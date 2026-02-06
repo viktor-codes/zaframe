@@ -11,6 +11,8 @@
 - Email достаточно для большинства случаев
 - Можно добавить позже при необходимости
 """
+from __future__ import annotations
+
 from datetime import datetime
 
 from sqlalchemy import String, func

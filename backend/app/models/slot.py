@@ -12,6 +12,8 @@
 - Имеет максимальное количество мест
 - Может быть забронирован несколько раз (через Booking)
 """
+from __future__ import annotations
+
 from datetime import datetime
 
 from sqlalchemy import ForeignKey, Integer, String, func

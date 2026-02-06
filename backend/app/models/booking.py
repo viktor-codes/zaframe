@@ -11,6 +11,8 @@
 - confirmed: оплачено и подтверждено
 - cancelled: отменено (клиентом или автоматически)
 """
+from __future__ import annotations
+
 from datetime import datetime
 
 from sqlalchemy import ForeignKey, String, func

@@ -6,6 +6,8 @@
 - Каждая студия имеет своё расписание и слоты
 - Удобно для масштабирования (несколько локаций, разные направления)
 """
+from __future__ import annotations
+
 from datetime import datetime
 
 from sqlalchemy import ForeignKey, String, Text, func
