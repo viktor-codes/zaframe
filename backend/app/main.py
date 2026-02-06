@@ -7,8 +7,15 @@ main.py остаётся минимальным: создание app, подк�
 from fastapi import FastAPI
 
 from app.api.v1 import health
+from app.core.config import settings
 
-app = FastAPI(title="ZaFrame API")
+# Используем настройки из config.py вместо хардкода.
+# Теперь title и version централизованы и могут быть переопределены через .env
+app = FastAPI(
+    title=settings.APP_NAME,
+    version=settings.APP_VERSION,
+    debug=settings.DEBUG,
+)
 
 # Один роутер — два префикса: без дублирования кода.
 # 1) Корень: / и /health — для load balancer'ов, k8s probes, мониторинга.
