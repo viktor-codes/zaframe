@@ -46,6 +46,9 @@ class Slot(Base):
     
     # Вместимость
     max_capacity: Mapped[int] = mapped_column(Integer, default=10, nullable=False)  # Максимальное количество мест
+
+    # Цена (в центах, для Stripe)
+    price_cents: Mapped[int] = mapped_column(Integer, default=0, nullable=False)  # Цена за одно место
     
     # Статус
     is_active: Mapped[bool] = mapped_column(default=True)  # Активен ли слот для бронирования

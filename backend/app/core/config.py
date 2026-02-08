@@ -58,6 +58,20 @@ class Settings(BaseSettings):
         default=["http://localhost:3000", "http://localhost:5173"],
         description="Allowed origins for CORS (frontend URLs)"
     )
+
+    # === Stripe ===
+    STRIPE_SECRET_KEY: str | None = Field(
+        default=None,
+        description="Stripe secret key (sk_test_... or sk_live_...)"
+    )
+    STRIPE_WEBHOOK_SECRET: str | None = Field(
+        default=None,
+        description="Stripe webhook signing secret (whsec_...)"
+    )
+    STRIPE_CURRENCY: str = Field(
+        default="eur",
+        description="Default currency for Stripe (eur for Ireland)"
+    )
     
     # === Pydantic Settings конфигурация ===
     model_config = SettingsConfigDict(

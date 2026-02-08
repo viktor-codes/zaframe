@@ -6,9 +6,16 @@
 - Валидация (end_time > start_time) в одном месте
 - Переиспользование при бронировании
 """
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import func, select
+
+
+def _to_naive_utc(dt: datetime) -> datetime:
+    """Приводит datetime к naive UTC для PostgreSQL TIMESTAMP WITHOUT TIME ZONE."""
+    if dt.tzinfo is not None:
+        return dt.astimezone(timezone.utc).replace(tzinfo=None)
+    return dt
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.booking import Booking
@@ -44,9 +51,9 @@ async def get_slots(
     if studio_id is not None:
         query = query.where(Slot.studio_id == studio_id)
     if start_from is not None:
-        query = query.where(Slot.start_time >= start_from)
+        query = query.where(Slot.start_time >= _to_naive_utc(start_from))
     if start_to is not None:
-        query = query.where(Slot.start_time <= start_to)
+        query = query.where(Slot.start_time <= _to_naive_utc(start_to))
     if is_active is not None:
         query = query.where(Slot.is_active == is_active)
     query = query.offset(skip).limit(limit).order_by(Slot.start_time.asc())
@@ -67,9 +74,9 @@ async def get_slots_count(
     if studio_id is not None:
         query = query.where(Slot.studio_id == studio_id)
     if start_from is not None:
-        query = query.where(Slot.start_time >= start_from)
+        query = query.where(Slot.start_time >= _to_naive_utc(start_from))
     if start_to is not None:
-        query = query.where(Slot.start_time <= start_to)
+        query = query.where(Slot.start_time <= _to_naive_utc(start_to))
     if is_active is not None:
         query = query.where(Slot.is_active == is_active)
     result = await db.execute(query)
@@ -109,11 +116,12 @@ async def create_slot(db: AsyncSession, schema: SlotCreate) -> Slot:
 
     slot = Slot(
         studio_id=schema.studio_id,
-        start_time=schema.start_time,
-        end_time=schema.end_time,
+        start_time=_to_naive_utc(schema.start_time),
+        end_time=_to_naive_utc(schema.end_time),
         title=schema.title,
         description=schema.description,
         max_capacity=schema.max_capacity,
+        price_cents=schema.price_cents,
     )
     db.add(slot)
     await db.flush()
@@ -142,6 +150,8 @@ async def update_slot(
             detail="Время окончания должно быть позже времени начала",
         )
     for field, value in update_data.items():
+        if field in ("start_time", "end_time") and value is not None:
+            value = _to_naive_utc(value)
         setattr(slot, field, value)
     await db.flush()
     await db.refresh(slot)

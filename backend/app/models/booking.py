@@ -65,6 +65,7 @@ class Booking(Base):
     )
     
     # Платежи (Stripe)
+    checkout_session_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)  # Stripe Checkout Session ID
     payment_intent_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)  # Stripe PaymentIntent ID
     payment_status: Mapped[str | None] = mapped_column(String(50), nullable=True)  # succeeded, failed, etc.
     

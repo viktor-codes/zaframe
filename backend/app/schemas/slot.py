@@ -15,6 +15,7 @@ class SlotBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=200, description="Название класса")
     description: str | None = Field(None, max_length=1000, description="Описание класса")
     max_capacity: int = Field(default=10, ge=1, description="Максимальное количество мест")
+    price_cents: int = Field(default=0, ge=0, description="Цена за место в центах")
 
 
 class SlotCreate(SlotBase):
@@ -29,6 +30,7 @@ class SlotUpdate(BaseModel):
     title: str | None = Field(None, min_length=1, max_length=200)
     description: str | None = Field(None, max_length=1000)
     max_capacity: int | None = Field(None, ge=1)
+    price_cents: int | None = Field(None, ge=0)
     is_active: bool | None = None
 
 

@@ -9,7 +9,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.api.v1 import auth, bookings, health, slots, studios
+from app.api.v1 import auth, bookings, health, payments, slots, studios
+from app.api.webhooks import router as webhooks_router
 from app.core.config import settings
 from app.core.database import engine
 
@@ -54,4 +55,6 @@ app.include_router(health.router, prefix="/api/v1")
 app.include_router(studios.router, prefix="/api/v1")
 app.include_router(slots.router, prefix="/api/v1")
 app.include_router(bookings.router, prefix="/api/v1")
+app.include_router(payments.router, prefix="/api/v1")
+app.include_router(webhooks_router)
 app.include_router(auth.router, prefix="/api/v1")

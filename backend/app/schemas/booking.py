@@ -52,6 +52,7 @@ class BookingResponse(BookingBase):
     guest_email: str | None
     guest_phone: str | None
     status: str
+    checkout_session_id: str | None
     payment_intent_id: str | None
     payment_status: str | None
     created_at: datetime
