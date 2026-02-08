@@ -18,7 +18,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
+from app.schemas.booking import BookingResponse
 from app.schemas.slot import SlotCreate, SlotResponse, SlotUpdate
+from app.services.booking import get_bookings
 from app.services.slot import (
     create_slot,
     delete_slot,
@@ -75,6 +77,23 @@ async def count_slots(
         is_active=is_active,
     )
     return {"count": count}
+
+
+@router.get("/{slot_id}/bookings", response_model=list[BookingResponse])
+async def list_slot_bookings(
+    slot_id: int,
+    db: AsyncSession = Depends(get_db),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    status: str | None = Query(None, description="Фильтр по статусу"),
+) -> list[BookingResponse]:
+    """Бронирования слота."""
+    slot = await get_slot(db, slot_id)
+    if slot is None:
+        raise HTTPException(status_code=404, detail="Слот не найден")
+    return await get_bookings(
+        db, skip=skip, limit=limit, slot_id=slot_id, status=status
+    )
 
 
 @router.get("/{slot_id}", response_model=SlotResponse)
