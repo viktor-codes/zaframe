@@ -26,7 +26,7 @@ class Settings(BaseSettings):
         description="Connection URL to PostgreSQL through asyncpg"
     )
     
-    # === Security (for future JWT authentication) ===
+    # === Security (JWT, Magic Link) ===
     SECRET_KEY: str = Field(
         default="change-me-in-production-use-openssl-rand-hex-32",
         description="Secret key for signing JWT tokens"
@@ -35,6 +35,22 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(
         default=30,
         description="Lifetime of access token in minutes"
+    )
+    REFRESH_TOKEN_EXPIRE_DAYS: int = Field(
+        default=7,
+        description="Lifetime of refresh token in days"
+    )
+    MAGIC_LINK_EXPIRE_MINUTES: int = Field(
+        default=15,
+        description="Lifetime of Magic Link token in minutes"
+    )
+    FRONTEND_URL: str = Field(
+        default="http://localhost:3000",
+        description="Frontend URL for Magic Link redirect"
+    )
+    RESEND_API_KEY: str | None = Field(
+        default=None,
+        description="Resend API key for sending emails (None = log link in dev)"
     )
     
     # === CORS ===
