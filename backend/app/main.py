@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.api.v1 import health
+from app.api.v1 import health, studios
 from app.core.config import settings
 from app.core.database import engine
 
@@ -51,3 +51,4 @@ app = FastAPI(
 # 2) Версионированный API: /api/v1/ и /api/v1/health — для клиентов.
 app.include_router(health.router)
 app.include_router(health.router, prefix="/api/v1")
+app.include_router(studios.router, prefix="/api/v1")
