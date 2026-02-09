@@ -98,7 +98,12 @@ def generate_magic_link_token() -> str:
 
 
 def get_magic_link_expires_at() -> datetime:
-    """Время истечения Magic Link токена."""
-    return datetime.now(timezone.utc) + timedelta(
-        minutes=settings.MAGIC_LINK_EXPIRE_MINUTES
-    )
+    """
+    Время истечения Magic Link токена.
+    
+    Возвращает naive datetime (без timezone) для совместимости с TIMESTAMP WITHOUT TIME ZONE.
+    """
+    utc_now = datetime.now(timezone.utc)
+    expires_at = utc_now + timedelta(minutes=settings.MAGIC_LINK_EXPIRE_MINUTES)
+    # Преобразуем в naive datetime (убираем timezone) для БД
+    return expires_at.replace(tzinfo=None)

@@ -53,10 +53,12 @@ async def verify_magic_link(
     Возвращает (user, access_token, refresh_token).
     Raises HTTPException если токен невалиден.
     """
+    # Используем naive datetime для сравнения с БД (TIMESTAMP WITHOUT TIME ZONE)
+    now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
     result = await db.execute(
         select(User).where(
             User.magic_link_token == token,
-            User.magic_link_expires_at > datetime.now(timezone.utc),
+            User.magic_link_expires_at > now_naive,
         )
     )
     user = result.scalar_one_or_none()
@@ -65,7 +67,8 @@ async def verify_magic_link(
 
     user.magic_link_token = None
     user.magic_link_expires_at = None
-    user.last_login_at = datetime.now(timezone.utc)
+    # Преобразуем в naive datetime для БД (TIMESTAMP WITHOUT TIME ZONE)
+    user.last_login_at = datetime.now(timezone.utc).replace(tzinfo=None)
     await db.flush()
 
     access_token = create_access_token(user.id, user.email)

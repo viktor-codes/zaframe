@@ -8,6 +8,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1 import auth, bookings, health, payments, slots, studios
 from app.api.webhooks import router as webhooks_router
@@ -45,6 +46,16 @@ app = FastAPI(
     version=settings.APP_VERSION,
     debug=settings.DEBUG,
     lifespan=lifespan,
+)
+
+# === CORS Middleware ===
+# Разрешаем запросы с фронтенда для разработки и production
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Один роутер — два префикса: без дублирования кода.
