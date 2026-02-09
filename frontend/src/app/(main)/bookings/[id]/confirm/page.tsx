@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Card, Button, Skeleton } from "@/components/ui";
@@ -10,6 +10,7 @@ import {
   fetchSlot,
   fetchStudio,
   createCheckoutSession,
+  cancelBooking,
 } from "@/lib/api";
 
 function formatPrice(cents: number): string {
@@ -32,9 +33,11 @@ function formatDateTime(iso: string): string {
 
 export default function BookingConfirmPage() {
   const params = useParams();
+  const queryClient = useQueryClient();
   const id = Number(params.id);
 
   const [error, setError] = useState<string | null>(null);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   const { data: booking, isLoading: loadingBooking, isError: errorBooking } = useQuery({
     queryKey: ["booking", id],
@@ -62,6 +65,18 @@ export default function BookingConfirmPage() {
     },
     onError: (err) => {
       setError(err instanceof Error ? err.message : "Payment failed");
+    },
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: cancelBooking,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["booking", id] });
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      setShowCancelConfirm(false);
+    },
+    onError: (err) => {
+      setError(err instanceof Error ? err.message : "Failed to cancel");
     },
   });
 
@@ -117,23 +132,46 @@ export default function BookingConfirmPage() {
   if (isCancelled) {
     return (
       <div className="max-w-2xl mx-auto px-6 py-12">
+        <Link
+          href="/bookings"
+          className="text-primary hover:text-primary-dark text-sm font-medium mb-6 inline-block"
+        >
+          ← My bookings
+        </Link>
         <div className="rounded-lg bg-neutral-100 border border-neutral-200 p-8 text-center">
           <p className="font-semibold text-neutral-700">Booking cancelled</p>
           <p className="text-sm text-neutral-600 mt-1">
             This booking has been cancelled.
           </p>
-          <Link href="/studios" className="text-primary underline mt-4 inline-block">
-            Browse studios
-          </Link>
+          <div className="flex gap-4 justify-center mt-4">
+            <Link href="/bookings" className="text-primary underline">
+              My bookings
+            </Link>
+            <Link href="/studios" className="text-primary underline">
+              Browse studios
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
+  const isPast = slot ? new Date(slot.start_time) < new Date() : false;
+  const canCancel = !isPast && !isCancelled;
+
   return (
     <div className="max-w-2xl mx-auto px-6 py-12">
+      <div className="flex items-center gap-4 mb-6">
+        <Link
+          href="/bookings"
+          className="text-primary hover:text-primary-dark text-sm font-medium"
+        >
+          ← My bookings
+        </Link>
+      </div>
+
       <h1 className="font-display font-bold text-2xl text-secondary mb-6">
-        Booking confirmed
+        Booking details
       </h1>
 
       <Card className="mb-6">
@@ -171,7 +209,7 @@ export default function BookingConfirmPage() {
       )}
 
       {!isPaid && slot && slot.price_cents > 0 && (
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
           <Button
             onClick={handlePay}
             isLoading={checkoutMutation.isPending}
@@ -181,6 +219,42 @@ export default function BookingConfirmPage() {
           <Button variant="outline" asChild>
             <Link href="/studios">Browse studios</Link>
           </Button>
+        </div>
+      )}
+
+      {canCancel && (
+        <div className="mb-6">
+          {showCancelConfirm ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+              <p className="font-medium text-red-800 mb-2">
+                Cancel this booking? This cannot be undone.
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => cancelMutation.mutate(id)}
+                  isLoading={cancelMutation.isPending}
+                  className="bg-red-600 hover:bg-red-700 text-white border-0"
+                >
+                  Confirm cancel
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowCancelConfirm(false)}
+                  disabled={cancelMutation.isPending}
+                >
+                  Keep booking
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button
+              variant="ghost"
+              onClick={() => setShowCancelConfirm(true)}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              Cancel booking
+            </Button>
+          )}
         </div>
       )}
 

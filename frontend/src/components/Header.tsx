@@ -42,6 +42,12 @@ export function Header() {
           {user ? (
             <>
               <Link
+                href="/dashboard"
+                className="text-neutral-600 hover:text-secondary font-medium"
+              >
+                Dashboard
+              </Link>
+              <Link
                 href="/bookings"
                 className="text-neutral-600 hover:text-secondary font-medium"
               >

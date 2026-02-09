@@ -23,7 +23,7 @@ export interface StudioWithSlots extends StudioResponse {
 }
 
 export interface StudioCreate extends StudioBase {
-  owner_id: number;
+  owner_id?: number; // задаётся на backend из токена
 }
 
 export interface StudioUpdate {

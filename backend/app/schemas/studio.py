@@ -16,8 +16,8 @@ class StudioBase(BaseModel):
 
 
 class StudioCreate(StudioBase):
-    """Схема для создания студии."""
-    owner_id: int = Field(..., description="ID владельца студии")
+    """Схема для создания студии. owner_id передаётся из токена на уровне роутера."""
+    owner_id: int | None = Field(None, description="ID владельца (устанавливается из токена)")
 
 
 class StudioUpdate(BaseModel):

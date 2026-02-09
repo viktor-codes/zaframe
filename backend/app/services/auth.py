@@ -70,6 +70,10 @@ async def verify_magic_link(
     # Преобразуем в naive datetime для БД (TIMESTAMP WITHOUT TIME ZONE)
     user.last_login_at = datetime.now(timezone.utc).replace(tzinfo=None)
     await db.flush()
+    # Refresh нужен: после flush атрибуты помечены expired, и доступ к ним
+    # (например updated_at при сериализации в Pydantic) вызывает lazy load,
+    # что в async SQLAlchemy даёт MissingGreenlet
+    await db.refresh(user)
 
     access_token = create_access_token(user.id, user.email)
     refresh_token = create_refresh_token(user.id)

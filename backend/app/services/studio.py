@@ -28,15 +28,19 @@ async def get_studios(
     *,
     skip: int = 0,
     limit: int = 20,
+    owner_id: int | None = None,
     is_active: bool | None = None,
 ) -> list[Studio]:
     """
     Список студий с пагинацией.
-    
+
     skip, limit — для пагинации
+    owner_id — фильтр по владельцу (для панели owner)
     is_active — фильтр по статусу (None = все)
     """
     query = select(Studio)
+    if owner_id is not None:
+        query = query.where(Studio.owner_id == owner_id)
     if is_active is not None:
         query = query.where(Studio.is_active == is_active)
     query = query.offset(skip).limit(limit).order_by(Studio.created_at.desc())
@@ -47,10 +51,13 @@ async def get_studios(
 async def get_studios_count(
     db: AsyncSession,
     *,
+    owner_id: int | None = None,
     is_active: bool | None = None,
 ) -> int:
     """Подсчёт студий для пагинации."""
     query = select(func.count()).select_from(Studio)
+    if owner_id is not None:
+        query = query.where(Studio.owner_id == owner_id)
     if is_active is not None:
         query = query.where(Studio.is_active == is_active)
     result = await db.execute(query)
@@ -60,18 +67,16 @@ async def get_studios_count(
 async def create_studio(db: AsyncSession, schema: StudioCreate) -> Studio:
     """
     Создать студию.
-    
-    Проверяет существование владельца (owner_id).
-    Raises HTTPException если владелец не найден.
+    owner_id должен быть передан в schema (из токена на уровне роутера).
     """
     from app.models.user import User
 
     # Проверка существования владельца
     result = await db.execute(select(User).where(User.id == schema.owner_id))
-    if result.scalar_one_or_none() is None:
+    if schema.owner_id is None or result.scalar_one_or_none() is None:
         from fastapi import HTTPException
 
-        raise HTTPException(status_code=404, detail="Владелец не найден")
+        raise HTTPException(status_code=400, detail="Владелец не указан или не найден")
 
     studio = Studio(
         owner_id=schema.owner_id,
