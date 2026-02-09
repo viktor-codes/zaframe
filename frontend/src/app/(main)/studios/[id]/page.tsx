@@ -1,10 +1,23 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { Card, Button, Skeleton } from "@/components/ui";
+import { useParams, useSearchParams } from "next/navigation";
+import { Card, Button, Skeleton, Input } from "@/components/ui";
 import { fetchStudio, fetchStudioSlots } from "@/lib/api";
+
+function toISOStartOfDay(d: Date): string {
+  const c = new Date(d);
+  c.setHours(0, 0, 0, 0);
+  return c.toISOString();
+}
+
+function toISOEndOfDay(d: Date): string {
+  const c = new Date(d);
+  c.setHours(23, 59, 59, 999);
+  return c.toISOString();
+}
 
 function formatPrice(cents: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -31,6 +44,23 @@ function formatDateTime(iso: string): { date: string; time: string } {
 export default function StudioDetailPage() {
   const params = useParams();
   const id = Number(params.id);
+
+  const today = useMemo(() => {
+    const t = new Date();
+    return t.toISOString().slice(0, 10);
+  }, []);
+
+  const [dateFilter, setDateFilter] = useState<string>(today);
+
+  const dateRange = useMemo(() => {
+    if (!dateFilter) return undefined;
+    const d = new Date(dateFilter);
+    if (Number.isNaN(d.getTime())) return undefined;
+    return {
+      start_from: toISOStartOfDay(d),
+      start_to: toISOEndOfDay(d),
+    };
+  }, [dateFilter]);
 
   if (Number.isNaN(id)) {
     return (
@@ -60,8 +90,12 @@ export default function StudioDetailPage() {
     isLoading: loadingSlots,
     isError: errorSlots,
   } = useQuery({
-    queryKey: ["studio", id, "slots"],
-    queryFn: () => fetchStudioSlots(id, { is_active: true }),
+    queryKey: ["studio", id, "slots", dateRange?.start_from, dateRange?.start_to],
+    queryFn: () =>
+      fetchStudioSlots(id, {
+        is_active: true,
+        ...(dateRange ?? {}),
+      }),
     enabled: !!studio,
   });
 
@@ -127,9 +161,21 @@ export default function StudioDetailPage() {
       </div>
 
       <section>
-        <h2 className="font-display font-semibold text-xl text-secondary mb-4">
-          Available slots
-        </h2>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+          <h2 className="font-display font-semibold text-xl text-secondary">
+            Available slots
+          </h2>
+          <label className="flex items-center gap-2 text-sm text-neutral-600">
+            <span>Date:</span>
+            <Input
+              type="date"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              min={today}
+              className="w-auto max-w-[180px]"
+            />
+          </label>
+        </div>
 
         {errorSlots ? (
           <div className="rounded-lg bg-amber-50 border border-amber-200 p-4 text-amber-800">
