@@ -56,6 +56,11 @@ from app.schemas.user import (
     UserResponse,
     UserUpdate,
 )
+from app.schemas.payment import (
+    CheckoutSessionCreate,
+    CheckoutSessionResponse,
+    OrderCheckoutSessionCreate,
+)
 
 __all__ = [
     # User
@@ -105,6 +110,10 @@ __all__ = [
     "PublicService",
     "PublicServiceOccurrence",
     "StudioPublicResponse",
+    # Payments
+    "CheckoutSessionCreate",
+    "OrderCheckoutSessionCreate",
+    "CheckoutSessionResponse",
     # GuestSession
     "GuestSessionBase",
     "GuestSessionCreate",

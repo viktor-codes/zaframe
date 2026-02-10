@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta, timezone
 
 from fastapi import HTTPException
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, func, select, case
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -302,25 +302,21 @@ async def _get_course_slots_with_capacity(
 
     slot_ids = [s.id for s in slots]
     # Считаем confirmed/pending по каждому слоту
-    counts_q = (
-        select(
-            Booking.slot_id,
-            func.sum(
-                func.case(
-                    (Booking.status == BookingStatus.CONFIRMED, 1),
-                    else_=0,
-                )
-            ).label("confirmed"),
-            func.sum(
-                func.case(
-                    (Booking.status == BookingStatus.PENDING, 1),
-                    else_=0,
-                )
-            ).label("pending"),
-        )
-        .where(Booking.slot_id.in_(slot_ids))
-        .group_by(Booking.slot_id)
-    )
+    counts_q = select(
+        Booking.slot_id,
+        func.sum(
+            case(
+                (Booking.status == BookingStatus.CONFIRMED, 1),
+                else_=0,
+            )
+        ).label("confirmed"),
+        func.sum(
+            case(
+                (Booking.status == BookingStatus.PENDING, 1),
+                else_=0,
+            )
+        ).label("pending"),
+    ).where(Booking.slot_id.in_(slot_ids)).group_by(Booking.slot_id)
     counts_result = await db.execute(counts_q)
     counts_map: dict[int, tuple[int, int]] = {
         row.slot_id: (row.confirmed or 0, row.pending or 0)
@@ -555,12 +551,52 @@ async def get_studio_public(
 
     services_public: list[PublicService] = []
 
-    # Для избежания N+1 по слотам/бронированиям можно в будущем
-    # вынести агрегированную загрузку вместимости по всем услугам студии.
+    # Собираем все будущие слоты студии, чтобы одним запросом посчитать заполненность.
+    now_utc = datetime.utcnow()
+    all_upcoming_slots: list[Slot] = []
+    for service in studio.services:
+        for slot in service.slots:
+            if (
+                slot.start_time >= now_utc
+                and slot.is_active
+                and slot.status == "active"
+            ):
+                all_upcoming_slots.append(slot)
+
+    slot_capacity_map: dict[int, tuple[int, int]] = {}
+    if all_upcoming_slots:
+        slot_ids = [s.id for s in all_upcoming_slots]
+        counts_q = (
+            select(
+                Booking.slot_id,
+                func.sum(
+                    case(
+                        (Booking.status == BookingStatus.CONFIRMED, 1),
+                        else_=0,
+                    )
+                ).label("confirmed"),
+                func.sum(
+                    case(
+                        (Booking.status == BookingStatus.PENDING, 1),
+                        else_=0,
+                    )
+                ).label("pending"),
+            )
+            .where(Booking.slot_id.in_(slot_ids))
+            .group_by(Booking.slot_id)
+        )
+        counts_result = await db.execute(counts_q)
+        slot_capacity_map = {
+            row.slot_id: (row.confirmed or 0, row.pending or 0)
+            for row in counts_result
+        }
+
     for service in studio.services:
         # Берём только будущие слоты этого сервиса (уже загружены через selectinload)
         upcoming_slots = [
-            s for s in service.slots if s.start_time >= datetime.utcnow()
+            s
+            for s in service.slots
+            if s.start_time >= now_utc and s.is_active and s.status == "active"
         ]
         upcoming_slots.sort(key=lambda s: s.start_time)
 
@@ -573,33 +609,49 @@ async def get_studio_public(
             term_end = None
             occurrences_count = 0
 
-        # Пока для карточки используем только агрегированную info из check_course_availability.
         availability_schema: PublicService.Availability | None = None
         if service.type == ServiceType.COURSE and upcoming_slots:
-            try:
-                availability = await check_course_availability(
-                    db,
-                    service_id=service.id,
-                    for_update=False,
+            total_remaining_capacity = 0
+            overbooked_dates_set: set[date] = set()
+            overbooked_slots_count = 0
+
+            for slot in upcoming_slots:
+                confirmed, pending = slot_capacity_map.get(slot.id, (0, 0))
+                current_total = confirmed + pending
+                remaining = max(0, slot.max_capacity - current_total)
+                total_remaining_capacity += remaining
+
+                status = service.get_capacity_status(
+                    max_capacity=slot.max_capacity,
+                    current_bookings=current_total,
+                    requested=1,
                 )
-                # total_remaining_capacity можно будет посчитать
-                # через общий helper вместимости; сейчас оставим 0 как заглушку.
-                overbooked_dates = [
-                    item.start_time.date() for item in availability.overbooked_slots
-                ]
-                availability_schema = PublicService.Availability(
-                    can_book=availability.can_book,
-                    total_remaining_capacity=0,
-                    requires_warning=availability.requires_warning,
-                    overbooked_dates=overbooked_dates,
-                )
-            except HTTPException:
-                availability_schema = PublicService.Availability(
-                    can_book=False,
-                    total_remaining_capacity=0,
-                    requires_warning=False,
-                    overbooked_dates=[],
-                )
+                is_over_soft = status == "SOFT_LIMIT_REACHED"
+                is_over_hard = status == "HARD_LIMIT_REACHED"
+
+                if is_over_soft or is_over_hard:
+                    overbooked_slots_count += 1
+                    overbooked_dates_set.add(slot.start_time.date())
+
+            requires_warning = overbooked_slots_count > 0
+            hard_block = False
+            if occurrences_count > 0:
+                overbooked_ratio = overbooked_slots_count / occurrences_count
+                if overbooked_ratio > service.max_overbooked_ratio:
+                    hard_block = True
+
+            can_book = (
+                occurrences_count > 0
+                and total_remaining_capacity > 0
+                and not hard_block
+            )
+
+            availability_schema = PublicService.Availability(
+                can_book=can_book,
+                total_remaining_capacity=total_remaining_capacity,
+                requires_warning=requires_warning and not hard_block,
+                overbooked_dates=sorted(overbooked_dates_set),
+            )
 
         services_public.append(
             PublicService(

@@ -23,16 +23,28 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import async_session_maker
+from app.core.config import settings
 from app.models.service import ServiceType, Service
 from app.models.slot import Slot
+from app.models.studio import Studio
 from app.models.user import User
 from app.schemas.booking import BookingCreate
-from app.schemas.service import CourseBookingCreate, ServiceCreate
+from app.schemas.service import (
+    CourseBookingCreate,
+    ServiceCreate,
+    StudioPublicResponse,
+)
 from app.schemas.studio import StudioCreate
 from app.services.booking import create_booking
+from app.services.payment import (
+    create_checkout_session,
+    create_order_checkout_session,
+)
 from app.services.service import (
     create_course_booking,
     create_service,
+    get_service_availability,
+    get_studio_public,
     occurrence_generator,
 )
 from app.services.studio import create_studio
@@ -78,6 +90,9 @@ async def seed_demo_data(
             owner_id=owner.id,
         )
         studio = await create_studio(db, studio_schema)
+        # Прописываем slug, чтобы работал публичный эндпоинт по slug.
+        studio.slug = f"demo-studio-{i + 1}"
+        await db.flush()
 
         services_in_studio = random.randint(min_services, max_services)
         for j in range(services_in_studio):
@@ -173,6 +188,10 @@ async def simulate_bookings(
     single_success = 0
     single_failed = 0
 
+    # Собираем идентификаторы для последующей симуляции платежей.
+    single_booking_ids: list[int] = []
+    course_order_ids: list[int] = []
+
     for user_idx in range(users_count):
         actions = random.randint(1, max_actions_per_user)
         for _ in range(actions):
@@ -190,8 +209,9 @@ async def simulate_bookings(
                     guest_phone=None,
                 )
                 try:
-                    await create_course_booking(db, schema=schema)
+                    course_resp = await create_course_booking(db, schema=schema)
                     course_success += 1
+                    course_order_ids.append(course_resp.order.id)
                 except HTTPException:
                     # Ожидаемо при отсутствии мест / конфликте
                     course_failed += 1
@@ -208,8 +228,9 @@ async def simulate_bookings(
                 guest_phone=None,
             )
             try:
-                await create_booking(db, schema)
+                booking = await create_booking(db, schema)
                 single_success += 1
+                single_booking_ids.append(booking.id)
             except HTTPException:
                 single_failed += 1
 
@@ -218,6 +239,92 @@ async def simulate_bookings(
         f"single_failed={single_failed}, "
         f"course_success={course_success}, "
         f"course_failed={course_failed}"
+    )
+
+    # Дополнительно симулируем создание Checkout Session для части бронирований и заказов.
+    if not settings.STRIPE_SECRET_KEY:
+        print("[payments] STRIPE_SECRET_KEY not configured, skipping checkout-session simulation.")
+        return
+
+    # Ограничиваем количество вызовов к Stripe, чтобы не перегружать тестовый аккаунт.
+    max_single_sessions = min(20, len(single_booking_ids))
+    max_course_sessions = min(10, len(course_order_ids))
+
+    for booking_id in single_booking_ids[:max_single_sessions]:
+        try:
+            await create_checkout_session(
+                db,
+                booking_id=booking_id,
+                success_url="https://example.com/payments/success",
+                cancel_url="https://example.com/payments/cancel",
+            )
+        except ValueError as e:
+            # В контексте симуляции достаточно залогировать и идти дальше.
+            print(f"[payments] single booking_id={booking_id} checkout error: {e}")
+
+    for order_id in course_order_ids[:max_course_sessions]:
+        try:
+            await create_order_checkout_session(
+                db,
+                order_id=order_id,
+                success_url="https://example.com/payments/success",
+                cancel_url="https://example.com/payments/cancel",
+            )
+        except ValueError as e:
+            print(f"[payments] order_id={order_id} checkout error: {e}")
+
+
+async def simulate_public_flows(db: AsyncSession) -> None:
+    """
+    Имитация публичных сценариев:
+    - GET /studios/slug/{slug}/public
+    - GET /services/{id}/availability
+    """
+    # Берём несколько студий с заданным slug.
+    studios_result = await db.execute(
+        select(Studio).where(Studio.slug.is_not(None), Studio.is_active.is_(True)).limit(5)
+    )
+    studios = list(studios_result.scalars().all())
+    if not studios:
+        print("[public] no studios with slug found, skipping public flow simulation.")
+        return
+
+    total_services_checked = 0
+    total_courses_availability_checked = 0
+
+    for studio in studios:
+        try:
+            public: StudioPublicResponse = await get_studio_public(db, slug=studio.slug or "")
+        except HTTPException as e:
+            print(f"[public] get_studio_public slug={studio.slug} error: {e.detail}")
+            continue
+
+        print(
+            f"[public] studio slug={studio.slug} services={len(public.services)}"
+        )
+        total_services_checked += len(public.services)
+
+        # Проверяем детальную доступность для первых нескольких курсов.
+        course_ids = [
+            svc.id
+            for svc in public.services
+            if svc.type == ServiceType.COURSE and svc.occurrences_count > 0
+        ]
+        for service_id in course_ids[:3]:
+            try:
+                availability = await get_service_availability(db, service_id=service_id)
+                print(
+                    f"[public] service_id={service_id} "
+                    f"can_book={availability.can_book} "
+                    f"days={len(availability.schedule_details)}"
+                )
+                total_courses_availability_checked += 1
+            except HTTPException as e:
+                print(f"[public] get_service_availability id={service_id} error: {e.detail}")
+
+    print(
+        f"[public] checked services={total_services_checked}, "
+        f"course_availability_calls={total_courses_availability_checked}"
     )
 
 
@@ -239,6 +346,8 @@ async def main() -> None:
 
         print("[simulate] starting bookings simulation...")
         await simulate_bookings(db)
+        print("[simulate] starting public flows simulation...")
+        await simulate_public_flows(db)
         print("[done] simulation finished.")
 
 

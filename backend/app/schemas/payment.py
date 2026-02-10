@@ -5,13 +5,49 @@ from pydantic import BaseModel, Field, HttpUrl
 
 
 class CheckoutSessionCreate(BaseModel):
-    """Схема для создания Checkout Session."""
+    """
+    Схема для создания Checkout Session для одиночного бронирования.
+
+    Используется для single-slot сценария (Booking).
+    """
+
     booking_id: int = Field(..., description="ID бронирования для оплаты")
-    success_url: HttpUrl = Field(..., description="URL перенаправления после успешной оплаты")
-    cancel_url: HttpUrl = Field(..., description="URL перенаправления при отмене")
+    success_url: HttpUrl = Field(
+        ...,
+        description="URL перенаправления после успешной оплаты",
+    )
+    cancel_url: HttpUrl = Field(
+        ...,
+        description="URL перенаправления при отмене",
+    )
+
+
+class OrderCheckoutSessionCreate(BaseModel):
+    """
+    Схема для создания Checkout Session для заказа (Order).
+
+    Используется для курсового сценария, когда оплата идёт за весь заказ.
+    """
+
+    order_id: int = Field(..., description="ID заказа для оплаты")
+    success_url: HttpUrl = Field(
+        ...,
+        description="URL перенаправления после успешной оплаты",
+    )
+    cancel_url: HttpUrl = Field(
+        ...,
+        description="URL перенаправления при отмене",
+    )
 
 
 class CheckoutSessionResponse(BaseModel):
     """Ответ с URL для перехода на Stripe Checkout."""
-    checkout_url: str = Field(..., description="URL для redirect на Stripe Checkout")
-    session_id: str = Field(..., description="ID Stripe Checkout Session")
+
+    checkout_url: str = Field(
+        ...,
+        description="URL для redirect на Stripe Checkout",
+    )
+    session_id: str = Field(
+        ...,
+        description="ID Stripe Checkout Session",
+    )

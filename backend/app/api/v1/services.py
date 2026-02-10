@@ -7,6 +7,7 @@ API роутер для услуг (Service) и шаблонов расписа�
 """
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from datetime import date
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user_required, get_db

@@ -17,6 +17,7 @@ import stripe
 from app.core.config import settings
 from app.core.database import async_session_maker
 from app.models.booking import Booking, BookingStatus
+from app.models.order import Order, OrderStatus
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 
@@ -60,16 +61,10 @@ async def stripe_webhook(request: Request) -> Response:
         metadata = getattr(session, "metadata", None) or {}
         if isinstance(metadata, dict):
             booking_id_str = metadata.get("booking_id")
+            order_id_str = metadata.get("order_id")
         else:
             booking_id_str = getattr(metadata, "booking_id", None)
-        if not booking_id_str:
-            logger.warning("Webhook checkout.session.completed: missing metadata.booking_id")
-            return Response(status_code=200)
-
-        try:
-            booking_id = int(booking_id_str)
-        except ValueError:
-            return Response(status_code=200)
+            order_id_str = getattr(metadata, "order_id", None)
 
         # payment_intent: может быть строка (id) или объект с .id
         pi = getattr(session, "payment_intent", None)
@@ -80,6 +75,57 @@ async def stripe_webhook(request: Request) -> Response:
             payment_intent_id = getattr(pi, "id", None) or (str(pi) if isinstance(pi, str) else None)
 
         async with async_session_maker() as db:
+            # Сначала обрабатываем оплату заказа (курс), если передан order_id.
+            if order_id_str:
+                try:
+                    order_id = int(order_id_str)
+                except ValueError:
+                    return Response(status_code=200)
+
+                result_order = await db.execute(select(Order).where(Order.id == order_id))
+                order = result_order.scalar_one_or_none()
+                if order is None:
+                    logger.warning("Webhook: order_id=%s not found", order_id)
+                    return Response(status_code=200)
+                if order.status == OrderStatus.PAID:
+                    # Идемпотентность: заказ уже оплачен.
+                    return Response(status_code=200)
+
+                order.status = OrderStatus.PAID
+
+                # Все связанные с заказом бронирования переводим в CONFIRMED.
+                result_bookings = await db.execute(
+                    select(Booking).where(Booking.order_id == order_id)
+                )
+                bookings = list(result_bookings.scalars().all())
+                for booking in bookings:
+                    if booking.status == BookingStatus.CONFIRMED:
+                        continue
+                    booking.status = BookingStatus.CONFIRMED
+                    booking.payment_status = "succeeded"
+                    if payment_intent_id:
+                        booking.payment_intent_id = payment_intent_id
+
+                await db.commit()
+                logger.info(
+                    "Webhook: order_id=%s paid, %s bookings confirmed",
+                    order_id,
+                    len(bookings),
+                )
+                return Response(status_code=200)
+
+            # Fallback: сценарий одиночного бронирования по booking_id.
+            if not booking_id_str:
+                logger.warning(
+                    "Webhook checkout.session.completed: missing metadata.booking_id and metadata.order_id"
+                )
+                return Response(status_code=200)
+
+            try:
+                booking_id = int(booking_id_str)
+            except ValueError:
+                return Response(status_code=200)
+
             result = await db.execute(select(Booking).where(Booking.id == booking_id))
             booking = result.scalar_one_or_none()
             if booking is None:
