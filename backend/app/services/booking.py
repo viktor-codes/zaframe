@@ -99,7 +99,11 @@ async def create_booking(db: AsyncSession, schema: BookingCreate) -> Booking:
 
     guest_session_id — опционально (добавим при интеграции Magic Link).
     """
-    result = await db.execute(select(Slot).where(Slot.id == schema.slot_id))
+    # Блокируем слот на время проверки и создания бронирования,
+    # чтобы избежать гонок при одновременных запросах.
+    result = await db.execute(
+        select(Slot).where(Slot.id == schema.slot_id).with_for_update()
+    )
     slot = result.scalar_one_or_none()
     if slot is None:
         raise HTTPException(status_code=404, detail="Слот не найден")

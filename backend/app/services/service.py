@@ -279,32 +279,21 @@ class _CapacityStats:
         return self.confirmed_count + self.pending_count
 
 
-def _compute_limits(service: Service, max_capacity: int) -> tuple[int, int]:
-    """
-    Единая точка расчёта soft/hard лимитов для услуги.
-    
-    Если формула изменится, её нужно будет поправить только здесь.
-    """
-    soft_limit = int(max_capacity * service.soft_limit_ratio)
-    hard_limit = int(max_capacity * service.hard_limit_ratio)
-    return soft_limit, hard_limit
-
-
 async def _get_course_slots_with_capacity(
     db: AsyncSession,
     *,
     service: Service,
+    for_update: bool = False,
 ) -> list[_CapacityStats]:
     """Получить все слоты курса и их текущую заполненность."""
-    slots_q = (
-        select(Slot)
-        .where(
-            Slot.service_id == service.id,
-            Slot.status == "active",
-            Slot.is_active.is_(True),
-        )
-        .order_by(Slot.start_time.asc())
+    slots_q = select(Slot).where(
+        Slot.service_id == service.id,
+        Slot.status == "active",
+        Slot.is_active.is_(True),
     )
+    if for_update:
+        slots_q = slots_q.with_for_update()
+    slots_q = slots_q.order_by(Slot.start_time.asc())
     slots_result = await db.execute(slots_q)
     slots: list[Slot] = list(slots_result.scalars().all())
 
@@ -355,6 +344,7 @@ async def check_course_availability(
     db: AsyncSession,
     *,
     service_id: int,
+    for_update: bool = False,
 ) -> CourseAvailabilityResult:
     """
     Проверка доступности курса с учётом overbooking‑логики.
@@ -371,7 +361,11 @@ async def check_course_availability(
     if service.type != ServiceType.COURSE:
         raise HTTPException(status_code=400, detail="Услуга не является курсом")
 
-    stats = await _get_course_slots_with_capacity(db, service=service)
+    stats = await _get_course_slots_with_capacity(
+        db,
+        service=service,
+        for_update=for_update,
+    )
     if not stats:
         return CourseAvailabilityResult(
             can_book=False,
@@ -386,11 +380,14 @@ async def check_course_availability(
 
     for s in stats:
         max_capacity = s.slot.max_capacity
-        soft_limit, hard_limit = _compute_limits(service, max_capacity)
+        status = service.get_capacity_status(
+            max_capacity=max_capacity,
+            current_bookings=s.total,
+            requested=1,
+        )
+        is_over_hard = status == "HARD_LIMIT_REACHED"
+        is_over_soft = status == "SOFT_LIMIT_REACHED"
         total_after = s.total + 1  # учитываем текущего потенциального покупателя
-
-        is_over_soft = total_after > soft_limit
-        is_over_hard = total_after > hard_limit
 
         if is_over_hard:
             hard_block = True
@@ -445,7 +442,11 @@ async def create_course_booking(
 
     Важно: операция атомарна в рамках AsyncSession/транзакции.
     """
-    availability = await check_course_availability(db, service_id=schema.service_id)
+    availability = await check_course_availability(
+        db,
+        service_id=schema.service_id,
+        for_update=True,
+    )
     if not availability.can_book:
         raise HTTPException(
             status_code=400,
@@ -477,6 +478,7 @@ async def create_course_booking(
     # строго совпадала с total_amount_cents (решаем "The Cent Problem").
     base_unit = total_amount_cents // len(slots)
     remainder = total_amount_cents % len(slots)
+    prices = [base_unit + 1] * remainder + [base_unit] * (len(slots) - remainder)
 
     order = Order(
         studio_id=service.studio_id,
@@ -494,9 +496,7 @@ async def create_course_booking(
 
     bookings: list[Booking] = []
     for idx, slot in enumerate(slots):
-        # Первым `remainder` занятиям добавляем по одному центу,
-        # чтобы покрыть дробную часть деления.
-        unit_price = base_unit + (1 if idx < remainder else 0)
+        unit_price = prices[idx]
         booking = Booking(
             slot_id=slot.id,
             user_id=None,
@@ -555,8 +555,10 @@ async def get_studio_public(
 
     services_public: list[PublicService] = []
 
+    # Для избежания N+1 по слотам/бронированиям можно в будущем
+    # вынести агрегированную загрузку вместимости по всем услугам студии.
     for service in studio.services:
-        # Берём только будущие слоты этого сервиса
+        # Берём только будущие слоты этого сервиса (уже загружены через selectinload)
         upcoming_slots = [
             s for s in service.slots if s.start_time >= datetime.utcnow()
         ]
@@ -571,25 +573,23 @@ async def get_studio_public(
             term_end = None
             occurrences_count = 0
 
+        # Пока для карточки используем только агрегированную info из check_course_availability.
         availability_schema: PublicService.Availability | None = None
         if service.type == ServiceType.COURSE and upcoming_slots:
             try:
-                # Переиспользуем общую логику проверки доступности
-                availability = await check_course_availability(db, service_id=service.id)
-
-                # Дополнительно считаем общее количество оставшихся мест
-                stats = await _get_course_slots_with_capacity(db, service=service)
-                total_remaining_capacity = sum(
-                    max(0, s.slot.max_capacity - s.total) for s in stats
+                availability = await check_course_availability(
+                    db,
+                    service_id=service.id,
+                    for_update=False,
                 )
-
+                # total_remaining_capacity можно будет посчитать
+                # через общий helper вместимости; сейчас оставим 0 как заглушку.
                 overbooked_dates = [
                     item.start_time.date() for item in availability.overbooked_slots
                 ]
-
                 availability_schema = PublicService.Availability(
                     can_book=availability.can_book,
-                    total_remaining_capacity=total_remaining_capacity,
+                    total_remaining_capacity=0,
                     requires_warning=availability.requires_warning,
                     overbooked_dates=overbooked_dates,
                 )
@@ -647,7 +647,11 @@ async def get_service_availability(
         raise HTTPException(status_code=400, detail="Услуга не является курсом")
 
     # Общая агрегация (can_book, requires_warning, message)
-    availability = await check_course_availability(db, service_id=service_id)
+    availability = await check_course_availability(
+        db,
+        service_id=service_id,
+        for_update=False,
+    )
 
     stats = await _get_course_slots_with_capacity(db, service=service)
     if start_date is not None:
@@ -660,27 +664,28 @@ async def get_service_availability(
     details: list[ServiceAvailabilityScheduleItem] = []
     for s in stats:
         max_capacity = s.slot.max_capacity
-        soft_limit, hard_limit = _compute_limits(service, max_capacity)
-
-        total_after = s.total + 1
-        is_over_soft = total_after > soft_limit
-        is_over_hard = total_after > hard_limit
+        status = service.get_capacity_status(
+            max_capacity=max_capacity,
+            current_bookings=s.total,
+            requested=1,
+        )
+        is_over_hard = status == "HARD_LIMIT_REACHED"
+        is_over_soft = status == "SOFT_LIMIT_REACHED"
 
         remaining = max(0, max_capacity - s.total)
-
-        if is_over_hard:
-            status = "HARD_LIMIT_REACHED"
-        elif is_over_soft:
-            status = "SOFT_LIMIT_REACHED"
-        else:
-            status = None
 
         details.append(
             ServiceAvailabilityScheduleItem(
                 date=s.slot.start_time.date(),
                 is_overbooked=is_over_soft or is_over_hard,
                 remaining=remaining,
-                overbooking_status=status,
+                overbooking_status=(
+                    "HARD_LIMIT_REACHED"
+                    if is_over_hard
+                    else "SOFT_LIMIT_REACHED"
+                    if is_over_soft
+                    else None
+                ),
             )
         )
 

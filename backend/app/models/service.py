@@ -112,3 +112,31 @@ class Service(Base):
         back_populates="service",
     )
 
+    # === Бизнес-логика вместимости ===
+    def get_capacity_status(
+        self,
+        *,
+        max_capacity: int,
+        current_bookings: int,
+        requested: int = 1,
+    ) -> str | None:
+        """
+        Возвращает статус заполненности для заданного количества мест.
+
+        Используется для реализации soft/hard лимитов и overbooking-логики.
+
+        Возвращаемые значения:
+        - "HARD_LIMIT_REACHED" — превышен жёсткий предел
+        - "SOFT_LIMIT_REACHED" — превышен мягкий предел
+        - None — в пределах soft‑лимита
+        """
+        total = current_bookings + requested
+        soft_limit = int(max_capacity * self.soft_limit_ratio)
+        hard_limit = int(max_capacity * self.hard_limit_ratio)
+
+        if total > hard_limit:
+            return "HARD_LIMIT_REACHED"
+        if total > soft_limit:
+            return "SOFT_LIMIT_REACHED"
+        return None
+
