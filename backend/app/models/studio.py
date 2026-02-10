@@ -31,6 +31,14 @@ class Studio(Base):
     
     # Основная информация
     name: Mapped[str] = mapped_column(String(200), nullable=False)
+    # Публичный slug для URL (например, /studios/yoga-hub-berlin).
+    # Делаем nullable для обратной совместимости, позже можно сделать обязательным.
+    slug: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+        unique=True,
+        index=True,
+    )
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     
     # Контакты студии
@@ -56,4 +64,16 @@ class Studio(Base):
         "Slot",
         back_populates="studio",
         cascade="all, delete-orphan"
+    )
+    # Одна студия может иметь множество услуг
+    services: Mapped[list["Service"]] = relationship(
+        "Service",
+        back_populates="studio",
+        cascade="all, delete-orphan",
+    )
+    # Заказы, оформленные в этой студии
+    orders: Mapped[list["Order"]] = relationship(
+        "Order",
+        back_populates="studio",
+        cascade="all, delete-orphan",
     )

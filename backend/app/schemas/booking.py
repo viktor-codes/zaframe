@@ -7,7 +7,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, Field
 
-from app.models.booking import BookingStatus
+from app.models.booking import BookingStatus, BookingType
 
 
 class BookingBase(BaseModel):
@@ -25,6 +25,14 @@ class BookingCreate(BookingBase):
     guest_name: str = Field(..., min_length=1, max_length=100, description="Имя гостя")
     guest_email: EmailStr = Field(..., description="Email гостя")
     guest_phone: str | None = Field(None, max_length=20, description="Телефон гостя (опционально)")
+    booking_type: str = Field(
+        default=BookingType.SINGLE,
+        description="Тип бронирования: single или course",
+    )
+    service_id: int | None = Field(
+        None,
+        description="ID услуги (обязательно для курса)",
+    )
 
 
 class BookingCreateAuthenticated(BookingBase):

@@ -12,7 +12,7 @@ from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.booking import Booking, BookingStatus
+from app.models.booking import Booking, BookingStatus, BookingType
 from app.models.slot import Slot
 from app.schemas.booking import BookingCreate, BookingUpdate
 
@@ -127,6 +127,8 @@ async def create_booking(db: AsyncSession, schema: BookingCreate) -> Booking:
         guest_email=schema.guest_email,
         guest_phone=schema.guest_phone,
         status=BookingStatus.PENDING,
+        booking_type=getattr(schema, "booking_type", BookingType.SINGLE),
+        service_id=getattr(schema, "service_id", None),
     )
     db.add(booking)
     await db.flush()

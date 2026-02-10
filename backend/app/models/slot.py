@@ -22,6 +22,13 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models import Base
 
 
+class OccurrenceStatus:
+    """Статус конкретного занятия (occurrence)."""
+
+    ACTIVE = "active"
+    CANCELLED = "cancelled"
+
+
 class Slot(Base):
     """
     Слот/класс для бронирования.
@@ -32,26 +39,53 @@ class Slot(Base):
     __tablename__ = "slots"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    
+
     # Связь со студией
-    studio_id: Mapped[int] = mapped_column(ForeignKey("studios.id"), nullable=False, index=True)
-    
+    studio_id: Mapped[int] = mapped_column(
+        ForeignKey("studios.id"), nullable=False, index=True
+    )
+
+    # Связь с услугой и шаблоном расписания
+    service_id: Mapped[int | None] = mapped_column(
+        ForeignKey("services.id"), nullable=True, index=True
+    )
+    schedule_id: Mapped[int | None] = mapped_column(
+        ForeignKey("schedules.id"), nullable=True, index=True
+    )
+
     # Временные параметры
-    start_time: Mapped[datetime] = mapped_column(nullable=False, index=True)  # Начало занятия
+    start_time: Mapped[datetime] = mapped_column(
+        nullable=False, index=True
+    )  # Начало занятия
     end_time: Mapped[datetime] = mapped_column(nullable=False)  # Окончание занятия
-    
+
     # Информация о классе
     title: Mapped[str] = mapped_column(String(200), nullable=False)  # Название класса
     description: Mapped[str | None] = mapped_column(String(1000), nullable=True)
-    
+
     # Вместимость
-    max_capacity: Mapped[int] = mapped_column(Integer, default=10, nullable=False)  # Максимальное количество мест
+    max_capacity: Mapped[int] = mapped_column(
+        Integer, default=10, nullable=False
+    )  # Максимальное количество мест
 
     # Цена (в центах, для Stripe)
-    price_cents: Mapped[int] = mapped_column(Integer, default=0, nullable=False)  # Цена за одно место
-    
+    price_cents: Mapped[int] = mapped_column(
+        Integer, default=0, nullable=False
+    )  # Цена за одно место (drop‑in)
+    course_price_cents: Mapped[int | None] = mapped_column(
+        Integer, nullable=True
+    )  # Опциональная цена "внутри курса" за это занятие
+
     # Статус
-    is_active: Mapped[bool] = mapped_column(default=True)  # Активен ли слот для бронирования
+    is_active: Mapped[bool] = mapped_column(
+        default=True
+    )  # Активен ли слот для бронирования в принципе
+    status: Mapped[str] = mapped_column(
+        String(20),
+        default=OccurrenceStatus.ACTIVE,
+        nullable=False,
+        index=True,
+    )  # Доменный статус занятия (active/cancelled)
     
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
@@ -62,7 +96,15 @@ class Slot(Base):
     
     # Связи
     studio: Mapped["Studio"] = relationship("Studio", back_populates="slots")
-    
+    service: Mapped["Service | None"] = relationship(
+        "Service",
+        back_populates="slots",
+    )
+    schedule: Mapped["Schedule | None"] = relationship(
+        "Schedule",
+        back_populates="slots",
+    )
+
     # Один слот может иметь множество бронирований
     bookings: Mapped[list["Booking"]] = relationship(
         "Booking",

@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1 import auth, bookings, health, payments, slots, studios
+from app.api.v1 import auth, bookings, health, payments, services, slots, studios
 from app.api.webhooks import router as webhooks_router
 from app.core.config import settings
 from app.core.database import engine
@@ -64,6 +64,7 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(health.router, prefix="/api/v1")
 app.include_router(studios.router, prefix="/api/v1")
+app.include_router(services.router, prefix="/api/v1")
 app.include_router(slots.router, prefix="/api/v1")
 app.include_router(bookings.router, prefix="/api/v1")
 app.include_router(payments.router, prefix="/api/v1")

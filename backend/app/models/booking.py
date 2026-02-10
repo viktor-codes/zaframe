@@ -28,6 +28,13 @@ class BookingStatus:
     CANCELLED = "cancelled"
 
 
+class BookingType:
+    """Тип бронирования."""
+
+    SINGLE = "single"
+    COURSE = "course"
+
+
 class Booking(Base):
     """
     Бронирование слота клиентом.
@@ -41,12 +48,31 @@ class Booking(Base):
     __tablename__ = "bookings"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    
-    # Связь со слотом (обязательно)
-    slot_id: Mapped[int] = mapped_column(ForeignKey("slots.id"), nullable=False, index=True)
+
+    # Связь со слотом (обязательно для SINGLE, для COURSE создаём по одному
+    # Booking на каждый слот курса)
+    slot_id: Mapped[int] = mapped_column(
+        ForeignKey("slots.id"), nullable=False, index=True
+    )
+
+    # Тип бронирования и связь с услугой/заказом
+    booking_type: Mapped[str] = mapped_column(
+        String(20),
+        default=BookingType.SINGLE,
+        nullable=False,
+        index=True,
+    )
+    service_id: Mapped[int | None] = mapped_column(
+        ForeignKey("services.id"), nullable=True, index=True
+    )
+    order_id: Mapped[int | None] = mapped_column(
+        ForeignKey("orders.id"), nullable=True, index=True
+    )
     
     # Связь с пользователем (может быть NULL для гостевых бронирований)
-    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
+    user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id"), nullable=True, index=True
+    )
     
     # Гостевая сессия (для бронирований до активации аккаунта)
     guest_session_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
@@ -68,6 +94,10 @@ class Booking(Base):
     checkout_session_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)  # Stripe Checkout Session ID
     payment_intent_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)  # Stripe PaymentIntent ID
     payment_status: Mapped[str | None] = mapped_column(String(50), nullable=True)  # succeeded, failed, etc.
+
+    # Цена за конкретное посещение внутри курса (для аналитики и учёта).
+    # Для одиночных бронирований может быть None или совпадать с ценой слота.
+    unit_price_cents: Mapped[int | None] = mapped_column(nullable=True)
     
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(server_default=func.now(), index=True)
@@ -80,6 +110,14 @@ class Booking(Base):
     # Связи
     slot: Mapped["Slot"] = relationship("Slot", back_populates="bookings")
     user: Mapped["User | None"] = relationship("User", back_populates="bookings")
+    service: Mapped["Service | None"] = relationship(
+        "Service",
+        back_populates="bookings",
+    )
+    order: Mapped["Order | None"] = relationship(
+        "Order",
+        back_populates="bookings",
+    )
     
     # Методы для проверки статуса (удобно использовать в коде)
     def is_confirmed(self) -> bool:

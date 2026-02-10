@@ -16,11 +16,20 @@ class SlotBase(BaseModel):
     description: str | None = Field(None, max_length=1000, description="Описание класса")
     max_capacity: int = Field(default=10, ge=1, description="Максимальное количество мест")
     price_cents: int = Field(default=0, ge=0, description="Цена за место в центах")
+    course_price_cents: int | None = Field(
+        None,
+        ge=0,
+        description="Цена за посещение в рамках курса (если отличается от обычной)",
+    )
 
 
 class SlotCreate(SlotBase):
     """Схема для создания слота."""
     studio_id: int = Field(..., description="ID студии")
+    service_id: int | None = Field(
+        None,
+        description="ID услуги (Service), если слот привязан к услуге/курсу",
+    )
 
 
 class SlotUpdate(BaseModel):

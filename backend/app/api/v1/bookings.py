@@ -12,7 +12,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
-from app.schemas.booking import BookingCreate, BookingResponse
+from app.schemas import (
+    BookingCreate,
+    BookingResponse,
+    CourseBookingCreate,
+    CourseBookingResponse,
+)
 from app.services.booking import (
     cancel_booking,
     create_booking,
@@ -20,21 +25,27 @@ from app.services.booking import (
     get_bookings,
     get_bookings_count,
 )
+from app.services.service import create_course_booking
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
 
 
-@router.post("", response_model=BookingResponse, status_code=201)
+@router.post("", response_model=BookingResponse | CourseBookingResponse, status_code=201)
 async def create_booking_endpoint(
-    schema: BookingCreate,
+    schema: BookingCreate | CourseBookingCreate,
     db: AsyncSession = Depends(get_db),
-) -> BookingResponse:
+) -> BookingResponse | CourseBookingResponse:
     """
-    Создать бронирование (гостевой режим).
+    Создать бронирование.
 
-    Проверяет: слот существует, активен, в будущем, есть места.
+    Варианты:
+    - разовое бронирование слота (BookingCreate)
+    - покупка курса (CourseBookingCreate) — создаёт Order и N бронирований
     """
-    booking = await create_booking(db, schema)
+    if isinstance(schema, CourseBookingCreate):
+        return await create_course_booking(db, schema=schema)
+    # Обычное разовое бронирование
+    booking = await create_booking(db, schema)  # type: ignore[arg-type]
     return booking
 
 

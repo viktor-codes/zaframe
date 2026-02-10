@@ -65,3 +65,9 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan"
     )
+    # И множество заказов
+    orders: Mapped[list["Order"]] = relationship(
+        "Order",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
