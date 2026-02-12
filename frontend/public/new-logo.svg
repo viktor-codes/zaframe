@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="none">
+  <defs>
+    <linearGradient id="gBack" x1="36" y1="52" x2="228" y2="212" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B7CFF"/>
+      <stop offset="1" stop-color="#00C2A8"/>
+    </linearGradient>
+
+    <linearGradient id="gFront" x1="56" y1="70" x2="232" y2="214" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#F3FAFF"/>
+    </linearGradient>
+
+    <linearGradient id="gInner" x1="72" y1="92" x2="218" y2="194" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B7CFF" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#00C2A8" stop-opacity="0.18"/>
+    </linearGradient>
+
+    <!-- NEW: Lime depth stroke for inner screen -->
+    <linearGradient id="gLimeStroke" x1="74" y1="92" x2="218" y2="194" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#B8FF2C" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#22C55E" stop-opacity="0.10"/>
+    </linearGradient>
+
+    <!-- NEW: Soft lime glow inside the inner screen -->
+    <radialGradient id="gLimeGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse"
+      gradientTransform="translate(206 178) rotate(135) scale(110 90)">
+      <stop stop-color="#B8FF2C" stop-opacity="0.25"/>
+      <stop offset="1" stop-color="#B8FF2C" stop-opacity="0"/>
+    </radialGradient>
+
+    <linearGradient id="gBadge" x1="150" y1="140" x2="206" y2="202" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#35D07F"/>
+      <stop offset="1" stop-color="#16A34A"/>
+    </linearGradient>
+
+    <linearGradient id="gHighlight" x1="64" y1="78" x2="180" y2="170" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.85"/>
+      <stop offset="0.45" stop-color="#FFFFFF" stop-opacity="0.20"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+
+    <linearGradient id="gInnerGloss" x1="74" y1="92" x2="180" y2="150" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+
+    <filter id="shadowSoft" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#061423" flood-opacity="0.18"/>
+    </filter>
+
+    <filter id="shadowTight" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#061423" flood-opacity="0.20"/>
+    </filter>
+  </defs>
+
+  <!-- BACK CARD -->
+  <rect x="38" y="54" width="178" height="140" rx="22"
+        fill="url(#gBack)" opacity="0.98"
+        transform="rotate(-7 38 54)"/>
+
+  <!-- FRONT CARD -->
+  <g filter="url(#shadowSoft)">
+    <rect x="54" y="70" width="184" height="144" rx="22" fill="url(#gFront)"/>
+    <rect x="54" y="70" width="184" height="144" rx="22"
+          stroke="#0B2B3A" stroke-opacity="0.10" stroke-width="2"/>
+
+    <!-- premium highlight -->
+    <path d="M76 78H196C214 78 228 92 228 110V112C192 118 152 116 120 104C100 97 86 88 76 78Z"
+          fill="url(#gHighlight)" opacity="0.9"/>
+  </g>
+
+  <!-- INNER SCREEN -->
+  <g filter="url(#shadowTight)">
+    <rect x="74" y="92" width="144" height="100" rx="16" fill="url(#gInner)"/>
+
+    <!-- NEW: lime glow -->
+    <rect x="74" y="92" width="144" height="100" rx="16" fill="url(#gLimeGlow)"/>
+
+    <!-- base stroke -->
+    <rect x="74" y="92" width="144" height="100" rx="16"
+          stroke="#0B2B3A" stroke-opacity="0.10" stroke-width="2"/>
+
+    <!-- NEW: lime inner stroke -->
+    <rect x="76" y="94" width="140" height="96" rx="15"
+          stroke="url(#gLimeStroke)" stroke-opacity="0.55" stroke-width="2"/>
+
+    <!-- inner gloss -->
+    <path d="M86 100H190C202 100 212 110 212 122V124C184 132 150 130 124 120C108 114 96 108 86 100Z"
+          fill="url(#gInnerGloss)"/>
+  </g>
+
+  <!-- CALENDAR -->
+  <g transform="translate(92 104)">
+    <rect x="0" y="12" width="84" height="68" rx="12"
+          fill="#FFFFFF" opacity="0.97"/>
+    <rect x="0" y="12" width="84" height="68" rx="12"
+          stroke="#0B2B3A" stroke-opacity="0.16" stroke-width="2"/>
+
+    <rect x="0" y="12" width="84" height="18" rx="12"
+          fill="#0B7CFF" opacity="0.16"/>
+
+    <rect x="14" y="0" width="12" height="22" rx="6"
+          fill="#0B2B3A" opacity="0.22"/>
+    <rect x="58" y="0" width="12" height="22" rx="6"
+          fill="#0B2B3A" opacity="0.22"/>
+
+    <g fill="#0B7CFF" opacity="0.38">
+      <rect x="14" y="40" width="12" height="10" rx="3"/>
+      <rect x="34" y="40" width="12" height="10" rx="3"/>
+      <rect x="54" y="40" width="12" height="10" rx="3"/>
+
+      <rect x="14" y="56" width="12" height="10" rx="3"/>
+      <rect x="34" y="56" width="12" height="10" rx="3"/>
+      <rect x="54" y="56" width="12" height="10" rx="3"/>
+    </g>
+
+    <path d="M10 34H74" stroke="#FFFFFF" stroke-opacity="0.55" stroke-width="2" stroke-linecap="round"/>
+  </g>
+
+  <!-- CHECK BADGE -->
+  <g>
+    <circle cx="178" cy="170" r="28" fill="url(#gBadge)"/>
+    <circle cx="178" cy="170" r="28"
+            stroke="#0B2B3A" stroke-opacity="0.14" stroke-width="2"/>
+
+    <!-- badge highlight -->
+    <path d="M160 162C168 150 188 148 198 158C190 160 182 160 174 158C168 156 164 158 160 162Z"
+          fill="#FFFFFF" opacity="0.28"/>
+
+    <path d="M167 170.5L174.5 178L190.5 162"
+          stroke="#FFFFFF" stroke-width="10"
+          stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

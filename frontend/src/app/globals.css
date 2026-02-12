@@ -1,39 +1,64 @@
 @import "tailwindcss";
 
-/* ZaFrame UI Kit - Design System */
+/* ZeeFrame UI Kit - Design System (Foundations) */
 @theme {
-  /* Primary (Mint) */
-  --color-primary: #45d1b8;
-  --color-primary-dark: #3ab89f;
-  --color-primary-light: #6fddc7;
+  /* Brand / Gradient: sky → teal → lime */
+  --color-brand-blue: #0ea5e9;
+  --color-brand-teal: #2dd4bf;
+  --color-brand-lime: #bef264;
+  /* Semantic aliases (primary = brand gradient) */
+  --color-primary: #0ea5e9;
+  --color-primary-dark: #0284c7;
+  --color-primary-light: #38bdf8;
 
-  /* Secondary (Navy) */
-  --color-secondary: #2c3e50;
+  /* Neutrals (zinc scale) */
+  --color-neutral-50: #fafafa;
+  --color-neutral-100: #f5f5f5;
+  --color-neutral-200: #e5e5e5;
+  --color-neutral-300: #d4d4d4;
+  --color-neutral-400: #a3a3a3;
+  --color-neutral-500: #737373;
+  --color-neutral-600: #52525b;
+  --color-neutral-700: #404040;
+  --color-neutral-800: #262626;
+  --color-neutral-900: #18181b;
 
-  /* Neutral (Gray Scale) */
-  --color-neutral-50: #f9fafb;
-  --color-neutral-100: #f3f4f6;
-  --color-neutral-200: #e5e7eb;
-  --color-neutral-300: #d1d5db;
-  --color-neutral-400: #9ca3af;
-  --color-neutral-500: #6b7280;
-  --color-neutral-600: #4b5563;
-  --color-neutral-700: #374151;
-  --color-neutral-800: #1f2937;
-  --color-neutral-900: #111827;
+  /* Status */
+  --color-status-success: #10b981;
+  --color-status-warning: #f59e0b;
+  --color-status-danger: #ef4444;
+
+  /* Surfaces */
+  --color-bg: #fafafa;
+  --color-surface: #ffffff;
+  --color-text-primary: #18181b;
+  --color-text-secondary: #52525b;
+  --color-border: #e5e5e5;
 
   /* Typography */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
 
-  /* Shadows */
-  --shadow-polaroid: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -1px rgb(0 0 0 / 0.06),
-    0 8px 16px -2px rgb(0 0 0 / 0.05);
+  /* Shadows (Paper / Hover / Lift / Modal) */
+  --shadow-paper: 0 18px 45px rgba(16, 17, 20, 0.14);
+  --shadow-hover: 0 26px 70px rgba(16, 17, 20, 0.18);
+  --shadow-lift: 0 40px 100px rgba(16, 17, 20, 0.22);
+  --shadow-modal: 0 60px 140px rgba(16, 17, 20, 0.35);
+  /* Legacy */
+  --shadow-polaroid: var(--shadow-paper);
+
+  /* Radius: 12 / 16 / 18 / 24 / 32 / 999 */
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-2xl: 32px;
+  --radius-full: 999px;
 }
 
 :root {
-  --background: #ffffff;
-  --foreground: #111827;
+  --background: var(--color-bg);
+  --foreground: var(--color-text-primary);
 }
 
 @theme inline {
@@ -47,11 +72,29 @@ body {
   font-family: var(--font-sans);
 }
 
-/* Polaroid card - reusable component base */
-.polaroid-card {
-  background: white;
-  padding: 12px;
-  padding-bottom: 24px;
-  border-radius: 4px;
-  box-shadow: var(--shadow-polaroid);
+/* Brand gradient utility */
+.bg-brand-gradient {
+  background: linear-gradient(to bottom right, var(--color-brand-blue), var(--color-brand-teal), var(--color-brand-lime));
+}
+
+.text-brand-gradient {
+  background: linear-gradient(to right, var(--color-brand-blue), var(--color-brand-teal), var(--color-brand-lime));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Modal enter animation */
+@keyframes polaroid-modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.polaroid-modal-in {
+  animation: polaroid-modal-in 0.3s ease-out forwards;
 }

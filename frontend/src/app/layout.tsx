@@ -17,7 +17,7 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "ZaFrame",
+  title: "ZeeFrame",
   description: "Book photo and video studios. Professional services with instant booking.",
 };
 

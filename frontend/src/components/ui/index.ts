@@ -1,7 +1,12 @@
 export { Alert } from "./Alert";
 export { Badge } from "./Badge";
 export { Button } from "./Button";
+export type { ButtonProps, ButtonSize, ButtonVariant } from "./Button";
+export { Chip } from "./Chip";
+export type { ChipProps, ChipSize, ChipTone } from "./Chip";
 export { Card } from "./Card";
 export { Input } from "./Input";
 export { Skeleton } from "./Skeleton";
+export { Tabs } from "./Tabs";
+export type { TabsProps, TabItem } from "./Tabs";
 export { Textarea } from "./Textarea";
