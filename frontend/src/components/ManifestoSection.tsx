@@ -12,7 +12,7 @@ export const ManifestoSection = ({ onInView }: ManifestoProps) => {
 
   // margin: "-50% 0px -50% 0px" означает, что триггер сработает,
   // когда центр секции пересечет центр экрана
-  const isInView = useInView(ref, { margin: "-20% 0px -90% 0px" });
+  const isInView = useInView(ref, { margin: "-10% 0px -10% 0px" });
 
   useEffect(() => {
     if (onInView) {
