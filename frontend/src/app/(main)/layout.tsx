@@ -1,5 +1,3 @@
-import { Header } from "@/components/Header";
-
 export default function MainLayout({
   children,
 }: {
@@ -7,7 +5,7 @@ export default function MainLayout({
 }) {
   return (
     <div className="min-h-screen bg-neutral-50">
-      <Header />
+      {/* <Header /> */}
       <main className="min-h-[calc(100vh-130px)]">{children}</main>
     </div>
   );

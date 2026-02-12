@@ -9,7 +9,7 @@ export const HeroSection = () => {
       <div className="absolute -left-24 h-96 w-96 rounded-sm bg-teal-100/50 blur-3xl" />
 
       <div className="container relative mx-auto px-4">
-        <div className="flex flex-col items-center lg:flex-row lg:justify-between">
+        <div className="flex flex-col items-center lg:flex-row lg:justify-between mt-24">
           {/* Левая колонка: текст и CTA */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}

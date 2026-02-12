@@ -50,7 +50,7 @@ export const MobileMenu = ({
             // 2. ПОЗИЦИОНИРОВАНИЕ:
             // - z-30 (меньше чем у хедера, который z-50)
             // - top-[104px] (начало сразу под хедером)
-            className="fixed left-0 right-0 top-[104px] z-30 flex h-[calc(100vh-104px)] flex-col bg-white/90 backdrop-blur-2xl md:hidden"
+            className="fixed left-0 right-0 top-25 z-30 flex h-[calc(100vh-100px)] flex-col bg-white/90 backdrop-blur-2xl md:hidden"
           ></motion.div>
           {/* Светлая шторка */}
           <motion.div
@@ -59,7 +59,7 @@ export const MobileMenu = ({
             exit={{ y: "-100%" }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
             // top-24 или top-[точная высота хедера]. В твоем случае хедер ~96px (banner + nav)
-            className="fixed inset-x-0 z-30 flex h-[calc(100vh-104px)] flex-col bg-white/70 backdrop-blur-2xl md:hidden"
+            className="fixed inset-x-0 z-30 flex h-[calc(100vh-100px)] flex-col bg-white/70 backdrop-blur-2xl md:hidden"
           >
             <div className="absolute inset-4 pointer-events-none">
               {/* Левый верхний */}
