@@ -1,6 +1,6 @@
 import { forwardRef } from "react";
 
-export interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {}
+export type SkeletonProps = React.HTMLAttributes<HTMLDivElement>;
 
 export const Skeleton = forwardRef<HTMLDivElement, SkeletonProps>(
   ({ className = "", ...props }, ref) => {

@@ -19,13 +19,25 @@ function VerifyContent() {
 
   const token = searchParams.get("token");
 
-  useEffect(() => {
-    if (!token) {
-      setStatus("error");
-      setErrorMessage("Missing token. Please use the link from your email.");
-      return;
-    }
+  if (!token) {
+    return (
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-6">
+        <div className="max-w-md w-full">
+          <Alert variant="error" title="Verification failed">
+            Missing token. Please use the link from your email.
+          </Alert>
+          <a
+            href="/auth/login"
+            className="block text-center mt-6 text-primary hover:text-primary-dark font-medium"
+          >
+            Request a new magic link
+          </a>
+        </div>
+      </div>
+    );
+  }
 
+  useEffect(() => {
     verifyMagicLink(token)
       .then((data) => {
         login(data.access_token, data.refresh_token, data.user);

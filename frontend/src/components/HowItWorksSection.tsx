@@ -1,7 +1,7 @@
 "use client";
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
-import { Camera, Calendar, Trophy, ChevronDown } from "lucide-react";
+import { Camera, Calendar, Trophy } from "lucide-react";
 
 const steps = [
   {
@@ -169,8 +169,15 @@ export const HowItWorksSection = () => {
   );
 };
 
-// Отдельный компонент для шага, чтобы удобно было использовать свой useInView для цвета
-const StepItem = ({ step, index }: { step: any; index: number }) => {
+interface StepItemData {
+  id: string;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  img: string;
+}
+
+const StepItem = ({ step, index }: { step: StepItemData; index: number }) => {
   const ref = useRef(null);
   const isStepInView = useInView(ref, { margin: "-30% 0px" });
   const isEven = index % 2 === 0;

@@ -62,19 +62,6 @@ export default function StudioDetailPage() {
     };
   }, [dateFilter]);
 
-  if (Number.isNaN(id)) {
-    return (
-      <div className="max-w-6xl mx-auto px-6 py-12">
-        <div className="rounded-lg bg-red-50 border border-red-200 p-6 text-red-800">
-          <p className="font-semibold">Invalid studio ID</p>
-          <Link href="/studios" className="text-primary underline mt-2 inline-block">
-            Back to studios
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   const {
     data: studio,
     isLoading: loadingStudio,
@@ -83,6 +70,7 @@ export default function StudioDetailPage() {
   } = useQuery({
     queryKey: ["studio", id],
     queryFn: () => fetchStudio(id),
+    enabled: !Number.isNaN(id),
   });
 
   const {
@@ -96,8 +84,21 @@ export default function StudioDetailPage() {
         is_active: true,
         ...(dateRange ?? {}),
       }),
-    enabled: !!studio,
+    enabled: !Number.isNaN(id) && !!studio,
   });
+
+  if (Number.isNaN(id)) {
+    return (
+      <div className="max-w-6xl mx-auto px-6 py-12">
+        <div className="rounded-lg bg-red-50 border border-red-200 p-6 text-red-800">
+          <p className="font-semibold">Invalid studio ID</p>
+          <Link href="/studios" className="text-primary underline mt-2 inline-block">
+            Back to studios
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (errorStudio) {
     return (

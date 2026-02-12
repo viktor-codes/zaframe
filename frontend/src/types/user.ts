@@ -21,7 +21,7 @@ export interface UserPublic extends UserBase {
   created_at: string;
 }
 
-export interface UserCreate extends UserBase {}
+export type UserCreate = UserBase;
 
 export interface UserUpdate {
   email?: string;
