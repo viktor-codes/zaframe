@@ -13,7 +13,6 @@ export type { InstructorCardProps } from "./InstructorCard";
 export { ReviewCard } from "./ReviewCard";
 export type { ReviewCardProps } from "./ReviewCard";
 export { HeroSection } from "./HeroSection";
-export type { HeroSectionProps } from "./HeroSection";
 export { SearchBar } from "./SearchBar";
 export type { SearchBarProps } from "./SearchBar";
 export { ScheduleSlot } from "./ScheduleSlot";

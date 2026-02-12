@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { Card, Button, Input } from "@/components/ui";
+import { Card, Button, Input, Skeleton } from "@/components/ui";
 import {
   fetchStudio,
   fetchStudioSlots,
@@ -29,7 +29,7 @@ function formatDateTime(iso: string): string {
   });
 }
 
-export default function BookPage() {
+function BookPageContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const studioId = Number(params.id);
@@ -212,5 +212,13 @@ export default function BookPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function BookPage() {
+  return (
+    <Suspense fallback={<div className="max-w-2xl mx-auto px-6 py-12"><Skeleton className="h-64 w-full" /></div>}>
+      <BookPageContent />
+    </Suspense>
   );
 }

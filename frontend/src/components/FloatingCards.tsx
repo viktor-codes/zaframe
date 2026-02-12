@@ -6,7 +6,7 @@ const FloatingCards = () => {
   const [cards, setCards] = useState([
     { id: 0, rotation: -12, img: "/yoga.webp", label: "Yoga Flow" },
     { id: 1, rotation: 2, img: "/cont.webp", label: "Contemporary" },
-    { id: 2, rotation: 10, img: "hip-hop.webp", label: "Stretching" },
+    { id: 2, rotation: 10, img: "hip-hop.webp", label: "hip-hop" },
   ]);
 
   useEffect(() => {

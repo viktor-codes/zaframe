@@ -64,22 +64,14 @@ export function PolaroidCard({
     >
       <div className="relative p-4 pb-3">
         <div className="relative overflow-hidden rounded-lg">
-          {isExternalImage ? (
-            <img
-              src={image}
-              alt={imageAlt}
-              className={`${imageHeightClasses[size]} w-full object-cover transition duration-500 group-hover:scale-[1.03]`}
-              unoptimized
-            />
-          ) : (
-            <Image
-              src={image}
-              alt={imageAlt}
-              width={360}
-              height={size === "sm" ? 200 : size === "md" ? 240 : 320}
-              className={`${imageHeightClasses[size]} w-full object-cover transition duration-500 group-hover:scale-[1.03]`}
-            />
-          )}
+          <Image
+            src={image}
+            alt={imageAlt}
+            width={360}
+            height={size === "sm" ? 200 : size === "md" ? 240 : 320}
+            className={`${imageHeightClasses[size]} w-full object-cover transition duration-500 group-hover:scale-[1.03]`}
+            unoptimized={isExternalImage}
+          />
 
           {(topLeft || topRight) && (
             <>

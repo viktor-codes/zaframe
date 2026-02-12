@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import { Card, Button, Skeleton, Input } from "@/components/ui";
 import { fetchStudio, fetchStudioSlots } from "@/lib/api";
 

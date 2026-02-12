@@ -172,6 +172,53 @@ export const ManifestoSection = ({ onInView }: ManifestoProps) => {
           ))}
         </div>
       </div>
+      {/* Добавь это в самый конец внутри <section>, после контейнера */}
+
+      {/* 1. Левый декоративный "мост" к следующей секции */}
+      <div className="absolute bottom-0 left-6 md:left-12 z-20 translate-y-1/2">
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={isInView ? { opacity: 1, x: 0 } : {}}
+          className="flex flex-col gap-0"
+        >
+          {/* Штрихкод - он будет наполовину на черном, наполовину на белом */}
+          <div className="flex flex-col items-start bg-zinc-950 p-4 border-l border-white/20">
+            <div className="flex gap-1 mb-2">
+              {[2, 4, 1, 6, 2, 8, 1, 3].map((h, i) => (
+                <div
+                  key={i}
+                  className="w-[2px] bg-white/40"
+                  style={{ height: `${h * 4}px` }}
+                />
+              ))}
+            </div>
+            <span className="text-[8px] font-mono text-zinc-500 tracking-[0.3em] uppercase">
+              ZeeFrame_Origin_2026
+            </span>
+          </div>
+
+          {/* Силуэт фотопленки (перфорация) */}
+          <div className="flex flex-col gap-2 mt-4 ml-1">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div
+                key={i}
+                className="w-4 h-6 border border-white/10 rounded-sm opacity-20"
+              />
+            ))}
+          </div>
+        </motion.div>
+      </div>
+
+      {/* 2. Правый акцент - "Серийный номер" */}
+      <div className="absolute bottom-12 right-12 hidden md:block">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={isInView ? { opacity: 0.3 } : {}}
+          className="rotate-90 origin-right text-[10px] font-mono text-white tracking-[1em] uppercase"
+        >
+          Verification_System_Active
+        </motion.div>
+      </div>
     </section>
   );
 };

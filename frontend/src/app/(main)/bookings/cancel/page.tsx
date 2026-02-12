@@ -1,10 +1,11 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Card, Button } from "@/components/ui";
+import { Card, Button, Skeleton } from "@/components/ui";
 
-export default function BookingCancelPage() {
+function CancelContent() {
   const searchParams = useSearchParams();
   const bookingId = searchParams.get("booking");
 
@@ -32,5 +33,13 @@ export default function BookingCancelPage() {
         </div>
       </Card>
     </div>
+  );
+}
+
+export default function BookingCancelPage() {
+  return (
+    <Suspense fallback={<div className="max-w-2xl mx-auto px-6 py-12"><Skeleton className="h-48 w-full" /></div>}>
+      <CancelContent />
+    </Suspense>
   );
 }

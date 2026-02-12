@@ -75,7 +75,7 @@ export const HowItWorksSection = () => {
               {/* Десктопная линия - теперь начинается левее (M150 вместо M450) */}
               <motion.path
                 className="hidden md:block"
-                d="M450 0 C 800 300, 200 600, 500 900 C 800 1200, 200 1300, 500 1500"
+                d="M450 -50 C 800 150, 200 600, 500 900 C 800 1200, 200 1300, 400 1600"
                 stroke="#F4F4F5"
                 strokeWidth="10" // Чуть жирнее для статуса
                 strokeDasharray="25 35"
@@ -83,11 +83,12 @@ export const HowItWorksSection = () => {
               />
               <motion.path
                 className="hidden md:block"
-                d="M450 0 C 800 300, 200 600, 500 900 C 800 1200, 200 1300, 500 1500"
+                d="M450 -50 C 800 150, 200 600, 500 900 C 800 1200, 200 1300, 400 1600"
                 stroke="url(#line-grad)"
                 strokeWidth="10"
                 strokeDasharray="25 35"
                 strokeLinecap="round"
+                markerEnd="url(#arrowhead)"
                 initial={{ pathLength: 0 }}
                 animate={isInView ? { pathLength: 1 } : {}}
                 transition={{ duration: 5, ease: "linear" }}
@@ -98,17 +99,18 @@ export const HowItWorksSection = () => {
                 className="md:hidden"
                 d="M40 0 L 40 1500" // M40 дает отступ от левого края экрана
                 stroke="#F4F4F5"
-                strokeWidth="8"
+                strokeWidth="10"
                 strokeDasharray="15 25"
                 strokeLinecap="round"
               />
               <motion.path
                 className="md:hidden"
-                d="M40 0 L 40 1500"
+                d="M50 -25 L 40 1550"
                 stroke="url(#line-grad)"
-                strokeWidth="8"
+                strokeWidth="10"
                 strokeDasharray="15 25"
                 strokeLinecap="round"
+                markerEnd="url(#arrowhead)"
                 initial={{ pathLength: 0 }}
                 animate={isInView ? { pathLength: 1 } : {}}
                 transition={{ duration: 5, ease: "linear" }}
@@ -118,6 +120,24 @@ export const HowItWorksSection = () => {
                   <stop stopColor="#14B8A6" />
                   <stop offset="1" stopColor="#0EA5E9" />
                 </linearGradient>
+                {/* Мягкая округлая стрелочка */}
+                <marker
+                  id="arrowhead"
+                  markerWidth="12"
+                  markerHeight="12"
+                  refX="10"
+                  refY="6"
+                  orient="auto"
+                >
+                  <motion.path
+                    d="M2 2 L10 6 L2 10" // Форма "галочки"
+                    fill="none"
+                    stroke="#0EA5E9" // Цвет конца градиента
+                    strokeWidth="2"
+                    strokeLinecap="round" // Округлые кончики
+                    strokeLinejoin="round" // Округлый изгиб
+                  />
+                </marker>
               </defs>
             </svg>
           </div>
@@ -130,7 +150,7 @@ export const HowItWorksSection = () => {
           </div>
         </div>
 
-        {/* Final Trigger Arrow */}
+        {/* Final Trigger Arrow
         <motion.div
           initial={{ opacity: 0 }}
           animate={isInView ? { opacity: 1 } : {}}
@@ -143,7 +163,7 @@ export const HowItWorksSection = () => {
           <div className="w-12 h-12 rounded-full border border-zinc-200 flex items-center justify-center">
             <ChevronDown className="text-zinc-900 w-5 h-5 animate-bounce" />
           </div>
-        </motion.div>
+        </motion.div> */}
       </div>
     </section>
   );

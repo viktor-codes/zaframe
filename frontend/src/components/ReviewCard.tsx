@@ -23,22 +23,14 @@ export function ReviewCard({
   return (
     <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
       <div className="flex items-start gap-3">
-        {isExternalImage ? (
-          <img
-            src={image}
-            alt={author}
-            className="h-12 w-12 rounded-full object-cover"
-            unoptimized
-          />
-        ) : (
-          <Image
-            src={image}
-            alt={author}
-            width={48}
-            height={48}
-            className="h-12 w-12 rounded-full object-cover"
-          />
-        )}
+        <Image
+          src={image}
+          alt={author}
+          width={48}
+          height={48}
+          className="h-12 w-12 rounded-full object-cover"
+          unoptimized={isExternalImage}
+        />
         <div className="flex-1">
           <div className="flex items-center justify-between">
             <div className="font-semibold text-zinc-900">{author}</div>
