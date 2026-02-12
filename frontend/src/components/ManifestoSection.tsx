@@ -1,6 +1,6 @@
 "use client";
 import { motion, useInView } from "framer-motion";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Search, Zap, Star } from "lucide-react";
 
 interface ManifestoProps {
@@ -9,19 +9,28 @@ interface ManifestoProps {
 
 export const ManifestoSection = ({ onInView }: ManifestoProps) => {
   const ref = useRef(null);
+  const [fallbackVisible, setFallbackVisible] = useState(false);
 
-  // Исправленный margin: теперь секция активируется, когда 10% её высоты
-  // попадает в область видимости. Это гарантирует работу на мобилках.
+  // На мобильном Safari IntersectionObserver может не срабатывать — используем
+  // щедрый margin и fallback: через 0.5s считаем секцию видимой.
   const isInView = useInView(ref, {
-    margin: "-10% 0px -10% 0px",
-    once: false,
+    margin: "0px 0px -5% 0px",
+    once: true,
+    amount: 0.1,
   });
 
   useEffect(() => {
+    const t = setTimeout(() => setFallbackVisible(true), 500);
+    return () => clearTimeout(t);
+  }, []);
+
+  const show = isInView || fallbackVisible;
+
+  useEffect(() => {
     if (onInView) {
-      onInView(isInView);
+      onInView(show);
     }
-  }, [isInView, onInView]);
+  }, [show, onInView]);
 
   const propositions = [
     {
@@ -76,7 +85,7 @@ export const ManifestoSection = ({ onInView }: ManifestoProps) => {
         <div className="mb-32 text-center">
           <motion.span
             initial={{ opacity: 0 }}
-            animate={isInView ? { opacity: 1 } : {}}
+            animate={show ? { opacity: 1 } : {}}
             className="text-[10px] font-black uppercase tracking-[0.5em] text-teal-500 mb-8 block"
           >
             Philosophy
@@ -84,7 +93,7 @@ export const ManifestoSection = ({ onInView }: ManifestoProps) => {
 
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            animate={show ? { opacity: 1, y: 0 } : {}}
             className="text-5xl md:text-7xl font-bold tracking-tighter text-white leading-[1.1]"
           >
             Made for everyone who <br />
@@ -98,7 +107,7 @@ export const ManifestoSection = ({ onInView }: ManifestoProps) => {
               >
                 <motion.path
                   initial={{ pathLength: 0 }}
-                  animate={isInView ? { pathLength: 1 } : {}}
+                  animate={show ? { pathLength: 1 } : {}}
                   transition={{ duration: 1.5, delay: 0.5 }}
                   d="M1 11C40 11 50 2 90 2C130 2 140 11 180 11C220 11 230 2 270 2C310 2 320 11 399 11"
                   stroke="url(#neon-wave)"
@@ -130,7 +139,7 @@ export const ManifestoSection = ({ onInView }: ManifestoProps) => {
             <motion.div
               key={value.label}
               initial={{ opacity: 0, y: 30 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              animate={show ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.8, delay: 0.4 + index * 0.2 }}
               whileHover={{ y: -5 }}
               className="group relative"
@@ -176,7 +185,7 @@ export const ManifestoSection = ({ onInView }: ManifestoProps) => {
       <div className="absolute bottom-0 left-6 md:left-12 z-20 translate-y-1/2 pointer-events-none">
         <motion.div
           initial={{ opacity: 0, x: -20 }}
-          animate={isInView ? { opacity: 1, x: 0 } : {}}
+          animate={show ? { opacity: 1, x: 0 } : {}}
           className="flex flex-col gap-0"
         >
           {/* Штрихкод */}
@@ -211,7 +220,7 @@ export const ManifestoSection = ({ onInView }: ManifestoProps) => {
       <div className="absolute bottom-12 right-12 hidden md:block pointer-events-none">
         <motion.div
           initial={{ opacity: 0 }}
-          animate={isInView ? { opacity: 0.3 } : {}}
+          animate={show ? { opacity: 0.3 } : {}}
           className="rotate-90 origin-right text-[10px] font-mono text-white tracking-[1em] uppercase"
         >
           Verification_System_Active
