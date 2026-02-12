@@ -82,7 +82,7 @@ export function Header({ variant = "light" }: { variant?: "light" | "dark" }) {
           <div className="flex items-center gap-4 ms-4">
             <Link
               href="#signin"
-              className={`hidden rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-500 md:inline-block ${
+              className={`hidden rounded-lg px-5 py-2.5 text-sm font-semibold transition-all duration-500 md:inline-block ${
                 isDark
                   ? "bg-white text-zinc-950 hover:bg-teal-400"
                   : "bg-zinc-900 text-white hover:bg-zinc-800"
@@ -110,7 +110,7 @@ export function Header({ variant = "light" }: { variant?: "light" | "dark" }) {
                 }}
                 transition={{ ...iconSpring, delay: mobileMenuOpen ? 0 : 0.12 }}
               >
-                <Scan className="h-6 w-6" />
+                <Scan className="h-6 w-6 " />
               </motion.span>
               <motion.span
                 className="absolute inset-0 flex items-center justify-center"
