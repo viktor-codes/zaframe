@@ -11,7 +11,7 @@ export default function HomePage() {
   const [isNavDark, setIsNavDark] = useState(false);
   return (
     <main className="min-h-screen bg-white">
-      <Header variant={isNavDark ? "light" : "dark"} />
+      <Header variant={isNavDark ? "dark" : "light"} />
       <HeroSection />
       <ManifestoSection onInView={(dark) => setIsNavDark(dark)} />
       <HowItWorksSection />

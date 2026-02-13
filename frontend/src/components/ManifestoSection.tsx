@@ -10,33 +10,23 @@ interface ManifestoProps {
 export const ManifestoSection = ({ onInView }: ManifestoProps) => {
   const ref = useRef<HTMLElement>(null);
 
-  // Отслеживаем "темную зону" для хедера
-  const isHeaderInDarkZone = useInView(ref, {
-    margin: "-80px 0px -100% 0px",
+  // Хук 1: Для смены темы хедера
+  // Нам нужно поймать момент, когда верх секции (Manifesto) касается хедера.
+  // -80px означает высоту твоего хедера.
+  const isDarkSectionUnderHeader = useInView(ref, {
+    margin: "-100px 0px -80% 0px",
   });
 
-  // Отслеживаем появление контента (один раз)
-  const contentVisible = useInView(ref, { once: true, amount: 0.1 });
+  // Хук 2: Для появления контента (один раз)
+  const contentVisible = useInView(ref, { once: true, amount: 0.2 });
 
+  // Единственный useEffect для смены темы
   useEffect(() => {
     if (onInView) {
-      onInView(isHeaderInDarkZone);
+      // Когда Manifesto заходит под хедер, мы передаем true (нужен светлый текст на темном фоне)
+      onInView(isDarkSectionUnderHeader);
     }
-  }, [isHeaderInDarkZone, onInView]);
-
-  // Используем amount: 0.2 (20% секции в кадре) и более простые марджины
-  const isInView = useInView(ref, {
-    // На мобилках лучше работают пиксели или небольшие проценты
-    margin: "-10% 0px -10% 0px",
-    amount: 0.1,
-  });
-
-  useEffect(() => {
-    if (onInView) {
-      // Теперь передаем isInView напрямую, без fallback таймера
-      onInView(isInView);
-    }
-  }, [isInView, onInView]);
+  }, [isDarkSectionUnderHeader, onInView]);
 
   const propositions = [
     {

@@ -15,9 +15,10 @@ const NAV_LINKS: NavLink[] = [
 
 const iconSpring = { type: "spring" as const, stiffness: 400, damping: 28 };
 
-export function Header({ variant = "light" }: { variant?: "light" | "dark" }) {
+export function Header({ variant = "dark" }: { variant?: "light" | "dark" }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const isDark = variant === "light";
+
+  const isDark = variant === "dark";
 
   return (
     // Добавлена плавная смена прозрачности фона в зависимости от варианта
@@ -85,7 +86,7 @@ export function Header({ variant = "light" }: { variant?: "light" | "dark" }) {
               className={`hidden rounded-lg px-5 py-2.5 text-sm font-semibold transition-all duration-500 md:inline-block ${
                 isDark
                   ? "bg-white text-zinc-950 hover:bg-teal-400"
-                  : "bg-zinc-900 text-white hover:bg-zinc-800"
+                  : "bg-zinc-900 text-white hover:bg-teal-400 hover:text-zinc-950"
               }`}
             >
               Sign in
