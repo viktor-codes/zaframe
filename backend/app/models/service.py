@@ -8,11 +8,24 @@ occurrence'ы (модель Slot), которые ссылаются на Servic
 from __future__ import annotations
 
 from datetime import datetime
+import enum
 
-from sqlalchemy import ForeignKey, Integer, String, Float, func
+from sqlalchemy import Enum, ForeignKey, Integer, String, Float, JSON, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models import Base
+
+
+class ServiceCategory(str, enum.Enum):
+    """Категория услуги для поиска и фильтрации."""
+
+    YOGA = "yoga"
+    BOXING = "boxing"
+    DANCE = "dance"
+    HIIT = "hiit"
+    PILATES = "pilates"
+    MARTIAL_ARTS = "martial_arts"
+    STRENGTH = "strength"
 
 
 class ServiceType:
@@ -52,6 +65,14 @@ class Service(Base):
         index=True,
     )
 
+    # Категория услуги (для поиска и фильтров)
+    category: Mapped[ServiceCategory] = mapped_column(
+        Enum(ServiceCategory, name="service_category"),
+        nullable=False,
+        default=ServiceCategory.YOGA,
+        index=True,
+    )
+
     # Настройки длительности и вместимости
     duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
     max_capacity: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -80,6 +101,13 @@ class Service(Base):
         Float,
         nullable=False,
         default=0.3,
+    )
+
+    # Теги для дополнительной классификации (например, "beginner", "evening")
+    tags: Mapped[list[str]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=list,
     )
 
     # Активна ли услуга

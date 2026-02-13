@@ -8,11 +8,19 @@ from pydantic import BaseModel, EmailStr, Field
 
 class StudioBase(BaseModel):
     """Базовые поля студии."""
+
     name: str = Field(..., min_length=1, max_length=200, description="Название студии")
     description: str | None = Field(None, description="Описание студии")
     email: EmailStr | None = Field(None, description="Email студии")
     phone: str | None = Field(None, max_length=20, description="Телефон студии")
     address: str | None = Field(None, max_length=500, description="Адрес студии")
+    city: str | None = Field(None, max_length=100, description="Город студии")
+    latitude: float | None = Field(None, description="Широта студии")
+    longitude: float | None = Field(None, description="Долгота студии")
+    amenities: list[str] = Field(
+        default_factory=list,
+        description="Список удобств/опций студии (например, душ, парковка)",
+    )
 
 
 class StudioCreate(StudioBase):

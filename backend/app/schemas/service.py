@@ -7,7 +7,7 @@ from datetime import date, datetime, time
 
 from pydantic import BaseModel, EmailStr, Field
 
-from app.models import BookingType, OrderStatus, ServiceType
+from app.models import BookingType, OrderStatus, ServiceType, ServiceCategory
 
 
 class ServiceBase(BaseModel):
@@ -22,6 +22,10 @@ class ServiceBase(BaseModel):
     type: str = Field(
         default=ServiceType.SINGLE_CLASS,
         description="Тип услуги: single_class или course",
+    )
+    category: ServiceCategory = Field(
+        default=ServiceCategory.YOGA,
+        description="Категория услуги (йога, бокс, танцы и т.д.)",
     )
     duration_minutes: int = Field(..., ge=1, description="Длительность занятия в минутах")
     max_capacity: int = Field(..., ge=1, description="Максимальное количество мест")
@@ -53,6 +57,10 @@ class ServiceBase(BaseModel):
         le=1.0,
         description="Допустимая доля занятий, которые могут уйти в overbooking",
     )
+    tags: list[str] = Field(
+        default_factory=list,
+        description="Теги услуги (например, beginner, evening, women_only)",
+    )
 
 
 class ServiceCreate(ServiceBase):
@@ -67,6 +75,10 @@ class ServiceUpdate(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=200)
     description: str | None = Field(None, max_length=1000)
     type: str | None = Field(None, description="Тип услуги")
+    category: ServiceCategory | None = Field(
+        None,
+        description="Категория услуги",
+    )
     duration_minutes: int | None = Field(None, ge=1)
     max_capacity: int | None = Field(None, ge=1)
     price_single_cents: int | None = Field(None, ge=0)
@@ -89,6 +101,10 @@ class ServiceUpdate(BaseModel):
         ge=0.0,
         le=1.0,
         description="Допустимая доля занятий, которые могут уйти в overbooking",
+    )
+    tags: list[str] | None = Field(
+        None,
+        description="Теги услуги",
     )
 
 
