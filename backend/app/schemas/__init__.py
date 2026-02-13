@@ -61,6 +61,7 @@ from app.schemas.payment import (
     CheckoutSessionResponse,
     OrderCheckoutSessionCreate,
 )
+from app.schemas.search import SearchQueryParams, SearchResult
 
 __all__ = [
     # User
@@ -118,4 +119,7 @@ __all__ = [
     "GuestSessionBase",
     "GuestSessionCreate",
     "GuestSessionResponse",
+    # Search
+    "SearchQueryParams",
+    "SearchResult",
 ]

@@ -7,6 +7,8 @@ Pydantic-схемы для параметров поиска студий и у�
 from pydantic import BaseModel, Field
 
 from app.models import ServiceCategory
+from app.schemas.service import ServiceResponse
+from app.schemas.studio import StudioResponse
 
 
 class SearchQueryParams(BaseModel):
@@ -45,4 +47,11 @@ class SearchQueryParams(BaseModel):
         None,
         description="Список требуемых удобств/опций студии",
     )
+
+
+class SearchResult(BaseModel):
+    """Результат поиска: студия + подходящие услуги."""
+
+    studio: StudioResponse
+    matched_services: list[ServiceResponse]
 

@@ -11,6 +11,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1 import auth, bookings, health, payments, services, slots, studios
+from app.api.v1.endpoints import search
 from app.api.webhooks import router as webhooks_router
 from app.core.config import settings
 from app.core.database import engine
@@ -70,3 +71,4 @@ app.include_router(bookings.router, prefix="/api/v1")
 app.include_router(payments.router, prefix="/api/v1")
 app.include_router(webhooks_router)
 app.include_router(auth.router, prefix="/api/v1")
+app.include_router(search.router, prefix="/api/v1")
