@@ -2,12 +2,11 @@
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Search,
-  ArrowRight,
-  MapPin,
-  Navigation,
-} from "lucide-react";
+import { Search, ArrowRight, MapPin, Navigation } from "lucide-react";
+
+import { config } from "@/lib/config";
+
+console.log("API URL from config:", config.apiUrl);
 
 const SUGGESTION_TO_CATEGORY: Record<string, string> = {
   yoga: "yoga",
@@ -128,10 +127,15 @@ export const SearchSection = () => {
             <button
               type="button"
               onClick={() => {
-                const activityNorm = activity.trim().toLowerCase().replace(/\s+/g, " ");
+                const activityNorm = activity
+                  .trim()
+                  .toLowerCase()
+                  .replace(/\s+/g, " ");
                 const category =
                   SUGGESTION_TO_CATEGORY[activityNorm] ??
-                  (activityNorm ? activityNorm.replace(/\s+/g, "_") : undefined);
+                  (activityNorm
+                    ? activityNorm.replace(/\s+/g, "_")
+                    : undefined);
                 const city = location.trim() || undefined;
                 const query = new URLSearchParams();
                 if (category) query.set("category", category);

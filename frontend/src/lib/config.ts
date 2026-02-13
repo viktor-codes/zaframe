@@ -1,19 +1,18 @@
 /**
  * Конфигурация приложения из переменных окружения.
- * Если NEXT_PUBLIC_API_URL не задан — режим «только лендинг» (без бэкенда).
+ *
+ * ВАЖНО: для клиентского кода в Next.js переменные должны быть
+ * доступны как process.env.NEXT_PUBLIC_*, и обращаться к ним
+ * нужно статически, а не через dynamic key, иначе на клиенте
+ * объект process.env будет пустым.
  */
 
-function getEnv(key: string, fallback = ""): string {
-  const value = process.env[key];
-  if (value === undefined || value === "") return fallback;
-  return value;
-}
-
-const apiUrl = getEnv("NEXT_PUBLIC_API_URL");
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
+const apiUrl = rawApiUrl.trim();
 
 export const config = {
   /** URL бэкенда. Пустая строка = статичный лендинг без API. */
-  apiUrl: apiUrl.trim(),
+  apiUrl,
   /** Есть ли настроенный бэкенд (для условного отображения ссылок и т.п.). */
-  hasBackend: apiUrl.trim().length > 0,
+  hasBackend: apiUrl.length > 0,
 } as const;

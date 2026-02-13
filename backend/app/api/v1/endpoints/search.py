@@ -5,27 +5,29 @@ MVP‑поиск с фильтрами по категории, городу, з
 """
 from __future__ import annotations
 
-from typing import Annotated
-
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import and_, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
-from app.models.service import Service
+from app.models.service import Service, ServiceCategory
 from app.models.studio import Studio
-from app.schemas import SearchQueryParams, SearchResult, ServiceResponse, StudioResponse
+from app.schemas import SearchResult, ServiceResponse, StudioResponse
 
 
 router = APIRouter(prefix="/search", tags=["search"])
 
-SearchParams = Annotated[SearchQueryParams, Depends()]
-
 
 @router.get("", response_model=list[SearchResult])
 async def search_endpoint(
-    params: SearchParams,
     db: AsyncSession = Depends(get_db),
+    query: str | None = Query(None, description="Поисковый запрос по названию/описанию"),
+    category: ServiceCategory | None = Query(None, description="Категория услуги"),
+    city: str | None = Query(None, description="Город"),
+    lat: float | None = Query(None, description="Широта для гео-поиска"),
+    lng: float | None = Query(None, description="Долгота для гео-поиска"),
+    radius_km: int | None = Query(10, ge=0, description="Радиус в км"),
+    amenities: list[str] | None = Query(None, description="Удобства (можно передать несколько)"),
 ) -> list[SearchResult]:
     """
     Поиск студий и услуг по комбинированным фильтрам.
@@ -38,19 +40,15 @@ async def search_endpoint(
         Service.is_active.is_(True),
     ]
 
-    # Фильтр по категории услуги
-    if params.category is not None:
-        conditions.append(Service.category == params.category)
-
     # Фильтр по городу (регистронезависимый)
-    if params.city:
-        city_normalized = params.city.strip().lower()
+    if city:
+        city_normalized = city.strip().lower()
         if city_normalized:
             conditions.append(func.lower(Studio.city) == city_normalized)
 
     # Поисковый запрос по названию услуги или студии
-    if params.query:
-        query_normalized = params.query.strip()
+    if query:
+        query_normalized = query.strip()
         if query_normalized:
             pattern = f"%{query_normalized}%"
             conditions.append(
@@ -61,23 +59,22 @@ async def search_endpoint(
             )
 
     # Фильтр по удобствам (JSON‑массив, должен содержать все указанные элементы)
-    if params.amenities:
-        for amenity in params.amenities:
+    if amenities:
+        for amenity in amenities:
             amenity_normalized = amenity.strip()
             if amenity_normalized:
                 conditions.append(Studio.amenities.contains([amenity_normalized]))
 
     # Простейший гео‑поиск по окну вокруг точки (lat/lng)
-    if params.lat is not None and params.lng is not None:
-        radius_km = params.radius_km or 10
-        # Примерное преобразование километров в градусы (1° ≈ 111 км)
-        delta_deg = radius_km / 111.0
+    if lat is not None and lng is not None:
+        radius = radius_km or 10
+        delta_deg = radius / 111.0
         conditions.append(
             and_(
                 Studio.latitude.is_not(None),
                 Studio.longitude.is_not(None),
-                func.abs(Studio.latitude - params.lat) <= delta_deg,
-                func.abs(Studio.longitude - params.lng) <= delta_deg,
+                func.abs(Studio.latitude - lat) <= delta_deg,
+                func.abs(Studio.longitude - lng) <= delta_deg,
             )
         )
 
@@ -88,6 +85,11 @@ async def search_endpoint(
         .where(*conditions)
         .distinct(Studio.id)
     )
+    # Фильтр по категории: сравниваем с raw value enum ('yoga', 'boxing', ...)
+    if category is not None:
+        studios_stmt = studios_stmt.where(
+            text("services.category = :category_filter")
+        ).params(category_filter=category.value)
     studios_result = await db.execute(studios_stmt)
     studios: list[Studio] = list(studios_result.scalars().all())
 
@@ -103,10 +105,12 @@ async def search_endpoint(
         Service.studio_id.in_(studio_ids),
         Service.is_active.is_(True),
     ]
-    if params.category is not None:
-        service_conditions.append(Service.category == params.category)
 
     services_stmt = select(Service).where(*service_conditions)
+    if category is not None:
+        services_stmt = services_stmt.where(
+            text("services.category = :category_filter")
+        ).params(category_filter=category.value)
     services_result = await db.execute(services_stmt)
     services: list[Service] = list(services_result.scalars().all())
 

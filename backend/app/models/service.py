@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import datetime
 import enum
 
-from sqlalchemy import Enum, ForeignKey, Integer, String, Float, JSON, func
+from sqlalchemy import ForeignKey, Integer, String, Float, JSON, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models import Base
@@ -65,11 +65,13 @@ class Service(Base):
         index=True,
     )
 
-    # Категория услуги (для поиска и фильтров)
-    category: Mapped[ServiceCategory] = mapped_column(
-        Enum(ServiceCategory, name="service_category"),
+    # Категория услуги (для поиска и фильтров).
+    # Храним строку (yoga, boxing, ...), чтобы не завязываться жёстко
+    # на Enum-тип SQLAlchemy при работе с PostgreSQL enum типом.
+    category: Mapped[str] = mapped_column(
+        String(32),
         nullable=False,
-        default=ServiceCategory.YOGA,
+        default=ServiceCategory.YOGA.value,
         index=True,
     )
 

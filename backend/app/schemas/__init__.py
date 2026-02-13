@@ -63,6 +63,11 @@ from app.schemas.payment import (
 )
 from app.schemas.search import SearchQueryParams, SearchResult
 
+# Явно пересобираем модели с взаимными ссылками, чтобы Pydantic v2
+# корректно обработал forward references перед использованием в Union.
+BookingResponse.model_rebuild()
+CourseBookingResponse.model_rebuild()
+
 __all__ = [
     # User
     "UserBase",
