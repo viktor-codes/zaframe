@@ -34,20 +34,35 @@ export class ApiError extends Error {
 }
 
 export interface RequestConfig extends RequestInit {
-  params?: Record<string, string | number | boolean | undefined>;
+  params?: Record<
+    string,
+    string | number | boolean | undefined | (string | number)[]
+  >;
   skipAuth?: boolean;
 }
 
-async function buildUrl(path: string, params?: Record<string, string | number | boolean | undefined>): Promise<string> {
+async function buildUrl(
+  path: string,
+  params?: RequestConfig["params"]
+): Promise<string> {
   if (!config.apiUrl) {
-    throw new ApiError("Backend not configured (static landing mode)", 0, { code: "BACKEND_NOT_CONFIGURED" });
+    throw new ApiError(
+      "Backend not configured (static landing mode)",
+      0,
+      { code: "BACKEND_NOT_CONFIGURED" }
+    );
   }
   const base = config.apiUrl.replace(/\/$/, "");
   const url = new URL(path.startsWith("/") ? path : `/${path}`, base);
 
   if (params) {
     for (const [key, value] of Object.entries(params)) {
-      if (value !== undefined) {
+      if (value === undefined) continue;
+      if (Array.isArray(value)) {
+        for (const v of value) {
+          url.searchParams.append(key, String(v));
+        }
+      } else {
         url.searchParams.set(key, String(value));
       }
     }

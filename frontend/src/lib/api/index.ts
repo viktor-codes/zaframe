@@ -27,3 +27,4 @@ export {
 } from "./bookings";
 export { createCheckoutSession } from "./payments";
 export { requestMagicLink, verifyMagicLink } from "./auth";
+export { fetchSearch } from "./search";

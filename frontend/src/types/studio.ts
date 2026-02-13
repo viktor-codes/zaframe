@@ -8,6 +8,11 @@ export interface StudioBase {
   email?: string | null;
   phone?: string | null;
   address?: string | null;
+  city?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  amenities?: string[];
+  cover_image_url?: string | null;
 }
 
 export interface StudioResponse extends StudioBase {

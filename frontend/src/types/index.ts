@@ -4,6 +4,8 @@
 
 export * from "./user";
 export * from "./studio";
+export * from "./service";
+export * from "./search";
 export * from "./slot";
 export * from "./booking";
 export * from "./auth";

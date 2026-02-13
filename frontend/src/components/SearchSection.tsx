@@ -1,21 +1,38 @@
 "use client";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Search,
   ArrowRight,
   MapPin,
   Navigation,
-  Clock,
-  Star,
 } from "lucide-react";
 
+const SUGGESTION_TO_CATEGORY: Record<string, string> = {
+  yoga: "yoga",
+  "yoga flow": "yoga",
+  boxing: "boxing",
+  "power boxing": "boxing",
+  pilates: "pilates",
+  "reformer pilates": "pilates",
+  hiit: "hiit",
+  "hiit blast": "hiit",
+  dance: "dance",
+  "contemporary dance": "dance",
+  martial_arts: "martial_arts",
+  "martial arts": "martial_arts",
+  strength: "strength",
+};
+
 export const SearchSection = () => {
+  const router = useRouter();
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-20%" });
 
   const [activity, setActivity] = useState("");
   const [location, setLocation] = useState("");
+  const [isNavigating, setIsNavigating] = useState(false);
   const [activeField, setActiveField] = useState<
     "activity" | "location" | null
   >(null);
@@ -108,12 +125,58 @@ export const SearchSection = () => {
 
             {/* Submit Button */}
 
-            <button className="bg-zinc-900 hover:bg-teal-500 text-white rounded-xl px-8 py-4 flex items-center justify-center transition-all duration-300 group">
-              <span className="mr-2 font-bold text-sm uppercase tracking-widest">
-                Search
-              </span>
-
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            <button
+              type="button"
+              onClick={() => {
+                const activityNorm = activity.trim().toLowerCase().replace(/\s+/g, " ");
+                const category =
+                  SUGGESTION_TO_CATEGORY[activityNorm] ??
+                  (activityNorm ? activityNorm.replace(/\s+/g, "_") : undefined);
+                const city = location.trim() || undefined;
+                const query = new URLSearchParams();
+                if (category) query.set("category", category);
+                if (city) query.set("city", city);
+                setIsNavigating(true);
+                router.push(`/studios?${query.toString()}`);
+              }}
+              disabled={isNavigating}
+              className="bg-zinc-900 hover:bg-teal-500 text-white rounded-xl px-8 py-4 flex items-center justify-center transition-all duration-300 group disabled:opacity-70 disabled:cursor-wait min-w-[140px]"
+            >
+              {isNavigating ? (
+                <>
+                  <svg
+                    className="animate-spin h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    aria-hidden
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  <span className="ml-2 font-bold text-sm uppercase tracking-widest">
+                    Searching…
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="mr-2 font-bold text-sm uppercase tracking-widest">
+                    Search
+                  </span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
             </button>
 
             {/* Autocomplete Suggestions Dropdown */}
