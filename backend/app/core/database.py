@@ -31,10 +31,13 @@ from app.core.config import settings
 engine = create_async_engine(
     settings.DATABASE_URL,
     pool_pre_ping=True,  # Проверка соединений перед использованием
-    pool_size=10,  # Несколько вкладок/запросов одновременно без голодания пула
-    max_overflow=5,
+    pool_size=20,          # Увеличиваем количество постоянных соединений
+    max_overflow=10,      # Сколько можно открыть сверх лимита в пике
+    pool_timeout=30,      # Сколько ждать свободного слота
+    pool_recycle=3600,    # Пересоздавать соединение раз в час
     echo=settings.DEBUG,  # Логирование SQL в режиме отладки
 )
+
 
 
 # === Session Factory ===

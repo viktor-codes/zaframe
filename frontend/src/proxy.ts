@@ -8,7 +8,7 @@ import type { NextRequest } from "next/server";
  */
 const APP_PATHS = ["/studios", "/dashboard", "/bookings", "/auth"];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL?.trim() ?? "";
   if (apiUrl.length > 0) {
     return NextResponse.next();
