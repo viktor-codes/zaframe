@@ -17,7 +17,7 @@ const iconSpring = { type: "spring" as const, stiffness: 400, damping: 28 };
 
 export function Header({ variant = "light" }: { variant?: "light" | "dark" }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const isDark = variant === "dark";
+  const isDark = variant === "light";
 
   return (
     // Добавлена плавная смена прозрачности фона в зависимости от варианта
