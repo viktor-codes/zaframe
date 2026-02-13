@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Scan, Minimize, ArrowRight } from "lucide-react";
+import { Scan, Minimize, ArrowRight, Search } from "lucide-react";
 import { MobileMenu, type NavLink } from "./MobileMenu";
 
 const NAV_LINKS: NavLink[] = [
@@ -15,7 +15,13 @@ const NAV_LINKS: NavLink[] = [
 
 const iconSpring = { type: "spring" as const, stiffness: 400, damping: 28 };
 
-export function Header({ variant = "dark" }: { variant?: "light" | "dark" }) {
+export interface HeaderProps {
+  variant?: "light" | "dark";
+  /** Минималистичный поиск в хедере: иконка + плейсхолдер, ведёт на якорь. */
+  minimalSearch?: { href: string; placeholder: string };
+}
+
+export function Header({ variant = "dark", minimalSearch }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isDark = variant === "dark";
@@ -81,6 +87,19 @@ export function Header({ variant = "dark" }: { variant?: "light" | "dark" }) {
           </nav>
 
           <div className="flex items-center gap-4 ms-4">
+            {minimalSearch && (
+              <Link
+                href={minimalSearch.href}
+                className={`hidden md:flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition-colors ${
+                  isDark
+                    ? "border-white/20 text-zinc-400 hover:border-white/40 hover:text-white"
+                    : "border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:text-zinc-700"
+                }`}
+              >
+                <Search className="w-4 h-4 shrink-0" />
+                <span>{minimalSearch.placeholder}</span>
+              </Link>
+            )}
             <Link
               href="#signin"
               className={`hidden rounded-lg px-5 py-2.5 text-sm font-semibold transition-all duration-500 md:inline-block ${

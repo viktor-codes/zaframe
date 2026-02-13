@@ -10,7 +10,8 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import ForeignKey, String, Text, Float, JSON, func
+from sqlalchemy import ForeignKey, String, Text, Float, func
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models import Base
@@ -49,7 +50,7 @@ class Studio(Base):
     latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
     longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
     amenities: Mapped[list[str]] = mapped_column(
-        JSON,
+        JSONB,
         nullable=False,
         default=list,
     )

@@ -31,6 +31,8 @@ from app.core.config import settings
 engine = create_async_engine(
     settings.DATABASE_URL,
     pool_pre_ping=True,  # Проверка соединений перед использованием
+    pool_size=10,  # Несколько вкладок/запросов одновременно без голодания пула
+    max_overflow=5,
     echo=settings.DEBUG,  # Логирование SQL в режиме отладки
 )
 

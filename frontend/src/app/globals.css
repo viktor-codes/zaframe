@@ -46,6 +46,7 @@
   --shadow-modal: 0 60px 140px rgba(16, 17, 20, 0.35);
   /* Legacy */
   --shadow-polaroid: var(--shadow-paper);
+  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.06);
 
   /* Radius: 12 / 16 / 18 / 24 / 32 / 999 */
   --radius-sm: 12px;
