@@ -5,11 +5,11 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Scan, Minimize, ArrowRight, Search } from "lucide-react";
 import { MobileMenu, type NavLink } from "./MobileMenu";
+import { Logo } from "./Logo";
 
 const NAV_LINKS: NavLink[] = [
-  { name: "Explore", href: "#explore" },
+  { name: "Explore", href: "/studios" },
   { name: "Moments", href: "#moments" },
-  { name: "Studios", href: "#studios" },
   { name: "B2B", href: "#b2b" },
 ];
 
@@ -42,27 +42,7 @@ export function Header({ variant = "dark", minimalSearch }: HeaderProps) {
       </div>
 
       <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
-        <Link
-          href="/"
-          className="flex items-center text-xl font-bold tracking-tighter transition-opacity hover:opacity-80"
-        >
-          <img
-            src="/new-logo.svg"
-            alt="ZeeFrame"
-            width={50}
-            height={50}
-            className="h-10 w-10 object-contain md:h-12 md:w-12"
-          />
-          <span
-            className={`ml-2 transition-colors duration-500 ${isDark ? "text-white" : "text-zinc-900"}`}
-          >
-            Zee
-            <span className="pr-0.5 bg-linear-to-r from-sky-400 to-teal-400 bg-clip-text text-transparent">
-              Frame
-            </span>
-            .
-          </span>
-        </Link>
+        <Logo variant={variant} />
 
         <div className="flex items-center justify-center gap-4">
           <nav className="hidden items-center gap-8 md:flex">
@@ -110,9 +90,7 @@ export function Header({ variant = "dark", minimalSearch }: HeaderProps) {
               type="button"
               onClick={() => setMobileMenuOpen((prev) => !prev)}
               className={`relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full transition-colors ${
-                isDark
-                  ? "text-white hover:bg-white/10"
-                  : "text-zinc-600 hover:bg-zinc-100"
+                isDark ? "text-white" : "text-zinc-950"
               } md:hidden`}
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
             >

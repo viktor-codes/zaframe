@@ -61,8 +61,8 @@ export const ManifestoSection = ({ onInView }: ManifestoProps) => {
             className="w-full h-full object-cover opacity-30 grayscale"
             loading="lazy"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-zinc-950 via-zinc-950/80 to-zinc-950" />
-          <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-transparent to-zinc-950" />
+          <div className="absolute inset-0 bg-linear-to-b from-zinc-950 via-zinc-950/80 to-zinc-950" />
+          <div className="absolute inset-0 bg-linear-to-r from-zinc-950 via-transparent to-zinc-950" />
         </div>
 
         <div className="absolute top-1/2 left-1/4 w-96 h-96 bg-teal-500/10 blur-[120px] rounded-full" />
@@ -96,7 +96,7 @@ export const ManifestoSection = ({ onInView }: ManifestoProps) => {
                 <motion.path
                   initial={{ pathLength: 0 }}
                   animate={{ pathLength: 1 }}
-                  transition={{ duration: 1.5, delay: 0.5 }}
+                  transition={{ duration: 2, delay: 1 }}
                   d="M1 11C40 11 50 2 90 2C130 2 140 11 180 11C220 11 230 2 270 2C310 2 320 11 399 11"
                   stroke="url(#neon-wave)"
                   strokeWidth="3"

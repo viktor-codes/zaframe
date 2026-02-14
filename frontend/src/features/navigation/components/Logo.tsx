@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image"; // Импортируем компонент Image
 import { cn } from "@/lib/utils";
 
 interface LogoProps {
@@ -20,15 +21,16 @@ export const Logo = ({ variant = "light", className }: LogoProps) => {
       )}
     >
       <div className="relative">
-        <img
+        {/* Оптимизированный Image */}
+        <Image
           src="/new-logo.svg"
-          alt="ZeeFrame"
+          alt="ZeeFrame Logo"
+          // Задаем физические размеры (максимальные)
           width={50}
           height={50}
-          className={cn(
-            "h-10 w-10 object-contain md:h-12 md:w-12 transition-all duration-300",
-            isDark && "brightness-0 invert",
-          )}
+          // priority заставляет браузер загружать логотип немедленно (важно для LCP)
+          priority
+          className="h-10 w-10 object-contain md:h-12 md:w-12"
         />
       </div>
 
