@@ -51,17 +51,17 @@ export const ManifestoSection = ({ onInView }: ManifestoProps) => {
     <section
       id="manifesto"
       ref={ref}
-      className="relative py-32 md:py-48 bg-zinc-950"
+      className="relative py-32 md:py-48 bg-zinc-950 overflow-hidden"
     >
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 z-0">
           <img
-            src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=2000"
+            src="/moments-bg.webp"
             alt="Dark Studio"
             className="w-full h-full object-cover opacity-30 grayscale"
             loading="lazy"
           />
-          <div className="absolute inset-0 bg-linear-to-b from-zinc-950 via-zinc-950/80 to-zinc-950" />
+          <div className="absolute inset-0 bg-linear-to-b from-zinc-950 to-zinc-950/80" />
           <div className="absolute inset-0 bg-linear-to-r from-zinc-950 via-transparent to-zinc-950" />
         </div>
 

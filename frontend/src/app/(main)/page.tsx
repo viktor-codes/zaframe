@@ -10,6 +10,7 @@ import {
 import { SearchSection } from "@/features/studios/components";
 import { Header } from "@/features/navigation/components";
 // import { LogoTicker } from "@/features/home/components/LogoTicker";
+import { Moments } from "@/features/home/components/Moments";
 
 export default function HomePage() {
   const [isNavDark, setIsNavDark] = useState(false);
@@ -22,6 +23,7 @@ export default function HomePage() {
       <ManifestoSection onInView={(dark) => setIsNavDark(dark)} />
       <HowItWorksSection />
       <SearchSection />
+      <Moments onInView={(dark) => setIsNavDark(dark)} />
     </main>
   );
 }

@@ -9,8 +9,8 @@ import { Logo } from "./Logo";
 
 const NAV_LINKS: NavLink[] = [
   { name: "Explore", href: "/studios" },
-  { name: "Moments", href: "#moments" },
-  { name: "B2B", href: "#b2b" },
+  { name: "Moments", href: "/#moments" },
+  { name: "B2B", href: "/#b2b" },
 ];
 
 const iconSpring = { type: "spring" as const, stiffness: 400, damping: 28 };
@@ -33,12 +33,15 @@ export function Header({ variant = "dark", minimalSearch }: HeaderProps) {
         <p className="text-white/50 hidden md:block">
           Revolutionizing the way you move
         </p>
-        <div className="flex gap-2 items-center group cursor-pointer">
+        <Link
+          href="/studios"
+          className="flex gap-2 items-center group w-fit cursor-pointer"
+        >
           <p className="text-teal-400 group-hover:text-teal-300 transition-colors">
             Start your EaZee journey
           </p>
           <ArrowRight className="w-3 h-3 text-teal-400 group-hover:translate-x-1 transition-transform" />
-        </div>
+        </Link>
       </div>
 
       <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
@@ -46,19 +49,34 @@ export function Header({ variant = "dark", minimalSearch }: HeaderProps) {
 
         <div className="flex items-center justify-center gap-4">
           <nav className="hidden items-center gap-8 md:flex">
-            {NAV_LINKS.map((link) => (
-              <Link
-                key={link.name}
-                href={link.href}
-                className={`text-sm font-medium transition-colors duration-500 ${
-                  isDark
-                    ? "text-zinc-400 hover:text-white"
-                    : "text-zinc-600 hover:text-zinc-900"
-                }`}
-              >
-                {link.name}
-              </Link>
-            ))}
+            {NAV_LINKS.map((link) => {
+              const isAnchor = link.href.startsWith("#");
+
+              // Если это якорь, используем <a>, если страница — <Link>
+              const Component = isAnchor ? "a" : Link;
+
+              return (
+                <Component
+                  key={link.name}
+                  href={link.href}
+                  // Для якорей добавляем плавный скролл
+                  onClick={(e) => {
+                    if (isAnchor) {
+                      // Опционально: предотвращаем дефолт и скроллим плавно
+                      // e.preventDefault();
+                      // document.querySelector(link.href)?.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }}
+                  className={`text-sm font-medium transition-colors duration-500 cursor-pointer ${
+                    isDark
+                      ? "text-zinc-400 hover:text-white"
+                      : "text-zinc-600 hover:text-zinc-900"
+                  }`}
+                >
+                  {link.name}
+                </Component>
+              );
+            })}
           </nav>
 
           <div className="flex items-center gap-4 ms-4">
@@ -79,8 +97,8 @@ export function Header({ variant = "dark", minimalSearch }: HeaderProps) {
               href="#signin"
               className={`hidden rounded-lg px-5 py-2.5 text-sm font-semibold transition-all duration-500 md:inline-block ${
                 isDark
-                  ? "bg-white text-zinc-950 hover:bg-teal-400"
-                  : "bg-zinc-900 text-white hover:bg-teal-400 hover:text-zinc-950"
+                  ? "bg-white text-zinc-950 hover:scale-105 transition-all duration-300"
+                  : "bg-zinc-900 text-white hover:scale-105 transition-all duration-300"
               }`}
             >
               Sign in

@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+html {
+  scroll-behavior: smooth;
+}
+
 /* ZeeFrame UI Kit - Design System (Foundations) */
 @theme {
   /* Brand / Gradient: sky → teal → lime */
@@ -75,11 +79,21 @@ body {
 
 /* Brand gradient utility */
 .bg-brand-gradient {
-  background: linear-gradient(to bottom right, var(--color-brand-blue), var(--color-brand-teal), var(--color-brand-lime));
+  background: linear-gradient(
+    to bottom right,
+    var(--color-brand-blue),
+    var(--color-brand-teal),
+    var(--color-brand-lime)
+  );
 }
 
 .text-brand-gradient {
-  background: linear-gradient(to right, var(--color-brand-blue), var(--color-brand-teal), var(--color-brand-lime));
+  background: linear-gradient(
+    to right,
+    var(--color-brand-blue),
+    var(--color-brand-teal),
+    var(--color-brand-lime)
+  );
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;

@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import FloatingCards from "./FloatingCards";
+import Link from "next/link";
 
 export const HeroSection = () => {
   return (
@@ -24,7 +25,7 @@ export const HeroSection = () => {
             </div>
             <h1 className="text-center md:text-left mb-6 text-5xl font-bold leading-[1.1] tracking-tight text-zinc-900 md:text-7xl">
               Ea
-              <span className="font-serif italic font-light bg-linear-to-r from-lime-400 to-teal-500 bg-clip-text text-transparent px-0.5">
+              <span className="font-serif italic font-light bg-linear-to-r from-lime-400 to-teal-500 bg-clip-text text-transparent pl-0.5 pr-1">
                 Zee
               </span>{" "}
               booking
@@ -37,7 +38,7 @@ export const HeroSection = () => {
               </span>
             </h1>
 
-            <p className="mx-auto mb-10 max-w-2xl text-lg leading-relaxed text-zinc-600 md:text-xl lg:mx-0">
+            <p className="text-center md:text-left mb-10 max-w-2xl text-lg leading-relaxed text-zinc-600 md:text-xl lg:mx-0">
               Discover and book classes at verified studios.{" "}
               <br className="hidden md:block" />
               Every session is a{" "}
@@ -46,15 +47,22 @@ export const HeroSection = () => {
             </p>
 
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row lg:justify-start">
-              <button className="group relative overflow-hidden rounded-sm bg-zinc-900 px-8 py-4 text-white transition-all hover:bg-zinc-800">
-                <span className="relative z-10 font-semibold">
+              {/* Обернули первую кнопку в Link */}
+              <Link
+                href="/studios"
+                className="group relative w-full sm:w-auto overflow-hidden rounded-sm bg-zinc-900 px-8 py-4 text-center text-white transition-all hover:scale-105 cursor-pointer"
+              >
+                <span className="relative z-10 font-semibold ">
                   Explore Studios
                 </span>
-                <div className="absolute inset-0 -translate-x-full bg-linear-to-r from-sky-400 to-lime-300 transition-transform duration-300 group-hover:translate-x-0" />
-              </button>
-              <button className="rounded-sm border border-teal-200 bg-white px-8 py-4 font-semibold text-zinc-900 transition-colors hover:bg-zinc-50">
+              </Link>
+
+              <a
+                href="#how-it-works"
+                className="w-full sm:w-auto flex items-center justify-center rounded-sm border border-teal-200 bg-white px-8 py-4 font-semibold hover:scale-105 text-zinc-900 text-center"
+              >
                 How it works
-              </button>
+              </a>
             </div>
           </motion.div>
 
