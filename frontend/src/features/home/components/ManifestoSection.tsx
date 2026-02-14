@@ -121,7 +121,7 @@ export const ManifestoSection = ({ onInView }: ManifestoProps) => {
           </motion.h2>
         </div>
 
-        <div className="grid gap-8 md:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {propositions.map((value, index) => (
             <motion.div
               key={value.label}
@@ -129,7 +129,11 @@ export const ManifestoSection = ({ onInView }: ManifestoProps) => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.4 + index * 0.2 }}
               whileHover={{ y: -5 }}
-              className="group relative"
+              className={`group relative ${
+                // На планшете (md) первая карточка растягивается на 2 колонки
+                // На десктопе (lg) снова занимает одну
+                index === 0 ? "md:col-span-2 lg:col-span-1" : "col-span-1"
+              }`}
             >
               <div className="relative h-full p-10 pt-16 rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl transition-all duration-500 group-hover:bg-white/10 group-hover:border-white/20">
                 <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-teal-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
