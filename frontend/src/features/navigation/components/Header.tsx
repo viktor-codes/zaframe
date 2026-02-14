@@ -17,7 +17,6 @@ const iconSpring = { type: "spring" as const, stiffness: 400, damping: 28 };
 
 export interface HeaderProps {
   variant?: "light" | "dark";
-  /** Минималистичный поиск в хедере: иконка + плейсхолдер, ведёт на якорь. */
   minimalSearch?: { href: string; placeholder: string };
 }
 
@@ -27,11 +26,9 @@ export function Header({ variant = "dark", minimalSearch }: HeaderProps) {
   const isDark = variant === "dark";
 
   return (
-    // Добавлена плавная смена прозрачности фона в зависимости от варианта
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isDark ? "bg-zinc-950/20 backdrop-blur-md" : "backdrop-blur-sm"}`}
     >
-      {/* Top Announcement Bar */}
       <div className="flex justify-center items-center py-2.5 bg-zinc-950 text-white text-[11px] font-bold uppercase tracking-[0.15em] gap-4 border-b border-white/5">
         <p className="text-white/50 hidden md:block">
           Revolutionizing the way you move
@@ -45,7 +42,6 @@ export function Header({ variant = "dark", minimalSearch }: HeaderProps) {
       </div>
 
       <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
-        {/* LOGO SECTION */}
         <Link
           href="/"
           className="flex items-center text-xl font-bold tracking-tighter transition-opacity hover:opacity-80"
@@ -69,7 +65,6 @@ export function Header({ variant = "dark", minimalSearch }: HeaderProps) {
         </Link>
 
         <div className="flex items-center justify-center gap-4">
-          {/* DESKTOP NAV */}
           <nav className="hidden items-center gap-8 md:flex">
             {NAV_LINKS.map((link) => (
               <Link
@@ -111,7 +106,6 @@ export function Header({ variant = "dark", minimalSearch }: HeaderProps) {
               Sign in
             </Link>
 
-            {/* Mobile menu toggle */}
             <button
               type="button"
               onClick={() => setMobileMenuOpen((prev) => !prev)}

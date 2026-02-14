@@ -1,6 +1,7 @@
 "use client";
+
 import { motion, useInView } from "framer-motion";
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect } from "react";
 import { Search, Zap, Star } from "lucide-react";
 
 interface ManifestoProps {
@@ -10,20 +11,14 @@ interface ManifestoProps {
 export const ManifestoSection = ({ onInView }: ManifestoProps) => {
   const ref = useRef<HTMLElement>(null);
 
-  // Хук 1: Для смены темы хедера
-  // Нам нужно поймать момент, когда верх секции (Manifesto) касается хедера.
-  // -80px означает высоту твоего хедера.
   const isDarkSectionUnderHeader = useInView(ref, {
     margin: "-100px 0px -80% 0px",
   });
 
-  // Хук 2: Для появления контента (один раз)
   const contentVisible = useInView(ref, { once: true, amount: 0.2 });
 
-  // Единственный useEffect для смены темы
   useEffect(() => {
     if (onInView) {
-      // Когда Manifesto заходит под хедер, мы передаем true (нужен светлый текст на темном фоне)
       onInView(isDarkSectionUnderHeader);
     }
   }, [isDarkSectionUnderHeader, onInView]);
@@ -56,9 +51,8 @@ export const ManifestoSection = ({ onInView }: ManifestoProps) => {
     <section
       id="manifesto"
       ref={ref}
-      className="relative py-32 md:py-48 bg-zinc-950" // Убрали overflow-hidden отсюда
+      className="relative py-32 md:py-48 bg-zinc-950"
     >
-      {/* Background Layer: Оборачиваем всё тяжелое в контейнер с overflow-hidden */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 z-0">
           <img
@@ -71,13 +65,11 @@ export const ManifestoSection = ({ onInView }: ManifestoProps) => {
           <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-transparent to-zinc-950" />
         </div>
 
-        {/* Neon Glow Accents */}
         <div className="absolute top-1/2 left-1/4 w-96 h-96 bg-teal-500/10 blur-[120px] rounded-full" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-sky-500/10 blur-[120px] rounded-full" />
       </div>
 
       <div className="container relative z-10 mx-auto px-6 max-w-7xl">
-        {/* Header */}
         <div className="mb-32 text-center">
           <motion.span
             initial={{ opacity: 0 }}
@@ -129,7 +121,6 @@ export const ManifestoSection = ({ onInView }: ManifestoProps) => {
           </motion.h2>
         </div>
 
-        {/* Glassmorphic Grid */}
         <div className="grid gap-8 md:grid-cols-3">
           {propositions.map((value, index) => (
             <motion.div
@@ -177,14 +168,12 @@ export const ManifestoSection = ({ onInView }: ManifestoProps) => {
         </div>
       </div>
 
-      {/* Decorative Bridge to next section */}
       <div className="absolute bottom-0 left-6 md:left-12 z-20 translate-y-1/2 pointer-events-none">
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           className="flex flex-col gap-0"
         >
-          {/* Штрихкод */}
           <div className="flex flex-col items-start bg-zinc-950 p-4 border-l border-white/20">
             <div className="flex gap-1 mb-2">
               {[2, 4, 1, 6, 2, 8, 1, 3].map((h, i) => (
@@ -200,7 +189,6 @@ export const ManifestoSection = ({ onInView }: ManifestoProps) => {
             </span>
           </div>
 
-          {/* Перфорация */}
           <div className="flex flex-col gap-2 mt-4 ml-1">
             {[1, 2, 3, 4, 5].map((i) => (
               <div
@@ -212,7 +200,6 @@ export const ManifestoSection = ({ onInView }: ManifestoProps) => {
         </motion.div>
       </div>
 
-      {/* Verification ID (Desktop only) */}
       <div className="absolute bottom-12 right-12 hidden md:block pointer-events-none">
         <motion.div
           initial={{ opacity: 0 }}

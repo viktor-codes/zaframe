@@ -15,7 +15,6 @@ export const MobileMenu = ({
   links: NavLink[];
   onClose: () => void;
 }) => {
-  // Блокировка скролла при открытии
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -27,19 +26,14 @@ export const MobileMenu = ({
     };
   }, [isOpen]);
 
-  // Стили для уголков видоискателя
   const cornerClass = "absolute w-6 h-6 border-black border-2";
 
   return (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Полупрозрачный задник */}
           <motion.div
             key="curtain"
-            // 1. АНИМАЦИЯ: Вместо "-100%" (верх экрана) используем "-100%" относительно своей позиции,
-            // но за счет того, что блок сам по себе начинается от top-[104px],
-            // он будет физически находиться за хедером.
             initial={{ y: "-100%" }}
             animate={{ y: 0 }}
             exit={{ y: "-100%" }}
@@ -47,43 +41,34 @@ export const MobileMenu = ({
               duration: 0.3,
               ease: "linear",
             }}
-            // 2. ПОЗИЦИОНИРОВАНИЕ:
-            // - z-30 (меньше чем у хедера, который z-50)
-            // - top-[104px] (начало сразу под хедером)
             className="fixed left-0 right-0 top-25 z-30 flex h-[calc(100vh-100px)] flex-col bg-white/90 backdrop-blur-2xl md:hidden"
-          ></motion.div>
-          {/* Светлая шторка */}
+          />
           <motion.div
             initial={{ y: "-100%" }}
             animate={{ y: 0 }}
             exit={{ y: "-100%" }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
-            // top-24 или top-[точная высота хедера]. В твоем случае хедер ~96px (banner + nav)
             className="fixed inset-x-0 z-30 flex h-[calc(100vh-100px)] flex-col bg-white/70 backdrop-blur-2xl md:hidden"
           >
             <div className="absolute inset-4 pointer-events-none">
-              {/* Левый верхний */}
               <motion.div
                 initial={{ opacity: 0, x: 20, y: 20 }}
                 animate={{ opacity: 1, x: 0, y: 0 }}
                 transition={{ delay: 0.3 }}
                 className={`${cornerClass} top-0 left-0 border-r-0 border-b-0`}
               />
-              {/* Правый верхний */}
               <motion.div
                 initial={{ opacity: 0, x: -20, y: 20 }}
                 animate={{ opacity: 1, x: 0, y: 0 }}
                 transition={{ delay: 0.3 }}
                 className={`${cornerClass} top-0 right-0 border-l-0 border-b-0`}
               />
-              {/* Левый нижний */}
               <motion.div
                 initial={{ opacity: 0, x: 20, y: -20 }}
                 animate={{ opacity: 1, x: 0, y: 0 }}
                 transition={{ delay: 0.3 }}
                 className={`${cornerClass} bottom-0 left-0 border-r-0 border-t-0`}
               />
-              {/* Правый нижний */}
               <motion.div
                 initial={{ opacity: 0, x: -20, y: -20 }}
                 animate={{ opacity: 1, x: 0, y: 0 }}

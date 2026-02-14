@@ -1,12 +1,9 @@
 "use client";
+
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, ArrowRight, MapPin, Navigation } from "lucide-react";
-
-import { config } from "@/lib/config";
-
-console.log("API URL from config:", config.apiUrl);
 
 const SUGGESTION_TO_CATEGORY: Record<string, string> = {
   yoga: "yoga",
@@ -56,7 +53,6 @@ export const SearchSection = () => {
   return (
     <section ref={ref} className="relative bg-white pt-0 pb-32 overflow-hidden">
       <div className="container relative z-10 mx-auto px-6 max-w-5xl">
-        {/* Apple Style Header */}
         <div className="text-left md:text-center mb-20 md:mb-32">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
@@ -77,11 +73,7 @@ export const SearchSection = () => {
           transition={{ duration: 0.8, delay: 0.2 }}
           className="w-full relative"
         >
-          {/* Main Search Bar Container */}
-
           <div className="relative flex flex-col md:flex-row items-stretch bg-zinc-50 rounded-2xl p-2 border border-zinc-100 shadow-sm focus-within:shadow-xl focus-within:bg-white transition-all duration-500">
-            {/* Activity Input */}
-
             <div className="flex-1 relative flex items-center px-6 py-4 border-b md:border-b-0 md:border-r border-zinc-200/50">
               <Search className="w-5 h-5 text-zinc-400 mr-4" />
 
@@ -101,8 +93,6 @@ export const SearchSection = () => {
               </div>
             </div>
 
-            {/* Location Input */}
-
             <div className="flex-1 relative flex items-center px-6 py-4">
               <MapPin className="w-5 h-5 text-zinc-400 mr-4" />
 
@@ -121,8 +111,6 @@ export const SearchSection = () => {
                 />
               </div>
             </div>
-
-            {/* Submit Button */}
 
             <button
               type="button"
@@ -183,8 +171,6 @@ export const SearchSection = () => {
               )}
             </button>
 
-            {/* Autocomplete Suggestions Dropdown */}
-
             <AnimatePresence>
               {activeField && (
                 <motion.div
@@ -234,7 +220,6 @@ export const SearchSection = () => {
             </AnimatePresence>
           </div>
 
-          {/* Minimalist Tags */}
           <div className="mt-16 flex flex-wrap justify-center items-center gap-x-8 gap-y-4">
             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-300">
               Popular:
@@ -253,10 +238,9 @@ export const SearchSection = () => {
         </motion.div>
       </div>
 
-      {/* Background Subtle Gradient */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full pointer-events-none">
         <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-teal-50/30 blur-[120px] rounded-full opacity-50" />
       </div>
     </section>
   );
-};
+}

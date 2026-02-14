@@ -1,16 +1,15 @@
 "use client";
+
 import { motion } from "framer-motion";
 import FloatingCards from "./FloatingCards";
+
 export const HeroSection = () => {
   return (
     <section className="relative overflow-hidden bg-zinc-50 py-12 lg:py-24">
-      {/* Фоновый декоративный элемент — мягкое свечение */}
-
       <div className="absolute -left-24 h-96 w-96 rounded-sm bg-teal-100/50 blur-3xl" />
 
       <div className="container relative mx-auto px-4">
         <div className="flex flex-col items-center lg:flex-row lg:justify-between mt-24">
-          {/* Левая колонка: текст и CTA */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -59,7 +58,6 @@ export const HeroSection = () => {
             </div>
           </motion.div>
 
-          {/* Правая колонка на lg, снизу на мобилке: парящие карточки */}
           <div className="relative flex w-full flex-1 justify-center">
             <FloatingCards />
           </div>

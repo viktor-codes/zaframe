@@ -32,13 +32,11 @@ function categoryLabel(category: string): string {
   return labels[category] ?? category;
 }
 
-/** Тип студии: из первой категории услуг или "Studio". */
 function studioTypeLabel(services: SearchResult["matched_services"]): string {
   const first = services[0];
   return first ? categoryLabel(first.category) : "Studio";
 }
 
-/** Рейтинг-заглушка для превью (на основе id). */
 function mockRating(studioId: number): string {
   return (4 + (studioId % 10) / 10).toFixed(1);
 }
@@ -90,7 +88,6 @@ export function StudioSearchCard({ result, index = 0 }: StudioSearchCardProps) {
             unoptimized={imageUrl.startsWith("http")}
           />
 
-          {/* Verified & Heart */}
           <div className="absolute inset-x-3 top-3 flex justify-between items-start">
             <div className="flex items-center gap-1 rounded-full bg-teal-500 px-2.5 py-1 text-[10px] font-bold text-white shadow-lg uppercase">
               <Check className="w-3 h-3" strokeWidth={3} />
@@ -113,7 +110,6 @@ export function StudioSearchCard({ result, index = 0 }: StudioSearchCardProps) {
             </button>
           </div>
 
-          {/* Badges: Spots Left (left) & Type (right) */}
           <div className="absolute inset-x-3 bottom-3 flex justify-between items-end">
             {showSpotsLeft && (
               <div className="rounded-lg bg-amber-400 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-zinc-900">

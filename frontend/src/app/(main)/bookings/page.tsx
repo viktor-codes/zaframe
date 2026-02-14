@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { RequireAuth } from "@/components/RequireAuth";
+import { RequireAuth } from "@/features/auth/components";
 import { Card, Button, Skeleton } from "@/components/ui";
 import { useAuth } from "@/lib/auth";
 import { fetchBookings, fetchSlot, fetchStudio } from "@/lib/api";

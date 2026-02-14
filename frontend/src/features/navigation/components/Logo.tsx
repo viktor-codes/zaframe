@@ -1,9 +1,10 @@
 "use client";
+
 import Link from "next/link";
-import { cn } from "@/lib/utils"; // Если используешь shadcn/tailwind-merge
+import { cn } from "@/lib/utils";
 
 interface LogoProps {
-  variant?: "light" | "dark"; // light — для белого фона, dark — для темного
+  variant?: "light" | "dark";
   className?: string;
 }
 
@@ -18,7 +19,6 @@ export const Logo = ({ variant = "light", className }: LogoProps) => {
         className,
       )}
     >
-      {/* Контейнер для иконки с эффектом видоискателя, если нужно */}
       <div className="relative">
         <img
           src="/new-logo.svg"

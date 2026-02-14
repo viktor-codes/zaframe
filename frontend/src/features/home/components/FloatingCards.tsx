@@ -1,4 +1,5 @@
 "use client";
+
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 
@@ -13,31 +14,28 @@ const FloatingCards = () => {
     const interval = setInterval(() => {
       setCards((prevCards) => {
         const [first, ...rest] = prevCards;
-        return [...rest, first]; // Первая уходит в конец
+        return [...rest, first];
       });
     }, 3000);
     return () => clearInterval(interval);
   }, []);
 
-  // Определяем X-позиции на основе текущего индекса в массиве
   const getXPosition = (index: number) => {
-    if (index === 0) return -220; // Слева
-    if (index === 1) return 0; // Центр
-    return 220; // Справа
+    if (index === 0) return -220;
+    if (index === 1) return 0;
+    return 220;
   };
 
   return (
     <div className="relative h-[550px] w-full max-w-3xl flex items-center justify-center">
       <AnimatePresence mode="popLayout">
         {cards.map((card, index) => {
-          // В этой логике "активной" логично считать центральную карточку (индекс 1)
-          // или ту, что была первой. Давай сделаем центральную (индекс 1) акцентной.
           const isActive = index === 1;
 
           return (
             <motion.div
-              key={card.id} // Важно: key привязан к id, а не к индексу
-              layout // Магия плавного перемещения
+              key={card.id}
+              layout
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{
                 opacity: 1,
@@ -64,7 +62,6 @@ const FloatingCards = () => {
               }`}
               style={{ width: "280px" }}
             >
-              {/* Контейнер изображения */}
               <div className="relative aspect-9/10 overflow-hidden rounded-lg bg-zinc-100">
                 <motion.img
                   animate={{ scale: isActive ? 1.15 : 1 }}
@@ -98,7 +95,6 @@ const FloatingCards = () => {
                 </div>
               </div>
 
-              {/* Детали карточки */}
               <div className="mt-5 px-1 flex flex-col gap-2">
                 <div className="flex justify-between items-center">
                   <div
@@ -114,7 +110,6 @@ const FloatingCards = () => {
                 </div>
               </div>
 
-              {/* Уголки видоискателя */}
               {isActive && (
                 <motion.div
                   initial={{ opacity: 0 }}

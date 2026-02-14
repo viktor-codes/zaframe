@@ -1,4 +1,5 @@
 "use client";
+
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 import { Camera, Calendar, Trophy } from "lucide-react";
@@ -40,7 +41,6 @@ export const HowItWorksSection = () => {
       className="py-32 md:py-64 bg-white overflow-hidden relative"
     >
       <div className="container mx-auto px-6 max-w-7xl relative">
-        {/* Header */}
         <div className="max-w-2xl mb-24">
           <motion.span
             initial={{ opacity: 0 }}
@@ -62,7 +62,6 @@ export const HowItWorksSection = () => {
         </div>
 
         <div className="relative">
-          {/* --- Жирная Пунктирная Линия Path --- */}
           <div className="absolute top-0 left-0 md:left-1/2 md:-translate-x-1/2 w-full h-full pointer-events-none z-0">
             <svg
               width="100%"
@@ -70,14 +69,13 @@ export const HowItWorksSection = () => {
               viewBox="0 0 1000 1500"
               fill="none"
               preserveAspectRatio="none"
-              className="overflow-visible" // Чтобы линия не обрезалась
+              className="overflow-visible"
             >
-              {/* Десктопная линия - теперь начинается левее (M150 вместо M450) */}
               <motion.path
                 className="hidden md:block"
                 d="M450 -50 C 800 150, 200 600, 500 900 C 800 1200, 200 1300, 400 1600"
                 stroke="#F4F4F5"
-                strokeWidth="10" // Чуть жирнее для статуса
+                strokeWidth="10"
                 strokeDasharray="25 35"
                 strokeLinecap="round"
               />
@@ -94,10 +92,9 @@ export const HowItWorksSection = () => {
                 transition={{ duration: 5, ease: "linear" }}
               />
 
-              {/* Мобильная линия - теперь она реально видна (смещена чуть вглубь от края) */}
               <motion.path
                 className="md:hidden"
-                d="M40 0 L 40 1500" // M40 дает отступ от левого края экрана
+                d="M40 0 L 40 1500"
                 stroke="#F4F4F5"
                 strokeWidth="10"
                 strokeDasharray="15 25"
@@ -120,7 +117,6 @@ export const HowItWorksSection = () => {
                   <stop stopColor="#14B8A6" />
                   <stop offset="1" stopColor="#0EA5E9" />
                 </linearGradient>
-                {/* Мягкая округлая стрелочка */}
                 <marker
                   id="arrowhead"
                   markerWidth="12"
@@ -130,40 +126,24 @@ export const HowItWorksSection = () => {
                   orient="auto"
                 >
                   <motion.path
-                    d="M2 2 L10 6 L2 10" // Форма "галочки"
+                    d="M2 2 L10 6 L2 10"
                     fill="none"
-                    stroke="#0EA5E9" // Цвет конца градиента
+                    stroke="#0EA5E9"
                     strokeWidth="2"
-                    strokeLinecap="round" // Округлые кончики
-                    strokeLinejoin="round" // Округлый изгиб
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   />
                 </marker>
               </defs>
             </svg>
           </div>
 
-          {/* Steps Wrapper */}
           <div className="space-y-48 md:space-y-72 relative z-10">
             {steps.map((step, index) => (
               <StepItem key={step.id} step={step} index={index} />
             ))}
           </div>
         </div>
-
-        {/* Final Trigger Arrow
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={isInView ? { opacity: 1 } : {}}
-          transition={{ delay: 4 }}
-          className="mt-32 flex flex-col items-center gap-4"
-        >
-          <p className="text-[10px] font-black uppercase tracking-[0.5em] text-zinc-400">
-            Ready to start?
-          </p>
-          <div className="w-12 h-12 rounded-full border border-zinc-200 flex items-center justify-center">
-            <ChevronDown className="text-zinc-900 w-5 h-5 animate-bounce" />
-          </div>
-        </motion.div> */}
       </div>
     </section>
   );
@@ -188,7 +168,6 @@ const StepItem = ({ step, index }: { step: StepItemData; index: number }) => {
       className={`flex flex-col md:flex-row items-center gap-12 md:gap-24 
         ${isEven ? "md:flex-row" : "md:flex-row-reverse"}`}
     >
-      {/* Photo Side */}
       <div className="w-full md:w-1/2">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
@@ -211,24 +190,19 @@ const StepItem = ({ step, index }: { step: StepItemData; index: number }) => {
         </motion.div>
       </div>
 
-      {/* Info Side */}
       <div className="w-full md:w-1/2 flex flex-col justify-center relative">
-        {/* Инструкция в частичной рамке (как в меню) */}
         <motion.div
           initial={{ opacity: 0, x: isEven ? 20 : -20 }}
           animate={isStepInView ? { opacity: 1, x: 0 } : {}}
           className="p-8 md:p-12 relative"
         >
-          {/* Частичная рамка (уголки) */}
           <div className="absolute top-0 right-0 w-12 h-12 border-t-2 border-r-2 border-zinc-100" />
           <div className="absolute bottom-0 left-0 w-12 h-12 border-b-2 border-l-2 border-teal-500/20" />
 
-          {/* --- Внутри StepItem для номеров шагов --- */}
           <div className="flex items-center gap-4 mb-6">
             <div className="p-3 bg-zinc-950 text-white rounded-lg shadow-xl">
               {step.icon}
             </div>
-            {/* Эффект контурного номера */}
             <span
               className="text-5xl font-black text-transparent stroke-zinc-200"
               style={{ WebkitTextStroke: "1px #E4E4E7" }}
@@ -244,9 +218,6 @@ const StepItem = ({ step, index }: { step: StepItemData; index: number }) => {
           <p className="text-lg text-zinc-500 font-light leading-relaxed max-w-md">
             {step.description}
           </p>
-
-          {/* На мобилках этот текст будет скрыт или адаптирован, 
-              но текущая структура отлично ложится в колонку */}
         </motion.div>
       </div>
     </div>

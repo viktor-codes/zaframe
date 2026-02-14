@@ -1,4 +1,4 @@
-import { RequireAuth } from "@/components/RequireAuth";
+import { RequireAuth } from "@/features/auth/components";
 
 export default function DashboardLayout({
   children,

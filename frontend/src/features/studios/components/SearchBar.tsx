@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "./ui/Button";
+import { Button } from "@/components/ui/Button";
 
 export interface SearchBarProps {
   onSearch?: (params: { location?: string; date?: string; activity?: string }) => void;

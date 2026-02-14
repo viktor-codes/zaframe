@@ -1,18 +1,22 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { Suspense, useCallback, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Search, MapPin, X, ChevronDown } from "lucide-react";
+import { X, ChevronDown } from "lucide-react";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import { fetchSearch } from "@/lib/api";
 import type { SearchQueryParams } from "@/types/search";
 import type { ServiceCategory } from "@/types/service";
-import { StudioSearchCard } from "@/components/StudioSearchCard";
-import { Skeleton } from "@/components/ui/Skeleton";
+import { Header } from "@/features/navigation/components";
+import {
+  StudioSearchCard,
+  StudiosSearchBar,
+  StudiosSkeleton,
+  EmptyState,
+} from "@/features/studios/components";
 import { Button } from "@/components/ui/Button";
-import { Header } from "@/components/Header";
-import { motion, AnimatePresence } from "framer-motion";
 
 const CATEGORIES: { value: ServiceCategory; label: string }[] = [
   { value: "yoga", label: "Yoga" },
@@ -33,103 +37,7 @@ const AMENITIES_OPTIONS = [
   "cafe",
 ];
 
-function StudiosSearchBar({
-  category,
-  city,
-  onSearch,
-}: {
-  category: string;
-  city: string;
-  onSearch: (category: string, city: string) => void;
-}) {
-  const [localCategory, setLocalCategory] = useState(category);
-  const [localCity, setLocalCity] = useState(city);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSearch(localCategory, localCity);
-  };
-
-  return (
-    <form
-      id="studios-search"
-      onSubmit={handleSubmit}
-      className="flex flex-col sm:flex-row w-full max-w-3xl rounded-2xl bg-white border border-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-shadow duration-200 hover:shadow-(--shadow-soft) overflow-hidden"
-    >
-      <div className="flex-1 flex items-center gap-2.5 px-4 py-3 min-w-0">
-        <Search className="w-4 h-4 text-zinc-400 shrink-0" />
-        <input
-          type="text"
-          placeholder="Category (yoga, boxing…)"
-          value={localCategory}
-          onChange={(e) => setLocalCategory(e.target.value)}
-          className="flex-1 min-w-0 bg-transparent text-sm font-medium text-zinc-900 placeholder:text-zinc-400 outline-none"
-        />
-      </div>
-      <div className="hidden sm:block w-px bg-zinc-100 self-stretch shrink-0" aria-hidden />
-      <div className="flex-1 flex items-center gap-2.5 px-4 py-3 min-w-0 border-t sm:border-t-0 sm:border-l border-zinc-100">
-        <MapPin className="w-4 h-4 text-zinc-400 shrink-0" />
-        <input
-          type="text"
-          placeholder="City"
-          value={localCity}
-          onChange={(e) => setLocalCity(e.target.value)}
-          className="flex-1 min-w-0 bg-transparent text-sm font-medium text-zinc-900 placeholder:text-zinc-400 outline-none"
-        />
-      </div>
-      <div className="px-3 py-2.5 sm:py-2 border-t sm:border-t-0 border-zinc-100 shrink-0">
-        <Button type="submit" size="md" className="w-full sm:w-auto">
-          Search
-        </Button>
-      </div>
-    </form>
-  );
-}
-
-function StudiosSkeleton() {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {Array.from({ length: 8 }).map((_, i) => (
-        <div key={i} className="rounded-2xl overflow-hidden bg-white border border-zinc-100 p-3">
-          <Skeleton className="aspect-9/10 w-full rounded-xl" />
-          <div className="mt-4 px-1 space-y-2">
-            <Skeleton className="h-6 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
-            <div className="flex justify-between pt-3 border-t border-zinc-100">
-              <Skeleton className="h-5 w-12" />
-              <Skeleton className="h-4 w-16" />
-            </div>
-            <Skeleton className="h-11 w-full rounded-xl mt-4" />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function EmptyState({ onReset }: { onReset: () => void }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="flex flex-col items-center justify-center py-24 px-6 text-center"
-    >
-      <div className="w-12 h-px bg-zinc-200 mb-8" aria-hidden />
-      <p className="text-2xl md:text-3xl font-serif italic font-light text-zinc-700 tracking-tight max-w-lg">
-        The vibe you&apos;re looking for is currently off the radar.
-      </p>
-      <p className="text-zinc-500 mt-4 text-sm max-w-md">
-        Try another city or category, or clear filters to see all studios.
-      </p>
-      <Button variant="secondary" className="mt-8" onClick={onReset}>
-        Clear filters
-      </Button>
-    </motion.div>
-  );
-}
-
-export default function StudiosPage() {
+function StudiosPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const category = searchParams.get("category") ?? "";
@@ -163,7 +71,6 @@ export default function StudiosPage() {
     queryFn: () => fetchSearch(params),
     staleTime: 60_000,
     retry: (failureCount, err) => {
-      // Повторяем при сетевых ошибках (две вкладки, гонка с бэкендом)
       const msg = err instanceof Error ? err.message.toLowerCase() : "";
       const isNetworkError =
         msg.includes("fetch") || msg.includes("network") || msg.includes("failed");
@@ -215,7 +122,6 @@ export default function StudiosPage() {
       />
 
       <div className="container mx-auto px-4 pt-28 pb-12">
-        {/* Breadcrumbs: Home / Ireland / Studios */}
         <nav className="flex items-center gap-1.5 text-xs text-zinc-500 mb-6 border-b border-zinc-100 pb-4" aria-label="Breadcrumb">
           <Link href="/" className="hover:text-zinc-700 transition-colors">
             Home
@@ -226,7 +132,6 @@ export default function StudiosPage() {
           <span className="text-zinc-900 font-medium">Studios</span>
         </nav>
 
-        {/* Main search — key resets local state when URL changes */}
         <div className="mb-8">
           <StudiosSearchBar
             key={`${category}-${city}`}
@@ -236,7 +141,6 @@ export default function StudiosPage() {
           />
         </div>
 
-        {/* Filters: collapsible Categories + Amenities pills */}
         <div className="border-b border-zinc-100 pb-6 mb-8">
           <button
             type="button"
@@ -329,7 +233,6 @@ export default function StudiosPage() {
           )}
         </div>
 
-        {/* Results */}
         <main>
           {isError && (
             <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-red-800 text-sm mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -369,5 +272,13 @@ export default function StudiosPage() {
         </main>
       </div>
     </div>
+  );
+}
+
+export default function StudiosPage() {
+  return (
+    <Suspense fallback={<StudiosSkeleton />}>
+      <StudiosPageContent />
+    </Suspense>
   );
 }
