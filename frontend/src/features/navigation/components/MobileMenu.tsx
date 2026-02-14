@@ -41,14 +41,14 @@ export const MobileMenu = ({
               duration: 0.3,
               ease: "linear",
             }}
-            className="fixed left-0 right-0 top-25 z-30 flex h-[calc(50vh-100px)] flex-col bg-white/90 backdrop-blur-2xl md:hidden"
+            className="fixed left-0 right-0 top-25 z-30 flex h-[calc(90vh-100px)] flex-col bg-white/90 backdrop-blur-2xl md:hidden"
           />
           <motion.div
             initial={{ y: "-100%" }}
             animate={{ y: 0 }}
             exit={{ y: "-100%" }}
             transition={{ duration: 0.3, ease: "linear" }}
-            className="fixed inset-x-0 z-30 flex h-[calc(50vh-100px)] flex-col bg-white/70 backdrop-blur-2xl md:hidden"
+            className="fixed inset-x-0 z-30 flex h-[calc(90vh-100px)] flex-col bg-white/70 backdrop-blur-2xl md:hidden"
           >
             <div className="absolute inset-4 pointer-events-none">
               <motion.div
