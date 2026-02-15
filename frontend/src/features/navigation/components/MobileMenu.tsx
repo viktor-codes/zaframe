@@ -66,9 +66,9 @@ export const MobileMenu = ({
       {isOpen && (
         <>
           <motion.div
-            initial={{ y: "-100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "-100%" }}
+            initial={{ x: "-100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "-100%" }}
             transition={{ duration: 0.3, ease: "linear" }}
             className="fixed inset-x-0 z-30 flex h-[calc(90vh-100px)] flex-col bg-zinc-50 md:hidden"
           >
