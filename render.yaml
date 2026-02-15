@@ -1,0 +1,19 @@
+# Render Blueprint: New → Blueprint → подключи репо.
+# Сервис будет собран из папки backend.
+services:
+  - type: web
+    name: zaframe-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: FRONTEND_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false

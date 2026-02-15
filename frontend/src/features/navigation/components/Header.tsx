@@ -26,9 +26,15 @@ export function Header({ variant = "dark", minimalSearch }: HeaderProps) {
   const isDark = variant === "dark";
 
   return (
-    <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isDark ? "bg-zinc-950/20 backdrop-blur-md" : "backdrop-blur-sm"}`}
-    >
+    <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-500">
+      {/* СЛОЙ ФОНА (Blur Layer) */}
+      <div
+        className={`absolute inset-0 -z-10 transition-all duration-500 ${
+          isDark
+            ? "bg-zinc-950/20 backdrop-blur-md"
+            : "bg-zinc-50/20 backdrop-blur-sm"
+        }`}
+      />
       <div className="flex justify-center items-center py-2.5 bg-zinc-950 text-white text-[11px] font-bold uppercase tracking-[0.15em] gap-4 border-b border-white/5">
         <p className="text-white/50 hidden md:block">
           Revolutionizing the way you move
