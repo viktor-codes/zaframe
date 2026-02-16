@@ -150,7 +150,7 @@ export const Moments = (_props: MomentsProps) => {
       {/* Background Layer */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <Image
-          src="/moments-bg.webp"
+          src="/dark-section-bg.jpg"
           alt="Dark Studio Background"
           fill
           className="object-cover opacity-20 grayscale"

@@ -36,22 +36,25 @@ export const ManifestoSection = () => {
 
   return (
     <div className="relative h-full">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute inset-0 z-0">
+      <div className=" inset-0 overflow-hidden pointer-events-none">
+        <div className=" inset-0 z-0">
           <Image
-            src="/moments-bg.webp"
-            alt=""
+            src="/dark-section-bg.jpg"
+            alt="Dark Studio Background"
             fill
-            className="object-cover opacity-30 grayscale"
+            className="object-cover opacity-15 grayscale"
             loading="lazy"
             sizes="100vw"
           />
-          <div className="absolute inset-0 bg-linear-to-b from-zinc-950 to-zinc-950/80" />
+          <div className="absolute inset-0 bg-linear-to-b from-zinc-950 to-zinc-950/30" />
           <div className="absolute inset-0 bg-linear-to-r from-zinc-950 via-transparent to-zinc-950" />
         </div>
         {/* Уменьшенный blur — blur-[120px] на больших div очень тяжёлый для GPU */}
-        <div className="absolute top-1/2 left-1/4 w-64 h-64 bg-teal-500/10 blur-[60px] rounded-full" />
-        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-sky-500/10 blur-[60px] rounded-full" />
+        {/* <div className="absolute top-1/2 left-1/4 w-64 h-64 bg-teal-500/10 blur-2xl rounded-full" />
+        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-sky-500/10 blur-2xl rounded-full" /> */}
+
+        <div className="absolute top-1/2 left-1/4 w-96 h-96 bg-[radial-gradient(circle,rgba(20,184,166,0.15)_0%,transparent_70%)] rounded-full" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[radial-gradient(circle,rgba(20,184,166,0.15)_0%,transparent_70%)] rounded-full" />
       </div>
 
       <div className="container relative z-10 mx-auto px-6 max-w-7xl">
@@ -97,19 +100,15 @@ export const ManifestoSection = () => {
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {propositions.map((value, index) => (
-            <motion.div
+            <div
               key={value.label}
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 + index * 0.2 }}
-              whileHover={{ y: -5 }}
               className={`group relative ${
                 // На планшете (md) первая карточка растягивается на 2 колонки
                 // На десктопе (lg) снова занимает одну
                 index === 0 ? "md:col-span-2 lg:col-span-1" : "col-span-1"
               }`}
             >
-              <div className="relative h-full p-10 pt-16 rounded-3xl border border-white/10 bg-white/[0.07] shadow-xl transition-all duration-500 group-hover:bg-white/10 group-hover:border-white/20">
+              <div className="relative h-full p-10 pt-16 rounded-3xl border border-white/10 bg-white/[0.07] shadow-xl transition-all duration-500 group-hover:bg-white/10 group-hover:border-white/20 backdrop-blur-2xl">
                 <div className="absolute inset-0 rounded-3xl bg-linear-to-br from-teal-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
                 <div className="absolute top-6 left-6 w-4 h-4 border-t border-l border-white/20 group-hover:border-teal-400/50 transition-colors" />
@@ -144,51 +143,9 @@ export const ManifestoSection = () => {
                   </div>
                 </div>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
-      </div>
-
-      <div className="absolute bottom-0 left-6 md:left-12 z-20 translate-y-1/2 pointer-events-none">
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="flex flex-col gap-0"
-        >
-          <div className="flex flex-col items-start bg-zinc-950 p-4 border-l border-white/20">
-            <div className="flex gap-1 mb-2">
-              {[2, 4, 1, 6, 2, 8, 1, 3].map((h, i) => (
-                <div
-                  key={i}
-                  className="w-[2px] bg-white/40"
-                  style={{ height: `${h * 4}px` }}
-                />
-              ))}
-            </div>
-            <span className="text-[8px] font-mono text-zinc-500 tracking-[0.3em] uppercase">
-              ZeeFrame_Origin_2026
-            </span>
-          </div>
-
-          <div className="flex flex-col gap-2 mt-4 ml-1">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div
-                key={i}
-                className="w-4 h-6 border border-white/10 rounded-sm opacity-20"
-              />
-            ))}
-          </div>
-        </motion.div>
-      </div>
-
-      <div className="absolute bottom-12 right-12 hidden md:block pointer-events-none">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.3 }}
-          className="rotate-90 origin-right text-[10px] font-mono text-white tracking-[1em] uppercase"
-        >
-          Verification_System_Active
-        </motion.div>
       </div>
     </div>
   );
