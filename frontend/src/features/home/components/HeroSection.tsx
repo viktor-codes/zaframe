@@ -11,14 +11,14 @@ export const HeroSection = () => {
       <div className="absolute -left-24 h-96 w-96 rounded-sm bg-teal-100/50 blur-3xl" />
 
       <div className="container relative mx-auto px-4">
-        <div className="flex flex-col items-center lg:flex-row lg:justify-between mt-24">
+        <div className="flex flex-col items-center xl:flex-row xl:justify-between xl:gap-16 mt-24">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
-            className="flex flex-1 flex-col lg:max-w-2xl"
+            className="relative z-10 flex flex-1 flex-col xl:max-w-2xl"
           >
-            <div className="mb-4 md:mb-2 mx-auto md:mx-0 w-fit inline-flex justify-center items-center gap-2 rounded-sm border border-teal-200 px-4 py-2 text-sm font-semibold text-teal-900 lg:inline-flex">
+            <div className="mb-4 xl:mb-2 mx-auto xl:mx-0 w-fit inline-flex justify-center items-center gap-2 rounded-sm border border-teal-200 px-4 py-2 text-sm font-semibold text-teal-900">
               <span className="">📸</span>
               <span className="font-light tracking-normal uppercase">
                 Book it like a moment
@@ -27,7 +27,7 @@ export const HeroSection = () => {
             <SectionHeading
               size="hero"
               as="h1"
-              className="text-center md:text-left mb-6 text-zinc-900"
+              className="text-center xl:text-left mb-6 text-zinc-900"
             >
               Ea
               <span className="font-serif italic font-light bg-linear-to-r from-lime-400 to-teal-500 bg-clip-text text-transparent pl-0.5 pr-1">
@@ -43,7 +43,7 @@ export const HeroSection = () => {
               </span>
             </SectionHeading>
 
-            <p className="text-center md:text-left mb-10 max-w-2xl text-lg leading-relaxed text-zinc-600 md:text-xl lg:mx-0">
+            <p className="text-center xl:text-left mb-10 max-w-2xl text-lg leading-relaxed text-zinc-600 md:text-xl xl:mx-0">
               Discover and book classes at verified studios.{" "}
               <br className="hidden md:block" />
               Every session is a{" "}
@@ -51,7 +51,7 @@ export const HeroSection = () => {
               capturing.
             </p>
 
-            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row lg:justify-start">
+            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row xl:justify-start">
               {/* Обернули первую кнопку в Link */}
               <Link
                 href="/studios"
@@ -71,7 +71,7 @@ export const HeroSection = () => {
             </div>
           </motion.div>
 
-          <div className="relative flex w-full flex-1 justify-center">
+          <div className="relative z-0 flex w-full flex-1 justify-center min-w-0">
             <FloatingCards />
           </div>
         </div>

@@ -1,9 +1,11 @@
 "use client";
 
-import { motion, useInView } from "framer-motion";
+import { motion } from "framer-motion";
 import Image from "next/image";
-import React, { useRef } from "react";
+import React from "react";
+import { useSectionInView } from "@/components/Section";
 import { SectionHeading } from "@/components/SectionHeading";
+import { cn } from "@/lib/utils";
 
 interface Moment {
   text: string;
@@ -137,8 +139,8 @@ const MomentsColumn = ({
 );
 
 export const Moments = (_props: MomentsProps) => {
-  const contentRef = useRef<HTMLDivElement>(null);
-  const contentVisible = useInView(contentRef, { once: true, amount: 0.2 });
+  const sectionView = useSectionInView();
+  const inView = sectionView?.inView ?? true;
 
   return (
     <div className="relative h-full">
@@ -157,37 +159,23 @@ export const Moments = (_props: MomentsProps) => {
         <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-sky-500/5 blur-[120px] rounded-full" />
       </div>
 
-      <div ref={contentRef} className="container relative z-10 mx-auto px-6 max-w-7xl">
+      <div className="container relative z-10 mx-auto px-6 max-w-7xl">
         <div className="mb-24 text-center">
-          <motion.span
-            initial={{ opacity: 0 }}
-            animate={contentVisible ? { opacity: 1 } : {}}
-            className="block"
-          >
-            <SectionHeading size="label" className="text-teal-500 mb-8 block">
-              Community
-            </SectionHeading>
-          </motion.span>
+          <SectionHeading size="label" className="text-teal-500 mb-8 block">
+            Community
+          </SectionHeading>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={contentVisible ? { opacity: 1, y: 0 } : {}}
-          >
-            <SectionHeading size="section" as="h2" className="text-white">
-              Real people <br />
+          <SectionHeading size="section" as="h2" className="text-white">
+            Real people <br />
             <span className="relative inline-block mt-4 font-serif italic font-light text-zinc-400">
               real impact
-              {/* Графический элемент "Zee" */}
               <svg
                 className="absolute -bottom-8 left-[-10%] w-[120%] h-8"
                 viewBox="0 0 400 30"
                 fill="none"
                 preserveAspectRatio="none"
               >
-                <motion.path
-                  initial={{ pathLength: 0 }}
-                  animate={contentVisible ? { pathLength: 1 } : {}}
-                  transition={{ duration: 2, delay: 0.5 }}
+                <path
                   d="M10 20C60 20 80 5 130 5C180 5 200 25 250 25C300 25 320 10 390 10"
                   stroke="url(#zee-wave)"
                   strokeWidth="3"
@@ -209,20 +197,20 @@ export const Moments = (_props: MomentsProps) => {
                 </defs>
               </svg>
             </span>
-            </SectionHeading>
-          </motion.div>
+          </SectionHeading>
 
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={contentVisible ? { opacity: 1, y: 0 } : {}}
-            transition={{ delay: 0.2 }}
-            className="text-zinc-400 mt-12 text-base md:text-lg max-w-2xl mx-auto font-light leading-relaxed tracking-tight"
+          <p
+            className={cn(
+              "text-zinc-400 mt-12 text-base md:text-lg max-w-2xl mx-auto font-light leading-relaxed tracking-tight",
+              "transition-all duration-500 ease-out delay-200",
+              inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2",
+            )}
           >
             Our community is the heartbeat of Eazee. We curate experiences
             around the people who use them, where your{" "}
             <span className="text-white font-medium">energy and time</span> are
             the ultimate priority.
-          </motion.p>
+          </p>
         </div>
 
         {/* Колонки */}

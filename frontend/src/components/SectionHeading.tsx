@@ -1,5 +1,6 @@
 "use client";
 
+import { useSectionInView } from "@/components/Section";
 import { cn } from "@/lib/utils";
 
 type SectionHeadingSize = "hero" | "section" | "subsection" | "label";
@@ -29,11 +30,18 @@ const sizeStyles: Record<
   },
 };
 
+const transitionClasses =
+  "transition-all duration-500 ease-out";
+const inViewClasses = "opacity-100 translate-y-0";
+const notInViewClasses = "opacity-0 translate-y-4";
+
 export interface SectionHeadingProps {
   size?: SectionHeadingSize;
   as?: "h1" | "h2" | "h3" | "span";
   children: React.ReactNode;
   className?: string;
+  /** Отключить анимацию появления (по умолчанию включена внутри Section). */
+  animate?: boolean;
 }
 
 export function SectionHeading({
@@ -41,9 +49,25 @@ export function SectionHeading({
   as,
   children,
   className,
+  animate = true,
 }: SectionHeadingProps) {
   const config = sizeStyles[size];
   const Tag = as ?? config.defaultTag;
+  const sectionView = useSectionInView();
 
-  return <Tag className={cn(config.className, className)}>{children}</Tag>;
+  const shouldAnimate = animate && sectionView !== null;
+  const visible = shouldAnimate ? sectionView!.inView : true;
+
+  return (
+    <Tag
+      className={cn(
+        config.className,
+        className,
+        shouldAnimate && transitionClasses,
+        shouldAnimate && (visible ? inViewClasses : notInViewClasses),
+      )}
+    >
+      {children}
+    </Tag>
+  );
 }

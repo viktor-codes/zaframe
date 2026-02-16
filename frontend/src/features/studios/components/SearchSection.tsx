@@ -1,10 +1,12 @@
 "use client";
 
-import { motion, useInView, AnimatePresence } from "framer-motion";
-import { useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, ArrowRight, MapPin, Navigation } from "lucide-react";
+import { useSectionInView } from "@/components/Section";
 import { SectionHeading } from "@/components/SectionHeading";
+import { cn } from "@/lib/utils";
 
 const SUGGESTION_TO_CATEGORY: Record<string, string> = {
   yoga: "yoga",
@@ -24,8 +26,8 @@ const SUGGESTION_TO_CATEGORY: Record<string, string> = {
 
 export const SearchSection = () => {
   const router = useRouter();
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-20%" });
+  const sectionView = useSectionInView();
+  const inView = sectionView?.inView ?? true;
 
   const [activity, setActivity] = useState("");
   const [location, setLocation] = useState("");
@@ -53,31 +55,25 @@ export const SearchSection = () => {
 
   return (
     <>
-      <div ref={ref} className="container relative z-10 mx-auto px-6 max-w-5xl">
+      <div className="container relative z-10 mx-auto px-6 max-w-5xl">
         <div className="text-left md:text-center mb-20 md:mb-32">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          <SectionHeading
+            size="section"
+            as="h2"
+            className="text-zinc-900 leading-[0.9]"
           >
-            <SectionHeading
-              size="section"
-              as="h2"
-              className="text-zinc-900 leading-[0.9]"
-            >
-              Ready to find <br />
-              <span className="font-serif italic font-light text-zinc-400">
-                your frame?
-              </span>
-            </SectionHeading>
-          </motion.div>
+            Ready to find <br />
+            <span className="font-serif italic font-light text-zinc-400">
+              your frame?
+            </span>
+          </SectionHeading>
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="w-full relative"
+        <div
+          className={cn(
+            "w-full relative transition-all duration-500 ease-out delay-200",
+            inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6",
+          )}
         >
           <div className="relative flex flex-col md:flex-row items-stretch bg-zinc-50 rounded-2xl p-2 border border-zinc-100 shadow-sm focus-within:shadow-xl focus-within:bg-white transition-all duration-500">
             <div className="flex-1 relative flex items-center px-6 py-4 border-b md:border-b-0 md:border-r border-zinc-200/50">
@@ -241,7 +237,7 @@ export const SearchSection = () => {
               </button>
             ))}
           </div>
-        </motion.div>
+        </div>
       </div>
 
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full pointer-events-none">

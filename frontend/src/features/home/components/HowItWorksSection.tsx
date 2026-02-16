@@ -39,26 +39,15 @@ export const HowItWorksSection = () => {
   return (
     <div ref={containerRef} className="container mx-auto px-6 max-w-7xl relative">
         <div className="max-w-2xl mb-24">
-          <motion.span
-            initial={{ opacity: 0 }}
-            animate={isInView ? { opacity: 1 } : {}}
-            className="block mb-6"
-          >
-            <SectionHeading size="label" className="text-teal-500">
-              Process
-            </SectionHeading>
-          </motion.span>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-          >
-            <SectionHeading size="section" as="h2" className="text-zinc-900">
-              Your journey, <br />
-              <span className="font-serif italic font-light text-zinc-400">
-                in three frames.
-              </span>
-            </SectionHeading>
-          </motion.div>
+          <SectionHeading size="label" className="text-teal-500 block mb-6">
+            Process
+          </SectionHeading>
+          <SectionHeading size="section" as="h2" className="text-zinc-900">
+            Your journey, <br />
+            <span className="font-serif italic font-light text-zinc-400">
+              in three frames.
+            </span>
+          </SectionHeading>
         </div>
 
         <div className="relative">

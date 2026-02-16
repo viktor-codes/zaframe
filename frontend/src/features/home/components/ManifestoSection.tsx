@@ -1,13 +1,10 @@
 "use client";
 
-import { motion, useInView } from "framer-motion";
-import { useRef } from "react";
+import { motion } from "framer-motion";
 import { Search, Zap, Star } from "lucide-react";
 import { SectionHeading } from "@/components/SectionHeading";
 
 export const ManifestoSection = () => {
-  const contentRef = useRef<HTMLDivElement>(null);
-  const contentVisible = useInView(contentRef, { once: true, amount: 0.2 });
 
   const propositions = [
     {
@@ -51,24 +48,14 @@ export const ManifestoSection = () => {
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-sky-500/10 blur-[120px] rounded-full" />
       </div>
 
-      <div ref={contentRef} className="container relative z-10 mx-auto px-6 max-w-7xl">
+      <div className="container relative z-10 mx-auto px-6 max-w-7xl">
         <div className="mb-32 text-center">
-          <motion.span
-            initial={{ opacity: 0 }}
-            animate={contentVisible ? { opacity: 1, y: 0 } : {}}
-            className="block"
-          >
-            <SectionHeading size="label" className="text-teal-500 mb-8 block">
-              Philosophy
-            </SectionHeading>
-          </motion.span>
+          <SectionHeading size="label" className="text-teal-500 mb-8 block">
+            Philosophy
+          </SectionHeading>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={contentVisible ? { opacity: 1, y: 0 } : {}}
-          >
-            <SectionHeading size="section" as="h2" className="text-white">
-              Made for everyone who <br />
+          <SectionHeading size="section" as="h2" className="text-white">
+            Made for everyone who <br />
             <span className="relative inline-block mt-4 font-serif italic font-light text-zinc-400">
               values their time
               <svg
@@ -102,8 +89,7 @@ export const ManifestoSection = () => {
                 </defs>
               </svg>
             </span>
-            </SectionHeading>
-          </motion.div>
+          </SectionHeading>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
