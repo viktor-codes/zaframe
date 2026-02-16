@@ -102,7 +102,7 @@ const MomentsColumn = ({
           {moments.map(({ text, imageSrc, name, username }, i) => (
             <div
               key={`${name}-${idx}-${i}`}
-              className="relative p-6 rounded-3xl border border-white/20 bg-zinc-900/40 backdrop-blur-2xl group hover:border-teal-500/30 transition-all duration-500 w-[260px] md:w-[280px] lg:w-[300px] shadow-2xl shadow-black/50"
+              className="relative p-6 rounded-3xl border border-white/20 bg-zinc-900/40 group hover:border-teal-500/30 transition-all duration-500 w-[260px] md:w-[280px] lg:w-[300px] shadow-2xl shadow-black/50"
             >
               <div className="absolute top-0 right-0 w-24 h-24 bg-teal-500/5 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="absolute top-4 left-4 w-2 h-2 border-t border-l border-teal-400/60 group-hover:border-teal-400 transition-colors" />

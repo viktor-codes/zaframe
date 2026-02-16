@@ -70,7 +70,7 @@ export const MobileMenu = ({
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
             transition={{ duration: 0.3, ease: "linear" }}
-            className="fixed inset-x-0 z-30 flex h-[calc(90vh-100px)] flex-col bg-zinc-50 md:hidden"
+            className="fixed inset-x-0 z-30 flex h-[calc(90svh-100px)] flex-col bg-zinc-50 md:hidden"
           >
             <div className="absolute inset-4 pointer-events-none">
               {/* Top Left */}
