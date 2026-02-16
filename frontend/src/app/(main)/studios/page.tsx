@@ -64,6 +64,7 @@ function StudiosPageContent() {
     () => ({
       is_active: true,
       limit: PAGE_SIZE,
+      include_services: true,
       ...(category && { category }),
       ...(city && { city }),
       ...(query && { query }),
@@ -101,10 +102,7 @@ function StudiosPageContent() {
   });
 
   const results: SearchResult[] = useMemo(
-    () =>
-      data?.pages.flatMap((page) =>
-        page.map((studio) => ({ studio, matched_services: [] }))
-      ) ?? [],
+    () => data?.pages.flat() ?? [],
     [data],
   );
 

@@ -5,6 +5,7 @@
 import { api } from "./client";
 import type { StudioCreate, StudioResponse } from "@/types/studio";
 import type { SlotResponse } from "@/types/slot";
+import type { SearchResult } from "@/types/search";
 
 export interface StudiosListParams {
   skip?: number;
@@ -19,6 +20,8 @@ export interface StudiosListParams {
   query?: string;
   /** Explore: удобства (все должны быть у студии) */
   amenities?: string[];
+  /** Вернуть студии с услугами (для карточек: цена, категория) */
+  include_services?: boolean;
 }
 
 export interface StudiosCountParams {
@@ -42,7 +45,7 @@ const PAGE_SIZE = 12;
 
 export async function fetchStudios(
   params: StudiosListParams = {}
-): Promise<StudioResponse[]> {
+): Promise<StudioResponse[] | SearchResult[]> {
   const {
     skip = 0,
     limit = PAGE_SIZE,
@@ -52,6 +55,7 @@ export async function fetchStudios(
     category,
     query,
     amenities,
+    include_services,
   } = params;
   const searchParams: Record<
     string,
@@ -66,8 +70,9 @@ export async function fetchStudios(
   if (category) searchParams.category = category;
   if (query) searchParams.query = query;
   if (amenities?.length) searchParams.amenities = amenities;
+  if (include_services === true) searchParams.include_services = true;
 
-  return api.get<StudioResponse[]>("api/v1/studios", {
+  return api.get<StudioResponse[] | SearchResult[]>("api/v1/studios", {
     params: searchParams,
     skipAuth: !owner_id,
   });

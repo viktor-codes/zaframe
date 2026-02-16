@@ -15,12 +15,17 @@ CRUD операции:
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.service import Service
 
 from app.api.deps import get_current_user_required, get_db
 from app.models.service import ServiceCategory
 from app.models.user import User
 from app.schemas import (
+    SearchResult,
+    ServiceResponse,
     SlotResponse,
     StudioCreate,
     StudioPublicResponse,
@@ -44,7 +49,7 @@ from app.services.service import (
 router = APIRouter(prefix="/studios", tags=["studios"])
 
 
-@router.get("", response_model=list[StudioResponse])
+@router.get("")
 async def list_studios(
     db: AsyncSession = Depends(get_db),
     skip: int = Query(0, ge=0, description="Пропустить N записей"),
@@ -55,9 +60,11 @@ async def list_studios(
     category: ServiceCategory | None = Query(None, description="Категория услуги (Explore)"),
     query: str | None = Query(None, description="Поиск по названию студии/услуги (Explore)"),
     amenities: list[str] | None = Query(None, description="Удобства (Explore)"),
-) -> list[StudioResponse]:
+    include_services: bool = Query(False, description="Вернуть услуги для карточек (цена, категория)"),
+):
     """
     Список студий с пагинацией и опциональными фильтрами для Explore.
+    При include_services=true возвращает list[SearchResult] (студия + услуги), иначе list[StudioResponse].
     """
     studios = await get_studios(
         db,
@@ -70,7 +77,29 @@ async def list_studios(
         query=query,
         amenities=amenities,
     )
-    return studios
+    if not include_services:
+        return [StudioResponse.model_validate(s) for s in studios]
+
+    studio_ids = [s.id for s in studios]
+    stmt = select(Service).where(
+        Service.studio_id.in_(studio_ids),
+        Service.is_active.is_(True),
+    )
+    if category is not None:
+        stmt = stmt.where(Service.category == category.value)
+    svc_result = await db.execute(stmt)
+    services = list(svc_result.scalars().all())
+    by_studio: dict[int, list] = {}
+    for svc in services:
+        by_studio.setdefault(svc.studio_id, []).append(ServiceResponse.model_validate(svc))
+
+    return [
+        SearchResult(
+            studio=StudioResponse.model_validate(s),
+            matched_services=by_studio.get(s.id, []),
+        )
+        for s in studios
+    ]
 
 
 @router.get("/count")
