@@ -30,9 +30,7 @@ export function Header({ variant = "dark", minimalSearch }: HeaderProps) {
       {/* СЛОЙ ФОНА (Blur Layer) */}
       <div
         className={`absolute inset-0 -z-10 transition-all duration-500 ${
-          isDark
-            ? "bg-zinc-950/20 backdrop-blur-xs"
-            : "bg-zinc-50/20 backdrop-blur-xs"
+          isDark ? "bg-zinc-950" : "bg-zinc-50"
         }`}
       />
       <div className="flex justify-center items-center py-2.5 bg-zinc-950 text-white text-[11px] font-bold uppercase tracking-[0.15em] gap-4 border-b border-white/5">
