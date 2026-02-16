@@ -66,11 +66,11 @@ export const MobileMenu = ({
       {isOpen && (
         <>
           <motion.div
-            initial={{ x: "-100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "-100%" }}
-            transition={{ duration: 0.3, ease: "linear" }}
-            className="fixed inset-x-0 z-30 flex h-[calc(90svh-100px)] flex-col bg-zinc-50 md:hidden"
+            initial={{ y: "-50%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "-50%" }}
+            transition={{ duration: 0.4, ease: [0.32, 0, 0.67, 0] }}
+            className="fixed inset-x-0 z-50 flex h-[calc(90svh-100px)] flex-col bg-zinc-50 md:hidden will-change-transform"
           >
             <div className="absolute inset-4 pointer-events-none">
               {/* Top Left */}
