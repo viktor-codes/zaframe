@@ -2,3 +2,7 @@
 
 export { PolaroidModal } from "./PolaroidModal";
 export type { PolaroidModalProps, PolaroidModalSize } from "./PolaroidModal";
+export { Section } from "./Section";
+export type { SectionProps } from "./Section";
+export { SectionHeading } from "./SectionHeading";
+export type { SectionHeadingProps } from "./SectionHeading";

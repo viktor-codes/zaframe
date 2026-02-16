@@ -1,6 +1,7 @@
 "use client";
 
-import { Suspense, useCallback, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useUIStore } from "@/store/useUIStore";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { X, ChevronDown } from "lucide-react";
@@ -113,11 +114,15 @@ function StudiosPageContent() {
   }, [router]);
 
   const hasFilters = category || city || query || amenities.length > 0;
+  const setHeaderVariant = useUIStore((state) => state.setHeaderVariant);
+
+  useEffect(() => {
+    setHeaderVariant("on-light");
+  }, [setHeaderVariant]);
 
   return (
     <div className="min-h-screen bg-white">
       <Header
-        variant="light"
         minimalSearch={{ href: "#studios-search", placeholder: "Search studios…" }}
       />
 

@@ -4,6 +4,7 @@ import { motion, useInView, AnimatePresence } from "framer-motion";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, ArrowRight, MapPin, Navigation } from "lucide-react";
+import { SectionHeading } from "@/components/SectionHeading";
 
 const SUGGESTION_TO_CATEGORY: Record<string, string> = {
   yoga: "yoga",
@@ -51,20 +52,25 @@ export const SearchSection = () => {
   };
 
   return (
-    <section ref={ref} className="relative bg-white pt-0 pb-32 overflow-hidden">
-      <div className="container relative z-10 mx-auto px-6 max-w-5xl">
+    <>
+      <div ref={ref} className="container relative z-10 mx-auto px-6 max-w-5xl">
         <div className="text-left md:text-center mb-20 md:mb-32">
-          <motion.h2
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="text-5xl md:text-7xl font-bold tracking-tighter text-zinc-900 leading-[0.9]"
           >
-            Ready to find <br />
-            <span className="font-serif italic font-light text-zinc-400">
-              your frame?
-            </span>
-          </motion.h2>
+            <SectionHeading
+              size="section"
+              as="h2"
+              className="text-zinc-900 leading-[0.9]"
+            >
+              Ready to find <br />
+              <span className="font-serif italic font-light text-zinc-400">
+                your frame?
+              </span>
+            </SectionHeading>
+          </motion.div>
         </div>
 
         <motion.div
@@ -241,6 +247,6 @@ export const SearchSection = () => {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full pointer-events-none">
         <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-teal-50/30 blur-[120px] rounded-full opacity-50" />
       </div>
-    </section>
+    </>
   );
 }

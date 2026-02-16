@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Scan, Minimize, ArrowRight, Search } from "lucide-react";
+import { useUIStore } from "@/store/useUIStore";
+import { HEADER_HEIGHT_PX } from "@/lib/constants/layout";
 import { MobileMenu, type NavLink } from "./MobileMenu";
 import { Logo } from "./Logo";
 
@@ -16,21 +18,25 @@ const NAV_LINKS: NavLink[] = [
 const iconSpring = { type: "spring" as const, stiffness: 400, damping: 28 };
 
 export interface HeaderProps {
-  variant?: "light" | "dark";
   minimalSearch?: { href: string; placeholder: string };
 }
 
-export function Header({ variant = "dark", minimalSearch }: HeaderProps) {
+export function Header({ minimalSearch }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const isDark = variant === "dark";
+  const headerVariant = useUIStore((state) => state.headerVariant);
+  const isDark = headerVariant === "on-dark";
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-500">
+    <header
+      className="fixed top-0 left-0 right-0 z-50 transition-all duration-500"
+      style={{ minHeight: HEADER_HEIGHT_PX }}
+    >
       {/* СЛОЙ ФОНА (Blur Layer) */}
       <div
         className={`absolute inset-0 -z-10 transition-all duration-500 ${
-          isDark ? "bg-zinc-950" : "bg-zinc-50"
+          isDark
+            ? "bg-zinc-950/20 backdrop-blur-xs"
+            : "bg-zinc-50/20 backdrop-blur-xs"
         }`}
       />
       <div className="flex justify-center items-center py-2.5 bg-zinc-950 text-white text-[11px] font-bold uppercase tracking-[0.15em] gap-4 border-b border-white/5">
@@ -49,7 +55,7 @@ export function Header({ variant = "dark", minimalSearch }: HeaderProps) {
       </div>
 
       <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
-        <Logo variant={variant} />
+        <Logo variant={isDark ? "dark" : "light"} />
 
         <div className="flex items-center justify-center gap-4">
           <nav className="hidden items-center gap-8 md:flex">
@@ -64,7 +70,7 @@ export function Header({ variant = "dark", minimalSearch }: HeaderProps) {
                   key={link.name}
                   href={link.href}
                   // Для якорей добавляем плавный скролл
-                  onClick={(e) => {
+                  onClick={() => {
                     if (isAnchor) {
                       // Опционально: предотвращаем дефолт и скроллим плавно
                       // e.preventDefault();

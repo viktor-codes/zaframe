@@ -1,27 +1,13 @@
 "use client";
 
 import { motion, useInView } from "framer-motion";
-import { useRef, useEffect } from "react";
+import { useRef } from "react";
 import { Search, Zap, Star } from "lucide-react";
+import { SectionHeading } from "@/components/SectionHeading";
 
-interface ManifestoProps {
-  onInView?: (isDark: boolean) => void;
-}
-
-export const ManifestoSection = ({ onInView }: ManifestoProps) => {
-  const ref = useRef<HTMLElement>(null);
-
-  const isDarkSectionUnderHeader = useInView(ref, {
-    margin: "-100px 0px -80% 0px",
-  });
-
-  const contentVisible = useInView(ref, { once: true, amount: 0.2 });
-
-  useEffect(() => {
-    if (onInView) {
-      onInView(isDarkSectionUnderHeader);
-    }
-  }, [isDarkSectionUnderHeader, onInView]);
+export const ManifestoSection = () => {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const contentVisible = useInView(contentRef, { once: true, amount: 0.2 });
 
   const propositions = [
     {
@@ -48,11 +34,7 @@ export const ManifestoSection = ({ onInView }: ManifestoProps) => {
   ];
 
   return (
-    <section
-      id="manifesto"
-      ref={ref}
-      className="relative py-32 md:py-48 bg-zinc-950 overflow-hidden"
-    >
+    <div className="relative h-full">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 z-0">
           <img
@@ -69,22 +51,24 @@ export const ManifestoSection = ({ onInView }: ManifestoProps) => {
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-sky-500/10 blur-[120px] rounded-full" />
       </div>
 
-      <div className="container relative z-10 mx-auto px-6 max-w-7xl">
+      <div ref={contentRef} className="container relative z-10 mx-auto px-6 max-w-7xl">
         <div className="mb-32 text-center">
           <motion.span
             initial={{ opacity: 0 }}
             animate={contentVisible ? { opacity: 1, y: 0 } : {}}
-            className="text-[10px] font-black uppercase tracking-[0.5em] text-teal-500 mb-8 block"
+            className="block"
           >
-            Philosophy
+            <SectionHeading size="label" className="text-teal-500 mb-8 block">
+              Philosophy
+            </SectionHeading>
           </motion.span>
 
-          <motion.h2
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={contentVisible ? { opacity: 1, y: 0 } : {}}
-            className="text-5xl md:text-7xl font-bold tracking-tighter text-white leading-[1.1]"
           >
-            Made for everyone who <br />
+            <SectionHeading size="section" as="h2" className="text-white">
+              Made for everyone who <br />
             <span className="relative inline-block mt-4 font-serif italic font-light text-zinc-400">
               values their time
               <svg
@@ -118,7 +102,8 @@ export const ManifestoSection = ({ onInView }: ManifestoProps) => {
                 </defs>
               </svg>
             </span>
-          </motion.h2>
+            </SectionHeading>
+          </motion.div>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -213,6 +198,6 @@ export const ManifestoSection = ({ onInView }: ManifestoProps) => {
           Verification_System_Active
         </motion.div>
       </div>
-    </section>
+    </div>
   );
 };

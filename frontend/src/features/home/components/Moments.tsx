@@ -2,7 +2,8 @@
 
 import { motion, useInView } from "framer-motion";
 import Image from "next/image";
-import React, { useRef, useEffect } from "react";
+import React, { useRef } from "react";
+import { SectionHeading } from "@/components/SectionHeading";
 
 interface Moment {
   text: string;
@@ -11,9 +12,7 @@ interface Moment {
   username: string;
 }
 
-interface MomentsProps {
-  onInView?: (isDark: boolean) => void;
-}
+interface MomentsProps {}
 
 // Данные (оставляем те же)
 const moments: Moment[] = [
@@ -137,28 +136,12 @@ const MomentsColumn = ({
   </div>
 );
 
-export const Moments = ({ onInView }: MomentsProps) => {
-  const ref = useRef<HTMLElement>(null);
-
-  // Логика смены цвета хедера
-  const isDarkUnderHeader = useInView(ref, {
-    margin: "-100px 0px -80% 0px",
-  });
-
-  const contentVisible = useInView(ref, { once: true, amount: 0.2 });
-
-  useEffect(() => {
-    if (onInView) {
-      onInView(isDarkUnderHeader);
-    }
-  }, [isDarkUnderHeader, onInView]);
+export const Moments = (_props: MomentsProps) => {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const contentVisible = useInView(contentRef, { once: true, amount: 0.2 });
 
   return (
-    <section
-      id="moments"
-      ref={ref}
-      className="relative py-32 bg-zinc-950 overflow-hidden"
-    >
+    <div className="relative h-full">
       {/* Background Layer */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <Image
@@ -174,22 +157,24 @@ export const Moments = ({ onInView }: MomentsProps) => {
         <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-sky-500/5 blur-[120px] rounded-full" />
       </div>
 
-      <div className="container relative z-10 mx-auto px-6 max-w-7xl">
+      <div ref={contentRef} className="container relative z-10 mx-auto px-6 max-w-7xl">
         <div className="mb-24 text-center">
           <motion.span
             initial={{ opacity: 0 }}
             animate={contentVisible ? { opacity: 1 } : {}}
-            className="text-[10px] font-black uppercase tracking-[0.5em] text-teal-500 mb-8 block"
+            className="block"
           >
-            Community
+            <SectionHeading size="label" className="text-teal-500 mb-8 block">
+              Community
+            </SectionHeading>
           </motion.span>
 
-          <motion.h2
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={contentVisible ? { opacity: 1, y: 0 } : {}}
-            className="text-5xl md:text-7xl font-bold tracking-tighter text-white leading-[1.1]"
           >
-            Real people <br />
+            <SectionHeading size="section" as="h2" className="text-white">
+              Real people <br />
             <span className="relative inline-block mt-4 font-serif italic font-light text-zinc-400">
               real impact
               {/* Графический элемент "Zee" */}
@@ -224,7 +209,8 @@ export const Moments = ({ onInView }: MomentsProps) => {
                 </defs>
               </svg>
             </span>
-          </motion.h2>
+            </SectionHeading>
+          </motion.div>
 
           <motion.p
             initial={{ opacity: 0, y: 10 }}
@@ -263,6 +249,6 @@ export const Moments = ({ onInView }: MomentsProps) => {
           </span>
         </div>
       </div>
-    </section>
+    </div>
   );
 };

@@ -1,12 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { SectionHeading } from "@/components/SectionHeading";
 import FloatingCards from "./FloatingCards";
 import Link from "next/link";
 
 export const HeroSection = () => {
   return (
-    <section className="relative overflow-hidden bg-zinc-50 py-12 lg:py-24">
+    <>
       <div className="absolute -left-24 h-96 w-96 rounded-sm bg-teal-100/50 blur-3xl" />
 
       <div className="container relative mx-auto px-4">
@@ -23,7 +24,11 @@ export const HeroSection = () => {
                 Book it like a moment
               </span>
             </div>
-            <h1 className="text-center md:text-left mb-6 text-5xl font-bold leading-[1.1] tracking-tight text-zinc-900 md:text-7xl">
+            <SectionHeading
+              size="hero"
+              as="h1"
+              className="text-center md:text-left mb-6 text-zinc-900"
+            >
               Ea
               <span className="font-serif italic font-light bg-linear-to-r from-lime-400 to-teal-500 bg-clip-text text-transparent pl-0.5 pr-1">
                 Zee
@@ -36,7 +41,7 @@ export const HeroSection = () => {
               <span className="bg-linear-to-r from-sky-500 via-teal-500 to-lime-400 bg-clip-text text-transparent">
                 yoga, dance & movement
               </span>
-            </h1>
+            </SectionHeading>
 
             <p className="text-center md:text-left mb-10 max-w-2xl text-lg leading-relaxed text-zinc-600 md:text-xl lg:mx-0">
               Discover and book classes at verified studios.{" "}
@@ -71,6 +76,6 @@ export const HeroSection = () => {
           </div>
         </div>
       </div>
-    </section>
+    </>
   );
 };

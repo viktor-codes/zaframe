@@ -3,6 +3,7 @@
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 import { Camera, Calendar, Trophy } from "lucide-react";
+import { SectionHeading } from "@/components/SectionHeading";
 
 const steps = [
   {
@@ -36,30 +37,28 @@ export const HowItWorksSection = () => {
   const isInView = useInView(containerRef, { once: true, margin: "-10%" });
 
   return (
-    <section
-      id="how-it-works"
-      ref={containerRef}
-      className="py-32 md:py-64 bg-white overflow-hidden relative"
-    >
-      <div className="container mx-auto px-6 max-w-7xl relative">
+    <div ref={containerRef} className="container mx-auto px-6 max-w-7xl relative">
         <div className="max-w-2xl mb-24">
           <motion.span
             initial={{ opacity: 0 }}
             animate={isInView ? { opacity: 1 } : {}}
-            className="text-[10px] font-black uppercase tracking-[0.4em] text-teal-500 block mb-6"
+            className="block mb-6"
           >
-            Process
+            <SectionHeading size="label" className="text-teal-500">
+              Process
+            </SectionHeading>
           </motion.span>
-          <motion.h2
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
-            className="text-5xl md:text-6xl font-bold tracking-tighter text-zinc-900"
           >
-            Your journey, <br />
-            <span className="font-serif italic font-light text-zinc-400">
-              in three frames.
-            </span>
-          </motion.h2>
+            <SectionHeading size="section" as="h2" className="text-zinc-900">
+              Your journey, <br />
+              <span className="font-serif italic font-light text-zinc-400">
+                in three frames.
+              </span>
+            </SectionHeading>
+          </motion.div>
         </div>
 
         <div className="relative">
@@ -146,7 +145,6 @@ export const HowItWorksSection = () => {
           </div>
         </div>
       </div>
-    </section>
   );
 };
 
