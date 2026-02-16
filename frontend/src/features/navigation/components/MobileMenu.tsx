@@ -69,7 +69,7 @@ export const MobileMenu = ({
             initial={{ x: "-100%" }}
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
-            transition={{ duration: 0.4, ease: "linear" }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
             className="fixed inset-x-0 z-50 flex h-[calc(100svh-100px)] flex-col bg-white md:hidden will-change-transform"
           >
             <div className="absolute inset-4 pointer-events-none">
