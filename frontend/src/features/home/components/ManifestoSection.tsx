@@ -110,7 +110,7 @@ export const ManifestoSection = () => {
               }`}
             >
               <div className="relative h-full p-10 pt-16 rounded-3xl border border-white/10 bg-white/[0.07] shadow-xl transition-all duration-500 group-hover:bg-white/10 group-hover:border-white/20">
-                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-teal-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute inset-0 rounded-3xl bg-linear-to-br from-teal-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
                 <div className="absolute top-6 left-6 w-4 h-4 border-t border-l border-white/20 group-hover:border-teal-400/50 transition-colors" />
                 <div className="absolute bottom-6 right-6 w-4 h-4 border-b border-r border-white/20 group-hover:border-teal-400/50 transition-colors" />
@@ -135,7 +135,7 @@ export const ManifestoSection = () => {
                 </div>
 
                 <div className="mt-12 pt-6 border-t border-white/5 flex justify-between items-center opacity-40">
-                  <span className="text-[9px] font-mono tracking-tighter text-zinc-500 tracking-[0.2em]">
+                  <span className="text-[9px] font-mono tracking-tighter text-zinc-500 ">
                     ZF_MOMENT_0{index + 1}
                   </span>
                   <div className="flex gap-1">
