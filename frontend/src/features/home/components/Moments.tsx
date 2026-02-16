@@ -78,24 +78,27 @@ const MomentsColumn = ({
   moments,
   duration = 10,
   className = "",
+  inView = true,
 }: {
   moments: Moment[];
   duration?: number;
   className?: string;
+  /** Когда false, анимация скролла приостанавливается — сильно снижает нагрузку вне viewport. */
+  inView?: boolean;
 }) => (
   <div className={className}>
     <motion.div
-      animate={{ y: ["0%", "-50%"] }}
+      animate={{ y: inView ? ["0%", "-50%"] : "0%" }}
       transition={{
-        repeat: Infinity,
+        repeat: inView ? Infinity : 0,
         ease: "linear",
-        duration: duration || 10,
+        duration: inView ? duration || 10 : 0,
       }}
       className="flex flex-col gap-6 pb-6 will-change-transform antialiased"
       style={{
         transformPerspective: "1000px",
-        transformStyle: "preserve-3d", // Safari fix
-        backfaceVisibility: "hidden", // Safari fix
+        transformStyle: "preserve-3d",
+        backfaceVisibility: "hidden",
       }}
     >
       {[...new Array(2)].fill(0).map((_, idx) => (
@@ -105,7 +108,7 @@ const MomentsColumn = ({
               key={`${name}-${idx}-${i}`}
               className="relative p-6 rounded-3xl border border-white/20 bg-zinc-900/40 group hover:border-teal-500/30 transition-all duration-500 w-[260px] md:w-[280px] lg:w-[300px] shadow-2xl shadow-black/50"
             >
-              <div className="absolute top-0 right-0 w-24 h-24 bg-teal-500/5 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute top-0 right-0 w-24 h-24 bg-teal-500/5 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="absolute top-4 left-4 w-2 h-2 border-t border-l border-teal-400/60 group-hover:border-teal-400 transition-colors" />
 
               <div className="relative z-20 text-white text-sm leading-relaxed font-light tracking-wide mb-6">
@@ -155,8 +158,9 @@ export const Moments = (_props: MomentsProps) => {
         <div className="absolute inset-0 bg-linear-to-b from-zinc-950 via-zinc-950/80 to-zinc-950" />
         <div className="absolute inset-0 bg-linear-to-r from-zinc-950 via-transparent to-zinc-950" />
 
-        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-teal-500/5 blur-[120px] rounded-full" />
-        <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-sky-500/5 blur-[120px] rounded-full" />
+        {/* Меньший blur и размер — blur-[120px] на 500px очень тяжёлый для GPU */}
+        <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-teal-500/5 blur-[60px] rounded-full" />
+        <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-sky-500/5 blur-[60px] rounded-full" />
       </div>
 
       <div className="container relative z-10 mx-auto px-6 max-w-7xl">
@@ -213,18 +217,20 @@ export const Moments = (_props: MomentsProps) => {
           </p>
         </div>
 
-        {/* Колонки */}
+        {/* Колонки: inView останавливает анимацию когда секция не видна */}
         <div className="flex justify-center gap-6 md:gap-8 [mask-image:linear-gradient(to_bottom,transparent,black_15%,black_85%,transparent)] max-h-[700px] overflow-hidden">
-          <MomentsColumn moments={moments.slice(0, 3)} duration={22} />
+          <MomentsColumn moments={moments.slice(0, 3)} duration={22} inView={inView} />
           <MomentsColumn
             moments={moments.slice(3, 6)}
             duration={28}
             className="hidden md:block mt-12"
+            inView={inView}
           />
           <MomentsColumn
             moments={moments.slice(6, 9)}
             duration={24}
             className="hidden lg:block"
+            inView={inView}
           />
         </div>
       </div>

@@ -1,51 +1,57 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { Search, Zap, Star } from "lucide-react";
 import { SectionHeading } from "@/components/SectionHeading";
 
-export const ManifestoSection = () => {
+const PROPOSITIONS = [
+  {
+    icon: "Search" as const,
+    label: "Instant Discovery",
+    title: "Find your vibe in seconds",
+    description:
+      "No more calling studios. Browse real-time availability and filter by style.",
+  },
+  {
+    icon: "Zap",
+    label: "Zero Friction",
+    title: "Book it like a moment",
+    description:
+      "See a class you love? One tap to reserve. Instant confirmation and calendar sync.",
+  },
+  {
+    icon: "Star",
+    label: "Curated Quality",
+    title: "Only the best studios",
+    description:
+      "We verify every space. Real instructors, clean vibes. Only what's worth your energy.",
+  },
+] as const;
 
-  const propositions = [
-    {
-      icon: <Search className="w-6 h-6 text-teal-400" />,
-      label: "Instant Discovery",
-      title: "Find your vibe in seconds",
-      description:
-        "No more calling studios. Browse real-time availability and filter by style.",
-    },
-    {
-      icon: <Zap className="w-6 h-6 text-teal-400" />,
-      label: "Zero Friction",
-      title: "Book it like a moment",
-      description:
-        "See a class you love? One tap to reserve. Instant confirmation and calendar sync.",
-    },
-    {
-      icon: <Star className="w-6 h-6 text-teal-400" />,
-      label: "Curated Quality",
-      title: "Only the best studios",
-      description:
-        "We verify every space. Real instructors, clean vibes. Only what's worth your energy.",
-    },
-  ];
+const ICONS = { Search, Zap, Star };
+
+export const ManifestoSection = () => {
+  const propositions = PROPOSITIONS;
 
   return (
     <div className="relative h-full">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 z-0">
-          <img
+          <Image
             src="/moments-bg.webp"
-            alt="Dark Studio"
-            className="w-full h-full object-cover opacity-30 grayscale"
+            alt=""
+            fill
+            className="object-cover opacity-30 grayscale"
             loading="lazy"
+            sizes="100vw"
           />
           <div className="absolute inset-0 bg-linear-to-b from-zinc-950 to-zinc-950/80" />
           <div className="absolute inset-0 bg-linear-to-r from-zinc-950 via-transparent to-zinc-950" />
         </div>
-
-        <div className="absolute top-1/2 left-1/4 w-96 h-96 bg-teal-500/10 blur-[120px] rounded-full" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-sky-500/10 blur-[120px] rounded-full" />
+        {/* Уменьшенный blur — blur-[120px] на больших div очень тяжёлый для GPU */}
+        <div className="absolute top-1/2 left-1/4 w-64 h-64 bg-teal-500/10 blur-[60px] rounded-full" />
+        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-sky-500/10 blur-[60px] rounded-full" />
       </div>
 
       <div className="container relative z-10 mx-auto px-6 max-w-7xl">
@@ -64,10 +70,7 @@ export const ManifestoSection = () => {
                 fill="none"
                 preserveAspectRatio="none"
               >
-                <motion.path
-                  initial={{ pathLength: 0 }}
-                  animate={{ pathLength: 1 }}
-                  transition={{ duration: 2, delay: 1 }}
+                <path
                   d="M1 11C40 11 50 2 90 2C130 2 140 11 180 11C220 11 230 2 270 2C310 2 320 11 399 11"
                   stroke="url(#neon-wave)"
                   strokeWidth="3"
@@ -106,14 +109,17 @@ export const ManifestoSection = () => {
                 index === 0 ? "md:col-span-2 lg:col-span-1" : "col-span-1"
               }`}
             >
-              <div className="relative h-full p-10 pt-16 rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl transition-all duration-500 group-hover:bg-white/10 group-hover:border-white/20">
+              <div className="relative h-full p-10 pt-16 rounded-3xl border border-white/10 bg-white/[0.07] shadow-xl transition-all duration-500 group-hover:bg-white/10 group-hover:border-white/20">
                 <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-teal-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
                 <div className="absolute top-6 left-6 w-4 h-4 border-t border-l border-white/20 group-hover:border-teal-400/50 transition-colors" />
                 <div className="absolute bottom-6 right-6 w-4 h-4 border-b border-r border-white/20 group-hover:border-teal-400/50 transition-colors" />
 
                 <div className="relative mb-12 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5 border border-white/10 shadow-inner group-hover:scale-110 transition-transform duration-500">
-                  {value.icon}
+                  {(() => {
+                    const Icon = ICONS[value.icon];
+                    return <Icon className="w-6 h-6 text-teal-400" />;
+                  })()}
                 </div>
 
                 <div className="relative space-y-6">

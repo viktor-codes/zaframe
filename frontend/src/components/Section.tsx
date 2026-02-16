@@ -9,7 +9,6 @@ import {
 } from "react";
 import { useInView } from "framer-motion";
 import { useUIStore, type HeaderVariant } from "@/store/useUIStore";
-import { HEADER_HEIGHT_PX } from "@/lib/constants/layout";
 import { cn } from "@/lib/utils";
 
 /** Состояние видимости контента секции для CSS-анимаций (Intersection Observer). */
@@ -39,7 +38,7 @@ export function Section({
   variant,
   children,
   className,
-  scrollMarginTop = HEADER_HEIGHT_PX,
+  scrollMarginTop,
   ariaLabel,
 }: SectionProps) {
   const setHeaderVariant = useUIStore((state) => state.setHeaderVariant);

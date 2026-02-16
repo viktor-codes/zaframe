@@ -37,103 +37,106 @@ export const HowItWorksSection = () => {
   const isInView = useInView(containerRef, { once: true, margin: "-10%" });
 
   return (
-    <div ref={containerRef} className="container mx-auto px-6 max-w-7xl relative">
-        <div className="max-w-2xl mb-24">
-          <SectionHeading size="label" className="text-teal-500 block mb-6">
-            Process
-          </SectionHeading>
-          <SectionHeading size="section" as="h2" className="text-zinc-900">
-            Your journey, <br />
-            <span className="font-serif italic font-light text-zinc-400">
-              in three frames.
-            </span>
-          </SectionHeading>
+    <div
+      ref={containerRef}
+      className="container mx-auto px-6 max-w-7xl relative"
+    >
+      <div className="max-w-2xl mb-24">
+        <SectionHeading size="label" className="text-teal-500 block mb-6">
+          Process
+        </SectionHeading>
+        <SectionHeading size="section" as="h2" className="text-zinc-900">
+          Your journey, <br />
+          <span className="font-serif italic font-light text-zinc-400">
+            in three frames.
+          </span>
+        </SectionHeading>
+      </div>
+
+      <div className="relative">
+        <div className="absolute top-0 left-0 md:left-1/2 md:-translate-x-1/2 w-full h-full pointer-events-none z-0">
+          <svg
+            width="100%"
+            height="100%"
+            viewBox="0 0 1000 1500"
+            fill="none"
+            preserveAspectRatio="none"
+            className="overflow-visible"
+          >
+            {/* <motion.path
+                className="hidden md:block"
+                d="M450 -50 C 800 150, 200 600, 500 900 C 800 1200, 200 1300, 400 1600"
+                stroke="#F4F4F5"
+                strokeWidth="10"
+                strokeDasharray="25 35"
+                strokeLinecap="round"
+              /> */}
+            <motion.path
+              className="hidden md:block"
+              d="M450 -50 C 800 150, 200 600, 500 900 C 800 1200, 200 1300, 400 1600"
+              stroke="url(#line-grad)"
+              strokeWidth="10"
+              strokeDasharray="25 35"
+              strokeLinecap="round"
+              markerEnd="url(#arrowhead)"
+              initial={{ pathLength: 0 }}
+              animate={isInView ? { pathLength: 1 } : {}}
+              transition={{ duration: 5, ease: "linear" }}
+            />
+
+            <motion.path
+              className="md:hidden"
+              d="M40 0 L 40 1500"
+              stroke="#F4F4F5"
+              strokeWidth="10"
+              strokeDasharray="15 25"
+              strokeLinecap="round"
+            />
+            <motion.path
+              className="md:hidden"
+              d="M50 -25 L 40 1550"
+              stroke="url(#line-grad)"
+              strokeWidth="10"
+              strokeDasharray="15 25"
+              strokeLinecap="round"
+              markerEnd="url(#arrowhead)"
+              initial={{ pathLength: 0 }}
+              animate={isInView ? { pathLength: 1 } : {}}
+              transition={{ duration: 5, ease: "linear" }}
+            />
+            <defs>
+              <linearGradient id="line-grad" x1="0" y1="0" x2="0" y2="1">
+                <stop stopColor="#14B8A6" />
+                <stop offset="1" stopColor="#0EA5E9" />
+              </linearGradient>
+              <marker
+                id="arrowhead"
+                markerWidth="12"
+                markerHeight="12"
+                refX="10"
+                refY="6"
+                orient="auto"
+              >
+                <motion.path
+                  d="M2 2 L10 6 L2 10"
+                  fill="none"
+                  stroke="#0EA5E9"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </marker>
+            </defs>
+          </svg>
         </div>
 
-        <div className="relative">
-          <div className="absolute top-0 left-0 md:left-1/2 md:-translate-x-1/2 w-full h-full pointer-events-none z-0">
-            <svg
-              width="100%"
-              height="100%"
-              viewBox="0 0 1000 1500"
-              fill="none"
-              preserveAspectRatio="none"
-              className="overflow-visible"
-            >
-              <motion.path
-                className="hidden md:block"
-                d="M450 -50 C 800 150, 200 600, 500 900 C 800 1200, 200 1300, 400 1600"
-                stroke="#F4F4F5"
-                strokeWidth="10"
-                strokeDasharray="25 35"
-                strokeLinecap="round"
-              />
-              <motion.path
-                className="hidden md:block"
-                d="M450 -50 C 800 150, 200 600, 500 900 C 800 1200, 200 1300, 400 1600"
-                stroke="url(#line-grad)"
-                strokeWidth="10"
-                strokeDasharray="25 35"
-                strokeLinecap="round"
-                markerEnd="url(#arrowhead)"
-                initial={{ pathLength: 0 }}
-                animate={isInView ? { pathLength: 1 } : {}}
-                transition={{ duration: 5, ease: "linear" }}
-              />
-
-              <motion.path
-                className="md:hidden"
-                d="M40 0 L 40 1500"
-                stroke="#F4F4F5"
-                strokeWidth="10"
-                strokeDasharray="15 25"
-                strokeLinecap="round"
-              />
-              <motion.path
-                className="md:hidden"
-                d="M50 -25 L 40 1550"
-                stroke="url(#line-grad)"
-                strokeWidth="10"
-                strokeDasharray="15 25"
-                strokeLinecap="round"
-                markerEnd="url(#arrowhead)"
-                initial={{ pathLength: 0 }}
-                animate={isInView ? { pathLength: 1 } : {}}
-                transition={{ duration: 5, ease: "linear" }}
-              />
-              <defs>
-                <linearGradient id="line-grad" x1="0" y1="0" x2="0" y2="1">
-                  <stop stopColor="#14B8A6" />
-                  <stop offset="1" stopColor="#0EA5E9" />
-                </linearGradient>
-                <marker
-                  id="arrowhead"
-                  markerWidth="12"
-                  markerHeight="12"
-                  refX="10"
-                  refY="6"
-                  orient="auto"
-                >
-                  <motion.path
-                    d="M2 2 L10 6 L2 10"
-                    fill="none"
-                    stroke="#0EA5E9"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </marker>
-              </defs>
-            </svg>
-          </div>
-
-          <div className="space-y-48 md:space-y-72 relative z-10">
-            {steps.map((step, index) => (
-              <StepItem key={step.id} step={step} index={index} />
-            ))}
-          </div>
+        <div className="space-y-48 md:space-y-72 relative z-10">
+          {steps.map((step, index) => (
+            <StepItem key={step.id} step={step} index={index} />
+          ))}
         </div>
       </div>
+    </div>
   );
 };
 

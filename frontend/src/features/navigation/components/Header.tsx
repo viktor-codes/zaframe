@@ -5,7 +5,6 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Scan, Minimize, ArrowRight, Search } from "lucide-react";
 import { useUIStore } from "@/store/useUIStore";
-import { HEADER_HEIGHT_PX } from "@/lib/constants/layout";
 import { MobileMenu, type NavLink } from "./MobileMenu";
 import { Logo } from "./Logo";
 
@@ -27,10 +26,7 @@ export function Header({ minimalSearch }: HeaderProps) {
   const isDark = headerVariant === "on-dark";
 
   return (
-    <header
-      className="fixed top-0 left-0 right-0 z-50 transition-all duration-500"
-      style={{ minHeight: HEADER_HEIGHT_PX }}
-    >
+    <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-500">
       {/* СЛОЙ ФОНА (Blur Layer) */}
       <div
         className={`absolute inset-0 -z-10 transition-all duration-500 ${
