@@ -53,8 +53,8 @@ export const ManifestoSection = () => {
         {/* <div className="absolute top-1/2 left-1/4 w-64 h-64 bg-teal-500/10 blur-2xl rounded-full" />
         <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-sky-500/10 blur-2xl rounded-full" /> */}
 
-        <div className="absolute top-1/2 left-1/4 w-96 h-96 bg-[radial-gradient(circle,rgba(20,184,166,0.15)_0%,transparent_70%)] rounded-full" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[radial-gradient(circle,rgba(20,184,166,0.15)_0%,transparent_70%)] rounded-full" />
+        <div className="absolute top-1/2 left-1/4 w-120 h-120 bg-[radial-gradient(circle,rgba(20,184,166,0.15)_0%,transparent_70%)] rounded-full" />
+        <div className="absolute bottom-1/4 right-1/4 w-120 h-120 bg-[radial-gradient(circle,rgba(20,184,166,0.15)_0%,transparent_70%)] rounded-full" />
       </div>
 
       <div className="container relative z-10 mx-auto px-6 max-w-7xl">

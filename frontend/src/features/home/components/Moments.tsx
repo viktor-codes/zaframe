@@ -141,7 +141,7 @@ const MomentsColumn = ({
   </div>
 );
 
-export const Moments = (_props: MomentsProps) => {
+export const Moments = () => {
   const sectionView = useSectionInView();
   const inView = sectionView?.inView ?? true;
 
@@ -158,9 +158,8 @@ export const Moments = (_props: MomentsProps) => {
         <div className="absolute inset-0 bg-linear-to-b from-zinc-950 via-zinc-950/80 to-zinc-950" />
         <div className="absolute inset-0 bg-linear-to-r from-zinc-950 via-transparent to-zinc-950" />
 
-        {/* Меньший blur и размер — blur-[120px] на 500px очень тяжёлый для GPU */}
-        <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-teal-500/5 blur-[60px] rounded-full" />
-        <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-sky-500/5 blur-[60px] rounded-full" />
+        <div className="absolute top-1/3 left-1/4 w-120 h-120 bg-[radial-gradient(circle,rgba(20,184,166,0.15)_0%,transparent_70%)] rounded-full" />
+        <div className="absolute bottom-1/4 right-1/4 w-120 h-120 bg-[radial-gradient(circle,rgba(20,184,166,0.15)_0%,transparent_70%)] rounded-full" />
       </div>
 
       <div className="container relative z-10 mx-auto px-6 max-w-7xl">
