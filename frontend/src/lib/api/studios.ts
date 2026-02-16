@@ -11,11 +11,23 @@ export interface StudiosListParams {
   limit?: number;
   owner_id?: number;
   is_active?: boolean;
+  /** Explore: город */
+  city?: string;
+  /** Explore: категория услуги */
+  category?: string;
+  /** Explore: поиск по названию студии/услуги */
+  query?: string;
+  /** Explore: удобства (все должны быть у студии) */
+  amenities?: string[];
 }
 
 export interface StudiosCountParams {
   owner_id?: number;
   is_active?: boolean;
+  city?: string;
+  category?: string;
+  query?: string;
+  amenities?: string[];
 }
 
 export interface StudioSlotsParams {
@@ -26,16 +38,34 @@ export interface StudioSlotsParams {
   is_active?: boolean;
 }
 
+const PAGE_SIZE = 12;
+
 export async function fetchStudios(
   params: StudiosListParams = {}
 ): Promise<StudioResponse[]> {
-  const { skip = 0, limit = 12, owner_id, is_active } = params;
-  const searchParams: Record<string, string | number | boolean | undefined> = {
+  const {
+    skip = 0,
+    limit = PAGE_SIZE,
+    owner_id,
+    is_active,
+    city,
+    category,
+    query,
+    amenities,
+  } = params;
+  const searchParams: Record<
+    string,
+    string | number | boolean | string[] | undefined
+  > = {
     skip,
     limit,
   };
   if (owner_id !== undefined) searchParams.owner_id = owner_id;
   if (is_active !== undefined) searchParams.is_active = is_active;
+  if (city) searchParams.city = city;
+  if (category) searchParams.category = category;
+  if (query) searchParams.query = query;
+  if (amenities?.length) searchParams.amenities = amenities;
 
   return api.get<StudioResponse[]>("api/v1/studios", {
     params: searchParams,
@@ -46,10 +76,17 @@ export async function fetchStudios(
 export async function fetchStudiosCount(
   params: StudiosCountParams = {}
 ): Promise<{ count: number }> {
-  const { owner_id, is_active } = params;
-  const searchParams: Record<string, string | number | boolean | undefined> = {};
+  const { owner_id, is_active, city, category, query, amenities } = params;
+  const searchParams: Record<
+    string,
+    string | number | boolean | string[] | undefined
+  > = {};
   if (owner_id !== undefined) searchParams.owner_id = owner_id;
   if (is_active !== undefined) searchParams.is_active = is_active;
+  if (city) searchParams.city = city;
+  if (category) searchParams.category = category;
+  if (query) searchParams.query = query;
+  if (amenities?.length) searchParams.amenities = amenities;
 
   return api.get<{ count: number }>("api/v1/studios/count", {
     params: searchParams,

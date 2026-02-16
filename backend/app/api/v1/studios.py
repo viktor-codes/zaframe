@@ -18,6 +18,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user_required, get_db
+from app.models.service import ServiceCategory
 from app.models.user import User
 from app.schemas import (
     SlotResponse,
@@ -50,12 +51,24 @@ async def list_studios(
     limit: int = Query(20, ge=1, le=100, description="Максимум записей"),
     owner_id: int | None = Query(None, description="Фильтр по владельцу (для панели owner)"),
     is_active: bool | None = Query(None, description="Фильтр по статусу"),
+    city: str | None = Query(None, description="Город (Explore)"),
+    category: ServiceCategory | None = Query(None, description="Категория услуги (Explore)"),
+    query: str | None = Query(None, description="Поиск по названию студии/услуги (Explore)"),
+    amenities: list[str] | None = Query(None, description="Удобства (Explore)"),
 ) -> list[StudioResponse]:
     """
-    Список студий с пагинацией.
+    Список студий с пагинацией и опциональными фильтрами для Explore.
     """
     studios = await get_studios(
-        db, skip=skip, limit=limit, owner_id=owner_id, is_active=is_active
+        db,
+        skip=skip,
+        limit=limit,
+        owner_id=owner_id,
+        is_active=is_active,
+        city=city,
+        category=category.value if category is not None else None,
+        query=query,
+        amenities=amenities,
     )
     return studios
 
@@ -65,9 +78,21 @@ async def count_studios(
     db: AsyncSession = Depends(get_db),
     owner_id: int | None = Query(None, description="Фильтр по владельцу"),
     is_active: bool | None = Query(None, description="Фильтр по статусу"),
+    city: str | None = Query(None, description="Город (Explore)"),
+    category: ServiceCategory | None = Query(None, description="Категория услуги (Explore)"),
+    query: str | None = Query(None, description="Поиск по названию (Explore)"),
+    amenities: list[str] | None = Query(None, description="Удобства (Explore)"),
 ) -> dict[str, int]:
-    """Количество студий (для пагинации)."""
-    count = await get_studios_count(db, owner_id=owner_id, is_active=is_active)
+    """Количество студий (для пагинации, те же фильтры что и list)."""
+    count = await get_studios_count(
+        db,
+        owner_id=owner_id,
+        is_active=is_active,
+        city=city,
+        category=category.value if category is not None else None,
+        query=query,
+        amenities=amenities,
+    )
     return {"count": count}
 
 

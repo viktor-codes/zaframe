@@ -1,14 +1,21 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useUIStore } from "@/store/useUIStore";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { X, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { fetchSearch } from "@/lib/api";
-import type { SearchQueryParams } from "@/types/search";
+import { fetchStudios } from "@/lib/api/studios";
+import type { SearchResult } from "@/types/search";
 import type { ServiceCategory } from "@/types/service";
 import { Header } from "@/features/navigation/components";
 import {
@@ -18,6 +25,8 @@ import {
   EmptyState,
 } from "@/features/studios/components";
 import { Button } from "@/components/ui/Button";
+
+const PAGE_SIZE = 12;
 
 const CATEGORIES: { value: ServiceCategory; label: string }[] = [
   { value: "yoga", label: "Yoga" },
@@ -51,9 +60,11 @@ function StudiosPageContent() {
   );
   const [categoriesOpen, setCategoriesOpen] = useState(true);
 
-  const params: SearchQueryParams = useMemo(
+  const listParams = useMemo(
     () => ({
-      ...(category && { category: category as ServiceCategory }),
+      is_active: true,
+      limit: PAGE_SIZE,
+      ...(category && { category }),
       ...(city && { city }),
       ...(query && { query }),
       ...(amenities.length > 0 && { amenities }),
@@ -62,14 +73,23 @@ function StudiosPageContent() {
   );
 
   const {
-    data: results,
+    data,
     isLoading,
     isError,
     error,
     refetch,
-  } = useQuery({
-    queryKey: ["search", params],
-    queryFn: () => fetchSearch(params),
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["studios", "explore", listParams],
+    queryFn: ({ pageParam }) =>
+      fetchStudios({ ...listParams, skip: pageParam }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, _allPages, lastPageParam) =>
+      lastPage.length < PAGE_SIZE
+        ? undefined
+        : (lastPageParam as number) + PAGE_SIZE,
     staleTime: 60_000,
     retry: (failureCount, err) => {
       const msg = err instanceof Error ? err.message.toLowerCase() : "";
@@ -79,6 +99,30 @@ function StudiosPageContent() {
     },
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 4000),
   });
+
+  const results: SearchResult[] = useMemo(
+    () =>
+      data?.pages.flatMap((page) =>
+        page.map((studio) => ({ studio, matched_services: [] }))
+      ) ?? [],
+    [data],
+  );
+
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!hasNextPage || isFetchingNextPage) return;
+    const el = loadMoreRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) fetchNextPage();
+      },
+      { rootMargin: "200px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const updateSearch = useCallback(
     (newCategory: string, newCity: string) => {
@@ -259,20 +303,28 @@ function StudiosPageContent() {
 
           {isLoading && <StudiosSkeleton />}
 
-          {!isLoading && !isError && results && results.length === 0 && (
+          {!isLoading && !isError && results.length === 0 && (
             <EmptyState onReset={resetFilters} />
           )}
 
-          {!isLoading && !isError && results && results.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {results.map((result, index) => (
-                <StudioSearchCard
-                  key={result.studio.id}
-                  result={result}
-                  index={index}
-                />
-              ))}
-            </div>
+          {!isLoading && !isError && results.length > 0 && (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {results.map((result, index) => (
+                  <StudioSearchCard
+                    key={result.studio.id}
+                    result={result}
+                    index={index}
+                  />
+                ))}
+              </div>
+              <div ref={loadMoreRef} className="h-4 min-h-4" aria-hidden />
+              {isFetchingNextPage && (
+                <div className="mt-6 flex justify-center">
+                  <span className="text-sm text-zinc-500">Loading more…</span>
+                </div>
+              )}
+            </>
           )}
         </main>
       </div>

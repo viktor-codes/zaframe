@@ -6,9 +6,10 @@
 - Бизнес-логика в одном месте — проще тестировать
 - Переиспользование в разных эндпоинтах (API, webhooks, CLI)
 """
-from sqlalchemy import select, func
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.service import Service
 from app.models.studio import Studio
 from app.schemas.studio import StudioCreate, StudioUpdate
 
@@ -30,21 +31,71 @@ async def get_studios(
     limit: int = 20,
     owner_id: int | None = None,
     is_active: bool | None = None,
+    city: str | None = None,
+    category: str | None = None,
+    query: str | None = None,
+    amenities: list[str] | None = None,
 ) -> list[Studio]:
     """
-    Список студий с пагинацией.
+    Список студий с пагинацией и фильтрами.
 
     skip, limit — для пагинации
     owner_id — фильтр по владельцу (для панели owner)
     is_active — фильтр по статусу (None = все)
+    city — фильтр по городу (регистронезависимый)
+    category — фильтр по категории услуги (join Service)
+    query — поиск по названию студии или услуги (ilike)
+    amenities — студия должна содержать все указанные удобства
     """
-    query = select(Studio)
+    conditions = []
     if owner_id is not None:
-        query = query.where(Studio.owner_id == owner_id)
+        conditions.append(Studio.owner_id == owner_id)
     if is_active is not None:
-        query = query.where(Studio.is_active == is_active)
-    query = query.offset(skip).limit(limit).order_by(Studio.created_at.desc())
-    result = await db.execute(query)
+        conditions.append(Studio.is_active == is_active)
+    if city:
+        city_norm = city.strip().lower()
+        if city_norm:
+            conditions.append(func.lower(Studio.city) == city_norm)
+    if amenities:
+        for a in amenities:
+            if a and a.strip():
+                conditions.append(Studio.amenities.contains([a.strip()]))
+
+    need_join = category or (query and query.strip())
+    if need_join:
+        join_conditions = list(conditions)
+        join_conditions.append(Service.studio_id == Studio.id)
+        join_conditions.append(Service.is_active.is_(True))
+        if category:
+            join_conditions.append(Service.category == category)
+        if query and query.strip():
+            pattern = f"%{query.strip()}%"
+            join_conditions.append(
+                or_(
+                    Studio.name.ilike(pattern),
+                    Service.name.ilike(pattern),
+                )
+            )
+        subq = (
+            select(Studio.id)
+            .join(Service, Service.studio_id == Studio.id)
+            .where(and_(*join_conditions))
+            .distinct()
+        )
+        stmt = (
+            select(Studio)
+            .where(Studio.id.in_(subq))
+            .order_by(Studio.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+        )
+    else:
+        stmt = select(Studio)
+        if conditions:
+            stmt = stmt.where(*conditions)
+        stmt = stmt.order_by(Studio.created_at.desc()).offset(skip).limit(limit)
+
+    result = await db.execute(stmt)
     return list(result.scalars().all())
 
 
@@ -53,14 +104,53 @@ async def get_studios_count(
     *,
     owner_id: int | None = None,
     is_active: bool | None = None,
+    city: str | None = None,
+    category: str | None = None,
+    query: str | None = None,
+    amenities: list[str] | None = None,
 ) -> int:
-    """Подсчёт студий для пагинации."""
-    query = select(func.count()).select_from(Studio)
+    """Подсчёт студий для пагинации (те же фильтры, что и get_studios)."""
+    conditions = []
     if owner_id is not None:
-        query = query.where(Studio.owner_id == owner_id)
+        conditions.append(Studio.owner_id == owner_id)
     if is_active is not None:
-        query = query.where(Studio.is_active == is_active)
-    result = await db.execute(query)
+        conditions.append(Studio.is_active == is_active)
+    if city:
+        city_norm = city.strip().lower()
+        if city_norm:
+            conditions.append(func.lower(Studio.city) == city_norm)
+    if amenities:
+        for a in amenities:
+            if a and a.strip():
+                conditions.append(Studio.amenities.contains([a.strip()]))
+
+    need_join = category or (query and query.strip())
+    if need_join:
+        join_conditions = list(conditions)
+        join_conditions.append(Service.studio_id == Studio.id)
+        join_conditions.append(Service.is_active.is_(True))
+        if category:
+            join_conditions.append(Service.category == category)
+        if query and query.strip():
+            pattern = f"%{query.strip()}%"
+            join_conditions.append(
+                or_(
+                    Studio.name.ilike(pattern),
+                    Service.name.ilike(pattern),
+                )
+            )
+        subq = (
+            select(Studio.id)
+            .join(Service, Service.studio_id == Studio.id)
+            .where(and_(*join_conditions))
+            .distinct()
+        )
+        stmt = select(func.count()).select_from(subq.subquery())
+    else:
+        stmt = select(func.count()).select_from(Studio)
+        if conditions:
+            stmt = stmt.where(*conditions)
+    result = await db.execute(stmt)
     return result.scalar_one_or_none() or 0
 
 
