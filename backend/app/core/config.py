@@ -1,4 +1,4 @@
-from pydantic import Field, model_validator
+from pydantic import Field, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -54,22 +54,17 @@ class Settings(BaseSettings):
     )
     
     # === CORS ===
-    CORS_ORIGINS: list[str] = Field(
-        default=["http://localhost:3000", "http://localhost:5173"],
-        description="Allowed origins for CORS (comma-separated in .env)"
+    # В env задаётся одна строка, через запятую: https://zeeframe.vercel.app или url1,url2
+    CORS_ORIGINS: str = Field(
+        default="http://localhost:3000,http://localhost:5173",
+        description="Allowed origins for CORS (comma-separated in .env)",
     )
 
-    @model_validator(mode="before")
-    @classmethod
-    def parse_cors_origins(cls, data: dict[str, object]) -> dict[str, object]:
-        """Parse CORS_ORIGINS from comma-separated string before validation."""
-        if "CORS_ORIGINS" in data:
-            cors_value = data["CORS_ORIGINS"]
-            if isinstance(cors_value, str):
-                data["CORS_ORIGINS"] = [
-                    origin.strip() for origin in cors_value.split(",") if origin.strip()
-                ]
-        return data
+    @computed_field
+    @property
+    def cors_origins_list(self) -> list[str]:
+        """Список origins для CORSMiddleware (парсим из строки)."""
+        return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
 
     # === Stripe ===
     STRIPE_SECRET_KEY: str | None = Field(
