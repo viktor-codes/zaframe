@@ -30,7 +30,7 @@ export const HeroSection = () => {
               className="text-center xl:text-left mb-6 text-zinc-900"
             >
               Ea
-              <span className="font-serif italic font-light bg-linear-to-r from-lime-400 to-teal-500 bg-clip-text text-transparent pl-0.5 pr-1">
+              <span className="font-serif italic font-light bg-linear-to-r from-lime-400 to-teal-500 bg-clip-text text-transparent pl-0.5 pr-1.5">
                 Zee
               </span>{" "}
               booking
