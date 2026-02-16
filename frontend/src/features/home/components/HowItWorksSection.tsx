@@ -39,7 +39,7 @@ export const HowItWorksSection = () => {
   return (
     <div
       ref={containerRef}
-      className="container mx-auto px-6 max-w-7xl relative"
+      className="container mx-auto px-6 max-w-7xl relative pb-36"
     >
       <div className="max-w-2xl mb-24">
         <SectionHeading size="label" className="text-teal-500 block mb-6">
@@ -58,19 +58,11 @@ export const HowItWorksSection = () => {
           <svg
             width="100%"
             height="100%"
-            viewBox="0 0 1000 1500"
+            viewBox="0 0 1000 1450"
             fill="none"
             preserveAspectRatio="none"
             className="overflow-visible"
           >
-            {/* <motion.path
-                className="hidden md:block"
-                d="M450 -50 C 800 150, 200 600, 500 900 C 800 1200, 200 1300, 400 1600"
-                stroke="#F4F4F5"
-                strokeWidth="10"
-                strokeDasharray="25 35"
-                strokeLinecap="round"
-              /> */}
             <motion.path
               className="hidden md:block"
               d="M450 -50 C 800 150, 200 600, 500 900 C 800 1200, 200 1300, 400 1600"
@@ -84,14 +76,6 @@ export const HowItWorksSection = () => {
               transition={{ duration: 5, ease: "linear" }}
             />
 
-            <motion.path
-              className="md:hidden"
-              d="M40 0 L 40 1500"
-              stroke="#F4F4F5"
-              strokeWidth="10"
-              strokeDasharray="15 25"
-              strokeLinecap="round"
-            />
             <motion.path
               className="md:hidden"
               d="M50 -25 L 40 1550"
