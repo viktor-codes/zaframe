@@ -14,7 +14,7 @@ interface Moment {
   username: string;
 }
 
-interface MomentsProps {}
+type MomentsProps = Record<string, never>;
 
 // Данные (оставляем те же)
 const moments: Moment[] = [
@@ -218,8 +218,12 @@ export const Moments = (_props: MomentsProps) => {
         </div>
 
         {/* Колонки: inView останавливает анимацию когда секция не видна */}
-        <div className="flex justify-center gap-6 md:gap-8 [mask-image:linear-gradient(to_bottom,transparent,black_15%,black_85%,transparent)] max-h-[700px] overflow-hidden">
-          <MomentsColumn moments={moments.slice(0, 3)} duration={22} inView={inView} />
+        <div className="flex justify-center gap-6 md:gap-8 mask-[linear-gradient(to_bottom,transparent,black_15%,black_85%,transparent)] max-h-[700px] overflow-hidden">
+          <MomentsColumn
+            moments={moments.slice(0, 3)}
+            duration={22}
+            inView={inView}
+          />
           <MomentsColumn
             moments={moments.slice(3, 6)}
             duration={28}
@@ -232,15 +236,6 @@ export const Moments = (_props: MomentsProps) => {
             className="hidden lg:block"
             inView={inView}
           />
-        </div>
-      </div>
-
-      {/* ZeeFrame декор */}
-      <div className="absolute bottom-12 left-6 md:left-12 z-20 pointer-events-none opacity-20">
-        <div className="flex flex-col items-start bg-zinc-950 p-4 border-l border-white/20">
-          <span className="text-[8px] font-mono text-zinc-500 tracking-[0.3em] uppercase">
-            Zee_Moment_Signature_2026
-          </span>
         </div>
       </div>
     </div>
