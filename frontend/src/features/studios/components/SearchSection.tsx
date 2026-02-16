@@ -240,8 +240,9 @@ export const SearchSection = () => {
         </div>
       </div>
 
+      {/* Лёгкий декор: на мобильном большой blur под меню даёт лаги при открытии overlay */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-teal-50/30 blur-[120px] rounded-full opacity-50" />
+        <div className="absolute top-0 left-1/4 w-64 h-64 md:w-72 md:h-72 bg-teal-50/30 blur-[48px] rounded-full opacity-50" />
       </div>
     </>
   );
