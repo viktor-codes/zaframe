@@ -140,3 +140,58 @@ async def create_order_checkout_session(
     await uow.session.flush()
 
     return {"checkout_url": session.url or "", "session_id": session.id}
+
+
+async def confirm_booking_after_payment(
+    uow: UnitOfWork,
+    booking_id: int,
+    *,
+    payment_intent_id: str | None = None,
+) -> bool:
+    """
+    Подтвердить бронирование после успешной оплаты (webhook).
+
+    Идемпотентно: если бронирование уже CONFIRMED — ничего не делаем, возвращаем True.
+    Возвращает True если подтверждено (или уже было подтверждено), False если бронирование не найдено.
+    """
+    booking = await uow.bookings.get_by_id(booking_id)
+    if booking is None:
+        return False
+    if booking.status == BookingStatus.CONFIRMED:
+        return True
+    booking.status = BookingStatus.CONFIRMED
+    booking.payment_status = "succeeded"
+    if payment_intent_id:
+        booking.payment_intent_id = payment_intent_id
+    await uow.session.flush()
+    return True
+
+
+async def confirm_order_after_payment(
+    uow: UnitOfWork,
+    order_id: int,
+    *,
+    payment_intent_id: str | None = None,
+) -> bool:
+    """
+    Подтвердить заказ и все связанные бронирования после успешной оплаты (webhook).
+
+    Идемпотентно: если заказ уже PAID — ничего не делаем, возвращаем True.
+    Возвращает True если подтверждено (или уже было), False если заказ не найден.
+    """
+    order = await uow.orders.get_by_id(order_id)
+    if order is None:
+        return False
+    if order.status == OrderStatus.PAID:
+        return True
+    order.status = OrderStatus.PAID
+    bookings = await uow.bookings.list_(order_id=order_id, limit=1000)
+    for booking in bookings:
+        if booking.status == BookingStatus.CONFIRMED:
+            continue
+        booking.status = BookingStatus.CONFIRMED
+        booking.payment_status = "succeeded"
+        if payment_intent_id:
+            booking.payment_intent_id = payment_intent_id
+    await uow.session.flush()
+    return True

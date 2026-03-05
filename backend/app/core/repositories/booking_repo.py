@@ -37,6 +37,7 @@ class BookingRepository:
         user_id: int | None = None,
         guest_email: str | None = None,
         status: str | None = None,
+        order_id: int | None = None,
     ) -> list[Booking]:
         query = select(Booking)
         if slot_id is not None:
@@ -47,6 +48,8 @@ class BookingRepository:
             query = query.where(Booking.guest_email == guest_email)
         if status is not None:
             query = query.where(Booking.status == status)
+        if order_id is not None:
+            query = query.where(Booking.order_id == order_id)
         query = query.offset(skip).limit(limit).order_by(Booking.created_at.desc())
         result = await self._session.execute(query)
         return list(result.scalars().all())
