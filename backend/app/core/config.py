@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     APP_NAME: str = Field(default="ZaFrame API", description="Smart Booking Service API")
     APP_VERSION: str = Field(default="0.1.0", description="Api Version")
     DEBUG: bool = Field(default=False, description="Debugging mode")
+    LOG_LEVEL: str = Field(default="INFO", description="Logging level (DEBUG, INFO, WARNING, ERROR)")
 
     # === Сервер ===
     HOST: str = Field(default="0.0.0.0", description="Host for server startup")

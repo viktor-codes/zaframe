@@ -4,6 +4,7 @@
 main.py остаётся минимальным: создание app, подключение роутеров, lifespan.
 Вся логика — в модулях core/, api/, services/.
 """
+import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -13,11 +14,18 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from app.api.v1 import auth, bookings, health, payments, services, slots, studios
-from app.core.exceptions import AppError
 from app.api.v1.endpoints import search
 from app.api.webhooks import router as webhooks_router
 from app.core.config import settings
 from app.core.database import engine
+from app.core.exceptions import AppError
+from app.core.logging_config import setup_logging
+from app.core.middleware.logging_middleware import (
+    REQUEST_ID_STATE_KEY,
+    RequestLoggingMiddleware,
+)
+
+logger = logging.getLogger(__name__)
 
 
 # === Lifespan Context Manager ===
@@ -29,16 +37,13 @@ from app.core.database import engine
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """
-    Lifespan context manager для управления подключением к БД.
+    Lifespan context manager для управления подключением к БД и логированием.
     
-    При старте: проверяем подключение к БД (опционально).
+    При старте: настройка логирования, при необходимости — проверка БД.
     При остановке: закрываем все соединения с БД.
     """
-    # Startup: здесь можно добавить проверку подключения к БД
-    # Пока просто пропускаем — engine сам управляет пулом соединений
+    setup_logging()
     yield
-    
-    # Shutdown: закрываем все соединения с БД
     await engine.dispose()
 
 
@@ -53,24 +58,58 @@ app = FastAPI(
 )
 
 
-# === Exception handlers (доменные исключения → HTTP) ===
-def _error_body(detail: str, status_code: int) -> dict:
+# === Exception handlers (доменные исключения → HTTP + логирование) ===
+def _error_body(detail: str, status_code: int, request_id: str | None = None) -> dict:
     """Единый формат тела ошибки (расширяем до RFC 7807 при необходимости)."""
-    return {"detail": detail}
+    body: dict = {"detail": detail}
+    if request_id:
+        body["request_id"] = request_id
+    return body
+
+
+def _request_id(request: Request) -> str | None:
+    return getattr(request.state, REQUEST_ID_STATE_KEY, None)
 
 
 async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
-    """Маппинг доменных исключений в HTTP-ответ."""
+    """Маппинг доменных исключений в HTTP-ответ и лог ошибки."""
+    request_id = _request_id(request)
+    logger.warning(
+        "app_error request_id=%s status=%s detail=%s",
+        request_id,
+        exc.status_code,
+        exc.detail,
+        exc_info=False,
+    )
     return JSONResponse(
         status_code=exc.status_code,
-        content=_error_body(exc.detail, exc.status_code),
+        content=_error_body(exc.detail, exc.status_code, request_id),
+    )
+
+
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Необработанное исключение: лог с traceback и ответ 500."""
+    request_id = _request_id(request)
+    logger.exception(
+        "unhandled_exception request_id=%s type=%s msg=%s",
+        request_id,
+        type(exc).__name__,
+        str(exc),
+    )
+    return JSONResponse(
+        status_code=500,
+        content=_error_body("Внутренняя ошибка сервера", 500, request_id),
     )
 
 
 app.add_exception_handler(AppError, app_error_handler)
+app.add_exception_handler(Exception, unhandled_exception_handler)
+
+# === Logging middleware (request_id + лог запроса/ответа) ===
+# Добавляем первым, чтобы оборачивать все запросы (последний добавленный выполняется первым).
+app.add_middleware(RequestLoggingMiddleware)
 
 # === CORS Middleware ===
-# Разрешаем запросы с фронтенда для разработки и production
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
