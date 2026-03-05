@@ -4,11 +4,9 @@ API роутер для платежей (Stripe Checkout).
 Операции:
 - POST /payments/checkout-session — создать Checkout Session для бронирования
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.api.deps import get_db, get_uow
+from app.api.deps import get_uow
 from app.core.uow import UnitOfWork
 from app.schemas.payment import (
     CheckoutSessionCreate,
@@ -34,18 +32,13 @@ async def create_checkout_session_endpoint(
     Возвращает URL для redirect пользователя на страницу оплаты Stripe.
     После успешной оплаты Stripe вызовет webhook и обновит статус бронирования.
     """
-    try:
-        result = await create_checkout_session(
-            uow,
-            schema.booking_id,
-            success_url=str(schema.success_url),
-            cancel_url=str(schema.cancel_url),
-        )
-        return CheckoutSessionResponse(**result)
-    except ValueError as e:
-        if "не найден" in str(e):
-            raise HTTPException(status_code=404, detail=str(e))
-        raise HTTPException(status_code=400, detail=str(e))
+    result = await create_checkout_session(
+        uow,
+        schema.booking_id,
+        success_url=str(schema.success_url),
+        cancel_url=str(schema.cancel_url),
+    )
+    return CheckoutSessionResponse(**result)
 
 
 @router.post(
@@ -62,15 +55,10 @@ async def create_order_checkout_session_endpoint(
 
     Сумма берётся из order.total_amount_cents, в metadata сессии попадает order_id.
     """
-    try:
-        result = await create_order_checkout_session(
-            uow,
-            schema.order_id,
-            success_url=str(schema.success_url),
-            cancel_url=str(schema.cancel_url),
-        )
-        return CheckoutSessionResponse(**result)
-    except ValueError as e:
-        if "не найден" in str(e):
-            raise HTTPException(status_code=404, detail=str(e))
-        raise HTTPException(status_code=400, detail=str(e))
+    result = await create_order_checkout_session(
+        uow,
+        schema.order_id,
+        success_url=str(schema.success_url),
+        cancel_url=str(schema.cancel_url),
+    )
+    return CheckoutSessionResponse(**result)

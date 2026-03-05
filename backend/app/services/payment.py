@@ -15,6 +15,7 @@ from sqlalchemy.orm import selectinload
 import stripe
 
 from app.core.config import settings
+from app.core.exceptions import AppError, NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
 from app.models.booking import Booking, BookingStatus
 from app.models.order import Order, OrderStatus
@@ -22,9 +23,9 @@ from app.models.slot import Slot
 
 
 def _get_stripe_client() -> stripe.StripeClient:
-    """Получить Stripe-клиент. Выбрасывает ValueError при отсутствии ключа."""
+    """Получить Stripe-клиент. Выбрасывает AppError при отсутствии ключа."""
     if not settings.STRIPE_SECRET_KEY:
-        raise ValueError("STRIPE_SECRET_KEY не настроен")
+        raise AppError("STRIPE_SECRET_KEY не настроен", status_code=503)
     return stripe.StripeClient(api_key=settings.STRIPE_SECRET_KEY)
 
 
@@ -48,15 +49,15 @@ async def create_checkout_session(
     )
     booking = result.scalar_one_or_none()
     if booking is None:
-        raise ValueError("Бронирование не найдено")
+        raise NotFoundError("Бронирование не найдено")
     if booking.status != BookingStatus.PENDING:
-        raise ValueError("Бронирование уже оплачено или отменено")
+        raise ValidationError("Бронирование уже оплачено или отменено")
     if booking.checkout_session_id:
-        raise ValueError("Checkout Session уже создан для этого бронирования")
+        raise ValidationError("Checkout Session уже создан для этого бронирования")
 
     slot: Slot = booking.slot
     if slot.price_cents <= 0:
-        raise ValueError("Слот не имеет цены для оплаты")
+        raise ValidationError("Слот не имеет цены для оплаты")
 
     client = _get_stripe_client()
     session = client.v1.checkout.sessions.create(
@@ -112,12 +113,12 @@ async def create_order_checkout_session(
     )
     order = result.scalar_one_or_none()
     if order is None:
-        raise ValueError("Заказ не найден")
+        raise NotFoundError("Заказ не найден")
     if order.status != OrderStatus.PENDING:
-        raise ValueError("Заказ уже оплачен или отменён")
+        raise ValidationError("Заказ уже оплачен или отменён")
 
     if order.total_amount_cents <= 0:
-        raise ValueError("Заказ не имеет суммы для оплаты")
+        raise ValidationError("Заказ не имеет суммы для оплаты")
 
     client = _get_stripe_client()
 
