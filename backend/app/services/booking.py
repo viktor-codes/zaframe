@@ -165,7 +165,7 @@ async def cancel_booking(uow: UnitOfWork, booking: Booking) -> Booking:
         raise ValidationError("Бронирование уже отменено")
 
     booking.status = BookingStatus.CANCELLED
-    booking.cancelled_at = datetime.utcnow()
+    booking.cancelled_at = datetime.now(timezone.utc)
     await db.flush()
     await db.refresh(booking)
     return booking

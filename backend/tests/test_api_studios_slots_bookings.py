@@ -4,7 +4,7 @@
 Проверяем, что end-to-end сценарии записи в БД работают корректно
 поверх текущей UoW-транзакционной модели.
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import re
 from unittest.mock import AsyncMock, patch
 
@@ -133,7 +133,7 @@ async def test_slot_and_booking_flow(client: AsyncClient):
     assert r_studio.json()["owner_id"] == user["id"]
 
     # Создаём слот в будущем
-    start = datetime.utcnow() + timedelta(hours=2)
+    start = datetime.now(timezone.utc) + timedelta(hours=2)
     end = start + timedelta(hours=1)
     r_slot = await client.post(
         "/api/v1/slots",

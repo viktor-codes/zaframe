@@ -579,7 +579,7 @@ async def get_studio_public(
     services_public: list[PublicService] = []
 
     # Собираем все будущие слоты студии, чтобы одним запросом посчитать заполненность.
-    now_utc = datetime.utcnow()
+    now_utc = datetime.now(timezone.utc)
     all_upcoming_slots: list[Slot] = []
     for service in studio.services:
         for slot in service.slots:
