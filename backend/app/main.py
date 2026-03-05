@@ -20,6 +20,8 @@ from app.core.config import settings
 from app.core.database import engine
 from app.core.exceptions import AppError
 from app.core.logging_config import setup_logging
+from app.core.rate_limit import limiter
+from slowapi.errors import RateLimitExceeded
 from app.core.middleware.logging_middleware import (
     REQUEST_ID_STATE_KEY,
     RequestLoggingMiddleware,
@@ -56,6 +58,24 @@ app = FastAPI(
     debug=settings.DEBUG,
     lifespan=lifespan,
 )
+
+app.state.limiter = limiter
+
+
+async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+    """429 в формате API: detail + заголовки лимита (X-RateLimit-*)."""
+    response = JSONResponse(
+        status_code=429,
+        content={"detail": "Превышен лимит запросов. Попробуйте позже."},
+    )
+    if hasattr(request.state, "view_rate_limit"):
+        response = request.app.state.limiter._inject_headers(
+            response, request.state.view_rate_limit
+        )
+    return response
+
+
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
 
 # === Exception handlers (доменные исключения → HTTP + логирование) ===

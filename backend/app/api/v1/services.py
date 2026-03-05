@@ -25,13 +25,14 @@ from app.services.service import (
     create_schedule,
     create_service,
     deactivate_service,
+    delete_schedule,
     get_schedule_or_raise,
     get_schedules_for_service,
     get_service_or_raise,
     get_service_availability,
     update_service,
 )
-from app.services.studio import ensure_studio_owner, get_studio
+from app.services.studio import ensure_studio_owner, get_studio_or_raise
 
 router = APIRouter(prefix="/services", tags=["services"])
 
@@ -47,7 +48,7 @@ async def create_service_endpoint(
 
     Требуется аутентификация и владение студией.
     """
-    studio = await get_studio(uow, schema.studio_id)
+    studio = await get_studio_or_raise(uow, schema.studio_id)
     ensure_studio_owner(studio, user.id)
 
     data = schema.model_dump(exclude={"studio_id"})
@@ -92,7 +93,7 @@ async def update_service_endpoint(
 ) -> ServiceResponse:
     """Обновить услугу (только владелец студии)."""
     service = await get_service_or_raise(uow, service_id)
-    studio = await get_studio(uow, service.studio_id)
+    studio = await get_studio_or_raise(uow, service.studio_id)
     ensure_studio_owner(studio, user.id)
     service = await update_service(uow, service, schema)
     return ServiceResponse.model_validate(service)
@@ -110,7 +111,7 @@ async def deactivate_service_endpoint(
     Связанные слоты и бронирования остаются в системе.
     """
     service = await get_service_or_raise(uow, service_id)
-    studio = await get_studio(uow, service.studio_id)
+    studio = await get_studio_or_raise(uow, service.studio_id)
     ensure_studio_owner(studio, user.id)
     service = await deactivate_service(uow, service)
     return ServiceResponse.model_validate(service)
@@ -145,7 +146,7 @@ async def create_service_schedule_endpoint(
     Создать шаблон расписания (Schedule) для услуги.
     """
     service = await get_service_or_raise(uow, service_id)
-    studio = await get_studio(uow, service.studio_id)
+    studio = await get_studio_or_raise(uow, service.studio_id)
     ensure_studio_owner(studio, user.id)
 
     schedule_schema = ScheduleCreate(
@@ -165,7 +166,7 @@ async def delete_schedule_endpoint(
     """Удалить шаблон расписания (только владелец студии услуги)."""
     schedule = await get_schedule_or_raise(uow, schedule_id)
     service = await get_service_or_raise(uow, schedule.service_id)
-    studio = await get_studio(uow, service.studio_id)
+    studio = await get_studio_or_raise(uow, service.studio_id)
     ensure_studio_owner(studio, user.id)
     await delete_schedule(uow, schedule)
 

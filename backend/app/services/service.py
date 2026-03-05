@@ -11,6 +11,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta, timezone
 
+from app.core.datetime_utils import to_naive_utc
 from app.core.exceptions import NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
 from app.models import (
@@ -41,17 +42,10 @@ from app.schemas import (
 )
 
 
-def _to_naive_utc(dt: datetime) -> datetime:
-    """Приводит datetime к naive UTC (как в core.database)."""
-    if dt.tzinfo is not None:
-        return dt.astimezone(timezone.utc).replace(tzinfo=None)
-    return dt
-
-
 def _combine_date_time(d: date, t: time) -> datetime:
     """Комбинирует date + time и приводит к naive UTC."""
     dt = datetime.combine(d, t)
-    return _to_naive_utc(dt)
+    return to_naive_utc(dt)
 
 
 async def create_service(uow: UnitOfWork, studio_id: int, data: dict) -> Service:

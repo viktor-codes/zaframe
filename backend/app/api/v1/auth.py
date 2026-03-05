@@ -6,9 +6,10 @@ Magic Link flow:
 2. GET /auth/magic-link/verify?token=xxx → возврат JWT (обычно вызывается с фронта после redirect)
 3. POST /auth/refresh {refresh_token} → обновление access token
 """
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 
 from app.api.deps import get_current_user_required, get_uow
+from app.core.rate_limit import limiter
 from app.core.uow import UnitOfWork
 from app.schemas.auth import (
     LogoutRequest,
@@ -30,7 +31,9 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/magic-link/request", response_model=MagicLinkSentResponse)
+@limiter.limit("5/minute")
 async def magic_link_request(
+    request: Request,
     schema: MagicLinkRequest,
     uow: UnitOfWork = Depends(get_uow),
 ) -> MagicLinkSentResponse:
@@ -45,7 +48,9 @@ async def magic_link_request(
 
 
 @router.get("/magic-link/verify")
+@limiter.limit("10/minute")
 async def magic_link_verify(
+    request: Request,
     token: str = Query(..., description="Токен из ссылки в письме"),
     uow: UnitOfWork = Depends(get_uow),
 ):
@@ -65,7 +70,9 @@ async def magic_link_verify(
 
 
 @router.post("/refresh", response_model=TokenResponse)
+@limiter.limit("30/minute")
 async def refresh_tokens(
+    request: Request,
     schema: RefreshTokenRequest,
     uow: UnitOfWork = Depends(get_uow),
 ) -> TokenResponse:

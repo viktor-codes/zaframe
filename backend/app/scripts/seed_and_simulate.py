@@ -2,29 +2,31 @@
 Утилита для сидирования демо-данных и имитации нагрузки.
 
 Цели:
-- создать N студий, у каждой по несколько услуг
-- сгенерировать расписание курсов на несколько недель
-- симулировать сотню "пользователей", которые случайно бронируют
-  одиночные занятия и курсы, проверяя надёжность бизнес-логики
+- создать N студий, у каждой по несколько услуг (single + course)
+- сгенерировать расписание курсов и слоты для одиночных занятий
+- симулировать пользователей: бронирования (single + course)
+- прогнать публичные сценарии и листинги (поиск студий, доступность)
+- опционально: создание Checkout Session (если настроен Stripe)
+
+Все вызовы идут через UnitOfWork и доменные исключения (AppError).
 
 Запуск (из директории backend):
     uv run python -m app.scripts.seed_and_simulate
-или:
-    python -m app.scripts.seed_and_simulate
 """
 from __future__ import annotations
 
+import argparse
 import asyncio
 import random
-from datetime import date, time, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 
-from fastapi import HTTPException
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, text
 
 from app.core.database import async_session_maker
 from app.core.config import settings
-from app.models.service import ServiceType, Service
+from app.core.exceptions import AppError
+from app.core.uow import UnitOfWork, create_uow
+from app.models.service import Service, ServiceType
 from app.models.slot import Slot
 from app.models.studio import Studio
 from app.models.user import User
@@ -35,6 +37,7 @@ from app.schemas.service import (
     StudioPublicResponse,
 )
 from app.schemas.studio import StudioCreate
+from app.schemas.slot import SlotCreate
 from app.services.booking import create_booking
 from app.services.payment import (
     create_checkout_session,
@@ -47,40 +50,58 @@ from app.services.service import (
     get_studio_public,
     occurrence_generator,
 )
-from app.services.studio import create_studio
+from app.services.studio import create_studio, get_studios, get_studios_count
+from app.services.slot import create_slot
 
 
-async def _create_owner(db: AsyncSession, idx: int) -> User:
-    """Создать владельца студий для демо."""
+async def _get_or_create_owner(uow: UnitOfWork, idx: int) -> User:
+    """
+    Найти или создать владельца для демо.
+    При повторном --force-seed пользователи остаются в БД — переиспользуем по email.
+    """
+    email = f"seed-demo-owner-{idx}@example.com"
+    user = await uow.users.get_by_email(email)
+    if user is not None:
+        return user
     user = User(
-        email=f"owner{idx}@example.com",
-        name=f"Owner {idx}",
+        email=email,
+        name=f"Demo Owner {idx}",
         phone=None,
         is_active=True,
     )
-    db.add(user)
-    await db.flush()
-    await db.refresh(user)
+    uow.session.add(user)
+    await uow.session.flush()
+    await uow.session.refresh(user)
     return user
 
 
+def _random_future_datetime(days_ahead: int, duration_minutes: int) -> tuple[datetime, datetime]:
+    """Случайные start/end в будущем (UTC)."""
+    d = date.today() + timedelta(days=random.randint(1, days_ahead))
+    hour = random.choice([9, 10, 12, 14, 18, 19, 20])
+    start = datetime.combine(d, time(hour, 0), tzinfo=timezone.utc)
+    end = start + timedelta(minutes=duration_minutes)
+    return start, end
+
+
 async def seed_demo_data(
-    db: AsyncSession,
+    uow: UnitOfWork,
     *,
-    studios_count: int = 10,
+    studios_count: int = 8,
     min_services: int = 3,
     max_services: int = 5,
-    weeks_count: int = 6,
+    weeks_count: int = 4,
+    single_slots_per_service: int = 3,
 ) -> None:
     """
-    Сидирует базу тестовыми студиями, услугами и расписанием.
+    Сидирует базу тестовыми студиями, услугами, расписанием курсов и слотами для single-class.
     """
     random.seed(42)
 
-    start_date = date.today() + timedelta(days=7)  # чтобы слоты точно были в будущем
+    start_date = date.today() + timedelta(days=7)
 
     for i in range(studios_count):
-        owner = await _create_owner(db, i)
+        owner = await _get_or_create_owner(uow, i)
         studio_schema = StudioCreate(
             name=f"Demo Studio {i + 1}",
             description="Demo studio for load testing",
@@ -89,10 +110,10 @@ async def seed_demo_data(
             address="Demo Address",
             owner_id=owner.id,
         )
-        studio = await create_studio(db, studio_schema)
-        # Прописываем slug, чтобы работал публичный эндпоинт по slug.
+        studio = await create_studio(uow, studio_schema)
         studio.slug = f"demo-studio-{i + 1}"
-        await db.flush()
+        studio.city = "Dublin"
+        await uow.session.flush()
 
         services_in_studio = random.randint(min_services, max_services)
         for j in range(services_in_studio):
@@ -120,75 +141,79 @@ async def seed_demo_data(
                 hard_limit_ratio=1.5,
                 max_overbooked_ratio=0.0 if not is_course else 0.3,
             )
-            service = await create_service(
-                db,
-                studio_id=studio.id,
-                data=service_schema.model_dump(exclude={"studio_id"}),
-            )
+            data = service_schema.model_dump(exclude={"studio_id"})
+            if hasattr(data.get("category"), "value"):
+                data["category"] = data["category"].value
+            service = await create_service(uow, studio_id=studio.id, data=data)
 
-            # Для курсов генерируем расписание на weeks_count недель
             if service.type == ServiceType.COURSE:
                 await occurrence_generator(
-                    db,
+                    uow,
                     studio_id=studio.id,
                     service_id=service.id,
-                    days=[1, 3],  # вторник и четверг, условно
+                    days=[1, 3],
                     start_time=time(18, 0),
                     weeks_count=weeks_count,
                     start_date=start_date,
                 )
+            else:
+                for _ in range(single_slots_per_service):
+                    start_dt, end_dt = _random_future_datetime(21, duration)
+                    slot_schema = SlotCreate(
+                        studio_id=studio.id,
+                        service_id=service.id,
+                        start_time=start_dt,
+                        end_time=end_dt,
+                        title=f"{service.name} — Drop-in",
+                        description=None,
+                        max_capacity=max_capacity,
+                        price_cents=price_single,
+                    )
+                    await create_slot(uow, slot_schema)
+
+    print(f"[seed] created {studios_count} studios with services and slots.")
 
 
 async def simulate_bookings(
-    db: AsyncSession,
+    uow: UnitOfWork,
     *,
-    users_count: int = 100,
+    users_count: int = 150,
     max_actions_per_user: int = 5,
 ) -> None:
     """
-    Имитация бронирований сотней "пользователей".
-
-    Каждый "пользователь" случайно выбирает действия:
-    - забронировать одиночный слот (guest booking)
-    - купить курс целиком (CourseBookingCreate)
+    Имитация бронирований: одиночные слоты и курсы.
     """
     random.seed(123)
 
-    # Забираем все услуги и слоты
-    services_result = await db.execute(select(Service))
+    services_result = await uow.session.execute(select(Service))
     services = list(services_result.scalars().all())
 
-    slots_result = await db.execute(
-        select(Slot).where(Slot.start_time >= date.today())
+    slots_result = await uow.session.execute(
+        select(Slot).where(Slot.start_time >= datetime.now(timezone.utc))
     )
     slots = list(slots_result.scalars().all())
 
     course_services = [s for s in services if s.type == ServiceType.COURSE]
+    single_slots = [
+        s for s in slots
+        if s.service_id is not None
+        and any(srv.id == s.service_id and srv.type == ServiceType.SINGLE_CLASS for srv in services)
+    ]
 
-    single_slots = [s for s in slots if s.service_id is None or any(
-        srv.id == s.service_id and srv.type == ServiceType.SINGLE_CLASS
-        for srv in services
-    )]
-
-    course_slots = [s for s in slots if any(
-        srv.id == s.service_id and srv.type == ServiceType.COURSE
-        for srv in services
-    )]
+    course_slots = [
+        s for s in slots
+        if any(srv.id == s.service_id and srv.type == ServiceType.COURSE for srv in services)
+    ]
 
     print(
-        f"[simulate] services={len(services)}, "
-        f"course_services={len(course_services)}, "
-        f"slots={len(slots)}, "
-        f"single_slots={len(single_slots)}, "
-        f"course_slots={len(course_slots)}"
+        f"[simulate] services={len(services)}, course_services={len(course_services)}, "
+        f"slots={len(slots)}, single_slots={len(single_slots)}, course_slots={len(course_slots)}"
     )
 
     course_success = 0
     course_failed = 0
     single_success = 0
     single_failed = 0
-
-    # Собираем идентификаторы для последующей симуляции платежей.
     single_booking_ids: list[int] = []
     course_order_ids: list[int] = []
 
@@ -209,15 +234,13 @@ async def simulate_bookings(
                     guest_phone=None,
                 )
                 try:
-                    course_resp = await create_course_booking(db, schema=schema)
+                    course_resp = await create_course_booking(uow, schema=schema)
                     course_success += 1
                     course_order_ids.append(course_resp.order.id)
-                except HTTPException:
-                    # Ожидаемо при отсутствии мест / конфликте
+                except AppError:
                     course_failed += 1
                 continue
 
-            # single booking
             if not single_slots:
                 continue
             slot = random.choice(single_slots)
@@ -228,129 +251,147 @@ async def simulate_bookings(
                 guest_phone=None,
             )
             try:
-                booking = await create_booking(db, schema)
+                booking = await create_booking(uow, schema)
                 single_success += 1
                 single_booking_ids.append(booking.id)
-            except HTTPException:
+            except AppError:
                 single_failed += 1
 
     print(
-        f"[simulate] single_success={single_success}, "
-        f"single_failed={single_failed}, "
-        f"course_success={course_success}, "
-        f"course_failed={course_failed}"
+        f"[simulate] single: success={single_success}, failed={single_failed}; "
+        f"course: success={course_success}, failed={course_failed}"
     )
 
-    # Дополнительно симулируем создание Checkout Session для части бронирований и заказов.
     if not settings.STRIPE_SECRET_KEY:
-        print("[payments] STRIPE_SECRET_KEY not configured, skipping checkout-session simulation.")
+        print("[payments] STRIPE_SECRET_KEY not set, skipping checkout-session simulation.")
         return
 
-    # Ограничиваем количество вызовов к Stripe, чтобы не перегружать тестовый аккаунт.
-    max_single_sessions = min(20, len(single_booking_ids))
-    max_course_sessions = min(10, len(course_order_ids))
+    max_single_sessions = min(25, len(single_booking_ids))
+    max_course_sessions = min(15, len(course_order_ids))
 
     for booking_id in single_booking_ids[:max_single_sessions]:
         try:
             await create_checkout_session(
-                db,
+                uow,
                 booking_id=booking_id,
                 success_url="https://example.com/payments/success",
                 cancel_url="https://example.com/payments/cancel",
             )
-        except ValueError as e:
-            # В контексте симуляции достаточно залогировать и идти дальше.
-            print(f"[payments] single booking_id={booking_id} checkout error: {e}")
+        except AppError as e:
+            print(f"[payments] booking_id={booking_id} checkout error: {e.detail}")
 
     for order_id in course_order_ids[:max_course_sessions]:
         try:
             await create_order_checkout_session(
-                db,
+                uow,
                 order_id=order_id,
                 success_url="https://example.com/payments/success",
                 cancel_url="https://example.com/payments/cancel",
             )
-        except ValueError as e:
-            print(f"[payments] order_id={order_id} checkout error: {e}")
+        except AppError as e:
+            print(f"[payments] order_id={order_id} checkout error: {e.detail}")
 
 
-async def simulate_public_flows(db: AsyncSession) -> None:
-    """
-    Имитация публичных сценариев:
-    - GET /studios/slug/{slug}/public
-    - GET /services/{id}/availability
-    """
-    # Берём несколько студий с заданным slug.
-    studios_result = await db.execute(
-        select(Studio).where(Studio.slug.is_not(None), Studio.is_active.is_(True)).limit(5)
+async def simulate_public_flows(uow: UnitOfWork) -> None:
+    """Публичные сценарии: студия по slug, доступность курса."""
+    studios_result = await uow.session.execute(
+        select(Studio).where(
+            Studio.slug.is_not(None),
+            Studio.is_active.is_(True),
+        ).limit(10)
     )
     studios = list(studios_result.scalars().all())
     if not studios:
-        print("[public] no studios with slug found, skipping public flow simulation.")
+        print("[public] no studios with slug, skipping.")
         return
 
-    total_services_checked = 0
-    total_courses_availability_checked = 0
+    total_services = 0
+    total_availability_calls = 0
 
     for studio in studios:
         try:
-            public: StudioPublicResponse = await get_studio_public(db, slug=studio.slug or "")
-        except HTTPException as e:
+            public: StudioPublicResponse = await get_studio_public(uow, slug=studio.slug or "")
+        except AppError as e:
             print(f"[public] get_studio_public slug={studio.slug} error: {e.detail}")
             continue
 
-        print(
-            f"[public] studio slug={studio.slug} services={len(public.services)}"
-        )
-        total_services_checked += len(public.services)
-
-        # Проверяем детальную доступность для первых нескольких курсов.
+        total_services += len(public.services)
         course_ids = [
-            svc.id
-            for svc in public.services
+            svc.id for svc in public.services
             if svc.type == ServiceType.COURSE and svc.occurrences_count > 0
         ]
         for service_id in course_ids[:3]:
             try:
-                availability = await get_service_availability(db, service_id=service_id)
-                print(
-                    f"[public] service_id={service_id} "
-                    f"can_book={availability.can_book} "
-                    f"days={len(availability.schedule_details)}"
-                )
-                total_courses_availability_checked += 1
-            except HTTPException as e:
-                print(f"[public] get_service_availability id={service_id} error: {e.detail}")
+                availability = await get_service_availability(uow, service_id=service_id)
+                total_availability_calls += 1
+            except AppError:
+                pass
 
-    print(
-        f"[public] checked services={total_services_checked}, "
-        f"course_availability_calls={total_courses_availability_checked}"
+    print(f"[public] studios_checked={len(studios)}, services={total_services}, availability_calls={total_availability_calls}")
+
+
+async def simulate_list_and_search(uow: UnitOfWork, *, rounds: int = 30) -> None:
+    """Нагрузка листингов и поиска: get_studios, get_studios_count."""
+    random.seed(456)
+    for _ in range(rounds):
+        skip = random.randint(0, 50)
+        limit = random.choice([10, 20, 50])
+        await get_studios(uow, skip=skip, limit=limit, is_active=True)
+        await get_studios_count(uow, is_active=True)
+        await get_studios(uow, skip=0, limit=10, city="Dublin")
+    print(f"[load] list/search rounds={rounds} done.")
+
+
+async def truncate_studios_services(uow: UnitOfWork) -> None:
+    """Очистить студии и услуги (CASCADE удалит слоты, бронирования, заказы)."""
+    await uow.session.execute(
+        text("TRUNCATE TABLE services, studios RESTART IDENTITY CASCADE")
     )
+    await uow.session.flush()
+    print("[seed] truncated studios and services.")
 
 
-async def main() -> None:
+async def main(force_seed: bool = False) -> None:
     """
-    Точка входа:
-    1) сидируем данные (если таблицы пустые)
-    2) запускаем симуляцию бронирований
+    1) Сидируем данные (при --force-seed сначала truncate)
+    2) Симуляция бронирований (single + course)
+    3) Публичные флоу (студия по slug, доступность)
+    4) Нагрузка листингов и поиска
     """
-    async with async_session_maker() as db:
-        # Простая эвристика: если услуг нет — сидируем.
-        result = await db.execute(select(Service))
-        existing_services = list(result.scalars().all())
-        if not existing_services:
-            print("[seed] no services found, seeding demo data...")
-            await seed_demo_data(db)
-        else:
-            print(f"[seed] found {len(existing_services)} services, skipping seeding.")
+    async with async_session_maker() as session:
+        uow = create_uow(session)
+        try:
+            result = await uow.session.execute(select(Service))
+            existing = list(result.scalars().all())
+            if force_seed and existing:
+                await truncate_studios_services(uow)
+                existing = []
+            if not existing:
+                print("[seed] seeding demo data...")
+                await seed_demo_data(uow)
+            else:
+                print(f"[seed] found {len(existing)} services, skipping seed.")
 
-        print("[simulate] starting bookings simulation...")
-        await simulate_bookings(db)
-        print("[simulate] starting public flows simulation...")
-        await simulate_public_flows(db)
-        print("[done] simulation finished.")
+            print("[simulate] bookings...")
+            await simulate_bookings(uow)
+            print("[simulate] public flows...")
+            await simulate_public_flows(uow)
+            print("[simulate] list/search load...")
+            await simulate_list_and_search(uow)
+
+            await uow.commit()
+            print("[done] commit ok.")
+        except Exception:
+            await uow.rollback()
+            raise
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
-
+    parser = argparse.ArgumentParser(description="Seed demo data and run load simulation")
+    parser.add_argument(
+        "--force-seed",
+        action="store_true",
+        help="Truncate studios/services and re-seed before simulating",
+    )
+    args = parser.parse_args()
+    asyncio.run(main(force_seed=args.force_seed))

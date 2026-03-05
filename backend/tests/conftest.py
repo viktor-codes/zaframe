@@ -2,8 +2,10 @@
 Общие фикстуры и настройки для тестов backend.
 
 Устанавливаем SECRET_KEY до импорта приложения, чтобы Settings() не падал.
+В тестах рейт-лимит по сути отключён (уникальный ключ на запрос).
 """
 import os
+import sys
 
 import pytest
 
@@ -14,6 +16,11 @@ if "SECRET_KEY" not in os.environ:
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "integration: mark test as integration (needs DB)")
+    # В тестах рейт-лимит отключён, чтобы не блокировать множественные запросы к одному эндпоинту
+    if "pytest" in sys.modules:
+        from app.core.rate_limit import limiter
+
+        limiter.enabled = False
 
 
 @pytest.fixture
@@ -36,11 +43,15 @@ async def app_with_rollback_uow():
             # Не коммитим — в конце теста делаем rollback
 
         app.dependency_overrides[get_uow] = get_uow_override
+        # Для интеграционных тестов webhook: одна и та же сессия на весь тест
+        app.state._integration_session = session
         try:
             yield app
         finally:
             await session.rollback()
             app.dependency_overrides.pop(get_uow, None)
+            if hasattr(app.state, "_integration_session"):
+                del app.state._integration_session
 
 
 @pytest.fixture

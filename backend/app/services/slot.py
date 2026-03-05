@@ -6,19 +6,13 @@
 - Валидация (end_time > start_time) в одном месте
 - Переиспользование при бронировании
 """
-from datetime import datetime, timezone
+from datetime import datetime
 
+from app.core.datetime_utils import to_naive_utc
 from app.core.exceptions import NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
 from app.models.slot import Slot
 from app.schemas.slot import SlotCreate, SlotUpdate
-
-
-def _to_naive_utc(dt: datetime) -> datetime:
-    """Приводит datetime к naive UTC для PostgreSQL TIMESTAMP WITHOUT TIME ZONE."""
-    if dt.tzinfo is not None:
-        return dt.astimezone(timezone.utc).replace(tzinfo=None)
-    return dt
 
 
 async def get_slot(uow: UnitOfWork, slot_id: int) -> Slot | None:
@@ -86,8 +80,9 @@ async def create_slot(uow: UnitOfWork, schema: SlotCreate) -> Slot:
 
     slot = Slot(
         studio_id=schema.studio_id,
-        start_time=_to_naive_utc(schema.start_time),
-        end_time=_to_naive_utc(schema.end_time),
+        service_id=schema.service_id,
+        start_time=to_naive_utc(schema.start_time),
+        end_time=to_naive_utc(schema.end_time),
         title=schema.title,
         description=schema.description,
         max_capacity=schema.max_capacity,
@@ -112,7 +107,7 @@ async def update_slot(
         raise ValidationError("Время окончания должно быть позже времени начала")
     for field, value in update_data.items():
         if field in ("start_time", "end_time") and value is not None:
-            value = _to_naive_utc(value)
+            value = to_naive_utc(value)
         setattr(slot, field, value)
     await uow.session.flush()
     await uow.session.refresh(slot)

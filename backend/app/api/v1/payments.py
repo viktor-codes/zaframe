@@ -4,9 +4,10 @@ API роутер для платежей (Stripe Checkout).
 Операции:
 - POST /payments/checkout-session — создать Checkout Session для бронирования
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 
 from app.api.deps import get_uow
+from app.core.rate_limit import limiter
 from app.core.uow import UnitOfWork
 from app.schemas.payment import (
     CheckoutSessionCreate,
@@ -22,7 +23,9 @@ router = APIRouter(prefix="/payments", tags=["payments"])
 
 
 @router.post("/checkout-session", response_model=CheckoutSessionResponse, status_code=201)
+@limiter.limit("10/minute")
 async def create_checkout_session_endpoint(
+    request: Request,
     schema: CheckoutSessionCreate,
     uow: UnitOfWork = Depends(get_uow),
 ) -> CheckoutSessionResponse:
@@ -46,7 +49,9 @@ async def create_checkout_session_endpoint(
     response_model=CheckoutSessionResponse,
     status_code=201,
 )
+@limiter.limit("10/minute")
 async def create_order_checkout_session_endpoint(
+    request: Request,
     schema: OrderCheckoutSessionCreate,
     uow: UnitOfWork = Depends(get_uow),
 ) -> CheckoutSessionResponse:

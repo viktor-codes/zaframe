@@ -7,9 +7,10 @@ API роутер для бронирований.
 - GET /bookings/{id} — одно бронирование
 - PATCH /bookings/{id}/cancel — отменить
 """
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 
 from app.api.deps import get_uow
+from app.core.rate_limit import limiter
 from app.core.uow import UnitOfWork
 from app.schemas import (
     BookingCreate,
@@ -30,7 +31,9 @@ router = APIRouter(prefix="/bookings", tags=["bookings"])
 
 
 @router.post("", response_model=BookingResponse | CourseBookingResponse, status_code=201)
+@limiter.limit("10/minute")
 async def create_booking_endpoint(
+    request: Request,
     schema: BookingCreate | CourseBookingCreate,
     uow: UnitOfWork = Depends(get_uow),
 ) -> BookingResponse | CourseBookingResponse:

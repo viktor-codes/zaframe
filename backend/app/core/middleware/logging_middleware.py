@@ -46,8 +46,10 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         status = response.status_code
         user_id = getattr(request.state, USER_ID_STATE_KEY, None)
 
-        logger.info(
-            "request_finished method=%s path=%s status=%s duration_ms=%.2f request_id=%s user_id=%s",
+        log_message = (
+            "request_finished method=%s path=%s status=%s duration_ms=%.2f request_id=%s user_id=%s"
+        )
+        log_args = (
             request.method,
             request.url.path,
             status,
@@ -55,6 +57,12 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             request_id,
             user_id,
         )
+        if status >= 500:
+            logger.error(log_message, *log_args)
+        elif status in (401, 403, 429):
+            logger.warning(log_message, *log_args)
+        else:
+            logger.info(log_message, *log_args)
 
         if REQUEST_ID_HEADER not in response.headers:
             response.headers[REQUEST_ID_HEADER] = request_id

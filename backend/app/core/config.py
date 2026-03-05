@@ -79,8 +79,9 @@ class Settings(BaseSettings):
     
     # === CORS ===
     # В env задаётся одна строка, через запятую: https://zeeframe.vercel.app или url1,url2
+    # Локально: укажи точный origin фронта (порт из браузера), например http://localhost:3001
     CORS_ORIGINS: str = Field(
-        default="http://localhost:3000,http://localhost:5173",
+        # default="http://localhost:3000,http://localhost:3001,http://localhost:5173,http://localhost:5174,http://127.0.0.1:3000,http://127.0.0.1:3001,http://127.0.0.1:5173",
         description="Allowed origins for CORS (comma-separated in .env)",
     )
 

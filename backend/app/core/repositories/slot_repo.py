@@ -6,14 +6,8 @@ from datetime import datetime
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.datetime_utils import to_naive_utc
 from app.models.slot import Slot
-
-
-def _to_naive_utc(dt: datetime) -> datetime:
-    from datetime import timezone
-    if dt.tzinfo is not None:
-        return dt.astimezone(timezone.utc).replace(tzinfo=None)
-    return dt
 
 
 class SlotRepository:
@@ -44,9 +38,9 @@ class SlotRepository:
         if studio_id is not None:
             query = query.where(Slot.studio_id == studio_id)
         if start_from is not None:
-            query = query.where(Slot.start_time >= _to_naive_utc(start_from))
+            query = query.where(Slot.start_time >= to_naive_utc(start_from))
         if start_to is not None:
-            query = query.where(Slot.start_time <= _to_naive_utc(start_to))
+            query = query.where(Slot.start_time <= to_naive_utc(start_to))
         if is_active is not None:
             query = query.where(Slot.is_active == is_active)
         query = query.offset(skip).limit(limit).order_by(Slot.start_time.asc())
@@ -65,9 +59,9 @@ class SlotRepository:
         if studio_id is not None:
             query = query.where(Slot.studio_id == studio_id)
         if start_from is not None:
-            query = query.where(Slot.start_time >= _to_naive_utc(start_from))
+            query = query.where(Slot.start_time >= to_naive_utc(start_from))
         if start_to is not None:
-            query = query.where(Slot.start_time <= _to_naive_utc(start_to))
+            query = query.where(Slot.start_time <= to_naive_utc(start_to))
         if is_active is not None:
             query = query.where(Slot.is_active == is_active)
         result = await self._session.execute(query)
