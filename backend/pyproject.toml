@@ -18,3 +18,8 @@ dependencies = [
     "resend>=2.0.0",
     "stripe>=11.0.0",
 ]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+]

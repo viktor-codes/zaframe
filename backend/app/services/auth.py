@@ -186,3 +186,45 @@ async def get_current_user_from_token(
     if user_id is None:
         return None
     return await get_user_by_id(db, user_id)
+
+
+async def logout_current_session(
+    db: AsyncSession,
+    user: User,
+    refresh_token: str,
+) -> None:
+    """
+    Выйти из текущей сессии (отозвать один refresh-token).
+
+    Поведение:
+    - если токен невалиден/не принадлежит пользователю — тихий no-op (idempotent logout)
+    - если сессия найдена и ещё активна — выставляем revoked_at/last_used_at.
+    """
+    payload = decode_token(refresh_token)
+    if payload is None or payload.get("type") != "refresh":
+        return
+
+    try:
+        user_id = int(payload["sub"])
+        jti = str(payload["jti"])
+    except (KeyError, ValueError, TypeError):
+        return
+
+    if user_id != user.id:
+        return
+
+    now_utc = datetime.now(timezone.utc)
+    result = await db.execute(
+        select(RefreshToken).where(
+            RefreshToken.user_id == user.id,
+            RefreshToken.jti == jti,
+        )
+    )
+    refresh_session = result.scalar_one_or_none()
+    if refresh_session is None:
+        return
+
+    if refresh_session.revoked_at is None:
+        refresh_session.revoked_at = now_utc
+        refresh_session.last_used_at = now_utc
+        await db.flush()

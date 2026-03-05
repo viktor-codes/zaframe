@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user_required, get_db
 from app.schemas.auth import (
+    LogoutRequest,
     MagicLinkRequest,
     MagicLinkSentResponse,
     RefreshTokenRequest,
@@ -20,6 +21,7 @@ from app.schemas.auth import (
 from app.models.user import User
 from app.schemas.user import UserResponse
 from app.services.auth import (
+    logout_current_session,
     refresh_access_token,
     request_magic_link,
     verify_magic_link,
@@ -74,6 +76,21 @@ async def refresh_tokens(
         access_token=access_token,
         refresh_token=refresh_token,
     )
+
+
+@router.post("/logout", status_code=204)
+async def logout(
+    schema: LogoutRequest,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user_required),
+) -> None:
+    """
+    Выйти из текущей сессии.
+
+    Отзывает один refresh-token, переданный в запросе.
+    Frontend после этого должен удалить access/refresh токены из хранилища.
+    """
+    await logout_current_session(db, user, schema.refresh_token)
 
 
 @router.get("/me", response_model=UserResponse)
