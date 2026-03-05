@@ -11,13 +11,14 @@ from app.core.config import settings
 from app.core.security import (
     create_access_token,
     create_refresh_token,
+    decode_token,
     generate_magic_link_token,
     get_magic_link_expires_at,
     get_user_id_from_access_token,
-    get_user_id_from_refresh_token,
     hash_magic_link_token,
 )
 from app.models.user import User
+from app.models.refresh_token import RefreshToken
 from app.services.email import send_magic_link_email
 from app.services.user import get_or_create_user, get_user_by_id
 
@@ -77,6 +78,31 @@ async def verify_magic_link(
 
     access_token = create_access_token(user.id, user.email)
     refresh_token = create_refresh_token(user.id)
+
+    # Регистрируем сессию refresh-токена
+    refresh_payload = decode_token(refresh_token)
+    if (
+        refresh_payload is not None
+        and refresh_payload.get("type") == "refresh"
+        and "jti" in refresh_payload
+        and "exp" in refresh_payload
+    ):
+        try:
+            jti = str(refresh_payload["jti"])
+            exp_ts = float(refresh_payload["exp"])
+            expires_at = datetime.fromtimestamp(exp_ts, tz=timezone.utc)
+        except (TypeError, ValueError):
+            jti = None
+        if jti:
+            db.add(
+                RefreshToken(
+                    user_id=user.id,
+                    jti=jti,
+                    expires_at=expires_at,
+                )
+            )
+            await db.flush()
+
     return user, access_token, refresh_token
 
 
@@ -90,15 +116,65 @@ async def refresh_access_token(
     Возвращает (access_token, refresh_token).
     Raises HTTPException если refresh token невалиден.
     """
-    user_id = get_user_id_from_refresh_token(refresh_token)
-    if user_id is None:
+    payload = decode_token(refresh_token)
+    if payload is None or payload.get("type") != "refresh":
         raise HTTPException(status_code=401, detail="Недействительный refresh token")
+
+    try:
+        user_id = int(payload["sub"])
+        jti = str(payload["jti"])
+    except (KeyError, ValueError, TypeError):
+        raise HTTPException(status_code=401, detail="Недействительный refresh token")
+
+    now_utc = datetime.now(timezone.utc)
+
+    # Проверяем, что сессия существует и активна
+    result = await db.execute(
+        select(RefreshToken).where(
+            RefreshToken.user_id == user_id,
+            RefreshToken.jti == jti,
+        )
+    )
+    refresh_session = result.scalar_one_or_none()
+    if refresh_session is None or not refresh_session.is_active(now_utc):
+        raise HTTPException(status_code=401, detail="Недействительный refresh token")
+
+    # Отзываем старый refresh-токен (ротация)
+    refresh_session.revoked_at = now_utc
+    refresh_session.last_used_at = now_utc
 
     user = await get_user_by_id(db, user_id)
     if user is None:
         raise HTTPException(status_code=401, detail="Пользователь не найден")
 
-    return create_access_token(user.id, user.email), create_refresh_token(user.id)
+    access_token = create_access_token(user.id, user.email)
+    new_refresh_token = create_refresh_token(user.id)
+
+    # Регистрируем новую сессию refresh-токена
+    new_payload = decode_token(new_refresh_token)
+    if (
+        new_payload is not None
+        and new_payload.get("type") == "refresh"
+        and "jti" in new_payload
+        and "exp" in new_payload
+    ):
+        try:
+            new_jti = str(new_payload["jti"])
+            new_exp_ts = float(new_payload["exp"])
+            new_expires_at = datetime.fromtimestamp(new_exp_ts, tz=timezone.utc)
+        except (TypeError, ValueError):
+            new_jti = None
+        if new_jti:
+            db.add(
+                RefreshToken(
+                    user_id=user.id,
+                    jti=new_jti,
+                    expires_at=new_expires_at,
+                )
+            )
+
+    await db.flush()
+    return access_token, new_refresh_token
 
 
 async def get_current_user_from_token(

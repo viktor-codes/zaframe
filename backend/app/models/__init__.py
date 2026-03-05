@@ -14,6 +14,7 @@ from app.models.user import User
 from app.models.order import Order, OrderStatus
 from app.models.service import Service, ServiceType, ServiceCategory
 from app.models.schedule import Schedule
+from app.models.refresh_token import RefreshToken
 
 __all__ = [
     "Base",
@@ -30,4 +31,5 @@ __all__ = [
     "ServiceType",
     "ServiceCategory",
     "Schedule",
+    "RefreshToken",
 ]
