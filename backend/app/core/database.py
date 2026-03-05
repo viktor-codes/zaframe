@@ -59,10 +59,6 @@ class Base(DeclarativeBase):
     pass
 
 
-# === Dependency для FastAPI ===
-# Функция-зависимость для получения сессии БД в роутерах.
-# Используется через Depends(get_db) в эндпоинтах.
-# Гарантирует закрытие сессии после использования (через yield).
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
     Dependency для получения сессии БД в роутерах.
@@ -74,11 +70,4 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             return result.scalars().all()
     """
     async with async_session_maker() as session:
-        try:
-            yield session
-            await session.commit()  # Коммит при успешном выполнении
-        except Exception:
-            await session.rollback()  # Откат при ошибке
-            raise
-        finally:
-            await session.close()  # Закрытие сессии
+        yield session
