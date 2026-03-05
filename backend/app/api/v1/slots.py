@@ -14,9 +14,8 @@ CRUD операции:
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user_required, get_db, get_uow
+from app.api.deps import get_current_user_required, get_uow
 from app.core.uow import UnitOfWork
 from app.models.user import User
 from app.services.studio import ensure_studio_owner, get_studio_or_raise
@@ -38,7 +37,7 @@ router = APIRouter(prefix="/slots", tags=["slots"])
 
 @router.get("", response_model=list[SlotResponse])
 async def list_slots(
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
     skip: int = Query(0, ge=0, description="Пропустить N записей"),
     limit: int = Query(20, ge=1, le=100, description="Максимум записей"),
     studio_id: int | None = Query(None, description="Фильтр по студии"),
@@ -52,7 +51,7 @@ async def list_slots(
     Для расписания студии: studio_id + start_from/start_to.
     """
     slots = await get_slots(
-        db,
+        uow,
         skip=skip,
         limit=limit,
         studio_id=studio_id,
@@ -65,7 +64,7 @@ async def list_slots(
 
 @router.get("/count")
 async def count_slots(
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
     studio_id: int | None = Query(None, description="Фильтр по студии"),
     start_from: datetime | None = Query(None, description="Начало диапазона дат"),
     start_to: datetime | None = Query(None, description="Конец диапазона дат"),
@@ -73,7 +72,7 @@ async def count_slots(
 ) -> dict[str, int]:
     """Количество слотов (для пагинации)."""
     count = await get_slots_count(
-        db,
+        uow,
         studio_id=studio_id,
         start_from=start_from,
         start_to=start_to,
@@ -85,25 +84,25 @@ async def count_slots(
 @router.get("/{slot_id}/bookings", response_model=list[BookingResponse])
 async def list_slot_bookings(
     slot_id: int,
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     status: str | None = Query(None, description="Фильтр по статусу"),
 ) -> list[BookingResponse]:
     """Бронирования слота."""
-    await get_slot_or_raise(db, slot_id)
+    await get_slot_or_raise(uow, slot_id)
     return await get_bookings(
-        db, skip=skip, limit=limit, slot_id=slot_id, status=status
+        uow, skip=skip, limit=limit, slot_id=slot_id, status=status
     )
 
 
 @router.get("/{slot_id}", response_model=SlotResponse)
 async def get_slot_by_id(
     slot_id: int,
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> SlotResponse:
     """Получить слот по ID."""
-    return await get_slot_or_raise(db, slot_id)
+    return await get_slot_or_raise(uow, slot_id)
 
 
 @router.post("", response_model=SlotResponse, status_code=201)
@@ -115,8 +114,7 @@ async def create_slot_endpoint(
     """
     Создать слот (требуется аутентификация, владелец студии).
     """
-    db = uow.session
-    studio = await get_studio_or_raise(db, schema.studio_id)
+    studio = await get_studio_or_raise(uow, schema.studio_id)
     ensure_studio_owner(studio, user.id)
     return await create_slot(uow, schema)
 
@@ -129,9 +127,8 @@ async def update_slot_endpoint(
     uow: UnitOfWork = Depends(get_uow),
 ) -> SlotResponse:
     """Обновить слот (только владелец студии)."""
-    db = uow.session
-    slot = await get_slot_or_raise(db, slot_id)
-    studio = await get_studio_or_raise(db, slot.studio_id)
+    slot = await get_slot_or_raise(uow, slot_id)
+    studio = await get_studio_or_raise(uow, slot.studio_id)
     ensure_studio_owner(studio, user.id)
     return await update_slot(uow, slot, schema)
 
@@ -143,8 +140,7 @@ async def delete_slot_endpoint(
     uow: UnitOfWork = Depends(get_uow),
 ) -> None:
     """Удалить слот (только владелец студии). Удалятся и связанные бронирования."""
-    db = uow.session
-    slot = await get_slot_or_raise(db, slot_id)
-    studio = await get_studio_or_raise(db, slot.studio_id)
+    slot = await get_slot_or_raise(uow, slot_id)
+    studio = await get_studio_or_raise(uow, slot.studio_id)
     ensure_studio_owner(studio, user.id)
     await delete_slot(uow, slot)

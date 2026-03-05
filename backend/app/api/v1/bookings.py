@@ -8,9 +8,8 @@ API роутер для бронирований.
 - PATCH /bookings/{id}/cancel — отменить
 """
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db, get_uow
+from app.api.deps import get_uow
 from app.core.uow import UnitOfWork
 from app.schemas import (
     BookingCreate,
@@ -51,7 +50,7 @@ async def create_booking_endpoint(
 
 @router.get("", response_model=list[BookingResponse])
 async def list_bookings(
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
     skip: int = Query(0, ge=0, description="Пропустить N записей"),
     limit: int = Query(20, ge=1, le=100, description="Максимум записей"),
     slot_id: int | None = Query(None, description="Фильтр по слоту"),
@@ -61,7 +60,7 @@ async def list_bookings(
 ) -> list[BookingResponse]:
     """Список бронирований с фильтрами."""
     bookings = await get_bookings(
-        db,
+        uow,
         skip=skip,
         limit=limit,
         slot_id=slot_id,
@@ -74,7 +73,7 @@ async def list_bookings(
 
 @router.get("/count")
 async def count_bookings(
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
     slot_id: int | None = Query(None, description="Фильтр по слоту"),
     user_id: int | None = Query(None, description="Фильтр по пользователю"),
     guest_email: str | None = Query(None, description="Фильтр по email гостя"),
@@ -82,7 +81,7 @@ async def count_bookings(
 ) -> dict[str, int]:
     """Количество бронирований (для пагинации)."""
     count = await get_bookings_count(
-        db,
+        uow,
         slot_id=slot_id,
         user_id=user_id,
         guest_email=guest_email,
@@ -94,10 +93,10 @@ async def count_bookings(
 @router.get("/{booking_id}", response_model=BookingResponse)
 async def get_booking_by_id(
     booking_id: int,
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> BookingResponse:
     """Получить бронирование по ID."""
-    return await get_booking_or_raise(db, booking_id)
+    return await get_booking_or_raise(uow, booking_id)
 
 
 @router.patch("/{booking_id}/cancel", response_model=BookingResponse)
@@ -106,6 +105,5 @@ async def cancel_booking_endpoint(
     uow: UnitOfWork = Depends(get_uow),
 ) -> BookingResponse:
     """Отменить бронирование."""
-    db = uow.session
-    booking = await get_booking_or_raise(db, booking_id)
+    booking = await get_booking_or_raise(uow, booking_id)
     return await cancel_booking(uow, booking)

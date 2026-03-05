@@ -11,10 +11,6 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta, timezone
 
-from sqlalchemy import and_, func, select, case
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-
 from app.core.exceptions import NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
 from app.models import (
@@ -60,26 +56,21 @@ def _combine_date_time(d: date, t: time) -> datetime:
 
 async def create_service(uow: UnitOfWork, studio_id: int, data: dict) -> Service:
     """Создать услугу."""
-    db = uow.session
-    service = Service(
-        studio_id=studio_id,
-        **data,
-    )
-    db.add(service)
-    await db.flush()
-    await db.refresh(service)
+    service = Service(studio_id=studio_id, **data)
+    uow.session.add(service)
+    await uow.session.flush()
+    await uow.session.refresh(service)
     return service
 
 
-async def get_service(db: AsyncSession, service_id: int) -> Service | None:
+async def get_service(uow: UnitOfWork, service_id: int) -> Service | None:
     """Получить услугу по ID."""
-    result = await db.execute(select(Service).where(Service.id == service_id))
-    return result.scalar_one_or_none()
+    return await uow.services.get_by_id(service_id)
 
 
-async def get_service_or_raise(db: AsyncSession, service_id: int) -> Service:
+async def get_service_or_raise(uow: UnitOfWork, service_id: int) -> Service:
     """Получить услугу по ID или выбросить NotFoundError."""
-    service = await get_service(db, service_id)
+    service = await uow.services.get_by_id(service_id)
     if service is None:
         raise NotFoundError("Услуга не найдена")
     return service
@@ -91,37 +82,25 @@ async def update_service(
     schema: ServiceUpdate,
 ) -> Service:
     """Обновить услугу (partial update)."""
-    db = uow.session
     update_data = schema.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(service, field, value)
-    await db.flush()
-    await db.refresh(service)
+    await uow.session.flush()
+    await uow.session.refresh(service)
     return service
 
 
 async def deactivate_service(uow: UnitOfWork, service: Service) -> Service:
-    """
-    Деактивировать услугу.
-
-    Жёстко не удаляем, чтобы не ломать существующие слоты/бронирования.
-    """
-    db = uow.session
+    """Деактивировать услугу (не удаляем, чтобы не ломать слоты/бронирования)."""
     service.is_active = False
-    await db.flush()
-    await db.refresh(service)
+    await uow.session.flush()
+    await uow.session.refresh(service)
     return service
 
 
 async def create_schedule(uow: UnitOfWork, schema: ScheduleCreate) -> Schedule:
     """Создать шаблон расписания для услуги."""
-    db = uow.session
-    # Проверяем, что услуга существует и принадлежит студии
-    result = await db.execute(
-        select(Service).where(Service.id == schema.service_id)
-    )
-    service = result.scalar_one_or_none()
-    if service is None:
+    if await uow.services.get_by_id(schema.service_id) is None:
         raise NotFoundError("Услуга не найдена")
 
     schedule = Schedule(
@@ -131,45 +110,35 @@ async def create_schedule(uow: UnitOfWork, schema: ScheduleCreate) -> Schedule:
         valid_from=schema.valid_from,
         valid_to=schema.valid_to,
     )
-    db.add(schedule)
-    await db.flush()
-    await db.refresh(schedule)
+    uow.session.add(schedule)
+    await uow.session.flush()
+    await uow.session.refresh(schedule)
     return schedule
 
 
 async def get_schedules_for_service(
-    db: AsyncSession,
+    uow: UnitOfWork,
     *,
     service_id: int,
 ) -> list[Schedule]:
     """Получить все шаблоны расписания для услуги."""
-    result = await db.execute(
-        select(Schedule).where(Schedule.service_id == service_id).order_by(
-            Schedule.day_of_week, Schedule.start_time
-        )
-    )
-    return list(result.scalars().all())
+    return await uow.schedules.list_by_service_id(service_id)
 
 
-async def get_schedule(db: AsyncSession, schedule_id: int) -> Schedule | None:
+async def get_schedule(uow: UnitOfWork, schedule_id: int) -> Schedule | None:
     """Получить один шаблон расписания."""
-    result = await db.execute(select(Schedule).where(Schedule.id == schedule_id))
-    return result.scalar_one_or_none()
+    return await uow.schedules.get_by_id(schedule_id)
 
 
 async def delete_schedule(uow: UnitOfWork, schedule: Schedule) -> None:
     """Удалить шаблон расписания."""
-    db = uow.session
-    await db.delete(schedule)
-    await db.flush()
+    await uow.session.delete(schedule)
+    await uow.session.flush()
 
 
-async def get_schedule_or_raise(
-    db: AsyncSession,
-    schedule_id: int,
-) -> Schedule:
+async def get_schedule_or_raise(uow: UnitOfWork, schedule_id: int) -> Schedule:
     """Получить шаблон расписания или выбросить NotFoundError."""
-    schedule = await get_schedule(db, schedule_id)
+    schedule = await uow.schedules.get_by_id(schedule_id)
     if schedule is None:
         raise NotFoundError("Расписание не найдено")
     return schedule
@@ -200,19 +169,12 @@ async def occurrence_generator(
     POST /studios/{id}/generate-schedule
     Payload: {service_id, days: [1,3], start_time, weeks_count}
     """
-    db = uow.session
     if weeks_count <= 0:
         raise ValidationError("weeks_count должен быть > 0")
     if not days:
         raise ValidationError("Список days не может быть пустым")
 
-    result = await db.execute(
-        select(Service).where(
-            Service.id == service_id,
-            Service.studio_id == studio_id,
-        )
-    )
-    service = result.scalar_one_or_none()
+    service = await uow.services.get_by_studio_and_id(studio_id, service_id)
     if service is None:
         raise NotFoundError("Услуга не найдена в этой студии")
 
@@ -250,18 +212,9 @@ async def occurrence_generator(
     min_start = min(s for s, _ in planned_intervals)
     max_end = max(e for _, e in planned_intervals)
 
-    # Проверка на наложение с уже существующими занятиями этого же сервиса.
-    existing_q = (
-        select(Slot)
-        .where(
-            Slot.studio_id == studio_id,
-            Slot.service_id == service_id,
-            Slot.start_time < max_end,
-            Slot.end_time > min_start,
-        )
+    existing_slots = await uow.slots.list_overlapping(
+        studio_id, service_id, min_start, max_end
     )
-    existing_result = await db.execute(existing_q)
-    existing_slots: list[Slot] = list(existing_result.scalars().all())
 
     if existing_slots:
         raise ValidationError(
@@ -284,13 +237,12 @@ async def occurrence_generator(
             price_cents=service.price_single_cents,
             course_price_cents=service.price_course_cents,
         )
-        db.add(slot)
+        uow.session.add(slot)
         created_slots.append(slot)
 
-    await db.flush()
-    # Обновляем объекты, чтобы у них появились id
+    await uow.session.flush()
     for slot in created_slots:
-        await db.refresh(slot)
+        await uow.session.refresh(slot)
     return created_slots
 
 
@@ -306,85 +258,50 @@ class _CapacityStats:
 
 
 async def _get_course_slots_with_capacity(
-    db: AsyncSession,
+    uow: UnitOfWork,
     *,
     service: Service,
     for_update: bool = False,
 ) -> list[_CapacityStats]:
     """Получить все слоты курса и их текущую заполненность."""
-    slots_q = select(Slot).where(
-        Slot.service_id == service.id,
-        Slot.status == "active",
-        Slot.is_active.is_(True),
+    slots = await uow.slots.list_by_service_active(
+        service.id, for_update=for_update
     )
-    if for_update:
-        slots_q = slots_q.with_for_update()
-    slots_q = slots_q.order_by(Slot.start_time.asc())
-    slots_result = await db.execute(slots_q)
-    slots: list[Slot] = list(slots_result.scalars().all())
-
     if not slots:
         return []
 
     slot_ids = [s.id for s in slots]
-    # Считаем confirmed/pending по каждому слоту
-    counts_q = select(
-        Booking.slot_id,
-        func.sum(
-            case(
-                (Booking.status == BookingStatus.CONFIRMED, 1),
-                else_=0,
-            )
-        ).label("confirmed"),
-        func.sum(
-            case(
-                (Booking.status == BookingStatus.PENDING, 1),
-                else_=0,
-            )
-        ).label("pending"),
-    ).where(Booking.slot_id.in_(slot_ids)).group_by(Booking.slot_id)
-    counts_result = await db.execute(counts_q)
-    counts_map: dict[int, tuple[int, int]] = {
-        row.slot_id: (row.confirmed or 0, row.pending or 0)
-        for row in counts_result
-    }
+    counts_map = await uow.bookings.get_confirmed_pending_counts_by_slot_ids(
+        slot_ids
+    )
 
-    stats: list[_CapacityStats] = []
-    for slot in slots:
-        confirmed, pending = counts_map.get(slot.id, (0, 0))
-        stats.append(
-            _CapacityStats(
-                slot=slot,
-                confirmed_count=confirmed,
-                pending_count=pending,
-            )
+    return [
+        _CapacityStats(
+            slot=slot,
+            confirmed_count=counts_map.get(slot.id, (0, 0))[0],
+            pending_count=counts_map.get(slot.id, (0, 0))[1],
         )
-    return stats
+        for slot in slots
+    ]
 
 
 async def check_course_availability(
-    db: AsyncSession,
+    uow: UnitOfWork,
     *,
     service_id: int,
     for_update: bool = False,
 ) -> CourseAvailabilityResult:
     """
     Проверка доступности курса с учётом overbooking‑логики.
-
-    Параметры:
-    - soft_limit_ratio: до какого уровня относительно max_capacity считаем "нормой"
-    - hard_limit_ratio: жёсткий предел (выше — блокируем покупку)
-    - max_overbooked_ratio: доля слотов, которые могут быть сверх soft‑лимита
     """
-    result = await db.execute(select(Service).where(Service.id == service_id))
-    service = result.scalar_one_or_none()
+    service = await uow.services.get_by_id(service_id)
     if service is None:
         raise NotFoundError("Услуга не найдена")
     if service.type != ServiceType.COURSE:
         raise ValidationError("Услуга не является курсом")
 
     stats = await _get_course_slots_with_capacity(
-        db,
+        uow,
         service=service,
         for_update=for_update,
     )
@@ -464,9 +381,8 @@ async def create_course_booking(
 
     Важно: операция атомарна в рамках AsyncSession/транзакции.
     """
-    db = uow.session
     availability = await check_course_availability(
-        db,
+        uow,
         service_id=schema.service_id,
         for_update=True,
     )
@@ -475,13 +391,7 @@ async def create_course_booking(
             availability.message or "Недостаточно мест для курса",
         )
 
-    # Получаем слоты ещё раз, чтобы зафиксировать актуальный список
-    result = await db.execute(
-        select(Service)
-        .options(selectinload(Service.slots))
-        .where(Service.id == schema.service_id)
-    )
-    service = result.scalar_one_or_none()
+    service = await uow.services.get_by_id_with_slots(schema.service_id)
     if service is None:
         raise NotFoundError("Услуга не найдена")
 
@@ -511,9 +421,9 @@ async def create_course_booking(
         currency="eur",
         status=OrderStatus.PENDING,
     )
-    db.add(order)
-    await db.flush()
-    await db.refresh(order)
+    uow.session.add(order)
+    await uow.session.flush()
+    await uow.session.refresh(order)
 
     bookings: list[Booking] = []
     for idx, slot in enumerate(slots):
@@ -531,12 +441,12 @@ async def create_course_booking(
             order_id=order.id,
             unit_price_cents=unit_price,
         )
-        db.add(booking)
+        uow.session.add(booking)
         bookings.append(booking)
 
-    await db.flush()
+    await uow.session.flush()
     for b in bookings:
-        await db.refresh(b)
+        await uow.session.refresh(b)
 
     order_schema = OrderResponse.model_validate(order)
     # Отложим полноценный маппинг BookingResponse, пока основной поток остаётся single-slot
@@ -554,7 +464,7 @@ async def create_course_booking(
 
 
 async def get_studio_public(
-    db: AsyncSession,
+    uow: UnitOfWork,
     *,
     slug: str,
 ) -> StudioPublicResponse:
@@ -565,14 +475,7 @@ async def get_studio_public(
     - основную информацию о студии
     - список услуг с ближайшими occurrence'ами.
     """
-    from app.models import Studio  # локальный импорт, чтобы не плодить зависимостей
-
-    studio_result = await db.execute(
-        select(Studio)
-        .options(selectinload(Studio.services).selectinload(Service.slots))
-        .where(Studio.slug == slug, Studio.is_active.is_(True))
-    )
-    studio = studio_result.scalar_one_or_none()
+    studio = await uow.studios.get_by_slug_with_services_slots(slug)
     if studio is None:
         raise NotFoundError("Студия не найдена")
 
@@ -593,30 +496,9 @@ async def get_studio_public(
     slot_capacity_map: dict[int, tuple[int, int]] = {}
     if all_upcoming_slots:
         slot_ids = [s.id for s in all_upcoming_slots]
-        counts_q = (
-            select(
-                Booking.slot_id,
-                func.sum(
-                    case(
-                        (Booking.status == BookingStatus.CONFIRMED, 1),
-                        else_=0,
-                    )
-                ).label("confirmed"),
-                func.sum(
-                    case(
-                        (Booking.status == BookingStatus.PENDING, 1),
-                        else_=0,
-                    )
-                ).label("pending"),
-            )
-            .where(Booking.slot_id.in_(slot_ids))
-            .group_by(Booking.slot_id)
+        slot_capacity_map = await uow.bookings.get_confirmed_pending_counts_by_slot_ids(
+            slot_ids
         )
-        counts_result = await db.execute(counts_q)
-        slot_capacity_map = {
-            row.slot_id: (row.confirmed or 0, row.pending or 0)
-            for row in counts_result
-        }
 
     for service in studio.services:
         # Берём только будущие слоты этого сервиса (уже загружены через selectinload)
@@ -708,7 +590,7 @@ async def get_studio_public(
 
 
 async def get_service_availability(
-    db: AsyncSession,
+    uow: UnitOfWork,
     *,
     service_id: int,
     start_date: date | None = None,
@@ -718,21 +600,19 @@ async def get_service_availability(
 
     Используется для pre‑check перед оплатой (модалка с календарём).
     """
-    result = await db.execute(select(Service).where(Service.id == service_id))
-    service = result.scalar_one_or_none()
+    service = await uow.services.get_by_id(service_id)
     if service is None:
         raise NotFoundError("Услуга не найдена")
     if service.type != ServiceType.COURSE:
         raise ValidationError("Услуга не является курсом")
 
-    # Общая агрегация (can_book, requires_warning, message)
     availability = await check_course_availability(
-        db,
+        uow,
         service_id=service_id,
         for_update=False,
     )
 
-    stats = await _get_course_slots_with_capacity(db, service=service)
+    stats = await _get_course_slots_with_capacity(uow, service=service)
     if start_date is not None:
         stats = [
             s

@@ -17,17 +17,35 @@ from starlette.requests import Request
 from app.core.database import async_session_maker, get_db
 from app.core.exceptions import UnauthorizedError
 from app.core.middleware.logging_middleware import USER_ID_STATE_KEY
-from app.core.uow import UnitOfWork
+from app.core.uow import UnitOfWork, create_uow
 from app.models.user import User
 from app.services.auth import get_current_user_from_token
 
 security = HTTPBearer(auto_error=False)
 
 
+async def get_uow() -> AsyncGenerator[UnitOfWork, None]:
+    """
+    Unit of Work с управлением транзакцией для write-сценариев.
+
+    - создаём AsyncSession
+    - оборачиваем в UnitOfWork с репозиториями (create_uow)
+    - при успехе коммитим, при ошибке откатываем.
+    """
+    async with async_session_maker() as session:
+        uow = create_uow(session)
+        try:
+            yield uow
+            await uow.commit()
+        except Exception:
+            await uow.rollback()
+            raise
+
+
 async def get_current_user(
     request: Request,
     credentials: HTTPAuthorizationCredentials | None = Depends(security),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> User | None:
     """
     Получить текущего пользователя по Bearer token.
@@ -38,7 +56,7 @@ async def get_current_user(
     """
     if credentials is None:
         return None
-    user = await get_current_user_from_token(db, credentials.credentials)
+    user = await get_current_user_from_token(uow, credentials.credentials)
     if user is not None:
         setattr(request.state, USER_ID_STATE_KEY, str(user.id))
     return user
@@ -55,24 +73,6 @@ async def get_current_user_required(
     if user is None:
         raise UnauthorizedError("Требуется аутентификация")
     return user
-
-
-async def get_uow() -> AsyncGenerator[UnitOfWork, None]:
-    """
-    Unit of Work с управлением транзакцией для write-сценариев.
-
-    - создаём AsyncSession
-    - оборачиваем его в UnitOfWork
-    - при успехе коммитим, при ошибке откатываем.
-    """
-    async with async_session_maker() as session:
-        uow = UnitOfWork(session=session)
-        try:
-            yield uow
-            await uow.commit()
-        except Exception:
-            await uow.rollback()
-            raise
 
 
 __all__ = ["get_db", "get_current_user", "get_current_user_required", "get_uow"]

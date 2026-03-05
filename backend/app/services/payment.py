@@ -8,10 +8,6 @@
 """
 from __future__ import annotations
 
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-
 import stripe
 
 from app.core.config import settings
@@ -41,13 +37,7 @@ async def create_checkout_session(
 
     Возвращает: {"checkout_url": "...", "session_id": "..."}
     """
-    db = uow.session
-    result = await db.execute(
-        select(Booking)
-        .options(selectinload(Booking.slot))
-        .where(Booking.id == booking_id)
-    )
-    booking = result.scalar_one_or_none()
+    booking = await uow.bookings.get_by_id_with_slot(booking_id)
     if booking is None:
         raise NotFoundError("Бронирование не найдено")
     if booking.status != BookingStatus.PENDING:
@@ -87,7 +77,7 @@ async def create_checkout_session(
     )
 
     booking.checkout_session_id = session.id
-    await db.flush()
+    await uow.session.flush()
 
     return {"checkout_url": session.url or "", "session_id": session.id}
 
@@ -105,13 +95,7 @@ async def create_order_checkout_session(
     Сумма берётся из order.total_amount_cents.
     В metadata сессии обязательно указываем order_id.
     """
-    db = uow.session
-    result = await db.execute(
-        select(Order)
-        .options(selectinload(Order.service))
-        .where(Order.id == order_id)
-    )
-    order = result.scalar_one_or_none()
+    order = await uow.orders.get_by_id_with_service(order_id)
     if order is None:
         raise NotFoundError("Заказ не найден")
     if order.status != OrderStatus.PENDING:
@@ -153,7 +137,6 @@ async def create_order_checkout_session(
         }
     )
 
-    # Для Order мы пока не храним checkout_session_id, достаточно metadata.order_id.
-    await db.flush()
+    await uow.session.flush()
 
     return {"checkout_url": session.url or "", "session_id": session.id}

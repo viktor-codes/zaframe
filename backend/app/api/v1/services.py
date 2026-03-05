@@ -8,9 +8,8 @@ API роутер для услуг (Service) и шаблонов расписа�
 from fastapi import APIRouter, Depends, Query
 
 from datetime import date
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user_required, get_db, get_uow
+from app.api.deps import get_current_user_required, get_uow
 from app.core.uow import UnitOfWork
 from app.models.user import User
 from app.schemas import (
@@ -48,8 +47,7 @@ async def create_service_endpoint(
 
     Требуется аутентификация и владение студией.
     """
-    db = uow.session
-    studio = await get_studio(db, schema.studio_id)
+    studio = await get_studio(uow, schema.studio_id)
     ensure_studio_owner(studio, user.id)
 
     data = schema.model_dump(exclude={"studio_id"})
@@ -60,10 +58,10 @@ async def create_service_endpoint(
 @router.get("/{service_id}", response_model=ServiceResponse)
 async def get_service_endpoint(
     service_id: int,
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> ServiceResponse:
     """Получить услугу по ID (публично)."""
-    service = await get_service_or_raise(db, service_id)
+    service = await get_service_or_raise(uow, service_id)
     return ServiceResponse.model_validate(service)
 
 
@@ -74,7 +72,7 @@ async def get_service_availability_endpoint(
         None,
         description="Опциональная дата, с которой считать доступность (по умолчанию сегодня)",
     ),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> ServiceAvailabilityResponse:
     """
     Получить подробную информацию о доступности курса.
@@ -82,7 +80,7 @@ async def get_service_availability_endpoint(
     Используется фронтендом при открытии модалки покупки, чтобы
     показать календарь занятости.
     """
-    return await get_service_availability(db, service_id=service_id, start_date=start_date)
+    return await get_service_availability(uow, service_id=service_id, start_date=start_date)
 
 
 @router.patch("/{service_id}", response_model=ServiceResponse)
@@ -93,9 +91,8 @@ async def update_service_endpoint(
     uow: UnitOfWork = Depends(get_uow),
 ) -> ServiceResponse:
     """Обновить услугу (только владелец студии)."""
-    db = uow.session
-    service = await get_service_or_raise(db, service_id)
-    studio = await get_studio(db, service.studio_id)
+    service = await get_service_or_raise(uow, service_id)
+    studio = await get_studio(uow, service.studio_id)
     ensure_studio_owner(studio, user.id)
     service = await update_service(uow, service, schema)
     return ServiceResponse.model_validate(service)
@@ -112,9 +109,8 @@ async def deactivate_service_endpoint(
 
     Связанные слоты и бронирования остаются в системе.
     """
-    db = uow.session
-    service = await get_service_or_raise(db, service_id)
-    studio = await get_studio(db, service.studio_id)
+    service = await get_service_or_raise(uow, service_id)
+    studio = await get_studio(uow, service.studio_id)
     ensure_studio_owner(studio, user.id)
     service = await deactivate_service(uow, service)
     return ServiceResponse.model_validate(service)
@@ -126,11 +122,11 @@ async def deactivate_service_endpoint(
 )
 async def list_service_schedules_endpoint(
     service_id: int,
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> list[ScheduleResponse]:
     """Список шаблонов расписания для услуги."""
-    await get_service_or_raise(db, service_id)
-    schedules = await get_schedules_for_service(db, service_id=service_id)
+    await get_service_or_raise(uow, service_id)
+    schedules = await get_schedules_for_service(uow, service_id=service_id)
     return [ScheduleResponse.model_validate(s) for s in schedules]
 
 
@@ -148,9 +144,8 @@ async def create_service_schedule_endpoint(
     """
     Создать шаблон расписания (Schedule) для услуги.
     """
-    db = uow.session
-    service = await get_service_or_raise(db, service_id)
-    studio = await get_studio(db, service.studio_id)
+    service = await get_service_or_raise(uow, service_id)
+    studio = await get_studio(uow, service.studio_id)
     ensure_studio_owner(studio, user.id)
 
     schedule_schema = ScheduleCreate(
@@ -168,10 +163,9 @@ async def delete_schedule_endpoint(
     uow: UnitOfWork = Depends(get_uow),
 ) -> None:
     """Удалить шаблон расписания (только владелец студии услуги)."""
-    db = uow.session
-    schedule = await get_schedule_or_raise(db, schedule_id)
-    service = await get_service_or_raise(db, schedule.service_id)
-    studio = await get_studio(db, service.studio_id)
+    schedule = await get_schedule_or_raise(uow, schedule_id)
+    service = await get_service_or_raise(uow, schedule.service_id)
+    studio = await get_studio(uow, service.studio_id)
     ensure_studio_owner(studio, user.id)
     await delete_schedule(uow, schedule)
 

@@ -6,28 +6,19 @@
 - Бизнес-логика в одном месте — проще тестировать
 - Переиспользование в разных эндпоинтах (API, webhooks, CLI)
 """
-from sqlalchemy import and_, func, or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
-from app.models.service import Service
 from app.models.studio import Studio
 from app.schemas.studio import StudioCreate, StudioUpdate
 
 
-async def get_studio(db: AsyncSession, studio_id: int) -> Studio | None:
-    """
-    Получить студию по ID.
-    
-    Возвращает None если студия не найдена.
-    """
-    result = await db.execute(select(Studio).where(Studio.id == studio_id))
-    return result.scalar_one_or_none()
+async def get_studio(uow: UnitOfWork, studio_id: int) -> Studio | None:
+    """Получить студию по ID. Возвращает None если не найдена."""
+    return await uow.studios.get_by_id(studio_id)
 
 
 async def get_studios(
-    db: AsyncSession,
+    uow: UnitOfWork,
     *,
     skip: int = 0,
     limit: int = 20,
@@ -38,71 +29,21 @@ async def get_studios(
     query: str | None = None,
     amenities: list[str] | None = None,
 ) -> list[Studio]:
-    """
-    Список студий с пагинацией и фильтрами.
-
-    skip, limit — для пагинации
-    owner_id — фильтр по владельцу (для панели owner)
-    is_active — фильтр по статусу (None = все)
-    city — фильтр по городу (регистронезависимый)
-    category — фильтр по категории услуги (join Service)
-    query — поиск по названию студии или услуги (ilike)
-    amenities — студия должна содержать все указанные удобства
-    """
-    conditions = []
-    if owner_id is not None:
-        conditions.append(Studio.owner_id == owner_id)
-    if is_active is not None:
-        conditions.append(Studio.is_active == is_active)
-    if city:
-        city_norm = city.strip().lower()
-        if city_norm:
-            conditions.append(func.lower(Studio.city) == city_norm)
-    if amenities:
-        for a in amenities:
-            if a and a.strip():
-                conditions.append(Studio.amenities.contains([a.strip()]))
-
-    need_join = category or (query and query.strip())
-    if need_join:
-        join_conditions = list(conditions)
-        join_conditions.append(Service.studio_id == Studio.id)
-        join_conditions.append(Service.is_active.is_(True))
-        if category:
-            join_conditions.append(Service.category == category)
-        if query and query.strip():
-            pattern = f"%{query.strip()}%"
-            join_conditions.append(
-                or_(
-                    Studio.name.ilike(pattern),
-                    Service.name.ilike(pattern),
-                )
-            )
-        subq = (
-            select(Studio.id)
-            .join(Service, Service.studio_id == Studio.id)
-            .where(and_(*join_conditions))
-            .distinct()
-        )
-        stmt = (
-            select(Studio)
-            .where(Studio.id.in_(subq))
-            .order_by(Studio.created_at.desc())
-            .offset(skip)
-            .limit(limit)
-        )
-    else:
-        stmt = select(Studio)
-        if conditions:
-            stmt = stmt.where(*conditions)
-        stmt = stmt.order_by(Studio.created_at.desc()).offset(skip).limit(limit)
-
-    result = await db.execute(stmt)
-    return list(result.scalars().all())
+    """Список студий с пагинацией и фильтрами."""
+    return await uow.studios.list_(
+        skip=skip,
+        limit=limit,
+        owner_id=owner_id,
+        is_active=is_active,
+        city=city,
+        category=category,
+        query=query,
+        amenities=amenities,
+    )
 
 
 async def get_studios_count(
-    db: AsyncSession,
+    uow: UnitOfWork,
     *,
     owner_id: int | None = None,
     is_active: bool | None = None,
@@ -112,53 +53,19 @@ async def get_studios_count(
     amenities: list[str] | None = None,
 ) -> int:
     """Подсчёт студий для пагинации (те же фильтры, что и get_studios)."""
-    conditions = []
-    if owner_id is not None:
-        conditions.append(Studio.owner_id == owner_id)
-    if is_active is not None:
-        conditions.append(Studio.is_active == is_active)
-    if city:
-        city_norm = city.strip().lower()
-        if city_norm:
-            conditions.append(func.lower(Studio.city) == city_norm)
-    if amenities:
-        for a in amenities:
-            if a and a.strip():
-                conditions.append(Studio.amenities.contains([a.strip()]))
-
-    need_join = category or (query and query.strip())
-    if need_join:
-        join_conditions = list(conditions)
-        join_conditions.append(Service.studio_id == Studio.id)
-        join_conditions.append(Service.is_active.is_(True))
-        if category:
-            join_conditions.append(Service.category == category)
-        if query and query.strip():
-            pattern = f"%{query.strip()}%"
-            join_conditions.append(
-                or_(
-                    Studio.name.ilike(pattern),
-                    Service.name.ilike(pattern),
-                )
-            )
-        subq = (
-            select(Studio.id)
-            .join(Service, Service.studio_id == Studio.id)
-            .where(and_(*join_conditions))
-            .distinct()
-        )
-        stmt = select(func.count()).select_from(subq.subquery())
-    else:
-        stmt = select(func.count()).select_from(Studio)
-        if conditions:
-            stmt = stmt.where(*conditions)
-    result = await db.execute(stmt)
-    return result.scalar_one_or_none() or 0
+    return await uow.studios.count(
+        owner_id=owner_id,
+        is_active=is_active,
+        city=city,
+        category=category,
+        query=query,
+        amenities=amenities,
+    )
 
 
-async def get_studio_or_raise(db: AsyncSession, studio_id: int) -> Studio:
+async def get_studio_or_raise(uow: UnitOfWork, studio_id: int) -> Studio:
     """Получить студию по ID или выбросить NotFoundError."""
-    studio = await get_studio(db, studio_id)
+    studio = await uow.studios.get_by_id(studio_id)
     if studio is None:
         raise NotFoundError("Студия не найдена")
     return studio
@@ -171,16 +78,11 @@ def ensure_studio_owner(studio: Studio, user_id: int) -> None:
 
 
 async def create_studio(uow: UnitOfWork, schema: StudioCreate) -> Studio:
-    """
-    Создать студию.
-    owner_id должен быть передан в schema (из токена на уровне роутера).
-    """
-    from app.models.user import User
-
-    db = uow.session
-    # Проверка существования владельца
-    result = await db.execute(select(User).where(User.id == schema.owner_id))
-    if schema.owner_id is None or result.scalar_one_or_none() is None:
+    """Создать студию. owner_id должен быть передан в schema (из токена на уровне роутера)."""
+    if schema.owner_id is None:
+        raise ValidationError("Владелец не указан или не найден")
+    owner = await uow.users.get_by_id(schema.owner_id)
+    if owner is None:
         raise ValidationError("Владелец не указан или не найден")
 
     studio = Studio(
@@ -191,9 +93,9 @@ async def create_studio(uow: UnitOfWork, schema: StudioCreate) -> Studio:
         phone=schema.phone,
         address=schema.address,
     )
-    db.add(studio)
-    await db.flush()  # Получаем id до commit
-    await db.refresh(studio)  # Обновляем объект из БД
+    uow.session.add(studio)
+    await uow.session.flush()
+    await uow.session.refresh(studio)
     return studio
 
 
@@ -202,22 +104,16 @@ async def update_studio(
     studio: Studio,
     schema: StudioUpdate,
 ) -> Studio:
-    """
-    Обновить студию.
-
-    Обновляет только переданные поля (partial update).
-    """
-    db = uow.session
+    """Обновить студию (partial update)."""
     update_data = schema.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(studio, field, value)
-    await db.flush()
-    await db.refresh(studio)
+    await uow.session.flush()
+    await uow.session.refresh(studio)
     return studio
 
 
 async def delete_studio(uow: UnitOfWork, studio: Studio) -> None:
     """Удалить студию. Cascade удалит связанные слоты."""
-    db = uow.session
-    await db.delete(studio)
-    await db.flush()
+    await uow.session.delete(studio)
+    await uow.session.flush()

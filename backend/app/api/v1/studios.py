@@ -15,12 +15,8 @@ CRUD операции:
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.service import Service
-
-from app.api.deps import get_current_user_required, get_db, get_uow
+from app.api.deps import get_current_user_required, get_uow
 from app.core.exceptions import ValidationError
 from app.core.uow import UnitOfWork
 from app.models.service import ServiceCategory
@@ -55,7 +51,7 @@ router = APIRouter(prefix="/studios", tags=["studios"])
 
 @router.get("")
 async def list_studios(
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
     skip: int = Query(0, ge=0, description="Пропустить N записей"),
     limit: int = Query(20, ge=1, le=100, description="Максимум записей"),
     owner_id: int | None = Query(None, description="Фильтр по владельцу (для панели owner)"),
@@ -71,7 +67,7 @@ async def list_studios(
     При include_services=true возвращает list[SearchResult] (студия + услуги), иначе list[StudioResponse].
     """
     studios = await get_studios(
-        db,
+        uow,
         skip=skip,
         limit=limit,
         owner_id=owner_id,
@@ -85,14 +81,10 @@ async def list_studios(
         return [StudioResponse.model_validate(s) for s in studios]
 
     studio_ids = [s.id for s in studios]
-    stmt = select(Service).where(
-        Service.studio_id.in_(studio_ids),
-        Service.is_active.is_(True),
+    services = await uow.services.list_active_by_studio_ids(
+        studio_ids,
+        category=category.value if category is not None else None,
     )
-    if category is not None:
-        stmt = stmt.where(Service.category == category.value)
-    svc_result = await db.execute(stmt)
-    services = list(svc_result.scalars().all())
     by_studio: dict[int, list] = {}
     for svc in services:
         by_studio.setdefault(svc.studio_id, []).append(ServiceResponse.model_validate(svc))
@@ -108,7 +100,7 @@ async def list_studios(
 
 @router.get("/count")
 async def count_studios(
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
     owner_id: int | None = Query(None, description="Фильтр по владельцу"),
     is_active: bool | None = Query(None, description="Фильтр по статусу"),
     city: str | None = Query(None, description="Город (Explore)"),
@@ -118,7 +110,7 @@ async def count_studios(
 ) -> dict[str, int]:
     """Количество студий (для пагинации, те же фильтры что и list)."""
     count = await get_studios_count(
-        db,
+        uow,
         owner_id=owner_id,
         is_active=is_active,
         city=city,
@@ -132,7 +124,7 @@ async def count_studios(
 @router.get("/{studio_id}/slots", response_model=list[SlotResponse])
 async def list_studio_slots(
     studio_id: int,
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
     skip: int = Query(0, ge=0, description="Пропустить N записей"),
     limit: int = Query(20, ge=1, le=100, description="Максимум записей"),
     start_from: datetime | None = Query(None, description="Начало диапазона дат"),
@@ -143,7 +135,7 @@ async def list_studio_slots(
     Расписание студии: слоты с фильтрами по датам.
     """
     slots = await get_slots(
-        db,
+        uow,
         skip=skip,
         limit=limit,
         studio_id=studio_id,
@@ -157,23 +149,23 @@ async def list_studio_slots(
 @router.get("/{studio_id}", response_model=StudioResponse)
 async def get_studio_by_id(
     studio_id: int,
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> StudioResponse:
     """Получить студию по ID."""
-    return await get_studio_or_raise(db, studio_id)
+    return await get_studio_or_raise(uow, studio_id)
 
 
 @router.get("/slug/{slug}/public", response_model=StudioPublicResponse)
 async def get_studio_public_endpoint(
     slug: str,
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> StudioPublicResponse:
     """
     Публичное представление студии по slug.
 
     Возвращает список услуг и ближайшие занятия.
     """
-    return await get_studio_public(db, slug=slug)
+    return await get_studio_public(uow, slug=slug)
 
 
 @router.post("/{studio_id}/generate-schedule", response_model=list[SlotResponse])
@@ -196,8 +188,7 @@ async def generate_studio_schedule_endpoint(
     """
     from datetime import time as time_cls
 
-    db = uow.session
-    studio = await get_studio_or_raise(db, studio_id)
+    studio = await get_studio_or_raise(uow, studio_id)
     ensure_studio_owner(studio, user.id)
 
     try:
@@ -256,8 +247,7 @@ async def update_studio_endpoint(
     uow: UnitOfWork = Depends(get_uow),
 ) -> StudioResponse:
     """Обновить студию (только владелец)."""
-    db = uow.session
-    studio = await get_studio_or_raise(db, studio_id)
+    studio = await get_studio_or_raise(uow, studio_id)
     ensure_studio_owner(studio, user.id)
     return await update_studio(uow, studio, schema)
 
@@ -269,7 +259,6 @@ async def delete_studio_endpoint(
     uow: UnitOfWork = Depends(get_uow),
 ) -> None:
     """Удалить студию (только владелец). Удалятся и связанные слоты."""
-    db = uow.session
-    studio = await get_studio_or_raise(db, studio_id)
+    studio = await get_studio_or_raise(uow, studio_id)
     ensure_studio_owner(studio, user.id)
     await delete_studio(uow, studio)

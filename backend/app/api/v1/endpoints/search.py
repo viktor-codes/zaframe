@@ -7,9 +7,9 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import and_, func, or_, select, text
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db
+from app.api.deps import get_uow
+from app.core.uow import UnitOfWork
 from app.models.service import Service, ServiceCategory
 from app.models.studio import Studio
 from app.schemas import SearchResult, ServiceResponse, StudioResponse
@@ -20,7 +20,7 @@ router = APIRouter(prefix="/search", tags=["search"])
 
 @router.get("", response_model=list[SearchResult])
 async def search_endpoint(
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
     query: str | None = Query(None, description="Поисковый запрос по названию/описанию"),
     category: ServiceCategory | None = Query(None, description="Категория услуги"),
     city: str | None = Query(None, description="Город"),
@@ -90,7 +90,7 @@ async def search_endpoint(
         studios_stmt = studios_stmt.where(
             text("services.category = :category_filter")
         ).params(category_filter=category.value)
-    studios_result = await db.execute(studios_stmt)
+    studios_result = await uow.session.execute(studios_stmt)
     studios: list[Studio] = list(studios_result.scalars().all())
 
     if not studios:
@@ -111,7 +111,7 @@ async def search_endpoint(
         services_stmt = services_stmt.where(
             text("services.category = :category_filter")
         ).params(category_filter=category.value)
-    services_result = await db.execute(services_stmt)
+    services_result = await uow.session.execute(services_stmt)
     services: list[Service] = list(services_result.scalars().all())
 
     services_by_studio: dict[int, list[Service]] = {}

@@ -8,9 +8,7 @@ Magic Link flow:
 """
 from fastapi import APIRouter, Depends, Query
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.api.deps import get_current_user_required, get_db, get_uow
+from app.api.deps import get_current_user_required, get_uow
 from app.core.uow import UnitOfWork
 from app.schemas.auth import (
     LogoutRequest,
