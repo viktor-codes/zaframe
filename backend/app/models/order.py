@@ -13,6 +13,7 @@ from sqlalchemy import ForeignKey, Integer, String, func, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models import Base
+from app.models.mixins import TimestampMixin
 
 
 class OrderStatus:
@@ -24,7 +25,7 @@ class OrderStatus:
     REFUNDED = "refunded"
 
 
-class Order(Base):
+class Order(TimestampMixin, Base):
     """Заказ на оплату услуги (single или курс)."""
 
     __tablename__ = "orders"
@@ -55,18 +56,6 @@ class Order(Base):
         default=OrderStatus.PENDING,
         nullable=False,
         index=True,
-    )
-
-    # Timestamps (UTC)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        index=True,
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now(),
     )
 
     # Связи

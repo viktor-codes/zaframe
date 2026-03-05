@@ -14,6 +14,7 @@ from sqlalchemy import ForeignKey, Integer, String, Float, JSON, func, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models import Base
+from app.models.mixins import TimestampMixin
 
 
 class ServiceCategory(str, enum.Enum):
@@ -35,7 +36,7 @@ class ServiceType:
     COURSE = "course"
 
 
-class Service(Base):
+class Service(TimestampMixin, Base):
     """
     Услуга, предлагаемая студией.
 
@@ -114,17 +115,6 @@ class Service(Base):
 
     # Активна ли услуга
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
-
-    # Timestamps (UTC)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now(),
-    )
 
     # Связи
     studio: Mapped["Studio"] = relationship("Studio", back_populates="services")

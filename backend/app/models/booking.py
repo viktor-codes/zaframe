@@ -19,6 +19,7 @@ from sqlalchemy import ForeignKey, String, func, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models import Base
+from app.models.mixins import TimestampMixin
 
 
 class BookingStatus:
@@ -35,7 +36,7 @@ class BookingType:
     COURSE = "course"
 
 
-class Booking(Base):
+class Booking(TimestampMixin, Base):
     """
     Бронирование слота клиентом.
     
@@ -99,17 +100,7 @@ class Booking(Base):
     # Для одиночных бронирований может быть None или совпадать с ценой слота.
     unit_price_cents: Mapped[int | None] = mapped_column(nullable=True)
     
-    # Timestamps (UTC)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        index=True,
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now(),
-    )
+    # Когда было отменено (UTC)
     cancelled_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,

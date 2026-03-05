@@ -15,9 +15,10 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models import Base
+from app.models.mixins import TimestampMixin
 
 
-class Studio(Base):
+class Studio(TimestampMixin, Base):
     """
     Студия/бизнес, предлагающий классы для бронирования.
     
@@ -57,17 +58,6 @@ class Studio(Base):
     
     # Настройки
     is_active: Mapped[bool] = mapped_column(default=True)  # Активна ли студия
-    
-    # Timestamps (UTC)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now(),
-    )
     
     # Связи
     owner: Mapped["User"] = relationship("User", back_populates="studios")

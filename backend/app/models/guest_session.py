@@ -17,9 +17,10 @@ from sqlalchemy import String, func, DateTime
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models import Base
+from app.models.mixins import TimestampMixin
 
 
-class GuestSession(Base):
+class GuestSession(TimestampMixin, Base):
     """
     Временная сессия для гостевых бронирований.
     
@@ -45,17 +46,6 @@ class GuestSession(Base):
         index=True,
     )
 
-    # Timestamps (UTC)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now(),
-    )
-    
     # Метод для проверки истечения сессии
     def is_expired(self) -> bool:
         """Проверка, истекла ли сессия."""

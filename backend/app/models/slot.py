@@ -20,6 +20,7 @@ from sqlalchemy import ForeignKey, Integer, String, func, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models import Base
+from app.models.mixins import TimestampMixin
 
 
 class OccurrenceStatus:
@@ -29,7 +30,7 @@ class OccurrenceStatus:
     CANCELLED = "cancelled"
 
 
-class Slot(Base):
+class Slot(TimestampMixin, Base):
     """
     Слот/класс для бронирования.
     
@@ -91,17 +92,6 @@ class Slot(Base):
         nullable=False,
         index=True,
     )  # Доменный статус занятия (active/cancelled)
-    
-    # Timestamps (UTC)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now(),
-    )
     
     # Связи
     studio: Mapped["Studio"] = relationship("Studio", back_populates="slots")

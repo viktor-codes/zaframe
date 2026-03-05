@@ -19,9 +19,10 @@ from sqlalchemy import String, func, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models import Base
+from app.models.mixins import TimestampMixin
 
 
-class User(Base):
+class User(TimestampMixin, Base):
     """
     Пользователь системы (клиент или владелец студии).
 
@@ -45,17 +46,7 @@ class User(Base):
         nullable=True,
     )  # Срок действия токена (UTC)
 
-    # Timestamps
-    # Используем server_default для автоматической установки времени на стороне БД
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now(),
-    )
+    # Временные поля авторизации
     last_login_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
