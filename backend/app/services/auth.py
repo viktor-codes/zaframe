@@ -3,11 +3,11 @@
 """
 from datetime import datetime, timezone
 
-from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.exceptions import UnauthorizedError, ValidationError
 from app.core.uow import UnitOfWork
 from app.core.security import (
     create_access_token,
@@ -69,10 +69,7 @@ async def verify_magic_link(
     )
     user = result.scalar_one_or_none()
     if user is None:
-        raise HTTPException(
-            status_code=400,
-            detail="Ссылка недействительна или истекла",
-        )
+        raise ValidationError("Ссылка недействительна или истекла")
 
     user.magic_link_token = None
     user.magic_link_expires_at = None
@@ -113,10 +110,7 @@ async def refresh_access_token(
     db = uow.session
     refresh_data = parse_refresh_token(refresh_token)
     if refresh_data is None:
-        raise HTTPException(
-            status_code=401,
-            detail="Недействительный refresh token",
-        )
+        raise UnauthorizedError("Недействительный refresh token")
 
     user_id = refresh_data.user_id
     jti = refresh_data.jti
@@ -132,10 +126,7 @@ async def refresh_access_token(
     )
     refresh_session = result.scalar_one_or_none()
     if refresh_session is None or not refresh_session.is_active(now_utc):
-        raise HTTPException(
-            status_code=401,
-            detail="Недействительный refresh token",
-        )
+        raise UnauthorizedError("Недействительный refresh token")
 
     # Отзываем старый refresh-токен (ротация)
     refresh_session.revoked_at = now_utc
@@ -143,10 +134,7 @@ async def refresh_access_token(
 
     user = await get_user_by_id(db, user_id)
     if user is None:
-        raise HTTPException(
-            status_code=401,
-            detail="Пользователь не найден",
-        )
+        raise UnauthorizedError("Пользователь не найден")
 
     access_token = create_access_token(user.id, user.email)
     new_refresh_token = create_refresh_token(user.id)

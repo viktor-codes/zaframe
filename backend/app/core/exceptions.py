@@ -35,3 +35,10 @@ class ValidationError(AppError):
 
     def __init__(self, detail: str) -> None:
         super().__init__(detail=detail, status_code=400)
+
+
+class UnauthorizedError(AppError):
+    """Требуется аутентификация или невалидные учётные данные (401)."""
+
+    def __init__(self, detail: str = "Требуется аутентификация") -> None:
+        super().__init__(detail=detail, status_code=401)

@@ -8,11 +8,12 @@
 """
 from collections.abc import AsyncGenerator
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import async_session_maker, get_db
+from app.core.exceptions import UnauthorizedError
 from app.core.uow import UnitOfWork
 from app.models.user import User
 from app.services.auth import get_current_user_from_token
@@ -44,7 +45,7 @@ async def get_current_user_required(
     Raises 401 если пользователь не аутентифицирован.
     """
     if user is None:
-        raise HTTPException(status_code=401, detail="Требуется аутентификация")
+        raise UnauthorizedError("Требуется аутентификация")
     return user
 
 
