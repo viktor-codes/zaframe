@@ -14,16 +14,6 @@ from httpx import ASGITransport, AsyncClient
 from app.main import app
 
 
-@pytest.fixture
-async def client():
-    """HTTP-клиент для тестов API (использует реальное приложение и БД)."""
-    async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test",
-    ) as ac:
-        yield ac
-
-
 async def _authenticate_user(client: AsyncClient, email: str = "owner@example.com"):
     """
     Создаёт пользователя через Magic Link и возвращает access/refresh токены и данные пользователя.
