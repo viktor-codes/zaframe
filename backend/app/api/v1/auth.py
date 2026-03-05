@@ -10,7 +10,8 @@ from fastapi import APIRouter, Depends, Query
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user_required, get_db
+from app.api.deps import get_current_user_required, get_db, get_uow
+from app.core.uow import UnitOfWork
 from app.schemas.auth import (
     LogoutRequest,
     MagicLinkRequest,
@@ -33,7 +34,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 @router.post("/magic-link/request", response_model=MagicLinkSentResponse)
 async def magic_link_request(
     schema: MagicLinkRequest,
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> MagicLinkSentResponse:
     """
     Запросить Magic Link на email.
@@ -41,14 +42,14 @@ async def magic_link_request(
     Создаёт пользователя при первом запросе.
     Отправляет письмо со ссылкой (или логирует в dev).
     """
-    await request_magic_link(db, schema.email, schema.name)
+    await request_magic_link(uow, schema.email, schema.name)
     return MagicLinkSentResponse()
 
 
 @router.get("/magic-link/verify")
 async def magic_link_verify(
     token: str = Query(..., description="Токен из ссылки в письме"),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ):
     """
     Проверить Magic Link токен и выдать JWT.
@@ -56,7 +57,7 @@ async def magic_link_verify(
     Вызывается когда пользователь переходит по ссылке из письма.
     Frontend обычно получает token из query и вызывает этот endpoint.
     """
-    user, access_token, refresh_token = await verify_magic_link(db, token)
+    user, access_token, refresh_token = await verify_magic_link(uow, token)
     return {
         "access_token": access_token,
         "refresh_token": refresh_token,
@@ -68,10 +69,10 @@ async def magic_link_verify(
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh_tokens(
     schema: RefreshTokenRequest,
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> TokenResponse:
     """Обновить access token по refresh token."""
-    access_token, refresh_token = await refresh_access_token(db, schema.refresh_token)
+    access_token, refresh_token = await refresh_access_token(uow, schema.refresh_token)
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
@@ -81,7 +82,7 @@ async def refresh_tokens(
 @router.post("/logout", status_code=204)
 async def logout(
     schema: LogoutRequest,
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
     user: User = Depends(get_current_user_required),
 ) -> None:
     """
@@ -90,7 +91,7 @@ async def logout(
     Отзывает один refresh-token, переданный в запросе.
     Frontend после этого должен удалить access/refresh токены из хранилища.
     """
-    await logout_current_session(db, user, schema.refresh_token)
+    await logout_current_session(uow, user, schema.refresh_token)
 
 
 @router.get("/me", response_model=UserResponse)

@@ -20,7 +20,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.service import Service
 
-from app.api.deps import get_current_user_required, get_db
+from app.api.deps import get_current_user_required, get_db, get_uow
+from app.core.uow import UnitOfWork
 from app.models.service import ServiceCategory
 from app.models.user import User
 from app.schemas import (
@@ -180,7 +181,7 @@ async def generate_studio_schedule_endpoint(
     studio_id: int,
     payload: dict,
     user: User = Depends(get_current_user_required),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> list[SlotResponse]:
     """
     Сгенерировать расписание для услуги в студии.
@@ -193,6 +194,7 @@ async def generate_studio_schedule_endpoint(
         "weeks_count": 6
     }
     """
+    db = uow.session
     studio = await get_studio(db, studio_id)
     if studio is None:
         raise HTTPException(status_code=404, detail="Студия не найдена")
@@ -222,7 +224,7 @@ async def generate_studio_schedule_endpoint(
         raise HTTPException(status_code=400, detail="Некорректный формат start_time")
 
     slots = await occurrence_generator(
-        db,
+        uow,
         studio_id=studio_id,
         service_id=service_id,
         days=days,
@@ -239,14 +241,14 @@ async def generate_studio_schedule_endpoint(
 async def create_studio_endpoint(
     schema: StudioCreate,
     user: User = Depends(get_current_user_required),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> StudioResponse:
     """
     Создать студию (требуется аутентификация).
     owner_id берётся из токена, переданный в schema игнорируется.
     """
     schema_with_owner = schema.model_copy(update={"owner_id": user.id})
-    studio = await create_studio(db, schema_with_owner)
+    studio = await create_studio(uow, schema_with_owner)
     return studio
 
 
@@ -255,27 +257,29 @@ async def update_studio_endpoint(
     studio_id: int,
     schema: StudioUpdate,
     user: User = Depends(get_current_user_required),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> StudioResponse:
     """Обновить студию (только владелец)."""
+    db = uow.session
     studio = await get_studio(db, studio_id)
     if studio is None:
         raise HTTPException(status_code=404, detail="Студия не найдена")
     if studio.owner_id != user.id:
         raise HTTPException(status_code=403, detail="Нет доступа к этой студии")
-    return await update_studio(db, studio, schema)
+    return await update_studio(uow, studio, schema)
 
 
 @router.delete("/{studio_id}", status_code=204)
 async def delete_studio_endpoint(
     studio_id: int,
     user: User = Depends(get_current_user_required),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> None:
     """Удалить студию (только владелец). Удалятся и связанные слоты."""
+    db = uow.session
     studio = await get_studio(db, studio_id)
     if studio is None:
         raise HTTPException(status_code=404, detail="Студия не найдена")
     if studio.owner_id != user.id:
         raise HTTPException(status_code=403, detail="Нет доступа к этой студии")
-    await delete_studio(db, studio)
+    await delete_studio(uow, studio)

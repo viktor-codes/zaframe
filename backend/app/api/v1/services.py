@@ -10,7 +10,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from datetime import date
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user_required, get_db
+from app.api.deps import get_current_user_required, get_db, get_uow
+from app.core.uow import UnitOfWork
 from app.models.user import User
 from app.schemas import (
     ScheduleBase,
@@ -46,13 +47,14 @@ def _ensure_service_owner(service, studio, user: User) -> None:
 async def create_service_endpoint(
     schema: ServiceCreate,
     user: User = Depends(get_current_user_required),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> ServiceResponse:
     """
     Создать услугу (Service) в студии.
 
     Требуется аутентификация и владение студией.
     """
+    db = uow.session
     studio = await get_studio(db, schema.studio_id)
     if studio is None:
         raise HTTPException(status_code=404, detail="Студия не найдена")
@@ -60,7 +62,7 @@ async def create_service_endpoint(
         raise HTTPException(status_code=403, detail="Нет доступа к этой студии")
 
     data = schema.model_dump(exclude={"studio_id"})
-    service = await create_service(db, schema.studio_id, data)
+    service = await create_service(uow, schema.studio_id, data)
     return ServiceResponse.model_validate(service)
 
 
@@ -99,15 +101,16 @@ async def update_service_endpoint(
     service_id: int,
     schema: ServiceUpdate,
     user: User = Depends(get_current_user_required),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> ServiceResponse:
     """Обновить услугу (только владелец студии)."""
+    db = uow.session
     service = await get_service(db, service_id)
     if service is None:
         raise HTTPException(status_code=404, detail="Услуга не найдена")
     studio = await get_studio(db, service.studio_id)
     _ensure_service_owner(service, studio, user)
-    service = await update_service(db, service, schema)
+    service = await update_service(uow, service, schema)
     return ServiceResponse.model_validate(service)
 
 
@@ -115,19 +118,20 @@ async def update_service_endpoint(
 async def deactivate_service_endpoint(
     service_id: int,
     user: User = Depends(get_current_user_required),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> ServiceResponse:
     """
     Деактивировать услугу (soft delete).
 
     Связанные слоты и бронирования остаются в системе.
     """
+    db = uow.session
     service = await get_service(db, service_id)
     if service is None:
         raise HTTPException(status_code=404, detail="Услуга не найдена")
     studio = await get_studio(db, service.studio_id)
     _ensure_service_owner(service, studio, user)
-    service = await deactivate_service(db, service)
+    service = await deactivate_service(uow, service)
     return ServiceResponse.model_validate(service)
 
 
@@ -156,11 +160,12 @@ async def create_service_schedule_endpoint(
     service_id: int,
     schema: ScheduleBase,
     user: User = Depends(get_current_user_required),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> ScheduleResponse:
     """
     Создать шаблон расписания (Schedule) для услуги.
     """
+    db = uow.session
     service = await get_service(db, service_id)
     if service is None:
         raise HTTPException(status_code=404, detail="Услуга не найдена")
@@ -171,7 +176,7 @@ async def create_service_schedule_endpoint(
         service_id=service_id,
         **schema.model_dump(),
     )
-    schedule = await create_schedule(db, schedule_schema)
+    schedule = await create_schedule(uow, schedule_schema)
     return ScheduleResponse.model_validate(schedule)
 
 
@@ -179,9 +184,10 @@ async def create_service_schedule_endpoint(
 async def delete_schedule_endpoint(
     schedule_id: int,
     user: User = Depends(get_current_user_required),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> None:
     """Удалить шаблон расписания (только владелец студии услуги)."""
+    db = uow.session
     schedule = await get_schedule(db, schedule_id)
     if schedule is None:
         raise HTTPException(status_code=404, detail="Расписание не найдено")
@@ -190,5 +196,5 @@ async def delete_schedule_endpoint(
         raise HTTPException(status_code=404, detail="Услуга не найдена")
     studio = await get_studio(db, service.studio_id)
     _ensure_service_owner(service, studio, user)
-    await delete_schedule(db, schedule)
+    await delete_schedule(uow, schedule)
 

@@ -62,7 +62,7 @@ class Base(DeclarativeBase):
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
     Dependency для получения сессии БД в роутерах.
-    
+
     Использование:
         @router.get("/users")
         async def get_users(db: AsyncSession = Depends(get_db)):

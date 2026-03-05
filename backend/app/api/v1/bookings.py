@@ -11,7 +11,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db
+from app.api.deps import get_db, get_uow
+from app.core.uow import UnitOfWork
 from app.schemas import (
     BookingCreate,
     BookingResponse,
@@ -33,7 +34,7 @@ router = APIRouter(prefix="/bookings", tags=["bookings"])
 @router.post("", response_model=BookingResponse | CourseBookingResponse, status_code=201)
 async def create_booking_endpoint(
     schema: BookingCreate | CourseBookingCreate,
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> BookingResponse | CourseBookingResponse:
     """
     Создать бронирование.
@@ -43,9 +44,9 @@ async def create_booking_endpoint(
     - покупка курса (CourseBookingCreate) — создаёт Order и N бронирований
     """
     if isinstance(schema, CourseBookingCreate):
-        return await create_course_booking(db, schema=schema)
+        return await create_course_booking(uow, schema=schema)
     # Обычное разовое бронирование
-    booking = await create_booking(db, schema)  # type: ignore[arg-type]
+    booking = await create_booking(uow, schema)  # type: ignore[arg-type]
     return booking
 
 
@@ -106,10 +107,11 @@ async def get_booking_by_id(
 @router.patch("/{booking_id}/cancel", response_model=BookingResponse)
 async def cancel_booking_endpoint(
     booking_id: int,
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> BookingResponse:
     """Отменить бронирование."""
+    db = uow.session
     booking = await get_booking(db, booking_id)
     if booking is None:
         raise HTTPException(status_code=404, detail="Бронирование не найдено")
-    return await cancel_booking(db, booking)
+    return await cancel_booking(uow, booking)

@@ -12,7 +12,8 @@ from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
+from app.core.database import async_session_maker, get_db
+from app.core.uow import UnitOfWork
 from app.models.user import User
 from app.services.auth import get_current_user_from_token
 
@@ -47,4 +48,23 @@ async def get_current_user_required(
     return user
 
 
-__all__ = ["get_db", "get_current_user", "get_current_user_required"]
+async def get_uow() -> AsyncGenerator[UnitOfWork, None]:
+    """
+    Unit of Work с управлением транзакцией для write-сценариев.
+
+    - создаём AsyncSession
+    - оборачиваем его в UnitOfWork
+    - при успехе коммитим, при ошибке откатываем.
+    """
+    async with async_session_maker() as session:
+        uow = UnitOfWork(session=session)
+        try:
+            yield uow
+            await uow.commit()
+        except Exception:
+            await uow.rollback()
+            raise
+
+
+__all__ = ["get_db", "get_current_user", "get_current_user_required", "get_uow"]
+

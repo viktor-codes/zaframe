@@ -8,7 +8,8 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db
+from app.api.deps import get_db, get_uow
+from app.core.uow import UnitOfWork
 from app.schemas.payment import (
     CheckoutSessionCreate,
     CheckoutSessionResponse,
@@ -25,7 +26,7 @@ router = APIRouter(prefix="/payments", tags=["payments"])
 @router.post("/checkout-session", response_model=CheckoutSessionResponse, status_code=201)
 async def create_checkout_session_endpoint(
     schema: CheckoutSessionCreate,
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> CheckoutSessionResponse:
     """
     Создать Stripe Checkout Session для оплаты бронирования.
@@ -35,7 +36,7 @@ async def create_checkout_session_endpoint(
     """
     try:
         result = await create_checkout_session(
-            db,
+            uow,
             schema.booking_id,
             success_url=str(schema.success_url),
             cancel_url=str(schema.cancel_url),
@@ -54,7 +55,7 @@ async def create_checkout_session_endpoint(
 )
 async def create_order_checkout_session_endpoint(
     schema: OrderCheckoutSessionCreate,
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> CheckoutSessionResponse:
     """
     Создать Stripe Checkout Session для оплаты заказа (Order).
@@ -63,7 +64,7 @@ async def create_order_checkout_session_endpoint(
     """
     try:
         result = await create_order_checkout_session(
-            db,
+            uow,
             schema.order_id,
             success_url=str(schema.success_url),
             cancel_url=str(schema.cancel_url),

@@ -16,6 +16,7 @@ from sqlalchemy import and_, func, select, case
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.uow import UnitOfWork
 from app.models import (
     Booking,
     BookingStatus,
@@ -57,17 +58,17 @@ def _combine_date_time(d: date, t: time) -> datetime:
     return _to_naive_utc(dt)
 
 
-async def create_service(db: AsyncSession, studio_id: int, data: dict) -> Service:
+async def create_service(uow: UnitOfWork, studio_id: int, data: dict) -> Service:
     """Создать услугу."""
-    async with db.begin():
-        service = Service(
-            studio_id=studio_id,
-            **data,
-        )
-        db.add(service)
-        await db.flush()
-        await db.refresh(service)
-        return service
+    db = uow.session
+    service = Service(
+        studio_id=studio_id,
+        **data,
+    )
+    db.add(service)
+    await db.flush()
+    await db.refresh(service)
+    return service
 
 
 async def get_service(db: AsyncSession, service_id: int) -> Service | None:
@@ -77,55 +78,55 @@ async def get_service(db: AsyncSession, service_id: int) -> Service | None:
 
 
 async def update_service(
-    db: AsyncSession,
+    uow: UnitOfWork,
     service: Service,
     schema: ServiceUpdate,
 ) -> Service:
     """Обновить услугу (partial update)."""
-    async with db.begin():
-        update_data = schema.model_dump(exclude_unset=True)
-        for field, value in update_data.items():
-            setattr(service, field, value)
-        await db.flush()
-        await db.refresh(service)
-        return service
+    db = uow.session
+    update_data = schema.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(service, field, value)
+    await db.flush()
+    await db.refresh(service)
+    return service
 
 
-async def deactivate_service(db: AsyncSession, service: Service) -> Service:
+async def deactivate_service(uow: UnitOfWork, service: Service) -> Service:
     """
     Деактивировать услугу.
 
     Жёстко не удаляем, чтобы не ломать существующие слоты/бронирования.
     """
-    async with db.begin():
-        service.is_active = False
-        await db.flush()
-        await db.refresh(service)
-        return service
+    db = uow.session
+    service.is_active = False
+    await db.flush()
+    await db.refresh(service)
+    return service
 
 
-async def create_schedule(db: AsyncSession, schema: ScheduleCreate) -> Schedule:
+async def create_schedule(uow: UnitOfWork, schema: ScheduleCreate) -> Schedule:
     """Создать шаблон расписания для услуги."""
-    async with db.begin():
-        # Проверяем, что услуга существует и принадлежит студии
-        result = await db.execute(
-            select(Service).where(Service.id == schema.service_id)
-        )
-        service = result.scalar_one_or_none()
-        if service is None:
-            raise HTTPException(status_code=404, detail="Услуга не найдена")
+    db = uow.session
+    # Проверяем, что услуга существует и принадлежит студии
+    result = await db.execute(
+        select(Service).where(Service.id == schema.service_id)
+    )
+    service = result.scalar_one_or_none()
+    if service is None:
+        raise HTTPException(status_code=404, detail="Услуга не найдена")
 
-        schedule = Schedule(
-            service_id=schema.service_id,
-            day_of_week=schema.day_of_week,
-            start_time=schema.start_time,
-            valid_from=schema.valid_from,
-            valid_to=schema.valid_to,
-        )
-        db.add(schedule)
-        await db.flush()
-        await db.refresh(schedule)
-        return schedule
+    schedule = Schedule(
+        service_id=schema.service_id,
+        day_of_week=schema.day_of_week,
+        start_time=schema.start_time,
+        valid_from=schema.valid_from,
+        valid_to=schema.valid_to,
+    )
+    db.add(schedule)
+    await db.flush()
+    await db.refresh(schedule)
+    return schedule
 
 
 async def get_schedules_for_service(
@@ -148,11 +149,11 @@ async def get_schedule(db: AsyncSession, schedule_id: int) -> Schedule | None:
     return result.scalar_one_or_none()
 
 
-async def delete_schedule(db: AsyncSession, schedule: Schedule) -> None:
+async def delete_schedule(uow: UnitOfWork, schedule: Schedule) -> None:
     """Удалить шаблон расписания."""
-    async with db.begin():
-        await db.delete(schedule)
-        await db.flush()
+    db = uow.session
+    await db.delete(schedule)
+    await db.flush()
 
 
 def _iterate_weeks(start: date, weeks_count: int) -> Iterable[date]:
@@ -164,7 +165,7 @@ def _iterate_weeks(start: date, weeks_count: int) -> Iterable[date]:
 
 
 async def occurrence_generator(
-    db: AsyncSession,
+    uow: UnitOfWork,
     *,
     studio_id: int,
     service_id: int,
@@ -180,112 +181,112 @@ async def occurrence_generator(
     POST /studios/{id}/generate-schedule
     Payload: {service_id, days: [1,3], start_time, weeks_count}
     """
-    async with db.begin():
-        if weeks_count <= 0:
-            raise HTTPException(
-                status_code=400,
-                detail="weeks_count должен быть > 0",
-            )
-        if not days:
-            raise HTTPException(
-                status_code=400,
-                detail="Список days не может быть пустым",
-            )
-
-        result = await db.execute(
-            select(Service).where(
-                Service.id == service_id,
-                Service.studio_id == studio_id,
-            )
+    db = uow.session
+    if weeks_count <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail="weeks_count должен быть > 0",
         )
-        service = result.scalar_one_or_none()
-        if service is None:
-            raise HTTPException(
-                status_code=404,
-                detail="Услуга не найдена в этой студии",
-            )
-
-        start_date = start_date or date.today()
-
-        # Нормализуем start_date к ближайшему понедельнику назад, чтобы удобно идти по неделям.
-        start_monday = start_date - timedelta(days=start_date.weekday())
-
-        # Сначала считаем все планируемые интервалы, потом одним запросом ищем пересечения,
-        # чтобы не плодить "мёртвые" слоты при повторной генерации.
-        planned_intervals: list[tuple[datetime, datetime]] = []
-        duration = timedelta(minutes=service.duration_minutes)
-
-        for week_start in _iterate_weeks(start_monday, weeks_count):
-            for dow in days:
-                if not 0 <= dow <= 6:
-                    raise HTTPException(
-                        status_code=400,
-                        detail="day_of_week должен быть в диапазоне 0-6",
-                    )
-                day_date = week_start + timedelta(days=dow)
-                if day_date < start_date:
-                    # Пропускаем занятия до стартовой даты
-                    continue
-
-                start_dt = _combine_date_time(day_date, start_time)
-                end_dt = start_dt + duration
-                planned_intervals.append((start_dt, end_dt))
-
-        if not planned_intervals:
-            raise HTTPException(
-                status_code=400,
-                detail=(
-                    "Не удалось сгенерировать ни одного занятия "
-                    "для заданных параметров"
-                ),
-            )
-
-        min_start = min(s for s, _ in planned_intervals)
-        max_end = max(e for _, e in planned_intervals)
-
-        # Проверка на наложение с уже существующими занятиями этого же сервиса.
-        existing_q = (
-            select(Slot)
-            .where(
-                Slot.studio_id == studio_id,
-                Slot.service_id == service_id,
-                Slot.start_time < max_end,
-                Slot.end_time > min_start,
-            )
+    if not days:
+        raise HTTPException(
+            status_code=400,
+            detail="Список days не может быть пустым",
         )
-        existing_result = await db.execute(existing_q)
-        existing_slots: list[Slot] = list(existing_result.scalars().all())
 
-        if existing_slots:
-            raise HTTPException(
-                status_code=400,
-                detail=(
-                    "Найдены уже существующие занятия этого курса в указанный период. "
-                    "Сначала удалите старые занятия или выберите другой интервал."
-                ),
-            )
+    result = await db.execute(
+        select(Service).where(
+            Service.id == service_id,
+            Service.studio_id == studio_id,
+        )
+    )
+    service = result.scalar_one_or_none()
+    if service is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Услуга не найдена в этой студии",
+        )
 
-        created_slots: list[Slot] = []
-        for start_dt, end_dt in planned_intervals:
-            slot = Slot(
-                studio_id=studio_id,
-                service_id=service_id,
-                start_time=start_dt,
-                end_time=end_dt,
-                title=service.name,
-                description=service.description,
-                max_capacity=service.max_capacity,
-                price_cents=service.price_single_cents,
-                course_price_cents=service.price_course_cents,
-            )
-            db.add(slot)
-            created_slots.append(slot)
+    start_date = start_date or date.today()
 
-        await db.flush()
-        # Обновляем объекты, чтобы у них появились id
-        for slot in created_slots:
-            await db.refresh(slot)
-        return created_slots
+    # Нормализуем start_date к ближайшему понедельнику назад, чтобы удобно идти по неделям.
+    start_monday = start_date - timedelta(days=start_date.weekday())
+
+    # Сначала считаем все планируемые интервалы, потом одним запросом ищем пересечения,
+    # чтобы не плодить "мёртвые" слоты при повторной генерации.
+    planned_intervals: list[tuple[datetime, datetime]] = []
+    duration = timedelta(minutes=service.duration_minutes)
+
+    for week_start in _iterate_weeks(start_monday, weeks_count):
+        for dow in days:
+            if not 0 <= dow <= 6:
+                raise HTTPException(
+                    status_code=400,
+                    detail="day_of_week должен быть в диапазоне 0-6",
+                )
+            day_date = week_start + timedelta(days=dow)
+            if day_date < start_date:
+                # Пропускаем занятия до стартовой даты
+                continue
+
+            start_dt = _combine_date_time(day_date, start_time)
+            end_dt = start_dt + duration
+            planned_intervals.append((start_dt, end_dt))
+
+    if not planned_intervals:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Не удалось сгенерировать ни одного занятия "
+                "для заданных параметров"
+            ),
+        )
+
+    min_start = min(s for s, _ in planned_intervals)
+    max_end = max(e for _, e in planned_intervals)
+
+    # Проверка на наложение с уже существующими занятиями этого же сервиса.
+    existing_q = (
+        select(Slot)
+        .where(
+            Slot.studio_id == studio_id,
+            Slot.service_id == service_id,
+            Slot.start_time < max_end,
+            Slot.end_time > min_start,
+        )
+    )
+    existing_result = await db.execute(existing_q)
+    existing_slots: list[Slot] = list(existing_result.scalars().all())
+
+    if existing_slots:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Найдены уже существующие занятия этого курса в указанный период. "
+                "Сначала удалите старые занятия или выберите другой интервал."
+            ),
+        )
+
+    created_slots: list[Slot] = []
+    for start_dt, end_dt in planned_intervals:
+        slot = Slot(
+            studio_id=studio_id,
+            service_id=service_id,
+            start_time=start_dt,
+            end_time=end_dt,
+            title=service.name,
+            description=service.description,
+            max_capacity=service.max_capacity,
+            price_cents=service.price_single_cents,
+            course_price_cents=service.price_course_cents,
+        )
+        db.add(slot)
+        created_slots.append(slot)
+
+    await db.flush()
+    # Обновляем объекты, чтобы у них появились id
+    for slot in created_slots:
+        await db.refresh(slot)
+    return created_slots
 
 
 @dataclass
@@ -449,7 +450,7 @@ async def check_course_availability(
 
 
 async def create_course_booking(
-    db: AsyncSession,
+    uow: UnitOfWork,
     *,
     schema: CourseBookingCreate,
 ) -> CourseBookingResponse:
@@ -458,95 +459,95 @@ async def create_course_booking(
 
     Важно: операция атомарна в рамках AsyncSession/транзакции.
     """
-    async with db.begin():
-        availability = await check_course_availability(
-            db,
-            service_id=schema.service_id,
-            for_update=True,
-        )
-        if not availability.can_book:
-            raise HTTPException(
-                status_code=400,
-                detail=availability.message or "Недостаточно мест для курса",
-            )
-
-        # Получаем слоты ещё раз, чтобы зафиксировать актуальный список
-        result = await db.execute(
-            select(Service)
-            .options(selectinload(Service.slots))
-            .where(Service.id == schema.service_id)
-        )
-        service = result.scalar_one_or_none()
-        if service is None:
-            raise HTTPException(status_code=404, detail="Услуга не найдена")
-
-        slots = sorted(service.slots, key=lambda s: s.start_time)
-        if not slots:
-            raise HTTPException(
-                status_code=400,
-                detail="Для этого курса ещё не создано ни одного занятия",
-            )
-
-        total_amount_cents = service.price_course_cents or (
-            service.price_single_cents * len(slots)
+    db = uow.session
+    availability = await check_course_availability(
+        db,
+        service_id=schema.service_id,
+        for_update=True,
+    )
+    if not availability.can_book:
+        raise HTTPException(
+            status_code=400,
+            detail=availability.message or "Недостаточно мест для курса",
         )
 
-        # Распределяем стоимость курса по занятиям так, чтобы сумма unit_price_cents
-        # строго совпадала с total_amount_cents (решаем "The Cent Problem").
-        base_unit = total_amount_cents // len(slots)
-        remainder = total_amount_cents % len(slots)
-        prices = [base_unit + 1] * remainder + [base_unit] * (len(slots) - remainder)
+    # Получаем слоты ещё раз, чтобы зафиксировать актуальный список
+    result = await db.execute(
+        select(Service)
+        .options(selectinload(Service.slots))
+        .where(Service.id == schema.service_id)
+    )
+    service = result.scalar_one_or_none()
+    if service is None:
+        raise HTTPException(status_code=404, detail="Услуга не найдена")
 
-        order = Order(
-            studio_id=service.studio_id,
-            service_id=service.id,
+    slots = sorted(service.slots, key=lambda s: s.start_time)
+    if not slots:
+        raise HTTPException(
+            status_code=400,
+            detail="Для этого курса ещё не создано ни одного занятия",
+        )
+
+    total_amount_cents = service.price_course_cents or (
+        service.price_single_cents * len(slots)
+    )
+
+    # Распределяем стоимость курса по занятиям так, чтобы сумма unit_price_cents
+    # строго совпадала с total_amount_cents (решаем "The Cent Problem").
+    base_unit = total_amount_cents // len(slots)
+    remainder = total_amount_cents % len(slots)
+    prices = [base_unit + 1] * remainder + [base_unit] * (len(slots) - remainder)
+
+    order = Order(
+        studio_id=service.studio_id,
+        service_id=service.id,
+        user_id=None,
+        guest_email=schema.guest_email,
+        guest_name=schema.guest_name,
+        total_amount_cents=total_amount_cents,
+        currency="eur",
+        status=OrderStatus.PENDING,
+    )
+    db.add(order)
+    await db.flush()
+    await db.refresh(order)
+
+    bookings: list[Booking] = []
+    for idx, slot in enumerate(slots):
+        unit_price = prices[idx]
+        booking = Booking(
+            slot_id=slot.id,
             user_id=None,
-            guest_email=schema.guest_email,
+            guest_session_id=None,
             guest_name=schema.guest_name,
-            total_amount_cents=total_amount_cents,
-            currency="eur",
-            status=OrderStatus.PENDING,
+            guest_email=schema.guest_email,
+            guest_phone=schema.guest_phone,
+            status=BookingStatus.PENDING,
+            booking_type=BookingType.COURSE,
+            service_id=service.id,
+            order_id=order.id,
+            unit_price_cents=unit_price,
         )
-        db.add(order)
-        await db.flush()
-        await db.refresh(order)
+        db.add(booking)
+        bookings.append(booking)
 
-        bookings: list[Booking] = []
-        for idx, slot in enumerate(slots):
-            unit_price = prices[idx]
-            booking = Booking(
-                slot_id=slot.id,
-                user_id=None,
-                guest_session_id=None,
-                guest_name=schema.guest_name,
-                guest_email=schema.guest_email,
-                guest_phone=schema.guest_phone,
-                status=BookingStatus.PENDING,
-                booking_type=BookingType.COURSE,
-                service_id=service.id,
-                order_id=order.id,
-                unit_price_cents=unit_price,
-            )
-            db.add(booking)
-            bookings.append(booking)
+    await db.flush()
+    for b in bookings:
+        await db.refresh(b)
 
-        await db.flush()
-        for b in bookings:
-            await db.refresh(b)
+    order_schema = OrderResponse.model_validate(order)
+    # Отложим полноценный маппинг BookingResponse, пока основной поток остаётся single-slot
+    from app.schemas.booking import (  # локальный импорт, чтобы избежать циклов
+        BookingResponse,
+    )
 
-        order_schema = OrderResponse.model_validate(order)
-        # Отложим полноценный маппинг BookingResponse, пока основной поток остаётся single-slot
-        from app.schemas.booking import (  # локальный импорт, чтобы избежать циклов
-            BookingResponse,
-        )
+    booking_schemas = [BookingResponse.model_validate(b) for b in bookings]
 
-        booking_schemas = [BookingResponse.model_validate(b) for b in bookings]
-
-        return CourseBookingResponse(
-            order=order_schema,
-            bookings=booking_schemas,
-            availability=availability,
-        )
+    return CourseBookingResponse(
+        order=order_schema,
+        bookings=booking_schemas,
+        availability=availability,
+    )
 
 
 async def get_studio_public(

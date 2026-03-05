@@ -12,6 +12,7 @@ from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.uow import UnitOfWork
 from app.models.booking import Booking, BookingStatus, BookingType
 from app.models.slot import Slot
 from app.schemas.booking import BookingCreate, BookingUpdate
@@ -88,7 +89,7 @@ async def _get_confirmed_bookings_count(db: AsyncSession, slot_id: int) -> int:
     return result.scalar_one_or_none() or 0
 
 
-async def create_booking(db: AsyncSession, schema: BookingCreate) -> Booking:
+async def create_booking(uow: UnitOfWork, schema: BookingCreate) -> Booking:
     """
     Создать гостевное бронирование.
 
@@ -99,84 +100,84 @@ async def create_booking(db: AsyncSession, schema: BookingCreate) -> Booking:
 
     guest_session_id — опционально (добавим при интеграции Magic Link).
     """
-    async with db.begin():
-        # Блокируем слот на время проверки и создания бронирования,
-        # чтобы избежать гонок при одновременных запросах.
-        result = await db.execute(
-            select(Slot).where(Slot.id == schema.slot_id).with_for_update()
+    db = uow.session
+    # Блокируем слот на время проверки и создания бронирования,
+    # чтобы избежать гонок при одновременных запросах.
+    result = await db.execute(
+        select(Slot).where(Slot.id == schema.slot_id).with_for_update()
+    )
+    slot = result.scalar_one_or_none()
+    if slot is None:
+        raise HTTPException(status_code=404, detail="Слот не найден")
+    if not slot.is_active:
+        raise HTTPException(
+            status_code=400,
+            detail="Слот недоступен для бронирования",
         )
-        slot = result.scalar_one_or_none()
-        if slot is None:
-            raise HTTPException(status_code=404, detail="Слот не найден")
-        if not slot.is_active:
-            raise HTTPException(
-                status_code=400,
-                detail="Слот недоступен для бронирования",
-            )
 
-        if slot.start_time <= datetime.utcnow():
-            raise HTTPException(
-                status_code=400,
-                detail="Нельзя бронировать прошедший слот",
-            )
-
-        confirmed_count = await _get_confirmed_bookings_count(db, slot.id)
-        # Учитываем и pending — одно место на бронирование
-        pending_result = await db.execute(
-            select(func.count()).select_from(Booking).where(
-                Booking.slot_id == slot.id,
-                Booking.status == BookingStatus.PENDING,
-            )
+    if slot.start_time <= datetime.utcnow():
+        raise HTTPException(
+            status_code=400,
+            detail="Нельзя бронировать прошедший слот",
         )
-        total_bookings = confirmed_count + (pending_result.scalar_one_or_none() or 0)
-        if total_bookings >= slot.max_capacity:
-            raise HTTPException(status_code=400, detail="Нет свободных мест")
 
-        booking = Booking(
-            slot_id=schema.slot_id,
-            guest_name=schema.guest_name,
-            guest_email=schema.guest_email,
-            guest_phone=schema.guest_phone,
-            status=BookingStatus.PENDING,
-            booking_type=getattr(schema, "booking_type", BookingType.SINGLE),
-            service_id=getattr(schema, "service_id", None),
+    confirmed_count = await _get_confirmed_bookings_count(db, slot.id)
+    # Учитываем и pending — одно место на бронирование
+    pending_result = await db.execute(
+        select(func.count()).select_from(Booking).where(
+            Booking.slot_id == slot.id,
+            Booking.status == BookingStatus.PENDING,
         )
-        db.add(booking)
-        await db.flush()
-        await db.refresh(booking)
-        return booking
+    )
+    total_bookings = confirmed_count + (pending_result.scalar_one_or_none() or 0)
+    if total_bookings >= slot.max_capacity:
+        raise HTTPException(status_code=400, detail="Нет свободных мест")
+
+    booking = Booking(
+        slot_id=schema.slot_id,
+        guest_name=schema.guest_name,
+        guest_email=schema.guest_email,
+        guest_phone=schema.guest_phone,
+        status=BookingStatus.PENDING,
+        booking_type=getattr(schema, "booking_type", BookingType.SINGLE),
+        service_id=getattr(schema, "service_id", None),
+    )
+    db.add(booking)
+    await db.flush()
+    await db.refresh(booking)
+    return booking
 
 
-async def cancel_booking(db: AsyncSession, booking: Booking) -> Booking:
+async def cancel_booking(uow: UnitOfWork, booking: Booking) -> Booking:
     """
     Отменить бронирование.
 
     Только pending или confirmed можно отменить.
     """
-    async with db.begin():
-        if booking.status == BookingStatus.CANCELLED:
-            raise HTTPException(
-                status_code=400,
-                detail="Бронирование уже отменено",
-            )
+    db = uow.session
+    if booking.status == BookingStatus.CANCELLED:
+        raise HTTPException(
+            status_code=400,
+            detail="Бронирование уже отменено",
+        )
 
-        booking.status = BookingStatus.CANCELLED
-        booking.cancelled_at = datetime.utcnow()
-        await db.flush()
-        await db.refresh(booking)
-        return booking
+    booking.status = BookingStatus.CANCELLED
+    booking.cancelled_at = datetime.utcnow()
+    await db.flush()
+    await db.refresh(booking)
+    return booking
 
 
 async def update_booking(
-    db: AsyncSession,
+    uow: UnitOfWork,
     booking: Booking,
     schema: BookingUpdate,
 ) -> Booking:
     """Обновить бронирование (статус, payment)."""
-    async with db.begin():
-        update_data = schema.model_dump(exclude_unset=True)
-        for field, value in update_data.items():
-            setattr(booking, field, value)
-        await db.flush()
-        await db.refresh(booking)
-        return booking
+    db = uow.session
+    update_data = schema.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(booking, field, value)
+    await db.flush()
+    await db.refresh(booking)
+    return booking
