@@ -9,8 +9,11 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 from app.api.v1 import auth, bookings, health, payments, services, slots, studios
+from app.core.exceptions import AppError
 from app.api.v1.endpoints import search
 from app.api.webhooks import router as webhooks_router
 from app.core.config import settings
@@ -48,6 +51,23 @@ app = FastAPI(
     debug=settings.DEBUG,
     lifespan=lifespan,
 )
+
+
+# === Exception handlers (доменные исключения → HTTP) ===
+def _error_body(detail: str, status_code: int) -> dict:
+    """Единый формат тела ошибки (расширяем до RFC 7807 при необходимости)."""
+    return {"detail": detail}
+
+
+async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
+    """Маппинг доменных исключений в HTTP-ответ."""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=_error_body(exc.detail, exc.status_code),
+    )
+
+
+app.add_exception_handler(AppError, app_error_handler)
 
 # === CORS Middleware ===
 # Разрешаем запросы с фронтенда для разработки и production

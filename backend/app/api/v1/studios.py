@@ -14,13 +14,14 @@ CRUD операции:
 """
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.service import Service
 
 from app.api.deps import get_current_user_required, get_db, get_uow
+from app.core.exceptions import ValidationError
 from app.core.uow import UnitOfWork
 from app.models.service import ServiceCategory
 from app.models.user import User
@@ -37,7 +38,9 @@ from app.services.slot import get_slots
 from app.services.studio import (
     create_studio,
     delete_studio,
+    ensure_studio_owner,
     get_studio,
+    get_studio_or_raise,
     get_studios,
     get_studios_count,
     update_studio,
@@ -157,10 +160,7 @@ async def get_studio_by_id(
     db: AsyncSession = Depends(get_db),
 ) -> StudioResponse:
     """Получить студию по ID."""
-    studio = await get_studio(db, studio_id)
-    if studio is None:
-        raise HTTPException(status_code=404, detail="Студия не найдена")
-    return studio
+    return await get_studio_or_raise(db, studio_id)
 
 
 @router.get("/slug/{slug}/public", response_model=StudioPublicResponse)
@@ -194,14 +194,11 @@ async def generate_studio_schedule_endpoint(
         "weeks_count": 6
     }
     """
-    db = uow.session
-    studio = await get_studio(db, studio_id)
-    if studio is None:
-        raise HTTPException(status_code=404, detail="Студия не найдена")
-    if studio.owner_id != user.id:
-        raise HTTPException(status_code=403, detail="Нет доступа к этой студии")
-
     from datetime import time as time_cls
+
+    db = uow.session
+    studio = await get_studio_or_raise(db, studio_id)
+    ensure_studio_owner(studio, user.id)
 
     try:
         service_id = int(payload["service_id"])
@@ -209,9 +206,8 @@ async def generate_studio_schedule_endpoint(
         start_time_str: str = payload["start_time"]
         weeks_count = int(payload["weeks_count"])
     except (KeyError, ValueError, TypeError):
-        raise HTTPException(status_code=400, detail="Неверный формат payload")
+        raise ValidationError("Неверный формат payload")
 
-    # Разбираем время в формате HH:MM[:SS]
     try:
         parts = [int(p) for p in start_time_str.split(":")]
         if len(parts) == 2:
@@ -221,7 +217,7 @@ async def generate_studio_schedule_endpoint(
         else:
             raise ValueError
     except ValueError:
-        raise HTTPException(status_code=400, detail="Некорректный формат start_time")
+        raise ValidationError("Некорректный формат start_time")
 
     slots = await occurrence_generator(
         uow,
@@ -261,11 +257,8 @@ async def update_studio_endpoint(
 ) -> StudioResponse:
     """Обновить студию (только владелец)."""
     db = uow.session
-    studio = await get_studio(db, studio_id)
-    if studio is None:
-        raise HTTPException(status_code=404, detail="Студия не найдена")
-    if studio.owner_id != user.id:
-        raise HTTPException(status_code=403, detail="Нет доступа к этой студии")
+    studio = await get_studio_or_raise(db, studio_id)
+    ensure_studio_owner(studio, user.id)
     return await update_studio(uow, studio, schema)
 
 
@@ -277,9 +270,6 @@ async def delete_studio_endpoint(
 ) -> None:
     """Удалить студию (только владелец). Удалятся и связанные слоты."""
     db = uow.session
-    studio = await get_studio(db, studio_id)
-    if studio is None:
-        raise HTTPException(status_code=404, detail="Студия не найдена")
-    if studio.owner_id != user.id:
-        raise HTTPException(status_code=403, detail="Нет доступа к этой студии")
+    studio = await get_studio_or_raise(db, studio_id)
+    ensure_studio_owner(studio, user.id)
     await delete_studio(uow, studio)

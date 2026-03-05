@@ -9,6 +9,7 @@
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
 from app.models.service import Service
 from app.models.studio import Studio
@@ -155,6 +156,20 @@ async def get_studios_count(
     return result.scalar_one_or_none() or 0
 
 
+async def get_studio_or_raise(db: AsyncSession, studio_id: int) -> Studio:
+    """Получить студию по ID или выбросить NotFoundError."""
+    studio = await get_studio(db, studio_id)
+    if studio is None:
+        raise NotFoundError("Студия не найдена")
+    return studio
+
+
+def ensure_studio_owner(studio: Studio, user_id: int) -> None:
+    """Проверить, что user_id — владелец студии; иначе ForbiddenError."""
+    if studio.owner_id != user_id:
+        raise ForbiddenError("Нет доступа к этой студии")
+
+
 async def create_studio(uow: UnitOfWork, schema: StudioCreate) -> Studio:
     """
     Создать студию.
@@ -166,12 +181,7 @@ async def create_studio(uow: UnitOfWork, schema: StudioCreate) -> Studio:
     # Проверка существования владельца
     result = await db.execute(select(User).where(User.id == schema.owner_id))
     if schema.owner_id is None or result.scalar_one_or_none() is None:
-        from fastapi import HTTPException
-
-        raise HTTPException(
-            status_code=400,
-            detail="Владелец не указан или не найден",
-        )
+        raise ValidationError("Владелец не указан или не найден")
 
     studio = Studio(
         owner_id=schema.owner_id,
