@@ -104,29 +104,30 @@ async def create_slot(db: AsyncSession, schema: SlotCreate) -> Slot:
     """
     from fastapi import HTTPException
 
-    if schema.end_time <= schema.start_time:
-        raise HTTPException(
-            status_code=400,
-            detail="Время окончания должно быть позже времени начала",
+    async with db.begin():
+        if schema.end_time <= schema.start_time:
+            raise HTTPException(
+                status_code=400,
+                detail="Время окончания должно быть позже времени начала",
+            )
+
+        result = await db.execute(select(Studio).where(Studio.id == schema.studio_id))
+        if result.scalar_one_or_none() is None:
+            raise HTTPException(status_code=404, detail="Студия не найдена")
+
+        slot = Slot(
+            studio_id=schema.studio_id,
+            start_time=_to_naive_utc(schema.start_time),
+            end_time=_to_naive_utc(schema.end_time),
+            title=schema.title,
+            description=schema.description,
+            max_capacity=schema.max_capacity,
+            price_cents=schema.price_cents,
         )
-
-    result = await db.execute(select(Studio).where(Studio.id == schema.studio_id))
-    if result.scalar_one_or_none() is None:
-        raise HTTPException(status_code=404, detail="Студия не найдена")
-
-    slot = Slot(
-        studio_id=schema.studio_id,
-        start_time=_to_naive_utc(schema.start_time),
-        end_time=_to_naive_utc(schema.end_time),
-        title=schema.title,
-        description=schema.description,
-        max_capacity=schema.max_capacity,
-        price_cents=schema.price_cents,
-    )
-    db.add(slot)
-    await db.flush()
-    await db.refresh(slot)
-    return slot
+        db.add(slot)
+        await db.flush()
+        await db.refresh(slot)
+        return slot
 
 
 async def update_slot(
@@ -141,24 +142,26 @@ async def update_slot(
     """
     from fastapi import HTTPException
 
-    update_data = schema.model_dump(exclude_unset=True)
-    start_time = update_data.get("start_time", slot.start_time)
-    end_time = update_data.get("end_time", slot.end_time)
-    if end_time <= start_time:
-        raise HTTPException(
-            status_code=400,
-            detail="Время окончания должно быть позже времени начала",
-        )
-    for field, value in update_data.items():
-        if field in ("start_time", "end_time") and value is not None:
-            value = _to_naive_utc(value)
-        setattr(slot, field, value)
-    await db.flush()
-    await db.refresh(slot)
-    return slot
+    async with db.begin():
+        update_data = schema.model_dump(exclude_unset=True)
+        start_time = update_data.get("start_time", slot.start_time)
+        end_time = update_data.get("end_time", slot.end_time)
+        if end_time <= start_time:
+            raise HTTPException(
+                status_code=400,
+                detail="Время окончания должно быть позже времени начала",
+            )
+        for field, value in update_data.items():
+            if field in ("start_time", "end_time") and value is not None:
+                value = _to_naive_utc(value)
+            setattr(slot, field, value)
+        await db.flush()
+        await db.refresh(slot)
+        return slot
 
 
 async def delete_slot(db: AsyncSession, slot: Slot) -> None:
     """Удалить слот. Cascade удалит бронирования."""
-    await db.delete(slot)
-    await db.flush()
+    async with db.begin():
+        await db.delete(slot)
+        await db.flush()

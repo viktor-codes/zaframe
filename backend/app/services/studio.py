@@ -161,25 +161,29 @@ async def create_studio(db: AsyncSession, schema: StudioCreate) -> Studio:
     """
     from app.models.user import User
 
-    # Проверка существования владельца
-    result = await db.execute(select(User).where(User.id == schema.owner_id))
-    if schema.owner_id is None or result.scalar_one_or_none() is None:
-        from fastapi import HTTPException
+    async with db.begin():
+        # Проверка существования владельца
+        result = await db.execute(select(User).where(User.id == schema.owner_id))
+        if schema.owner_id is None or result.scalar_one_or_none() is None:
+            from fastapi import HTTPException
 
-        raise HTTPException(status_code=400, detail="Владелец не указан или не найден")
+            raise HTTPException(
+                status_code=400,
+                detail="Владелец не указан или не найден",
+            )
 
-    studio = Studio(
-        owner_id=schema.owner_id,
-        name=schema.name,
-        description=schema.description,
-        email=schema.email,
-        phone=schema.phone,
-        address=schema.address,
-    )
-    db.add(studio)
-    await db.flush()  # Получаем id до commit
-    await db.refresh(studio)  # Обновляем объект из БД
-    return studio
+        studio = Studio(
+            owner_id=schema.owner_id,
+            name=schema.name,
+            description=schema.description,
+            email=schema.email,
+            phone=schema.phone,
+            address=schema.address,
+        )
+        db.add(studio)
+        await db.flush()  # Получаем id до commit
+        await db.refresh(studio)  # Обновляем объект из БД
+        return studio
 
 
 async def update_studio(
@@ -189,18 +193,20 @@ async def update_studio(
 ) -> Studio:
     """
     Обновить студию.
-    
+
     Обновляет только переданные поля (partial update).
     """
-    update_data = schema.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(studio, field, value)
-    await db.flush()
-    await db.refresh(studio)
-    return studio
+    async with db.begin():
+        update_data = schema.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(studio, field, value)
+        await db.flush()
+        await db.refresh(studio)
+        return studio
 
 
 async def delete_studio(db: AsyncSession, studio: Studio) -> None:
     """Удалить студию. Cascade удалит связанные слоты."""
-    await db.delete(studio)
-    await db.flush()
+    async with db.begin():
+        await db.delete(studio)
+        await db.flush()

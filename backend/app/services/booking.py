@@ -99,45 +99,52 @@ async def create_booking(db: AsyncSession, schema: BookingCreate) -> Booking:
 
     guest_session_id — опционально (добавим при интеграции Magic Link).
     """
-    # Блокируем слот на время проверки и создания бронирования,
-    # чтобы избежать гонок при одновременных запросах.
-    result = await db.execute(
-        select(Slot).where(Slot.id == schema.slot_id).with_for_update()
-    )
-    slot = result.scalar_one_or_none()
-    if slot is None:
-        raise HTTPException(status_code=404, detail="Слот не найден")
-    if not slot.is_active:
-        raise HTTPException(status_code=400, detail="Слот недоступен для бронирования")
-
-    if slot.start_time <= datetime.utcnow():
-        raise HTTPException(status_code=400, detail="Нельзя бронировать прошедший слот")
-
-    confirmed_count = await _get_confirmed_bookings_count(db, slot.id)
-    # Учитываем и pending — одно место на бронирование
-    pending_count = await db.execute(
-        select(func.count()).select_from(Booking).where(
-            Booking.slot_id == slot.id,
-            Booking.status == BookingStatus.PENDING,
+    async with db.begin():
+        # Блокируем слот на время проверки и создания бронирования,
+        # чтобы избежать гонок при одновременных запросах.
+        result = await db.execute(
+            select(Slot).where(Slot.id == schema.slot_id).with_for_update()
         )
-    )
-    total_bookings = confirmed_count + (pending_count.scalar_one_or_none() or 0)
-    if total_bookings >= slot.max_capacity:
-        raise HTTPException(status_code=400, detail="Нет свободных мест")
+        slot = result.scalar_one_or_none()
+        if slot is None:
+            raise HTTPException(status_code=404, detail="Слот не найден")
+        if not slot.is_active:
+            raise HTTPException(
+                status_code=400,
+                detail="Слот недоступен для бронирования",
+            )
 
-    booking = Booking(
-        slot_id=schema.slot_id,
-        guest_name=schema.guest_name,
-        guest_email=schema.guest_email,
-        guest_phone=schema.guest_phone,
-        status=BookingStatus.PENDING,
-        booking_type=getattr(schema, "booking_type", BookingType.SINGLE),
-        service_id=getattr(schema, "service_id", None),
-    )
-    db.add(booking)
-    await db.flush()
-    await db.refresh(booking)
-    return booking
+        if slot.start_time <= datetime.utcnow():
+            raise HTTPException(
+                status_code=400,
+                detail="Нельзя бронировать прошедший слот",
+            )
+
+        confirmed_count = await _get_confirmed_bookings_count(db, slot.id)
+        # Учитываем и pending — одно место на бронирование
+        pending_result = await db.execute(
+            select(func.count()).select_from(Booking).where(
+                Booking.slot_id == slot.id,
+                Booking.status == BookingStatus.PENDING,
+            )
+        )
+        total_bookings = confirmed_count + (pending_result.scalar_one_or_none() or 0)
+        if total_bookings >= slot.max_capacity:
+            raise HTTPException(status_code=400, detail="Нет свободных мест")
+
+        booking = Booking(
+            slot_id=schema.slot_id,
+            guest_name=schema.guest_name,
+            guest_email=schema.guest_email,
+            guest_phone=schema.guest_phone,
+            status=BookingStatus.PENDING,
+            booking_type=getattr(schema, "booking_type", BookingType.SINGLE),
+            service_id=getattr(schema, "service_id", None),
+        )
+        db.add(booking)
+        await db.flush()
+        await db.refresh(booking)
+        return booking
 
 
 async def cancel_booking(db: AsyncSession, booking: Booking) -> Booking:
@@ -146,14 +153,18 @@ async def cancel_booking(db: AsyncSession, booking: Booking) -> Booking:
 
     Только pending или confirmed можно отменить.
     """
-    if booking.status == BookingStatus.CANCELLED:
-        raise HTTPException(status_code=400, detail="Бронирование уже отменено")
+    async with db.begin():
+        if booking.status == BookingStatus.CANCELLED:
+            raise HTTPException(
+                status_code=400,
+                detail="Бронирование уже отменено",
+            )
 
-    booking.status = BookingStatus.CANCELLED
-    booking.cancelled_at = datetime.utcnow()
-    await db.flush()
-    await db.refresh(booking)
-    return booking
+        booking.status = BookingStatus.CANCELLED
+        booking.cancelled_at = datetime.utcnow()
+        await db.flush()
+        await db.refresh(booking)
+        return booking
 
 
 async def update_booking(
@@ -162,9 +173,10 @@ async def update_booking(
     schema: BookingUpdate,
 ) -> Booking:
     """Обновить бронирование (статус, payment)."""
-    update_data = schema.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(booking, field, value)
-    await db.flush()
-    await db.refresh(booking)
-    return booking
+    async with db.begin():
+        update_data = schema.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(booking, field, value)
+        await db.flush()
+        await db.refresh(booking)
+        return booking
