@@ -10,6 +10,7 @@ from datetime import datetime, timedelta, timezone
 from secrets import token_urlsafe
 import hashlib
 import hmac
+from dataclasses import dataclass
 
 from jose import JWTError, jwt
 
@@ -102,6 +103,37 @@ def get_user_id_from_refresh_token(token: str) -> int | None:
         return int(payload["sub"])
     except (ValueError, KeyError):
         return None
+
+
+@dataclass
+class RefreshTokenData:
+    """Структурированное содержимое refresh-токена после валидации."""
+
+    user_id: int
+    jti: str
+    expires_at: datetime
+
+
+def parse_refresh_token(token: str) -> RefreshTokenData | None:
+    """
+    Распарсить и провалидировать refresh-token.
+
+    Возвращает RefreshTokenData или None, если токен недействителен.
+    """
+    payload = decode_token(token)
+    if payload is None or payload.get("type") != "refresh":
+        return None
+
+    try:
+        user_id = int(payload["sub"])
+        jti = str(payload["jti"])
+        exp_raw = payload["exp"]
+        exp_ts = float(exp_raw)
+        expires_at = datetime.fromtimestamp(exp_ts, tz=timezone.utc)
+    except (KeyError, TypeError, ValueError):
+        return None
+
+    return RefreshTokenData(user_id=user_id, jti=jti, expires_at=expires_at)
 
 
 def generate_magic_link_token() -> str:

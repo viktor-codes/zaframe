@@ -40,7 +40,11 @@ class User(TimestampMixin, Base):
 
     # Аутентификация (для Magic Link)
     is_active: Mapped[bool] = mapped_column(default=True)  # Аккаунт активирован через Magic Link
-    magic_link_token: Mapped[str | None] = mapped_column(String(255), nullable=True)  # Хэш токена для Magic Link
+    magic_link_token: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+        index=True,
+    )  # Хэш токена для Magic Link
     magic_link_expires_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,

@@ -16,6 +16,7 @@ from app.core.security import (
     get_magic_link_expires_at,
     get_user_id_from_access_token,
     hash_magic_link_token,
+    parse_refresh_token,
 )
 from app.models.user import User
 from app.models.refresh_token import RefreshToken
@@ -35,11 +36,12 @@ async def request_magic_link(
     2. Генерирует токен, сохраняет его хэш в БД
     3. Отправляет email со ссылкой
     """
-    user = await get_or_create_user(db, email=email, name=name)
-    token = generate_magic_link_token()
-    user.magic_link_token = hash_magic_link_token(token)
-    user.magic_link_expires_at = get_magic_link_expires_at()
-    await db.flush()
+    async with db.begin():
+        user = await get_or_create_user(db, email=email, name=name)
+        token = generate_magic_link_token()
+        user.magic_link_token = hash_magic_link_token(token)
+        user.magic_link_expires_at = get_magic_link_expires_at()
+        await db.flush()
 
     magic_link_url = f"{settings.FRONTEND_URL}/auth/verify?token={token}"
     await send_magic_link_email(email, magic_link_url)
@@ -55,50 +57,41 @@ async def verify_magic_link(
     Возвращает (user, access_token, refresh_token).
     Raises HTTPException если токен невалиден.
     """
-    now_utc = datetime.now(timezone.utc)
-    token_hash = hash_magic_link_token(token)
-    result = await db.execute(
-        select(User).where(
-            User.magic_link_token == token_hash,
-            User.magic_link_expires_at > now_utc,
+    async with db.begin():
+        now_utc = datetime.now(timezone.utc)
+        token_hash = hash_magic_link_token(token)
+        result = await db.execute(
+            select(User).where(
+                User.magic_link_token == token_hash,
+                User.magic_link_expires_at > now_utc,
+            )
         )
-    )
-    user = result.scalar_one_or_none()
-    if user is None:
-        raise HTTPException(status_code=400, detail="Ссылка недействительна или истекла")
+        user = result.scalar_one_or_none()
+        if user is None:
+            raise HTTPException(
+                status_code=400,
+                detail="Ссылка недействительна или истекла",
+            )
 
-    user.magic_link_token = None
-    user.magic_link_expires_at = None
-    user.last_login_at = now_utc
-    await db.flush()
-    # Refresh нужен: после flush атрибуты помечены expired, и доступ к ним
-    # (например updated_at при сериализации в Pydantic) вызывает lazy load,
-    # что в async SQLAlchemy даёт MissingGreenlet
-    await db.refresh(user)
+        user.magic_link_token = None
+        user.magic_link_expires_at = None
+        user.last_login_at = now_utc
+        await db.flush()
+        # Refresh нужен: после flush атрибуты помечены expired, и доступ к ним
+        # (например updated_at при сериализации в Pydantic) вызывает lazy load,
+        # что в async SQLAlchemy даёт MissingGreenlet
+        await db.refresh(user)
 
-    access_token = create_access_token(user.id, user.email)
-    refresh_token = create_refresh_token(user.id)
+        access_token = create_access_token(user.id, user.email)
+        refresh_token = create_refresh_token(user.id)
 
-    # Регистрируем сессию refresh-токена
-    refresh_payload = decode_token(refresh_token)
-    if (
-        refresh_payload is not None
-        and refresh_payload.get("type") == "refresh"
-        and "jti" in refresh_payload
-        and "exp" in refresh_payload
-    ):
-        try:
-            jti = str(refresh_payload["jti"])
-            exp_ts = float(refresh_payload["exp"])
-            expires_at = datetime.fromtimestamp(exp_ts, tz=timezone.utc)
-        except (TypeError, ValueError):
-            jti = None
-        if jti:
+        refresh_data = parse_refresh_token(refresh_token)
+        if refresh_data is not None:
             db.add(
                 RefreshToken(
                     user_id=user.id,
-                    jti=jti,
-                    expires_at=expires_at,
+                    jti=refresh_data.jti,
+                    expires_at=refresh_data.expires_at,
                 )
             )
             await db.flush()
@@ -116,64 +109,58 @@ async def refresh_access_token(
     Возвращает (access_token, refresh_token).
     Raises HTTPException если refresh token невалиден.
     """
-    payload = decode_token(refresh_token)
-    if payload is None or payload.get("type") != "refresh":
-        raise HTTPException(status_code=401, detail="Недействительный refresh token")
-
-    try:
-        user_id = int(payload["sub"])
-        jti = str(payload["jti"])
-    except (KeyError, ValueError, TypeError):
-        raise HTTPException(status_code=401, detail="Недействительный refresh token")
-
-    now_utc = datetime.now(timezone.utc)
-
-    # Проверяем, что сессия существует и активна
-    result = await db.execute(
-        select(RefreshToken).where(
-            RefreshToken.user_id == user_id,
-            RefreshToken.jti == jti,
+    refresh_data = parse_refresh_token(refresh_token)
+    if refresh_data is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Недействительный refresh token",
         )
-    )
-    refresh_session = result.scalar_one_or_none()
-    if refresh_session is None or not refresh_session.is_active(now_utc):
-        raise HTTPException(status_code=401, detail="Недействительный refresh token")
 
-    # Отзываем старый refresh-токен (ротация)
-    refresh_session.revoked_at = now_utc
-    refresh_session.last_used_at = now_utc
+    user_id = refresh_data.user_id
+    jti = refresh_data.jti
 
-    user = await get_user_by_id(db, user_id)
-    if user is None:
-        raise HTTPException(status_code=401, detail="Пользователь не найден")
+    async with db.begin():
+        now_utc = datetime.now(timezone.utc)
 
-    access_token = create_access_token(user.id, user.email)
-    new_refresh_token = create_refresh_token(user.id)
+        # Проверяем, что сессия существует и активна
+        result = await db.execute(
+            select(RefreshToken).where(
+                RefreshToken.user_id == user_id,
+                RefreshToken.jti == jti,
+            )
+        )
+        refresh_session = result.scalar_one_or_none()
+        if refresh_session is None or not refresh_session.is_active(now_utc):
+            raise HTTPException(
+                status_code=401,
+                detail="Недействительный refresh token",
+            )
 
-    # Регистрируем новую сессию refresh-токена
-    new_payload = decode_token(new_refresh_token)
-    if (
-        new_payload is not None
-        and new_payload.get("type") == "refresh"
-        and "jti" in new_payload
-        and "exp" in new_payload
-    ):
-        try:
-            new_jti = str(new_payload["jti"])
-            new_exp_ts = float(new_payload["exp"])
-            new_expires_at = datetime.fromtimestamp(new_exp_ts, tz=timezone.utc)
-        except (TypeError, ValueError):
-            new_jti = None
-        if new_jti:
+        # Отзываем старый refresh-токен (ротация)
+        refresh_session.revoked_at = now_utc
+        refresh_session.last_used_at = now_utc
+
+        user = await get_user_by_id(db, user_id)
+        if user is None:
+            raise HTTPException(
+                status_code=401,
+                detail="Пользователь не найден",
+            )
+
+        access_token = create_access_token(user.id, user.email)
+        new_refresh_token = create_refresh_token(user.id)
+
+        new_data = parse_refresh_token(new_refresh_token)
+        if new_data is not None:
             db.add(
                 RefreshToken(
                     user_id=user.id,
-                    jti=new_jti,
-                    expires_at=new_expires_at,
+                    jti=new_data.jti,
+                    expires_at=new_data.expires_at,
                 )
             )
 
-    await db.flush()
+        await db.flush()
     return access_token, new_refresh_token
 
 
@@ -200,31 +187,23 @@ async def logout_current_session(
     - если токен невалиден/не принадлежит пользователю — тихий no-op (idempotent logout)
     - если сессия найдена и ещё активна — выставляем revoked_at/last_used_at.
     """
-    payload = decode_token(refresh_token)
-    if payload is None or payload.get("type") != "refresh":
+    data = parse_refresh_token(refresh_token)
+    if data is None or data.user_id != user.id:
         return
 
-    try:
-        user_id = int(payload["sub"])
-        jti = str(payload["jti"])
-    except (KeyError, ValueError, TypeError):
-        return
-
-    if user_id != user.id:
-        return
-
-    now_utc = datetime.now(timezone.utc)
-    result = await db.execute(
-        select(RefreshToken).where(
-            RefreshToken.user_id == user.id,
-            RefreshToken.jti == jti,
+    async with db.begin():
+        now_utc = datetime.now(timezone.utc)
+        result = await db.execute(
+            select(RefreshToken).where(
+                RefreshToken.user_id == user.id,
+                RefreshToken.jti == data.jti,
+            )
         )
-    )
-    refresh_session = result.scalar_one_or_none()
-    if refresh_session is None:
-        return
+        refresh_session = result.scalar_one_or_none()
+        if refresh_session is None:
+            return
 
-    if refresh_session.revoked_at is None:
-        refresh_session.revoked_at = now_utc
-        refresh_session.last_used_at = now_utc
-        await db.flush()
+        if refresh_session.revoked_at is None:
+            refresh_session.revoked_at = now_utc
+            refresh_session.last_used_at = now_utc
+            await db.flush()
