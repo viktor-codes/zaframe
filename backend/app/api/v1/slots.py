@@ -13,14 +13,13 @@ CRUD операции:
 """
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user_required, get_db, get_uow
 from app.core.uow import UnitOfWork
 from app.models.user import User
-from app.services.studio import get_studio
+from app.services.studio import ensure_studio_owner, get_studio_or_raise
 from app.schemas.booking import BookingResponse
 from app.schemas.slot import SlotCreate, SlotResponse, SlotUpdate
 from app.services.booking import get_bookings
@@ -28,6 +27,7 @@ from app.services.slot import (
     create_slot,
     delete_slot,
     get_slot,
+    get_slot_or_raise,
     get_slots,
     get_slots_count,
     update_slot,
@@ -91,9 +91,7 @@ async def list_slot_bookings(
     status: str | None = Query(None, description="Фильтр по статусу"),
 ) -> list[BookingResponse]:
     """Бронирования слота."""
-    slot = await get_slot(db, slot_id)
-    if slot is None:
-        raise HTTPException(status_code=404, detail="Слот не найден")
+    await get_slot_or_raise(db, slot_id)
     return await get_bookings(
         db, skip=skip, limit=limit, slot_id=slot_id, status=status
     )
@@ -105,10 +103,7 @@ async def get_slot_by_id(
     db: AsyncSession = Depends(get_db),
 ) -> SlotResponse:
     """Получить слот по ID."""
-    slot = await get_slot(db, slot_id)
-    if slot is None:
-        raise HTTPException(status_code=404, detail="Слот не найден")
-    return slot
+    return await get_slot_or_raise(db, slot_id)
 
 
 @router.post("", response_model=SlotResponse, status_code=201)
@@ -121,11 +116,8 @@ async def create_slot_endpoint(
     Создать слот (требуется аутентификация, владелец студии).
     """
     db = uow.session
-    studio = await get_studio(db, schema.studio_id)
-    if studio is None:
-        raise HTTPException(status_code=404, detail="Студия не найдена")
-    if studio.owner_id != user.id:
-        raise HTTPException(status_code=403, detail="Нет доступа к этой студии")
+    studio = await get_studio_or_raise(db, schema.studio_id)
+    ensure_studio_owner(studio, user.id)
     return await create_slot(uow, schema)
 
 
@@ -138,12 +130,9 @@ async def update_slot_endpoint(
 ) -> SlotResponse:
     """Обновить слот (только владелец студии)."""
     db = uow.session
-    slot = await get_slot(db, slot_id)
-    if slot is None:
-        raise HTTPException(status_code=404, detail="Слот не найден")
-    studio = await get_studio(db, slot.studio_id)
-    if studio is None or studio.owner_id != user.id:
-        raise HTTPException(status_code=403, detail="Нет доступа к этому слоту")
+    slot = await get_slot_or_raise(db, slot_id)
+    studio = await get_studio_or_raise(db, slot.studio_id)
+    ensure_studio_owner(studio, user.id)
     return await update_slot(uow, slot, schema)
 
 
@@ -155,10 +144,7 @@ async def delete_slot_endpoint(
 ) -> None:
     """Удалить слот (только владелец студии). Удалятся и связанные бронирования."""
     db = uow.session
-    slot = await get_slot(db, slot_id)
-    if slot is None:
-        raise HTTPException(status_code=404, detail="Слот не найден")
-    studio = await get_studio(db, slot.studio_id)
-    if studio is None or studio.owner_id != user.id:
-        raise HTTPException(status_code=403, detail="Нет доступа к этому слоту")
+    slot = await get_slot_or_raise(db, slot_id)
+    studio = await get_studio_or_raise(db, slot.studio_id)
+    ensure_studio_owner(studio, user.id)
     await delete_slot(uow, slot)

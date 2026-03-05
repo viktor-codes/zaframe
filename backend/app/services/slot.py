@@ -9,9 +9,9 @@
 from datetime import datetime, timezone
 
 from sqlalchemy import func, select
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
 from app.models.booking import Booking
 from app.models.slot import Slot
@@ -30,6 +30,14 @@ async def get_slot(db: AsyncSession, slot_id: int) -> Slot | None:
     """Получить слот по ID."""
     result = await db.execute(select(Slot).where(Slot.id == slot_id))
     return result.scalar_one_or_none()
+
+
+async def get_slot_or_raise(db: AsyncSession, slot_id: int) -> Slot:
+    """Получить слот по ID или выбросить NotFoundError."""
+    slot = await get_slot(db, slot_id)
+    if slot is None:
+        raise NotFoundError("Слот не найден")
+    return slot
 
 
 async def get_slots(
@@ -104,18 +112,13 @@ async def create_slot(uow: UnitOfWork, schema: SlotCreate) -> Slot:
 
     Проверяет: студия существует, end_time > start_time.
     """
-    from fastapi import HTTPException
-
     db = uow.session
     if schema.end_time <= schema.start_time:
-        raise HTTPException(
-            status_code=400,
-            detail="Время окончания должно быть позже времени начала",
-        )
+        raise ValidationError("Время окончания должно быть позже времени начала")
 
     result = await db.execute(select(Studio).where(Studio.id == schema.studio_id))
     if result.scalar_one_or_none() is None:
-        raise HTTPException(status_code=404, detail="Студия не найдена")
+        raise NotFoundError("Студия не найдена")
 
     slot = Slot(
         studio_id=schema.studio_id,
@@ -142,17 +145,12 @@ async def update_slot(
 
     Проверяет end_time > start_time при обновлении времён.
     """
-    from fastapi import HTTPException
-
     db = uow.session
     update_data = schema.model_dump(exclude_unset=True)
     start_time = update_data.get("start_time", slot.start_time)
     end_time = update_data.get("end_time", slot.end_time)
     if end_time <= start_time:
-        raise HTTPException(
-            status_code=400,
-            detail="Время окончания должно быть позже времени начала",
-        )
+        raise ValidationError("Время окончания должно быть позже времени начала")
     for field, value in update_data.items():
         if field in ("start_time", "end_time") and value is not None:
             value = _to_naive_utc(value)

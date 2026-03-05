@@ -6,12 +6,12 @@
 - Валидация (слот в будущем, не отменён)
 - Переиспользование при webhook оплаты
 """
-from datetime import datetime
+from datetime import datetime, timezone
 
-from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
 from app.models.booking import Booking, BookingStatus, BookingType
 from app.models.slot import Slot
@@ -22,6 +22,14 @@ async def get_booking(db: AsyncSession, booking_id: int) -> Booking | None:
     """Получить бронирование по ID."""
     result = await db.execute(select(Booking).where(Booking.id == booking_id))
     return result.scalar_one_or_none()
+
+
+async def get_booking_or_raise(db: AsyncSession, booking_id: int) -> Booking:
+    """Получить бронирование по ID или выбросить NotFoundError."""
+    booking = await get_booking(db, booking_id)
+    if booking is None:
+        raise NotFoundError("Бронирование не найдено")
+    return booking
 
 
 async def get_bookings(
@@ -108,18 +116,16 @@ async def create_booking(uow: UnitOfWork, schema: BookingCreate) -> Booking:
     )
     slot = result.scalar_one_or_none()
     if slot is None:
-        raise HTTPException(status_code=404, detail="Слот не найден")
+        raise NotFoundError("Слот не найден")
     if not slot.is_active:
-        raise HTTPException(
-            status_code=400,
-            detail="Слот недоступен для бронирования",
-        )
+        raise ValidationError("Слот недоступен для бронирования")
 
-    if slot.start_time <= datetime.utcnow():
-        raise HTTPException(
-            status_code=400,
-            detail="Нельзя бронировать прошедший слот",
-        )
+    now_utc = datetime.now(timezone.utc)
+    slot_start = slot.start_time
+    if slot_start.tzinfo is None:
+        slot_start = slot_start.replace(tzinfo=timezone.utc)
+    if slot_start <= now_utc:
+        raise ValidationError("Нельзя бронировать прошедший слот")
 
     confirmed_count = await _get_confirmed_bookings_count(db, slot.id)
     # Учитываем и pending — одно место на бронирование
@@ -131,7 +137,7 @@ async def create_booking(uow: UnitOfWork, schema: BookingCreate) -> Booking:
     )
     total_bookings = confirmed_count + (pending_result.scalar_one_or_none() or 0)
     if total_bookings >= slot.max_capacity:
-        raise HTTPException(status_code=400, detail="Нет свободных мест")
+        raise ValidationError("Нет свободных мест")
 
     booking = Booking(
         slot_id=schema.slot_id,
@@ -156,10 +162,7 @@ async def cancel_booking(uow: UnitOfWork, booking: Booking) -> Booking:
     """
     db = uow.session
     if booking.status == BookingStatus.CANCELLED:
-        raise HTTPException(
-            status_code=400,
-            detail="Бронирование уже отменено",
-        )
+        raise ValidationError("Бронирование уже отменено")
 
     booking.status = BookingStatus.CANCELLED
     booking.cancelled_at = datetime.utcnow()

@@ -7,8 +7,7 @@ API роутер для бронирований.
 - GET /bookings/{id} — одно бронирование
 - PATCH /bookings/{id}/cancel — отменить
 """
-from fastapi import APIRouter, Depends, HTTPException, Query
-
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, get_uow
@@ -22,7 +21,7 @@ from app.schemas import (
 from app.services.booking import (
     cancel_booking,
     create_booking,
-    get_booking,
+    get_booking_or_raise,
     get_bookings,
     get_bookings_count,
 )
@@ -98,10 +97,7 @@ async def get_booking_by_id(
     db: AsyncSession = Depends(get_db),
 ) -> BookingResponse:
     """Получить бронирование по ID."""
-    booking = await get_booking(db, booking_id)
-    if booking is None:
-        raise HTTPException(status_code=404, detail="Бронирование не найдено")
-    return booking
+    return await get_booking_or_raise(db, booking_id)
 
 
 @router.patch("/{booking_id}/cancel", response_model=BookingResponse)
@@ -111,7 +107,5 @@ async def cancel_booking_endpoint(
 ) -> BookingResponse:
     """Отменить бронирование."""
     db = uow.session
-    booking = await get_booking(db, booking_id)
-    if booking is None:
-        raise HTTPException(status_code=404, detail="Бронирование не найдено")
+    booking = await get_booking_or_raise(db, booking_id)
     return await cancel_booking(uow, booking)
