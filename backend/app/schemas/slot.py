@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class SlotBase(BaseModel):
@@ -51,8 +51,7 @@ class SlotResponse(SlotBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SlotWithBookings(SlotResponse):
@@ -60,5 +59,4 @@ class SlotWithBookings(SlotResponse):
     bookings_count: int = Field(default=0, description="Количество бронирований")
     available_spots: int = Field(..., description="Доступные места")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

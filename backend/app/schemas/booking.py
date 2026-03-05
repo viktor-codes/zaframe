@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from app.models.booking import BookingStatus, BookingType
 
@@ -67,24 +67,21 @@ class BookingResponse(BookingBase):
     updated_at: datetime
     cancelled_at: datetime | None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class BookingWithSlot(BookingResponse):
     """Бронирование с информацией о слоте."""
     slot: "SlotResponse" = Field(..., description="Информация о слоте")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class BookingWithUser(BookingResponse):
     """Бронирование с информацией о пользователе."""
     user: "UserPublic | None" = Field(None, description="Информация о пользователе")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class BookingCancel(BaseModel):

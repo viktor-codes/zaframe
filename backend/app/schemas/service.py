@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, time
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from app.models import BookingType, OrderStatus, ServiceType, ServiceCategory
 
@@ -117,8 +117,7 @@ class ServiceResponse(ServiceBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ScheduleBase(BaseModel):
@@ -147,8 +146,7 @@ class ScheduleResponse(ScheduleBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class OrderBase(BaseModel):

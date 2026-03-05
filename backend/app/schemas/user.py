@@ -13,7 +13,7 @@ Pydantic schemas для User модели.
 """
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class UserBase(BaseModel):
@@ -43,8 +43,9 @@ class UserResponse(UserBase):
     updated_at: datetime
     last_login_at: datetime | None
 
-    class Config:
-        from_attributes = True  # Pydantic v2: позволяет создавать из SQLAlchemy моделей
+    model_config = ConfigDict(
+        from_attributes=True,
+    )  # Pydantic v2: позволяет создавать из SQLAlchemy моделей
 
 
 class UserPublic(UserBase):
@@ -52,5 +53,4 @@ class UserPublic(UserBase):
     id: int
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
