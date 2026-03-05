@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import ForeignKey, String, func
+from sqlalchemy import ForeignKey, String, func, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models import Base
@@ -99,13 +99,21 @@ class Booking(Base):
     # Для одиночных бронирований может быть None или совпадать с ценой слота.
     unit_price_cents: Mapped[int | None] = mapped_column(nullable=True)
     
-    # Timestamps
-    created_at: Mapped[datetime] = mapped_column(server_default=func.now(), index=True)
-    updated_at: Mapped[datetime] = mapped_column(
+    # Timestamps (UTC)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
         server_default=func.now(),
-        onupdate=func.now()
+        index=True,
     )
-    cancelled_at: Mapped[datetime | None] = mapped_column(nullable=True)  # Когда было отменено
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+    cancelled_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )  # Когда было отменено
     
     # Связи
     slot: Mapped["Slot"] = relationship("Slot", back_populates="bookings")

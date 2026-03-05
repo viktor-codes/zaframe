@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, time
 
-from sqlalchemy import ForeignKey, Integer, Time, Date, func
+from sqlalchemy import ForeignKey, Integer, Time, Date, func, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models import Base
@@ -40,9 +40,13 @@ class Schedule(Base):
     valid_from: Mapped[date] = mapped_column(Date, nullable=False)
     valid_to: Mapped[date | None] = mapped_column(Date, nullable=True)
 
-    # Timestamps
-    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    # Timestamps (UTC)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+    )
     updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
         server_default=func.now(),
         onupdate=func.now(),
     )

@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import ForeignKey, Integer, String, func
+from sqlalchemy import ForeignKey, Integer, String, func, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models import Base
@@ -53,11 +53,16 @@ class Slot(Base):
         ForeignKey("schedules.id"), nullable=True, index=True
     )
 
-    # Временные параметры
+    # Временные параметры (UTC)
     start_time: Mapped[datetime] = mapped_column(
-        nullable=False, index=True
+        DateTime(timezone=True),
+        nullable=False,
+        index=True,
     )  # Начало занятия
-    end_time: Mapped[datetime] = mapped_column(nullable=False)  # Окончание занятия
+    end_time: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+    )  # Окончание занятия
 
     # Информация о классе
     title: Mapped[str] = mapped_column(String(200), nullable=False)  # Название класса
@@ -87,11 +92,15 @@ class Slot(Base):
         index=True,
     )  # Доменный статус занятия (active/cancelled)
     
-    # Timestamps
-    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(
+    # Timestamps (UTC)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
         server_default=func.now(),
-        onupdate=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
     )
     
     # Связи
