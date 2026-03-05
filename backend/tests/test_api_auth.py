@@ -26,6 +26,26 @@ async def test_health():
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+async def test_health_ready():
+    """Readiness: проверка БД и опционально Stripe/Resend."""
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as ac:
+        r = await ac.get("/api/v1/health/ready")
+    # При доступной БД — 200, иначе 503
+    assert r.status_code in (200, 503)
+    data = r.json()
+    assert "status" in data
+    assert "checks" in data
+    assert "database" in data["checks"]
+    if r.status_code == 200:
+        assert data["status"] == "ready"
+        assert data["checks"]["database"] == "ok"
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_magic_link_request_returns_200(client):
     """POST /auth/magic-link/request возвращает 200 и не падает."""
     with patch("app.services.auth.send_magic_link_email", new_callable=AsyncMock):
