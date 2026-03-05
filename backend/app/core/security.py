@@ -8,10 +8,17 @@ JWT и Magic Link: создание и проверка токенов.
 """
 from datetime import datetime, timedelta, timezone
 from secrets import token_urlsafe
+import hashlib
+import hmac
 
 from jose import JWTError, jwt
 
 from app.core.config import settings
+
+
+def _utcnow() -> datetime:
+    """Возвращает текущий момент времени в UTC (aware datetime)."""
+    return datetime.now(timezone.utc)
 
 
 def create_access_token(
@@ -19,15 +26,14 @@ def create_access_token(
     email: str,
 ) -> str:
     """Создать access token (короткоживущий)."""
-    expire = datetime.now(timezone.utc) + timedelta(
-        minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
-    )
+    now = _utcnow()
+    expire = now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {
         "sub": str(user_id),
         "email": email,
         "type": "access",
         "exp": expire,
-        "iat": datetime.now(timezone.utc),
+        "iat": now,
     }
     return jwt.encode(
         payload,
@@ -37,15 +43,21 @@ def create_access_token(
 
 
 def create_refresh_token(user_id: int) -> str:
-    """Создать refresh token (долгоживущий)."""
-    expire = datetime.now(timezone.utc) + timedelta(
-        days=settings.REFRESH_TOKEN_EXPIRE_DAYS
-    )
+    """
+    Создать refresh token (долгоживущий).
+
+    Добавляем jti (unique JWT ID) для возможности последующей ротации
+    и точечного отзыва конкретных refresh-токенов.
+    """
+    now = _utcnow()
+    expire = now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    jti = token_urlsafe(16)
     payload = {
         "sub": str(user_id),
         "type": "refresh",
+        "jti": jti,
         "exp": expire,
-        "iat": datetime.now(timezone.utc),
+        "iat": now,
     }
     return jwt.encode(
         payload,
@@ -97,13 +109,21 @@ def generate_magic_link_token() -> str:
     return token_urlsafe(32)
 
 
+def hash_magic_link_token(token: str) -> str:
+    """
+    Получить безопасный хэш токена Magic Link для хранения в БД.
+
+    Используем HMAC-SHA256 с SECRET_KEY как ключом, чтобы даже при компрометации
+    дампа БД нельзя было восстановить исходный токен.
+    """
+    key = settings.SECRET_KEY.encode("utf-8")
+    msg = token.encode("utf-8")
+    return hmac.new(key, msg, hashlib.sha256).hexdigest()
+
+
 def get_magic_link_expires_at() -> datetime:
     """
-    Время истечения Magic Link токена.
-    
-    Возвращает naive datetime (без timezone) для совместимости с TIMESTAMP WITHOUT TIME ZONE.
+    Время истечения Magic Link токена (aware datetime в UTC).
     """
-    utc_now = datetime.now(timezone.utc)
-    expires_at = utc_now + timedelta(minutes=settings.MAGIC_LINK_EXPIRE_MINUTES)
-    # Преобразуем в naive datetime (убираем timezone) для БД
-    return expires_at.replace(tzinfo=None)
+    utc_now = _utcnow()
+    return utc_now + timedelta(minutes=settings.MAGIC_LINK_EXPIRE_MINUTES)

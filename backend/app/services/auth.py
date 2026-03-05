@@ -15,6 +15,7 @@ from app.core.security import (
     get_magic_link_expires_at,
     get_user_id_from_access_token,
     get_user_id_from_refresh_token,
+    hash_magic_link_token,
 )
 from app.models.user import User
 from app.services.email import send_magic_link_email
@@ -30,12 +31,12 @@ async def request_magic_link(
     Запросить Magic Link.
 
     1. Создаёт пользователя по email/name или обновляет существующего
-    2. Генерирует токен, сохраняет в БД
-    3. Отправляет email и ссылкой
+    2. Генерирует токен, сохраняет его хэш в БД
+    3. Отправляет email со ссылкой
     """
     user = await get_or_create_user(db, email=email, name=name)
     token = generate_magic_link_token()
-    user.magic_link_token = token
+    user.magic_link_token = hash_magic_link_token(token)
     user.magic_link_expires_at = get_magic_link_expires_at()
     await db.flush()
 
@@ -53,12 +54,12 @@ async def verify_magic_link(
     Возвращает (user, access_token, refresh_token).
     Raises HTTPException если токен невалиден.
     """
-    # Используем naive datetime для сравнения с БД (TIMESTAMP WITHOUT TIME ZONE)
-    now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
+    now_utc = datetime.now(timezone.utc)
+    token_hash = hash_magic_link_token(token)
     result = await db.execute(
         select(User).where(
-            User.magic_link_token == token,
-            User.magic_link_expires_at > now_naive,
+            User.magic_link_token == token_hash,
+            User.magic_link_expires_at > now_utc,
         )
     )
     user = result.scalar_one_or_none()
@@ -67,8 +68,7 @@ async def verify_magic_link(
 
     user.magic_link_token = None
     user.magic_link_expires_at = None
-    # Преобразуем в naive datetime для БД (TIMESTAMP WITHOUT TIME ZONE)
-    user.last_login_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    user.last_login_at = now_utc
     await db.flush()
     # Refresh нужен: после flush атрибуты помечены expired, и доступ к ним
     # (например updated_at при сериализации в Pydantic) вызывает lazy load,
