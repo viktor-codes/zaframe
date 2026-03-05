@@ -1,4 +1,4 @@
-from pydantic import Field, computed_field
+from pydantic import Field, computed_field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -26,9 +26,32 @@ class Settings(BaseSettings):
         description="Connection URL to PostgreSQL through asyncpg"
     )
     
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def normalize_database_url(cls, v: str) -> str:
+        """
+        Нормализуем DATABASE_URL для корректной работы SQLAlchemy с asyncpg.
+
+        Поддерживаем "сырые" URL из окружения (например, postgres://... с Heroku/Render)
+        и приводим их к унифицированному виду postgresql+asyncpg://...
+        """
+        if not isinstance(v, str):
+            return v
+
+        url = v
+
+        # 1) postgres:// -> postgresql://
+        if url.startswith("postgres://"):
+            url = "postgresql://" + url[len("postgres://") :]
+
+        # 2) postgresql:// -> postgresql+asyncpg:// (если ещё не указали asyncpg)
+        if url.startswith("postgresql://") and not url.startswith("postgresql+asyncpg://"):
+            url = "postgresql+asyncpg://" + url[len("postgresql://") :]
+
+        return url
+    
     # === Security (JWT, Magic Link) ===
     SECRET_KEY: str = Field(
-        default="change-me-in-production-use-openssl-rand-hex-32",
         description="Secret key for signing JWT tokens"
     )
     ALGORITHM: str = Field(default="HS256", description="JWT signing algorithm")

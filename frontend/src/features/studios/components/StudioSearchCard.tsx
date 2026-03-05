@@ -53,16 +53,15 @@ export function StudioSearchCard({ result, index = 0 }: StudioSearchCardProps) {
   const [saved, setSaved] = useState(false);
   const { studio, matched_services } = result;
   const imageUrl = studio.cover_image_url ?? PLACEHOLDER_IMAGE;
-  const minPrice =
-    matched_services.length > 0
-      ? Math.min(
-          ...matched_services.map((s) =>
-            s.price_course_cents != null && s.price_course_cents > 0
-              ? s.price_course_cents
-              : s.price_single_cents,
-          ),
-        )
-      : null;
+  const priceCandidates = (matched_services ?? []).map((s) => {
+    const cents =
+      s.price_course_cents != null && s.price_course_cents > 0
+        ? s.price_course_cents
+        : s.price_single_cents;
+    return typeof cents === "number" && Number.isFinite(cents) ? cents : null;
+  });
+  const validPrices = priceCandidates.filter((c): c is number => c != null);
+  const minPrice = validPrices.length > 0 ? Math.min(...validPrices) : null;
   const showSpotsLeft = studio.id % 5 === 0;
   const typeLabel = studioTypeLabel(matched_services);
   const rating = mockRating(studio.id);
