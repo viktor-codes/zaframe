@@ -11,11 +11,11 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta, timezone
 
-from fastapi import HTTPException
 from sqlalchemy import and_, func, select, case
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.exceptions import NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
 from app.models import (
     Booking,
@@ -77,6 +77,14 @@ async def get_service(db: AsyncSession, service_id: int) -> Service | None:
     return result.scalar_one_or_none()
 
 
+async def get_service_or_raise(db: AsyncSession, service_id: int) -> Service:
+    """Получить услугу по ID или выбросить NotFoundError."""
+    service = await get_service(db, service_id)
+    if service is None:
+        raise NotFoundError("Услуга не найдена")
+    return service
+
+
 async def update_service(
     uow: UnitOfWork,
     service: Service,
@@ -114,7 +122,7 @@ async def create_schedule(uow: UnitOfWork, schema: ScheduleCreate) -> Schedule:
     )
     service = result.scalar_one_or_none()
     if service is None:
-        raise HTTPException(status_code=404, detail="Услуга не найдена")
+        raise NotFoundError("Услуга не найдена")
 
     schedule = Schedule(
         service_id=schema.service_id,
@@ -156,6 +164,17 @@ async def delete_schedule(uow: UnitOfWork, schedule: Schedule) -> None:
     await db.flush()
 
 
+async def get_schedule_or_raise(
+    db: AsyncSession,
+    schedule_id: int,
+) -> Schedule:
+    """Получить шаблон расписания или выбросить NotFoundError."""
+    schedule = await get_schedule(db, schedule_id)
+    if schedule is None:
+        raise NotFoundError("Расписание не найдено")
+    return schedule
+
+
 def _iterate_weeks(start: date, weeks_count: int) -> Iterable[date]:
     """Генерирует даты начала недель (по понедельникам) для заданного количества недель."""
     current = start
@@ -183,15 +202,9 @@ async def occurrence_generator(
     """
     db = uow.session
     if weeks_count <= 0:
-        raise HTTPException(
-            status_code=400,
-            detail="weeks_count должен быть > 0",
-        )
+        raise ValidationError("weeks_count должен быть > 0")
     if not days:
-        raise HTTPException(
-            status_code=400,
-            detail="Список days не может быть пустым",
-        )
+        raise ValidationError("Список days не может быть пустым")
 
     result = await db.execute(
         select(Service).where(
@@ -201,10 +214,7 @@ async def occurrence_generator(
     )
     service = result.scalar_one_or_none()
     if service is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Услуга не найдена в этой студии",
-        )
+        raise NotFoundError("Услуга не найдена в этой студии")
 
     start_date = start_date or date.today()
 
@@ -219,10 +229,7 @@ async def occurrence_generator(
     for week_start in _iterate_weeks(start_monday, weeks_count):
         for dow in days:
             if not 0 <= dow <= 6:
-                raise HTTPException(
-                    status_code=400,
-                    detail="day_of_week должен быть в диапазоне 0-6",
-                )
+                raise ValidationError("day_of_week должен быть в диапазоне 0-6")
             day_date = week_start + timedelta(days=dow)
             if day_date < start_date:
                 # Пропускаем занятия до стартовой даты
@@ -233,12 +240,11 @@ async def occurrence_generator(
             planned_intervals.append((start_dt, end_dt))
 
     if not planned_intervals:
-        raise HTTPException(
-            status_code=400,
-            detail=(
+        raise ValidationError(
+            (
                 "Не удалось сгенерировать ни одного занятия "
                 "для заданных параметров"
-            ),
+            )
         )
 
     min_start = min(s for s, _ in planned_intervals)
@@ -258,12 +264,11 @@ async def occurrence_generator(
     existing_slots: list[Slot] = list(existing_result.scalars().all())
 
     if existing_slots:
-        raise HTTPException(
-            status_code=400,
-            detail=(
+        raise ValidationError(
+            (
                 "Найдены уже существующие занятия этого курса в указанный период. "
                 "Сначала удалите старые занятия или выберите другой интервал."
-            ),
+            )
         )
 
     created_slots: list[Slot] = []
@@ -374,9 +379,9 @@ async def check_course_availability(
     result = await db.execute(select(Service).where(Service.id == service_id))
     service = result.scalar_one_or_none()
     if service is None:
-        raise HTTPException(status_code=404, detail="Услуга не найдена")
+        raise NotFoundError("Услуга не найдена")
     if service.type != ServiceType.COURSE:
-        raise HTTPException(status_code=400, detail="Услуга не является курсом")
+        raise ValidationError("Услуга не является курсом")
 
     stats = await _get_course_slots_with_capacity(
         db,
@@ -466,9 +471,8 @@ async def create_course_booking(
         for_update=True,
     )
     if not availability.can_book:
-        raise HTTPException(
-            status_code=400,
-            detail=availability.message or "Недостаточно мест для курса",
+        raise ValidationError(
+            availability.message or "Недостаточно мест для курса",
         )
 
     # Получаем слоты ещё раз, чтобы зафиксировать актуальный список
@@ -479,13 +483,12 @@ async def create_course_booking(
     )
     service = result.scalar_one_or_none()
     if service is None:
-        raise HTTPException(status_code=404, detail="Услуга не найдена")
+        raise NotFoundError("Услуга не найдена")
 
     slots = sorted(service.slots, key=lambda s: s.start_time)
     if not slots:
-        raise HTTPException(
-            status_code=400,
-            detail="Для этого курса ещё не создано ни одного занятия",
+        raise ValidationError(
+            "Для этого курса ещё не создано ни одного занятия",
         )
 
     total_amount_cents = service.price_course_cents or (
@@ -571,7 +574,7 @@ async def get_studio_public(
     )
     studio = studio_result.scalar_one_or_none()
     if studio is None:
-        raise HTTPException(status_code=404, detail="Студия не найдена")
+        raise NotFoundError("Студия не найдена")
 
     services_public: list[PublicService] = []
 
@@ -718,9 +721,9 @@ async def get_service_availability(
     result = await db.execute(select(Service).where(Service.id == service_id))
     service = result.scalar_one_or_none()
     if service is None:
-        raise HTTPException(status_code=404, detail="Услуга не найдена")
+        raise NotFoundError("Услуга не найдена")
     if service.type != ServiceType.COURSE:
-        raise HTTPException(status_code=400, detail="Услуга не является курсом")
+        raise ValidationError("Услуга не является курсом")
 
     # Общая агрегация (can_book, requires_warning, message)
     availability = await check_course_availability(
