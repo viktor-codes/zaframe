@@ -1,8 +1,8 @@
 """
-Точка входа приложения ZaFrame API.
+ZaFrame API entrypoint.
 
-main.py остаётся минимальным: создание app, подключение роутеров, lifespan.
-Вся логика — в модулях core/, api/, services/.
+`main.py` stays minimal: create the `FastAPI` app, include routers, and define
+the lifespan hook. All business logic lives in `core/`, `api/`, and `services/`.
 """
 import logging
 from collections.abc import AsyncGenerator
@@ -31,27 +31,27 @@ logger = logging.getLogger(__name__)
 
 
 # === Lifespan Context Manager ===
-# Управляет жизненным циклом приложения: startup и shutdown события.
-# Почему lifespan вместо @app.on_event:
-# - Рекомендуемый способ в FastAPI (on_event deprecated)
-# - Более явное управление ресурсами через context manager
-# - Проще тестировать и мокировать
+# Manages the application's lifecycle: startup and shutdown events.
+# Why `lifespan` instead of `@app.on_event`:
+# - Recommended way in FastAPI (`on_event` is deprecated)
+# - More explicit resource management via a context manager
+# - Easier to test and mock
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """
-    Lifespan context manager для управления подключением к БД и логированием.
-    
-    При старте: настройка логирования, при необходимости — проверка БД.
-    При остановке: закрываем все соединения с БД.
+    Lifespan context manager for DB and logging setup.
+
+    On startup: initialize logging (and optionally run readiness checks).
+    On shutdown: close all DB connections.
     """
     setup_logging()
     yield
     await engine.dispose()
 
 
-# Используем настройки из config.py вместо хардкода.
-# Теперь title и version централизованы и могут быть переопределены через .env
-# lifespan=lifespan — подключаем управление жизненным циклом
+# Use settings from `config.py` instead of hardcoding.
+# Centralize `title` and `version` and allow overrides via `.env`.
+# `lifespan=lifespan` wires the lifecycle management.
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
@@ -63,12 +63,12 @@ app.state.limiter = limiter
 
 
 async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
-    """429 в формате API: detail + заголовки лимита (X-RateLimit-*)."""
+    """429 in API format: detail + rate limit headers (X-RateLimit-*)."""
     request_id = _request_id(request)
     response = JSONResponse(
         status_code=429,
         content=_error_body(
-            detail="Превышен лимит запросов. Попробуйте позже.",
+            detail="Too many requests. Please try again later.",
             status_code=429,
             request_id=request_id,
             problem_type="rate-limit-exceeded",
@@ -84,7 +84,7 @@ async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) 
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
 
-# === Exception handlers (доменные исключения → HTTP + логирование) ===
+# === Exception handlers (domain exceptions → HTTP + logging) ===
 _STATUS_TITLES: dict[int, str] = {
     400: "Bad Request",
     401: "Unauthorized",
@@ -119,7 +119,7 @@ def _request_id(request: Request) -> str | None:
 
 
 async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
-    """Маппинг доменных исключений в HTTP-ответ и лог ошибки."""
+    """Map domain exceptions to HTTP responses and log the failure."""
     request_id = _request_id(request)
     logger.warning(
         "app_error request_id=%s status=%s detail=%s",
@@ -140,7 +140,7 @@ async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
 
 
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    """Необработанное исключение: лог с traceback и ответ 500."""
+    """Unhandled exception: log traceback and return 500."""
     request_id = _request_id(request)
     logger.exception(
         "unhandled_exception request_id=%s type=%s msg=%s",
@@ -151,7 +151,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
     return JSONResponse(
         status_code=500,
         content=_error_body(
-            detail="Внутренняя ошибка сервера",
+            detail="Internal server error",
             status_code=500,
             request_id=request_id,
             problem_type="internal-error",
@@ -162,11 +162,11 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 app.add_exception_handler(AppError, app_error_handler)
 app.add_exception_handler(Exception, unhandled_exception_handler)
 
-# === Logging middleware (request_id + лог запроса/ответа) ===
-# Добавляем первым, чтобы оборачивать все запросы (последний добавленный выполняется первым).
+# === Logging middleware (request_id + request/response logging) ===
+# Add it first so it can wrap all requests (the last added runs first).
 app.add_middleware(RequestLoggingMiddleware)
 
-# === CORS Middleware ===
+# === CORS middleware ===
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
@@ -175,9 +175,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Один роутер — два префикса: без дублирования кода.
-# 1) Корень: / и /health — для load balancer'ов, k8s probes, мониторинга.
-# 2) Версионированный API: /api/v1/ и /api/v1/health — для клиентов.
+# One router — two prefixes: no duplicated routes.
+# 1) Root: `/` and `/health` for load balancers, k8s probes, and monitoring.
+# 2) Versioned API: `/api/v1/` and `/api/v1/health` for clients.
 app.include_router(health.router)
 app.include_router(health.router, prefix="/api/v1")
 app.include_router(studios.router, prefix="/api/v1")
