@@ -8,6 +8,9 @@ import { ApiError } from "@/lib/api";
 import { Alert } from "@/components/ui";
 import { Skeleton } from "@/components/ui";
 
+/** Dedupe verify in React Strict Mode (dev): second effect must not call the API again. */
+const verifyInFlight = new Set<string>();
+
 function VerifyContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -21,6 +24,12 @@ function VerifyContent() {
 
   useEffect(() => {
     if (!token) return;
+
+    if (verifyInFlight.has(token)) {
+      return;
+    }
+    verifyInFlight.add(token);
+
     verifyMagicLink(token)
       .then((data) => {
         login(data.access_token, data.user);
@@ -36,6 +45,9 @@ function VerifyContent() {
               : err.message
             : "Link is invalid or expired. Please request a new one.";
         setErrorMessage(detail);
+      })
+      .finally(() => {
+        verifyInFlight.delete(token);
       });
   }, [token, login, router]);
 

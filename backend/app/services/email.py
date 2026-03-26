@@ -75,4 +75,10 @@ async def send_magic_link_email(email: str, magic_link_url: str) -> bool:
             "magic_link_email_send_failed",
             error_type=type(e).__name__,
         )
+        if settings.DEBUG:
+            # Safe for local dev: Resend returns API error text (domain, from, quota), not user PII.
+            logger.warning(
+                "magic_link_resend_error_detail",
+                detail=str(e)[:800],
+            )
         return False

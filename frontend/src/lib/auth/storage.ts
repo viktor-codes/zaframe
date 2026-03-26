@@ -1,5 +1,6 @@
 /**
- * Хранение токенов в localStorage (только client-side).
+ * Client-side storage for the short-lived access token only.
+ * Refresh token is httpOnly cookie on the API origin (never localStorage).
  */
 
 const ACCESS_KEY = "zaframe_access_token";
