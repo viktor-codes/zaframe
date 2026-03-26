@@ -64,9 +64,15 @@ app.state.limiter = limiter
 
 async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
     """429 в формате API: detail + заголовки лимита (X-RateLimit-*)."""
+    request_id = _request_id(request)
     response = JSONResponse(
         status_code=429,
-        content={"detail": "Превышен лимит запросов. Попробуйте позже."},
+        content=_error_body(
+            detail="Превышен лимит запросов. Попробуйте позже.",
+            status_code=429,
+            request_id=request_id,
+            problem_type="rate-limit-exceeded",
+        ),
     )
     if hasattr(request.state, "view_rate_limit"):
         response = request.app.state.limiter._inject_headers(
@@ -79,12 +85,33 @@ app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
 
 # === Exception handlers (доменные исключения → HTTP + логирование) ===
-def _error_body(detail: str, status_code: int, request_id: str | None = None) -> dict:
-    """Единый формат тела ошибки (расширяем до RFC 7807 при необходимости)."""
-    body: dict = {"detail": detail}
-    if request_id:
-        body["request_id"] = request_id
-    return body
+_STATUS_TITLES: dict[int, str] = {
+    400: "Bad Request",
+    401: "Unauthorized",
+    403: "Forbidden",
+    404: "Not Found",
+    409: "Conflict",
+    422: "Unprocessable Entity",
+    429: "Too Many Requests",
+    500: "Internal Server Error",
+}
+
+
+def _error_body(
+    *,
+    detail: str,
+    status_code: int,
+    request_id: str | None = None,
+    problem_type: str = "about:blank",
+) -> dict:
+    """RFC 7807 Problem JSON."""
+    return {
+        "type": problem_type,
+        "title": _STATUS_TITLES.get(status_code, "Error"),
+        "status": status_code,
+        "detail": detail,
+        **({"request_id": request_id} if request_id else {}),
+    }
 
 
 def _request_id(request: Request) -> str | None:
@@ -103,7 +130,12 @@ async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
     )
     return JSONResponse(
         status_code=exc.status_code,
-        content=_error_body(exc.detail, exc.status_code, request_id),
+        content=_error_body(
+            detail=exc.detail,
+            status_code=exc.status_code,
+            request_id=request_id,
+            problem_type=f"app-error:{type(exc).__name__}",
+        ),
     )
 
 
@@ -118,7 +150,12 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
     )
     return JSONResponse(
         status_code=500,
-        content=_error_body("Внутренняя ошибка сервера", 500, request_id),
+        content=_error_body(
+            detail="Внутренняя ошибка сервера",
+            status_code=500,
+            request_id=request_id,
+            problem_type="internal-error",
+        ),
     )
 
 
