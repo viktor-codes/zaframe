@@ -46,7 +46,7 @@ async function buildUrl(
   params?: RequestConfig["params"],
 ): Promise<string> {
   if (!config.apiUrl) {
-    throw new ApiError("Backend not configured (static landing mode)", 0, {
+    throw new ApiError("Backend URL is not configured (set NEXT_PUBLIC_API_URL)", 0, {
       code: "BACKEND_NOT_CONFIGURED",
     });
   }

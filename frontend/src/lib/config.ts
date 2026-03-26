@@ -11,8 +11,8 @@ const rawApiUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
 const apiUrl = rawApiUrl.trim();
 
 export const config = {
-  /** URL бэкенда. Пустая строка = статичный лендинг без API. */
+  /** API base URL (trimmed). Empty means misconfiguration — the app needs a backend. */
   apiUrl,
-  /** Есть ли настроенный бэкенд (для условного отображения ссылок и т.п.). */
+  /** True when NEXT_PUBLIC_API_URL is set — API calls are possible. */
   hasBackend: apiUrl.length > 0,
 } as const;
