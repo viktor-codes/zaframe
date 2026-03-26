@@ -1,8 +1,7 @@
-"""
-Эндпоинты здоровья: liveness (/health) и readiness (/health/ready).
+"""Health endpoints.
 
-/health — простой "жив ли процесс", для load balancer.
-/health/ready — готов ли принимать трафик: проверка БД, опционально Stripe/Resend.
+`/health` is a lightweight health check (DB connectivity is required by rules).
+`/health/ready` is a readiness check (DB + optional Stripe/Resend).
 """
 import asyncio
 import logging
@@ -24,13 +23,17 @@ async def root() -> dict[str, str]:
 
 
 @router.get("/health")
-async def health_check() -> dict[str, str]:
-    """Liveness: процесс запущен. Не проверяет зависимости."""
-    return {"status": "ok"}
+async def health_check(response: Response) -> dict[str, str]:
+    """Validate DB connectivity and return required health payload."""
+    db_ok = await _check_database()
+    if not db_ok:
+        response.status_code = 503
+        return {"status": "unready", "version": "1.0.0", "db": "fail"}
+    return {"status": "ok", "version": "1.0.0", "db": "ok"}
 
 
 async def _check_database() -> bool:
-    """Проверка подключения к БД (SELECT 1)."""
+    """Check DB connectivity (SELECT 1)."""
     from sqlalchemy import text
 
     try:
@@ -43,9 +46,9 @@ async def _check_database() -> bool:
 
 
 def _check_stripe_sync() -> bool:
-    """Проверка доступности Stripe (лёгкий запрос). Вызывать в thread — SDK синхронный."""
+    """Check Stripe availability (lightweight request). Runs in a thread (SDK is sync)."""
     if not settings.STRIPE_SECRET_KEY:
-        return True  # не настроен — не проверяем
+        return True  # not configured, skip the check
     try:
         import stripe
 
@@ -57,27 +60,25 @@ def _check_stripe_sync() -> bool:
 
 
 async def _check_stripe() -> bool:
-    """Асинхронная обёртка для синхронного Stripe SDK."""
+    """Async wrapper for the synchronous Stripe SDK."""
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, _check_stripe_sync)
 
 
 def _check_resend_configured() -> bool:
-    """Resend: проверяем только наличие ключа (API не даёт лёгкого ping)."""
+    """Resend: check whether the API key is present."""
     return bool(settings.RESEND_API_KEY)
 
 
 @router.get("/health/ready")
 async def readiness(response: Response) -> dict[str, Any]:
     """
-    Readiness: готов ли сервис принимать трафик.
+    Readiness: whether the service is ready to accept traffic.
 
-    Проверяет:
-    - БД — обязательно; при ошибке возвращает 503.
-    - Stripe — если STRIPE_SECRET_KEY задан, один лёгкий запрос.
-    - Resend — только факт настройки ключа.
-
-    Используется k8s readinessProbe, load balancer и т.п.
+    Checks:
+    - DB: required; return 503 when it fails.
+    - Stripe: when `STRIPE_SECRET_KEY` is set, do one lightweight request.
+    - Resend: only validate whether the API key is configured.
     """
     checks: dict[str, str] = {}
     all_ok = True
@@ -99,7 +100,7 @@ async def readiness(response: Response) -> dict[str, Any]:
     else:
         checks["resend"] = "skip"
 
-    # 503 только при недоступности БД; Stripe/Resend — в checks для мониторинга
+    # Return 503 only when DB is unavailable; Stripe/Resend are included for monitoring.
     return {
         "status": "ready",
         "checks": checks,
