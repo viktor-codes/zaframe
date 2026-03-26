@@ -1,21 +1,21 @@
-"""
-API роутер для аутентификации.
+"""Authentication API router.
 
-Magic Link flow:
-1. POST /auth/magic-link/request {email, name} → отправка письма
-2. GET /auth/magic-link/verify?token=xxx → возврат JWT (обычно вызывается с фронта после redirect)
-3. POST /auth/refresh {refresh_token} → обновление access token
+Magic link flow (strict cookie mode):
+1. POST /auth/magic-link/request {email, name}
+2. GET /auth/magic-link/verify?token=xxx -> returns access token JSON + sets refresh token httpOnly cookie
+3. POST /auth/refresh -> reads refresh token from cookie, returns new access token JSON + rotates refresh cookie
+4. POST /auth/logout -> revokes current refresh token (from cookie) and clears the cookie
 """
-from fastapi import APIRouter, Depends, Query, Request
+
+from fastapi import APIRouter, Depends, Query, Request, Response
 
 from app.api.deps import get_current_user_required, get_uow
+from app.core.config import settings
 from app.core.rate_limit import limiter
 from app.core.uow import UnitOfWork
 from app.schemas.auth import (
-    LogoutRequest,
     MagicLinkRequest,
     MagicLinkSentResponse,
-    RefreshTokenRequest,
     TokenResponse,
 )
 from app.models.user import User
@@ -28,6 +28,28 @@ from app.services.auth import (
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+REFRESH_TOKEN_COOKIE_NAME = "refresh_token"
+
+
+def _set_refresh_cookie(response: Response, refresh_token: str) -> None:
+    max_age_seconds = settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
+    response.set_cookie(
+        key=REFRESH_TOKEN_COOKIE_NAME,
+        value=refresh_token,
+        httponly=True,
+        secure=not settings.DEBUG,
+        samesite="lax",
+        max_age=max_age_seconds,
+        path="/",
+    )
+
+
+def _clear_refresh_cookie(response: Response) -> None:
+    response.delete_cookie(
+        key=REFRESH_TOKEN_COOKIE_NAME,
+        path="/",
+    )
 
 
 @router.post("/magic-link/request", response_model=MagicLinkSentResponse)
@@ -51,6 +73,7 @@ async def magic_link_request(
 @limiter.limit("10/minute")
 async def magic_link_verify(
     request: Request,
+    response: Response,
     token: str = Query(..., description="Токен из ссылки в письме"),
     uow: UnitOfWork = Depends(get_uow),
 ):
@@ -61,9 +84,9 @@ async def magic_link_verify(
     Frontend обычно получает token из query и вызывает этот endpoint.
     """
     user, access_token, refresh_token = await verify_magic_link(uow, token)
+    _set_refresh_cookie(response, refresh_token)
     return {
         "access_token": access_token,
-        "refresh_token": refresh_token,
         "token_type": "bearer",
         "user": UserResponse.model_validate(user),
     }
@@ -73,30 +96,39 @@ async def magic_link_verify(
 @limiter.limit("30/minute")
 async def refresh_tokens(
     request: Request,
-    schema: RefreshTokenRequest,
+    response: Response,
     uow: UnitOfWork = Depends(get_uow),
 ) -> TokenResponse:
-    """Обновить access token по refresh token."""
-    access_token, refresh_token = await refresh_access_token(uow, schema.refresh_token)
+    """Refresh access token using refresh token cookie."""
+    refresh_token = request.cookies.get(REFRESH_TOKEN_COOKIE_NAME)
+    if not refresh_token:
+        from app.core.exceptions import UnauthorizedError
+
+        raise UnauthorizedError("Missing refresh token cookie")
+
+    access_token, new_refresh_token = await refresh_access_token(uow, refresh_token)
+    _set_refresh_cookie(response, new_refresh_token)
     return TokenResponse(
         access_token=access_token,
-        refresh_token=refresh_token,
     )
 
 
 @router.post("/logout", status_code=204)
 async def logout(
-    schema: LogoutRequest,
+    request: Request,
+    response: Response,
     uow: UnitOfWork = Depends(get_uow),
     user: User = Depends(get_current_user_required),
 ) -> None:
     """
     Выйти из текущей сессии.
 
-    Отзывает один refresh-token, переданный в запросе.
-    Frontend после этого должен удалить access/refresh токены из хранилища.
+    Revokes current refresh session (from cookie) and clears the cookie.
     """
-    await logout_current_session(uow, user, schema.refresh_token)
+    refresh_token = request.cookies.get(REFRESH_TOKEN_COOKIE_NAME)
+    _clear_refresh_cookie(response)
+    if refresh_token:
+        await logout_current_session(uow, user, refresh_token)
 
 
 @router.get("/me", response_model=UserResponse)

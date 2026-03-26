@@ -1,11 +1,9 @@
-"""
-Pydantic schemas для аутентификации.
-"""
+"""Pydantic schemas for authentication."""
 from pydantic import BaseModel, EmailStr, Field
 
 
 class MagicLinkRequest(BaseModel):
-    """Запрос Magic Link на email."""
+    """Magic link request payload."""
 
     email: EmailStr = Field(..., description="Email для входа")
     name: str = Field(
@@ -17,30 +15,18 @@ class MagicLinkRequest(BaseModel):
 
 
 class TokenResponse(BaseModel):
-    """Ответ с JWT токенами."""
+    """Access token response.
+
+    Refresh token is stored in an httpOnly cookie (strict mode) and is not
+    returned in the JSON body.
+    """
 
     access_token: str = Field(..., description="Access token для API")
-    refresh_token: str = Field(..., description="Refresh token для обновления")
     token_type: str = Field(default="bearer", description="Тип токена")
 
 
-class RefreshTokenRequest(BaseModel):
-    """Запрос на обновление токена."""
-
-    refresh_token: str = Field(..., description="Refresh token")
-
-
-class LogoutRequest(BaseModel):
-    """Запрос на выход из текущей сессии."""
-
-    refresh_token: str = Field(
-        ...,
-        description="Refresh token текущей сессии (будет отозван)",
-    )
-
-
 class MagicLinkSentResponse(BaseModel):
-    """Ответ после отправки Magic Link."""
+    """Response after requesting a magic link."""
 
     message: str = Field(
         default="Если email зарегистрирован, вы получите ссылку для входа",
