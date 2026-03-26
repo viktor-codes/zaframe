@@ -44,7 +44,7 @@ def setup_logging() -> None:
     """Configure stdlib + structlog for the whole app."""
     level = getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO)
 
-    structlog.stdlib.recreate_defaults(level=level)
+    structlog.stdlib.recreate_defaults(log_level=level)
 
     if settings.DEBUG:
         renderer = structlog.dev.ConsoleRenderer(colors=False)
