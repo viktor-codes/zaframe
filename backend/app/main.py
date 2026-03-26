@@ -10,8 +10,9 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import JSONResponse
+from starlette.responses import JSONResponse, Response
 
 from app.api.v1 import auth, bookings, health, payments, services, slots, studios
 from app.api.v1.endpoints import search
@@ -28,6 +29,19 @@ from app.core.middleware.logging_middleware import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Add baseline security headers to every response."""
+
+    async def dispatch(self, request: Request, call_next) -> Response:
+        response = await call_next(request)
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault(
+            "Referrer-Policy", "strict-origin-when-cross-origin"
+        )
+        return response
 
 
 # === Lifespan Context Manager ===
@@ -165,6 +179,9 @@ app.add_exception_handler(Exception, unhandled_exception_handler)
 # === Logging middleware (request_id + request/response logging) ===
 # Add it first so it can wrap all requests (the last added runs first).
 app.add_middleware(RequestLoggingMiddleware)
+
+# === Security headers Middleware ===
+app.add_middleware(SecurityHeadersMiddleware)
 
 # === CORS middleware ===
 app.add_middleware(
