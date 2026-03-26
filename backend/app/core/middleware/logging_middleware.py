@@ -1,13 +1,13 @@
-"""
-Middleware: request_id и логирование запроса/ответа.
+"""Request logging middleware.
 
-- Генерирует или читает X-Request-ID, сохраняет в request.state.request_id.
-- После обработки логирует: method, path, status_code, duration_ms, request_id, user_id (если есть).
-- Пробрасывает request_id в заголовок ответа X-Request-ID.
+Adds `X-Request-ID` to every request/response and logs structured request
+completion events via `structlog`.
 """
-import logging
+
 import time
 import uuid
+
+import structlog
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -17,11 +17,9 @@ REQUEST_ID_HEADER = "X-Request-ID"
 REQUEST_ID_STATE_KEY = "request_id"
 USER_ID_STATE_KEY = "user_id"
 
-logger = logging.getLogger(__name__)
-
 
 def _get_request_id(request: Request) -> str:
-    """Читает X-Request-ID из заголовка или генерирует новый."""
+    """Read `X-Request-ID` from headers or generate a new one."""
     raw = request.headers.get(REQUEST_ID_HEADER)
     if raw and raw.strip():
         return raw.strip()
@@ -30,13 +28,13 @@ def _get_request_id(request: Request) -> str:
 
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     """
-    Добавляет request_id и логирует каждый HTTP-запрос после обработки.
+    Add `request_id` and log each HTTP request after processing.
 
-    Ожидает, что request.state.user_id может быть установлен зависимостью
-    (например, get_current_user) для защищённых эндпоинтов.
+    Expects `request.state.user_id` to be optionally set by auth dependencies.
     """
 
     async def dispatch(self, request: Request, call_next) -> Response:
+        logger = structlog.get_logger(__name__)
         request_id = _get_request_id(request)
         setattr(request.state, REQUEST_ID_STATE_KEY, request_id)
         start = time.perf_counter()
@@ -46,23 +44,21 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         status = response.status_code
         user_id = getattr(request.state, USER_ID_STATE_KEY, None)
 
-        log_message = (
-            "request_finished method=%s path=%s status=%s duration_ms=%.2f request_id=%s user_id=%s"
-        )
-        log_args = (
-            request.method,
-            request.url.path,
-            status,
-            duration_ms,
-            request_id,
-            user_id,
-        )
+        common_fields = {
+            "method": request.method,
+            "path": request.url.path,
+            "status": status,
+            "duration_ms": duration_ms,
+            "request_id": request_id,
+            "user_id": user_id,
+        }
+        event = "request_finished"
         if status >= 500:
-            logger.error(log_message, *log_args)
+            logger.error(event, **common_fields)
         elif status in (401, 403, 429):
-            logger.warning(log_message, *log_args)
+            logger.warning(event, **common_fields)
         else:
-            logger.info(log_message, *log_args)
+            logger.info(event, **common_fields)
 
         if REQUEST_ID_HEADER not in response.headers:
             response.headers[REQUEST_ID_HEADER] = request_id

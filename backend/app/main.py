@@ -4,12 +4,12 @@ ZaFrame API entrypoint.
 `main.py` stays minimal: create the `FastAPI` app, include routers, and define
 the lifespan hook. All business logic lives in `core/`, `api/`, and `services/`.
 """
-import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import structlog
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
@@ -27,8 +27,6 @@ from app.core.middleware.logging_middleware import (
     REQUEST_ID_STATE_KEY,
     RequestLoggingMiddleware,
 )
-
-logger = logging.getLogger(__name__)
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -134,13 +132,13 @@ def _request_id(request: Request) -> str | None:
 
 async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
     """Map domain exceptions to HTTP responses and log the failure."""
+    logger = structlog.get_logger(__name__)
     request_id = _request_id(request)
     logger.warning(
-        "app_error request_id=%s status=%s detail=%s",
-        request_id,
-        exc.status_code,
-        exc.detail,
-        exc_info=False,
+        "app_error",
+        request_id=request_id,
+        status=exc.status_code,
+        detail=exc.detail,
     )
     return JSONResponse(
         status_code=exc.status_code,
@@ -155,12 +153,13 @@ async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
 
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Unhandled exception: log traceback and return 500."""
+    logger = structlog.get_logger(__name__)
     request_id = _request_id(request)
     logger.exception(
-        "unhandled_exception request_id=%s type=%s msg=%s",
-        request_id,
-        type(exc).__name__,
-        str(exc),
+        "unhandled_exception",
+        request_id=request_id,
+        exc_type=type(exc).__name__,
+        msg=str(exc),
     )
     return JSONResponse(
         status_code=500,
