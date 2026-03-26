@@ -19,6 +19,26 @@ function VerifyContent() {
 
   const token = searchParams.get("token");
 
+  useEffect(() => {
+    if (!token) return;
+    verifyMagicLink(token)
+      .then((data) => {
+        login(data.access_token, data.user);
+        setStatus("success");
+        router.replace("/");
+      })
+      .catch((err) => {
+        setStatus("error");
+        const detail =
+          err instanceof ApiError
+            ? typeof err.body === "object" && err.body && "detail" in err.body
+              ? String((err.body as { detail: unknown }).detail)
+              : err.message
+            : "Link is invalid or expired. Please request a new one.";
+        setErrorMessage(detail);
+      });
+  }, [token, login, router]);
+
   if (!token) {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-6">
@@ -36,25 +56,6 @@ function VerifyContent() {
       </div>
     );
   }
-
-  useEffect(() => {
-    verifyMagicLink(token)
-      .then((data) => {
-        login(data.access_token, data.refresh_token, data.user);
-        setStatus("success");
-        router.replace("/");
-      })
-      .catch((err) => {
-        setStatus("error");
-        const detail =
-          err instanceof ApiError
-            ? typeof err.body === "object" && err.body && "detail" in err.body
-              ? String((err.body as { detail: unknown }).detail)
-              : err.message
-            : "Link is invalid or expired. Please request a new one.";
-        setErrorMessage(detail);
-      });
-  }, [token, login, router]);
 
   if (status === "loading") {
     return (

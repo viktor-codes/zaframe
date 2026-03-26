@@ -3,7 +3,6 @@
  */
 
 const ACCESS_KEY = "zaframe_access_token";
-const REFRESH_KEY = "zaframe_refresh_token";
 
 export function getStoredAccessToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -11,18 +10,15 @@ export function getStoredAccessToken(): string | null {
 }
 
 export function getStoredRefreshToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(REFRESH_KEY);
+  return null;
 }
 
-export function setStoredTokens(access: string, refresh: string): void {
+export function setStoredTokens(access: string): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(ACCESS_KEY, access);
-  localStorage.setItem(REFRESH_KEY, refresh);
 }
 
 export function clearStoredTokens(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem(ACCESS_KEY);
-  localStorage.removeItem(REFRESH_KEY);
 }

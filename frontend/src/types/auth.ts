@@ -15,7 +15,6 @@ export interface MagicLinkSentResponse {
 
 export interface TokenResponse {
   access_token: string;
-  refresh_token: string;
   token_type: string;
 }
 
@@ -23,6 +22,4 @@ export interface MagicLinkVerifyResponse extends TokenResponse {
   user: UserResponse;
 }
 
-export interface RefreshTokenRequest {
-  refresh_token: string;
-}
+export type RefreshTokenResponse = TokenResponse;

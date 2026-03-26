@@ -10,6 +10,6 @@ export interface AuthState {
 }
 
 export interface AuthActions {
-  login: (accessToken: string, refreshToken: string, user: UserResponse) => void;
+  login: (accessToken: string, user: UserResponse) => void;
   logout: () => void;
 }

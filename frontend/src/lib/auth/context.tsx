@@ -25,11 +25,11 @@ import {
 import {
   clearStoredTokens,
   getStoredAccessToken,
-  getStoredRefreshToken,
   setStoredTokens,
 } from "./storage";
 import type { AuthActions, AuthState } from "./types";
 import type { UserResponse } from "@/types";
+import { logoutSession, refreshAccessToken } from "@/lib/api/auth";
 
 type AuthContextValue = AuthState & AuthActions;
 
@@ -40,7 +40,7 @@ function useAuthQuery(loginTrigger: number) {
     typeof window !== "undefined" && !!getStoredAccessToken();
 
   return useQuery({
-    queryKey: ["auth", "me"],
+    queryKey: ["auth", "me", loginTrigger],
     queryFn: () => api.get<UserResponse>("/api/v1/auth/me"),
     enabled: hasToken,
     staleTime: 5 * 60 * 1000,
@@ -55,8 +55,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { data: user, isLoading } = useAuthQuery(loginTrigger);
 
   const login = useCallback(
-    (accessToken: string, refreshToken: string, _userData: UserResponse) => {
-      setStoredTokens(accessToken, refreshToken);
+    (accessToken: string, _userData: UserResponse) => {
+      setStoredTokens(accessToken);
       setAuthTokenProvider(getStoredAccessToken);
       setLoginTrigger((prev) => prev + 1);
     },
@@ -64,22 +64,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logout = useCallback(() => {
-    clearStoredTokens();
-    setLoginTrigger((prev) => prev + 1);
+    void logoutSession().finally(() => {
+      clearStoredTokens();
+      setLoginTrigger((prev) => prev + 1);
+    });
   }, []);
 
   useEffect(() => {
     setAuthTokenProvider(getStoredAccessToken);
     setRefreshTokensFn(async () => {
-      const refresh = getStoredRefreshToken();
-      if (!refresh) return null;
       try {
-        const res = await api.post<{ access_token: string; refresh_token: string }>(
-          "/api/v1/auth/refresh",
-          { refresh_token: refresh },
-          { skipAuth: true }
-        );
-        setStoredTokens(res.access_token, res.refresh_token);
+        const res = await refreshAccessToken();
+        setStoredTokens(res.access_token);
         return { access_token: res.access_token };
       } catch {
         clearStoredTokens();

@@ -95,13 +95,14 @@ async function request<T>(
   const response = await fetch(url, {
     ...init,
     headers,
+    credentials: "include",
   });
 
   if (response.status === 401 && retryOn401 && refreshTokens) {
     const newTokens = await refreshTokens();
     if (newTokens) {
       headers.set("Authorization", `Bearer ${newTokens.access_token}`);
-      const retryResponse = await fetch(url, { ...init, headers });
+      const retryResponse = await fetch(url, { ...init, headers, credentials: "include" });
       if (!retryResponse.ok) {
         throw new ApiError(
           retryResponse.statusText,
