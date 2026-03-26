@@ -4,15 +4,13 @@
 `/health/ready` is a readiness check (DB + optional Stripe/Resend).
 """
 import asyncio
-import logging
 from typing import Any
 
+import structlog
 from fastapi import APIRouter, Response
 
 from app.core.config import settings
 from app.core.database import engine
-
-logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["health"])
 
@@ -34,6 +32,7 @@ async def health_check(response: Response) -> dict[str, str]:
 
 async def _check_database() -> bool:
     """Check DB connectivity (SELECT 1)."""
+    logger = structlog.get_logger(__name__)
     from sqlalchemy import text
 
     try:
@@ -41,12 +40,15 @@ async def _check_database() -> bool:
             await conn.execute(text("SELECT 1"))
         return True
     except Exception as e:
-        logger.warning("Readiness DB check failed: %s", e)
+        logger.warning(
+            "readiness_db_check_failed", error_type=type(e).__name__
+        )
         return False
 
 
 def _check_stripe_sync() -> bool:
     """Check Stripe availability (lightweight request). Runs in a thread (SDK is sync)."""
+    logger = structlog.get_logger(__name__)
     if not settings.STRIPE_SECRET_KEY:
         return True  # not configured, skip the check
     try:
@@ -55,7 +57,9 @@ def _check_stripe_sync() -> bool:
         stripe.StripeClient(api_key=settings.STRIPE_SECRET_KEY).v1.balance.retrieve()
         return True
     except Exception as e:
-        logger.warning("Readiness Stripe check failed: %s", e)
+        logger.warning(
+            "readiness_stripe_check_failed", error_type=type(e).__name__
+        )
         return False
 
 

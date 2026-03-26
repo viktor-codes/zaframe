@@ -8,11 +8,9 @@
 
 Если RESEND_API_KEY не задан — логируем ссылку (для разработки).
 """
-import logging
+import structlog
 
 from app.core.config import settings
-
-logger = logging.getLogger(__name__)
 
 
 async def send_magic_link_email(email: str, magic_link_url: str) -> bool:
@@ -23,16 +21,18 @@ async def send_magic_link_email(email: str, magic_link_url: str) -> bool:
     Если RESEND_API_KEY не задан — логируем URL и возвращаем True (dev mode).
     """
     if not settings.RESEND_API_KEY:
-        logger.info(
-            "Magic Link (dev mode, no RESEND_API_KEY): %s",
-            magic_link_url,
-        )
+        logger = structlog.get_logger(__name__)
+        logger.info("magic_link_dev_mode_no_provider")
         return True
 
+    logger = structlog.get_logger(__name__)
     try:
         import resend
 
-        logger.debug("Using Resend API key: %s...", settings.RESEND_API_KEY[:10])
+        logger.debug(
+            "resend_provider_enabled",
+            resend_api_key_configured=True,
+        )
         resend.api_key = settings.RESEND_API_KEY
         
         params: resend.Emails.SendParams = {
@@ -66,17 +66,13 @@ async def send_magic_link_email(email: str, magic_link_url: str) -> bool:
         
         result = resend.Emails.send(params)
         logger.info(
-            "Magic Link email sent successfully to %s. Resend ID: %s",
-            email,
-            result.get("id", "unknown"),
+            "magic_link_email_sent",
+            resend_id=result.get("id", "unknown"),
         )
         return True
     except Exception as e:
         logger.error(
-            "Failed to send magic link email to %s: %s. Error type: %s",
-            email,
-            str(e),
-            type(e).__name__,
+            "magic_link_email_send_failed",
+            error_type=type(e).__name__,
         )
-        logger.exception("Full traceback:")
         return False

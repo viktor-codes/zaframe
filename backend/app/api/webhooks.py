@@ -7,7 +7,7 @@ Stripe webhook требует raw body для проверки подписи.
 Роль роутера: парсинг payload, проверка подписи, извлечение данных.
 Бизнес-логика подтверждения оплаты — в сервисе payment.
 """
-import logging
+import structlog
 
 from fastapi import APIRouter, Request, Response
 
@@ -16,9 +16,8 @@ import stripe
 from app.core.config import settings
 from app.core.database import async_session_maker
 from app.core.uow import create_uow
+from app.core.middleware.logging_middleware import REQUEST_ID_STATE_KEY
 from app.services.payment import confirm_booking_after_payment, confirm_order_after_payment
-
-logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 
@@ -55,6 +54,9 @@ async def stripe_webhook(request: Request) -> Response:
     Проверяет подпись, парсит событие checkout.session.completed,
     вызывает сервисы confirm_order_after_payment или confirm_booking_after_payment.
     """
+    logger = structlog.get_logger(__name__)
+    request_id = getattr(request.state, REQUEST_ID_STATE_KEY, None)
+
     if not settings.STRIPE_WEBHOOK_SECRET:
         return Response(status_code=500, content="Webhook secret not configured")
 
@@ -68,10 +70,18 @@ async def stripe_webhook(request: Request) -> Response:
             settings.STRIPE_WEBHOOK_SECRET,
         )
     except ValueError as e:
-        logger.warning("Webhook ValueError: %s", e)
+        logger.warning(
+            "webhook_value_error",
+            request_id=request_id,
+            error_type=type(e).__name__,
+        )
         return Response(status_code=400, content="Invalid payload")
     except stripe.SignatureVerificationError as e:
-        logger.warning("Webhook SignatureVerificationError: %s", e)
+        logger.warning(
+            "webhook_signature_verification_error",
+            request_id=request_id,
+            error_type=type(e).__name__,
+        )
         return Response(status_code=400, content="Invalid signature")
 
     if event.type != "checkout.session.completed":
@@ -96,9 +106,17 @@ async def stripe_webhook(request: Request) -> Response:
                 )
                 if ok:
                     await uow.commit()
-                    logger.info("Webhook: order_id=%s paid", order_id)
+                    logger.info(
+                        "webhook_order_paid",
+                        request_id=request_id,
+                        order_id=order_id,
+                    )
                 else:
-                    logger.warning("Webhook: order_id=%s not found or already paid", order_id)
+                    logger.warning(
+                        "webhook_order_not_found_or_already_paid",
+                        request_id=request_id,
+                        order_id=order_id,
+                    )
                 return Response(status_code=200)
 
             if booking_id_str:
@@ -113,13 +131,22 @@ async def stripe_webhook(request: Request) -> Response:
                 )
                 if ok:
                     await uow.commit()
-                    logger.info("Webhook: booking_id=%s confirmed", booking_id)
+                    logger.info(
+                        "webhook_booking_confirmed",
+                        request_id=request_id,
+                        booking_id=booking_id,
+                    )
                 else:
-                    logger.warning("Webhook: booking_id=%s not found or already confirmed", booking_id)
+                    logger.warning(
+                        "webhook_booking_not_found_or_already_confirmed",
+                        request_id=request_id,
+                        booking_id=booking_id,
+                    )
                 return Response(status_code=200)
 
             logger.warning(
-                "Webhook checkout.session.completed: missing metadata.booking_id and metadata.order_id"
+                "webhook_checkout_completed_missing_metadata",
+                request_id=request_id,
             )
         except Exception:
             await uow.rollback()
