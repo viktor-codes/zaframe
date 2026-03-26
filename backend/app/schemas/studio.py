@@ -1,6 +1,7 @@
 """
 Pydantic schemas для Studio модели.
 """
+
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
@@ -25,11 +26,13 @@ class StudioBase(BaseModel):
 
 class StudioCreate(StudioBase):
     """Схема для создания студии. owner_id передаётся из токена на уровне роутера."""
+
     owner_id: int | None = Field(None, description="ID владельца (устанавливается из токена)")
 
 
 class StudioUpdate(BaseModel):
     """Схема для обновления студии (все поля опциональные)."""
+
     name: str | None = Field(None, min_length=1, max_length=200)
     description: str | None = None
     email: EmailStr | None = None
@@ -40,6 +43,7 @@ class StudioUpdate(BaseModel):
 
 class StudioResponse(StudioBase):
     """Схема для ответа API."""
+
     id: int
     owner_id: int
     is_active: bool
@@ -51,6 +55,7 @@ class StudioResponse(StudioBase):
 
 class StudioWithSlots(StudioResponse):
     """Студия с количеством слотов (для списков)."""
+
     slots_count: int | None = Field(None, description="Количество слотов")
 
     model_config = ConfigDict(from_attributes=True)

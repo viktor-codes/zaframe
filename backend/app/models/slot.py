@@ -12,11 +12,12 @@
 - Имеет максимальное количество мест
 - Может быть забронирован несколько раз (через Booking)
 """
+
 from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import ForeignKey, Integer, String, func, DateTime
+from sqlalchemy import DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models import Base
@@ -33,18 +34,17 @@ class OccurrenceStatus:
 class Slot(TimestampMixin, Base):
     """
     Слот/класс для бронирования.
-    
+
     Представляет одно занятие (например, "Йога в 18:00, 5 февраля").
     Может быть забронирован несколькими клиентами (до max_capacity).
     """
+
     __tablename__ = "slots"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
 
     # Связь со студией
-    studio_id: Mapped[int] = mapped_column(
-        ForeignKey("studios.id"), nullable=False, index=True
-    )
+    studio_id: Mapped[int] = mapped_column(ForeignKey("studios.id"), nullable=False, index=True)
 
     # Связь с услугой и шаблоном расписания
     service_id: Mapped[int | None] = mapped_column(
@@ -92,24 +92,22 @@ class Slot(TimestampMixin, Base):
         nullable=False,
         index=True,
     )  # Доменный статус занятия (active/cancelled)
-    
+
     # Связи
-    studio: Mapped["Studio"] = relationship("Studio", back_populates="slots")
-    service: Mapped["Service | None"] = relationship(
+    studio: Mapped[Studio] = relationship("Studio", back_populates="slots")
+    service: Mapped[Service | None] = relationship(
         "Service",
         back_populates="slots",
     )
-    schedule: Mapped["Schedule | None"] = relationship(
+    schedule: Mapped[Schedule | None] = relationship(
         "Schedule",
         back_populates="slots",
     )
 
     # Один слот может иметь множество бронирований
-    bookings: Mapped[list["Booking"]] = relationship(
-        "Booking",
-        back_populates="slot",
-        cascade="all, delete-orphan"
+    bookings: Mapped[list[Booking]] = relationship(
+        "Booking", back_populates="slot", cascade="all, delete-orphan"
     )
-    
+
     # Вычисляемое свойство: сколько мест занято
     # Будет реализовано через SQL запрос или property в схеме

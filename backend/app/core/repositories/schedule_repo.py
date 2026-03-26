@@ -1,6 +1,7 @@
 """
 Репозиторий для сущности Schedule.
 """
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,9 +13,7 @@ class ScheduleRepository:
         self._session = session
 
     async def get_by_id(self, schedule_id: int) -> Schedule | None:
-        result = await self._session.execute(
-            select(Schedule).where(Schedule.id == schedule_id)
-        )
+        result = await self._session.execute(select(Schedule).where(Schedule.id == schedule_id))
         return result.scalar_one_or_none()
 
     async def list_by_service_id(self, service_id: int) -> list[Schedule]:

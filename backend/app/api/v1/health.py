@@ -3,6 +3,7 @@
 `/health` is a lightweight health check (DB connectivity is required by rules).
 `/health/ready` is a readiness check (DB + optional Stripe/Resend).
 """
+
 import asyncio
 from typing import Any
 
@@ -40,9 +41,7 @@ async def _check_database() -> bool:
             await conn.execute(text("SELECT 1"))
         return True
     except Exception as e:
-        logger.warning(
-            "readiness_db_check_failed", error_type=type(e).__name__
-        )
+        logger.warning("readiness_db_check_failed", error_type=type(e).__name__)
         return False
 
 
@@ -57,9 +56,7 @@ def _check_stripe_sync() -> bool:
         stripe.StripeClient(api_key=settings.STRIPE_SECRET_KEY).v1.balance.retrieve()
         return True
     except Exception as e:
-        logger.warning(
-            "readiness_stripe_check_failed", error_type=type(e).__name__
-        )
+        logger.warning("readiness_stripe_check_failed", error_type=type(e).__name__)
         return False
 
 
@@ -85,7 +82,6 @@ async def readiness(response: Response) -> dict[str, Any]:
     - Resend: only validate whether the API key is configured.
     """
     checks: dict[str, str] = {}
-    all_ok = True
 
     db_ok = await _check_database()
     checks["database"] = "ok" if db_ok else "fail"

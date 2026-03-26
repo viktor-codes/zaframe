@@ -6,6 +6,7 @@
 - Валидация бронирования перед оплатой
 - Изоляция Stripe API от роутеров
 """
+
 from __future__ import annotations
 
 import stripe
@@ -13,15 +14,15 @@ import stripe
 from app.core.config import settings
 from app.core.exceptions import AppError, NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
-from app.models.booking import Booking, BookingStatus
-from app.models.order import Order, OrderStatus
+from app.models.booking import BookingStatus
+from app.models.order import OrderStatus
 from app.models.slot import Slot
 
 
 def _get_stripe_client() -> stripe.StripeClient:
     """Получить Stripe-клиент. Выбрасывает AppError при отсутствии ключа."""
     if not settings.STRIPE_SECRET_KEY:
-        raise AppError("STRIPE_SECRET_KEY не настроен", status_code=503)
+        raise AppError("STRIPE_SECRET_KEY is not configured", status_code=503)
     return stripe.StripeClient(api_key=settings.STRIPE_SECRET_KEY)
 
 
@@ -39,15 +40,15 @@ async def create_checkout_session(
     """
     booking = await uow.bookings.get_by_id_with_slot(booking_id)
     if booking is None:
-        raise NotFoundError("Бронирование не найдено")
+        raise NotFoundError("Booking not found")
     if booking.status != BookingStatus.PENDING:
-        raise ValidationError("Бронирование уже оплачено или отменено")
+        raise ValidationError("Booking is already paid or cancelled")
     if booking.checkout_session_id:
-        raise ValidationError("Checkout Session уже создан для этого бронирования")
+        raise ValidationError("Checkout Session already created for this booking")
 
     slot: Slot = booking.slot
     if slot.price_cents <= 0:
-        raise ValidationError("Слот не имеет цены для оплаты")
+        raise ValidationError("Slot has no price for checkout")
 
     client = _get_stripe_client()
     session = client.v1.checkout.sessions.create(
@@ -62,10 +63,7 @@ async def create_checkout_session(
                         "unit_amount": slot.price_cents,
                         "product_data": {
                             "name": slot.title,
-                            "description": (
-                                slot.description
-                                or f"Бронирование слота #{slot.id}"
-                            ),
+                            "description": (slot.description or f"Бронирование слота #{slot.id}"),
                         },
                     },
                     "quantity": 1,
@@ -97,20 +95,16 @@ async def create_order_checkout_session(
     """
     order = await uow.orders.get_by_id_with_service(order_id)
     if order is None:
-        raise NotFoundError("Заказ не найден")
+        raise NotFoundError("Order not found")
     if order.status != OrderStatus.PENDING:
-        raise ValidationError("Заказ уже оплачен или отменён")
+        raise ValidationError("Order is already paid or cancelled")
 
     if order.total_amount_cents <= 0:
-        raise ValidationError("Заказ не имеет суммы для оплаты")
+        raise ValidationError("Order has no payable amount")
 
     client = _get_stripe_client()
 
-    product_name = (
-        order.service.name
-        if order.service is not None
-        else f"Заказ #{order.id}"
-    )
+    product_name = order.service.name if order.service is not None else f"Заказ #{order.id}"
 
     session = client.v1.checkout.sessions.create(
         params={

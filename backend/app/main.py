@@ -4,12 +4,14 @@ ZaFrame API entrypoint.
 `main.py` stays minimal: create the `FastAPI` app, include routers, and define
 the lifespan hook. All business logic lives in `core/`, `api/`, and `services/`.
 """
+
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
+import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import structlog
+from slowapi.errors import RateLimitExceeded
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
@@ -21,12 +23,11 @@ from app.core.config import settings
 from app.core.database import engine
 from app.core.exceptions import AppError
 from app.core.logging_config import setup_logging
-from app.core.rate_limit import limiter
-from slowapi.errors import RateLimitExceeded
 from app.core.middleware.logging_middleware import (
     REQUEST_ID_STATE_KEY,
     RequestLoggingMiddleware,
 )
+from app.core.rate_limit import limiter
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -36,9 +37,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("X-Frame-Options", "DENY")
-        response.headers.setdefault(
-            "Referrer-Policy", "strict-origin-when-cross-origin"
-        )
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
         return response
 
 
@@ -49,7 +48,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 # - More explicit resource management via a context manager
 # - Easier to test and mock
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     """
     Lifespan context manager for DB and logging setup.
 

@@ -4,6 +4,7 @@ API роутер для платежей (Stripe Checkout).
 Операции:
 - POST /payments/checkout-session — создать Checkout Session для бронирования
 """
+
 from fastapi import APIRouter, Depends, Request
 
 from app.api.deps import get_uow

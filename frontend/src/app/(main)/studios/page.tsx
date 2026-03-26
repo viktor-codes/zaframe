@@ -101,8 +101,8 @@ function StudiosPageContent() {
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 4000),
   });
 
-  const results: SearchResult[] = useMemo(
-    () => data?.pages.flat() ?? [],
+  const results = useMemo(
+    () => (data?.pages.flat() ?? []) as SearchResult[],
     [data],
   );
 

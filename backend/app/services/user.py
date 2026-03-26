@@ -1,6 +1,7 @@
 """
 Бизнес-логика для пользователей.
 """
+
 from app.core.uow import UnitOfWork
 from app.models.user import User
 

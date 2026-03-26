@@ -6,7 +6,8 @@
 - Валидация (слот в будущем, не отменён)
 - Переиспользование при webhook оплаты
 """
-from datetime import datetime, timezone
+
+from datetime import UTC, datetime
 
 from app.core.exceptions import NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
@@ -23,7 +24,7 @@ async def get_booking_or_raise(uow: UnitOfWork, booking_id: int) -> Booking:
     """Получить бронирование по ID или выбросить NotFoundError."""
     booking = await uow.bookings.get_by_id(booking_id)
     if booking is None:
-        raise NotFoundError("Бронирование не найдено")
+        raise NotFoundError("Booking not found")
     return booking
 
 
@@ -85,21 +86,21 @@ async def create_booking(uow: UnitOfWork, schema: BookingCreate) -> Booking:
     """
     slot = await uow.slots.get_by_id_for_update(schema.slot_id)
     if slot is None:
-        raise NotFoundError("Слот не найден")
+        raise NotFoundError("Slot not found")
     if not slot.is_active:
-        raise ValidationError("Слот недоступен для бронирования")
+        raise ValidationError("Slot is not available for booking")
 
-    now_utc = datetime.now(timezone.utc)
+    now_utc = datetime.now(UTC)
     slot_start = slot.start_time
     if slot_start.tzinfo is None:
-        slot_start = slot_start.replace(tzinfo=timezone.utc)
+        slot_start = slot_start.replace(tzinfo=UTC)
     if slot_start <= now_utc:
-        raise ValidationError("Нельзя бронировать прошедший слот")
+        raise ValidationError("Cannot book a slot in the past")
 
     confirmed_count = await uow.bookings.count_confirmed_by_slot(slot.id)
     pending_count = await uow.bookings.count_pending_by_slot(slot.id)
     if confirmed_count + pending_count >= slot.max_capacity:
-        raise ValidationError("Нет свободных мест")
+        raise ValidationError("No seats available")
 
     booking = Booking(
         slot_id=schema.slot_id,
@@ -123,10 +124,10 @@ async def cancel_booking(uow: UnitOfWork, booking: Booking) -> Booking:
     Только pending или confirmed можно отменить.
     """
     if booking.status == BookingStatus.CANCELLED:
-        raise ValidationError("Бронирование уже отменено")
+        raise ValidationError("Booking is already cancelled")
 
     booking.status = BookingStatus.CANCELLED
-    booking.cancelled_at = datetime.now(timezone.utc)
+    booking.cancelled_at = datetime.now(UTC)
     await uow.session.flush()
     await uow.session.refresh(booking)
     return booking

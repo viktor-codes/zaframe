@@ -1,6 +1,7 @@
 """
 Pydantic schemas для платежей (Stripe Checkout).
 """
+
 from pydantic import BaseModel, Field, HttpUrl
 
 

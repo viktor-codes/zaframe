@@ -11,11 +11,12 @@
 - Email достаточно для большинства случаев
 - Можно добавить позже при необходимости
 """
+
 from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import String, func, DateTime
+from sqlalchemy import DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models import Base
@@ -29,6 +30,7 @@ class User(TimestampMixin, Base):
     Создаётся автоматически при первом использовании Magic Link.
     Может быть привязан к студии как владелец (через Studio.owner_id).
     """
+
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
@@ -58,26 +60,26 @@ class User(TimestampMixin, Base):
 
     # Связи
     # Один пользователь может быть владельцем нескольких студий
-    studios: Mapped[list["Studio"]] = relationship(
+    studios: Mapped[list[Studio]] = relationship(
         "Studio",
         back_populates="owner",
         cascade="all, delete-orphan",
     )
 
     # Один пользователь может иметь множество бронирований
-    bookings: Mapped[list["Booking"]] = relationship(
+    bookings: Mapped[list[Booking]] = relationship(
         "Booking",
         back_populates="user",
         cascade="all, delete-orphan",
     )
     # И множество заказов
-    orders: Mapped[list["Order"]] = relationship(
+    orders: Mapped[list[Order]] = relationship(
         "Order",
         back_populates="user",
         cascade="all, delete-orphan",
     )
     # И множество refresh-токенов (сессий)
-    refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
+    refresh_tokens: Mapped[list[RefreshToken]] = relationship(
         "RefreshToken",
         back_populates="user",
         cascade="all, delete-orphan",

@@ -1,5 +1,3 @@
-from datetime import date
-
 from app.models.service import Service
 
 
@@ -44,5 +42,3 @@ def test_get_capacity_status_fractional_ratios():
         service_like, max_capacity=10, current_bookings=12, requested=1
     )
     assert status == "SOFT_LIMIT_REACHED"  # total = 13 > 12
-
-

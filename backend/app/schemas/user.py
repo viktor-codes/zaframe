@@ -11,6 +11,7 @@ Pydantic schemas для User модели.
 - Валидация: разные правила для создания и обновления
 - Гибкость: можем добавлять вычисляемые поля в Response
 """
+
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
@@ -18,6 +19,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 class UserBase(BaseModel):
     """Базовые поля пользователя (общие для Create и Update)."""
+
     email: EmailStr = Field(..., description="Email пользователя (уникальный)")
     name: str = Field(..., min_length=1, max_length=100, description="Имя пользователя")
     phone: str | None = Field(None, max_length=20, description="Номер телефона (опционально)")
@@ -25,11 +27,13 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     """Схема для создания пользователя."""
+
     pass
 
 
 class UserUpdate(BaseModel):
     """Схема для обновления пользователя (все поля опциональные)."""
+
     email: EmailStr | None = Field(None, description="Email пользователя")
     name: str | None = Field(None, min_length=1, max_length=100, description="Имя пользователя")
     phone: str | None = Field(None, max_length=20, description="Номер телефона")
@@ -37,6 +41,7 @@ class UserUpdate(BaseModel):
 
 class UserResponse(UserBase):
     """Схема для ответа API (включает id и timestamps)."""
+
     id: int
     is_active: bool
     created_at: datetime
@@ -50,6 +55,7 @@ class UserResponse(UserBase):
 
 class UserPublic(UserBase):
     """Публичная информация о пользователе (без внутренних данных)."""
+
     id: int
     created_at: datetime
 

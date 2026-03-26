@@ -1,8 +1,9 @@
 """
-Интеграционные тесты API аутентификации.
+Integration tests for authentication API.
 
-Требуют запущенную БД (DATABASE_URL) и SECRET_KEY в окружении.
+Requires DATABASE_URL and SECRET_KEY in the environment.
 """
+
 import re
 from unittest.mock import AsyncMock, patch
 
@@ -15,7 +16,7 @@ from app.main import app
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_health():
-    """Health endpoint без БД (без override)."""
+    """Health endpoint without DB override."""
     async with AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://test",
@@ -27,13 +28,12 @@ async def test_health():
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_health_ready():
-    """Readiness: проверка БД и опционально Stripe/Resend."""
+    """Readiness: DB check and optional Stripe/Resend."""
     async with AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://test",
     ) as ac:
         r = await ac.get("/api/v1/health/ready")
-    # При доступной БД — 200, иначе 503
     assert r.status_code in (200, 503)
     data = r.json()
     assert "status" in data
@@ -47,7 +47,7 @@ async def test_health_ready():
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_magic_link_request_returns_200(client):
-    """POST /auth/magic-link/request возвращает 200 и не падает."""
+    """POST /auth/magic-link/request returns 200."""
     with patch("app.services.auth.send_magic_link_email", new_callable=AsyncMock):
         r = await client.post(
             "/api/v1/auth/magic-link/request",
@@ -61,17 +61,19 @@ async def test_magic_link_request_returns_200(client):
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_magic_link_verify_invalid_token_returns_400(client):
-    """GET /auth/magic-link/verify с неверным токеном — 400."""
+    """GET /auth/magic-link/verify with invalid token returns 400."""
     r = await client.get("/api/v1/auth/magic-link/verify", params={"token": "invalid-token"})
     assert r.status_code == 400
-    assert "недействительна" in r.json().get("detail", "") or "истекла" in r.json().get("detail", "")
+    detail = r.json().get("detail", "")
+    assert "invalid" in detail.lower() or "expired" in detail.lower()
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_full_auth_flow_refresh_logout_me(client):
     """
-    Полный сценарий: запрос magic link -> верификация -> refresh -> /me -> logout -> старый refresh не работает.
+    Full flow: magic link request -> verify (cookie) -> refresh -> /me -> logout
+    -> old refresh no longer works.
     """
     captured_url = []
 
@@ -92,32 +94,34 @@ async def test_full_auth_flow_refresh_logout_me(client):
     r2 = await client.get("/api/v1/auth/magic-link/verify", params={"token": token})
     assert r2.status_code == 200
     data2 = r2.json()
+    assert "refresh_token" not in data2
     access = data2["access_token"]
-    refresh = data2["refresh_token"]
     assert data2.get("token_type") == "bearer"
     assert "user" in data2
     assert data2["user"]["email"] == "flow@example.com"
+    refresh_cookie_after_verify = client.cookies.get("refresh_token")
+    assert refresh_cookie_after_verify is not None
 
     r3 = await client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {access}"})
     assert r3.status_code == 200
     assert r3.json()["email"] == "flow@example.com"
 
-    r4 = await client.post("/api/v1/auth/refresh", json={"refresh_token": refresh})
+    r4 = await client.post("/api/v1/auth/refresh")
     assert r4.status_code == 200
     data4 = r4.json()
+    assert "refresh_token" not in data4
     new_access = data4["access_token"]
-    new_refresh = data4["refresh_token"]
-    # После ротации refresh обязательно новый; access может совпадать при выдаче в ту же секунду
-    assert new_refresh != refresh
+    refresh_cookie_after_refresh = client.cookies.get("refresh_token")
+    assert refresh_cookie_after_refresh is not None
+    assert refresh_cookie_after_refresh != refresh_cookie_after_verify
 
     r5 = await client.post(
         "/api/v1/auth/logout",
-        json={"refresh_token": new_refresh},
         headers={"Authorization": f"Bearer {new_access}"},
     )
     assert r5.status_code == 204
 
-    r6 = await client.post("/api/v1/auth/refresh", json={"refresh_token": new_refresh})
+    r6 = await client.post("/api/v1/auth/refresh")
     assert r6.status_code == 401
 
     r7 = await client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {new_access}"})
@@ -127,22 +131,26 @@ async def test_full_auth_flow_refresh_logout_me(client):
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_me_without_bearer_returns_401(client):
-    """GET /auth/me без Authorization — 401."""
+    """GET /auth/me without Authorization returns 401."""
     r = await client.get("/api/v1/auth/me")
     assert r.status_code == 401
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_refresh_with_invalid_token_returns_401(client):
-    """POST /auth/refresh с невалидным refresh token — 401."""
-    r = await client.post("/api/v1/auth/refresh", json={"refresh_token": "invalid-token"})
+async def test_refresh_with_invalid_token_returns_401():
+    """POST /auth/refresh without valid refresh cookie returns 401."""
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as fresh_client:
+        r = await fresh_client.post("/api/v1/auth/refresh")
     assert r.status_code == 401
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_logout_without_auth_returns_401(client):
-    """POST /auth/logout без Bearer — 401."""
-    r = await client.post("/api/v1/auth/logout", json={"refresh_token": "any"})
+    """POST /auth/logout without Bearer returns 401."""
+    r = await client.post("/api/v1/auth/logout")
     assert r.status_code == 401

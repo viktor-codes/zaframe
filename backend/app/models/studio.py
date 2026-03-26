@@ -6,11 +6,10 @@
 - Каждая студия имеет своё расписание и слоты
 - Удобно для масштабирования (несколько локаций, разные направления)
 """
+
 from __future__ import annotations
 
-from datetime import datetime
-
-from sqlalchemy import ForeignKey, String, Text, Float, func, DateTime
+from sqlalchemy import Float, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -21,16 +20,17 @@ from app.models.mixins import TimestampMixin
 class Studio(TimestampMixin, Base):
     """
     Студия/бизнес, предлагающий классы для бронирования.
-    
+
     Принадлежит владельцу (User), имеет расписание и слоты.
     """
+
     __tablename__ = "studios"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    
+
     # Связь с владельцем
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
-    
+
     # Основная информация
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     # Публичный slug для URL (например, /studios/yoga-hub-berlin).
@@ -42,7 +42,7 @@ class Studio(TimestampMixin, Base):
         index=True,
     )
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    
+
     # Контакты студии
     email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
@@ -55,27 +55,25 @@ class Studio(TimestampMixin, Base):
         nullable=False,
         default=list,
     )
-    
+
     # Настройки
     is_active: Mapped[bool] = mapped_column(default=True)  # Активна ли студия
-    
+
     # Связи
-    owner: Mapped["User"] = relationship("User", back_populates="studios")
-    
+    owner: Mapped[User] = relationship("User", back_populates="studios")
+
     # Одна студия может иметь множество слотов
-    slots: Mapped[list["Slot"]] = relationship(
-        "Slot",
-        back_populates="studio",
-        cascade="all, delete-orphan"
+    slots: Mapped[list[Slot]] = relationship(
+        "Slot", back_populates="studio", cascade="all, delete-orphan"
     )
     # Одна студия может иметь множество услуг
-    services: Mapped[list["Service"]] = relationship(
+    services: Mapped[list[Service]] = relationship(
         "Service",
         back_populates="studio",
         cascade="all, delete-orphan",
     )
     # Заказы, оформленные в этой студии
-    orders: Mapped[list["Order"]] = relationship(
+    orders: Mapped[list[Order]] = relationship(
         "Order",
         back_populates="studio",
         cascade="all, delete-orphan",

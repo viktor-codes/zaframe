@@ -53,4 +53,3 @@ def create_uow(session: AsyncSession) -> UnitOfWork:
         refresh_tokens=RefreshTokenRepository(session),
         orders=OrderRepository(session),
     )
-

@@ -1,16 +1,17 @@
 """Pydantic schemas for authentication."""
+
 from pydantic import BaseModel, EmailStr, Field
 
 
 class MagicLinkRequest(BaseModel):
     """Magic link request payload."""
 
-    email: EmailStr = Field(..., description="Email для входа")
+    email: EmailStr = Field(..., description="Email for sign-in")
     name: str = Field(
         ...,
         min_length=1,
         max_length=100,
-        description="Имя (для регистрации)",
+        description="Display name (for registration)",
     )
 
 
@@ -21,14 +22,14 @@ class TokenResponse(BaseModel):
     returned in the JSON body.
     """
 
-    access_token: str = Field(..., description="Access token для API")
-    token_type: str = Field(default="bearer", description="Тип токена")
+    access_token: str = Field(..., description="API access token")
+    token_type: str = Field(default="bearer", description="Token type")
 
 
 class MagicLinkSentResponse(BaseModel):
     """Response after requesting a magic link."""
 
     message: str = Field(
-        default="Если email зарегистрирован, вы получите ссылку для входа",
-        description="Сообщение пользователю",
+        default="If the email is registered, you will receive a sign-in link",
+        description="User-facing message",
     )

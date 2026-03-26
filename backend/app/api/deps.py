@@ -1,20 +1,16 @@
 """
-Общие зависимости для API роутеров.
+Shared dependencies for API routers.
 
-Почему отдельный файл deps.py:
-- Централизованное управление зависимостями
-- Переиспользование в разных роутерах
-- Упрощение тестирования (легко мокировать)
+Centralized DI, reuse across routers, easier testing (mock get_uow).
 
-get_db экспортируется для возможных read-only эндпоинтов без UoW;
-роутеры по умолчанию используют get_uow.
+`get_db` is exported for possible read-only endpoints without UoW;
+routers default to `get_uow`.
 """
+
 from collections.abc import AsyncGenerator
 
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from starlette.requests import Request
 
 from app.core.database import async_session_maker, get_db
@@ -27,13 +23,12 @@ from app.services.auth import get_current_user_from_token
 security = HTTPBearer(auto_error=False)
 
 
-async def get_uow() -> AsyncGenerator[UnitOfWork, None]:
+async def get_uow() -> AsyncGenerator[UnitOfWork]:
     """
-    Unit of Work с управлением транзакцией для write-сценариев.
+    Unit of Work with transaction management for write paths.
 
-    - создаём AsyncSession
-    - оборачиваем в UnitOfWork с репозиториями (create_uow)
-    - при успехе коммитим, при ошибке откатываем.
+    Creates AsyncSession, wraps UnitOfWork with repositories, commits on success
+    and rolls back on error.
     """
     async with async_session_maker() as session:
         uow = create_uow(session)
@@ -51,11 +46,10 @@ async def get_current_user(
     uow: UnitOfWork = Depends(get_uow),
 ) -> User | None:
     """
-    Получить текущего пользователя по Bearer token.
+    Resolve current user from Bearer token.
 
-    Возвращает None если токен не передан или невалиден.
-    Используйте для опциональной аутентификации.
-    Устанавливает request.state.user_id для логирования в middleware.
+    Returns None if no token or invalid token (optional auth).
+    Sets request.state.user_id for logging middleware when user is found.
     """
     if credentials is None:
         return None
@@ -69,14 +63,13 @@ async def get_current_user_required(
     user: User | None = Depends(get_current_user),
 ) -> User:
     """
-    Получить текущего пользователя, обязательная аутентификация.
+    Require authenticated user.
 
-    Raises 401 если пользователь не аутентифицирован.
+    Raises 401 if not authenticated.
     """
     if user is None:
-        raise UnauthorizedError("Требуется аутентификация")
+        raise UnauthorizedError("Authentication required")
     return user
 
 
 __all__ = ["get_db", "get_current_user", "get_current_user_required", "get_uow"]
-

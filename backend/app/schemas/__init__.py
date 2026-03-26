@@ -15,6 +15,32 @@ from app.schemas.guest_session import (
     GuestSessionCreate,
     GuestSessionResponse,
 )
+from app.schemas.payment import (
+    CheckoutSessionCreate,
+    CheckoutSessionResponse,
+    OrderCheckoutSessionCreate,
+)
+from app.schemas.search import SearchQueryParams, SearchResult
+from app.schemas.service import (
+    CourseAvailabilityResult,
+    CourseBookingCreate,
+    CourseBookingPreviewItem,
+    CourseBookingResponse,
+    OrderBase,
+    OrderResponse,
+    PublicService,
+    PublicServiceOccurrence,
+    ScheduleBase,
+    ScheduleCreate,
+    ScheduleResponse,
+    ServiceAvailabilityResponse,
+    ServiceAvailabilityScheduleItem,
+    ServiceBase,
+    ServiceCreate,
+    ServiceResponse,
+    ServiceUpdate,
+    StudioPublicResponse,
+)
 from app.schemas.slot import (
     SlotBase,
     SlotCreate,
@@ -29,26 +55,6 @@ from app.schemas.studio import (
     StudioUpdate,
     StudioWithSlots,
 )
-from app.schemas.service import (
-    CourseAvailabilityResult,
-    CourseBookingCreate,
-    CourseBookingResponse,
-    CourseBookingPreviewItem,
-    OrderBase,
-    OrderResponse,
-    ServiceAvailabilityResponse,
-    ServiceAvailabilityScheduleItem,
-    PublicService,
-    PublicServiceOccurrence,
-    ScheduleBase,
-    ScheduleCreate,
-    ScheduleResponse,
-    ServiceBase,
-    ServiceCreate,
-    ServiceResponse,
-    ServiceUpdate,
-    StudioPublicResponse,
-)
 from app.schemas.user import (
     UserBase,
     UserCreate,
@@ -56,12 +62,6 @@ from app.schemas.user import (
     UserResponse,
     UserUpdate,
 )
-from app.schemas.payment import (
-    CheckoutSessionCreate,
-    CheckoutSessionResponse,
-    OrderCheckoutSessionCreate,
-)
-from app.schemas.search import SearchQueryParams, SearchResult
 
 # Явно пересобираем модели с взаимными ссылками, чтобы Pydantic v2
 # корректно обработал forward references перед использованием в Union.

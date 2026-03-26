@@ -1,6 +1,7 @@
 """
 Pydantic schemas для Slot модели.
 """
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -10,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class SlotBase(BaseModel):
     """Базовые поля слота."""
+
     start_time: datetime = Field(..., description="Время начала занятия")
     end_time: datetime = Field(..., description="Время окончания занятия")
     title: str = Field(..., min_length=1, max_length=200, description="Название класса")
@@ -25,6 +27,7 @@ class SlotBase(BaseModel):
 
 class SlotCreate(SlotBase):
     """Схема для создания слота."""
+
     studio_id: int = Field(..., description="ID студии")
     service_id: int | None = Field(
         None,
@@ -34,6 +37,7 @@ class SlotCreate(SlotBase):
 
 class SlotUpdate(BaseModel):
     """Схема для обновления слота (все поля опциональные)."""
+
     start_time: datetime | None = None
     end_time: datetime | None = None
     title: str | None = Field(None, min_length=1, max_length=200)
@@ -45,6 +49,7 @@ class SlotUpdate(BaseModel):
 
 class SlotResponse(SlotBase):
     """Схема для ответа API."""
+
     id: int
     studio_id: int
     is_active: bool
@@ -56,6 +61,7 @@ class SlotResponse(SlotBase):
 
 class SlotWithBookings(SlotResponse):
     """Слот с информацией о бронированиях."""
+
     bookings_count: int = Field(default=0, description="Количество бронирований")
     available_spots: int = Field(..., description="Доступные места")
 

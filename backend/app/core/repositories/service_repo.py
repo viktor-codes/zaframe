@@ -1,6 +1,7 @@
 """
 Репозиторий для сущности Service.
 """
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -13,22 +14,16 @@ class ServiceRepository:
         self._session = session
 
     async def get_by_id(self, service_id: int) -> Service | None:
-        result = await self._session.execute(
-            select(Service).where(Service.id == service_id)
-        )
+        result = await self._session.execute(select(Service).where(Service.id == service_id))
         return result.scalar_one_or_none()
 
     async def get_by_id_with_slots(self, service_id: int) -> Service | None:
         result = await self._session.execute(
-            select(Service)
-            .options(selectinload(Service.slots))
-            .where(Service.id == service_id)
+            select(Service).options(selectinload(Service.slots)).where(Service.id == service_id)
         )
         return result.scalar_one_or_none()
 
-    async def get_by_studio_and_id(
-        self, studio_id: int, service_id: int
-    ) -> Service | None:
+    async def get_by_studio_and_id(self, studio_id: int, service_id: int) -> Service | None:
         result = await self._session.execute(
             select(Service).where(
                 Service.id == service_id,
@@ -43,12 +38,9 @@ class ServiceRepository:
         *,
         category: str | None = None,
     ) -> list[Service]:
-        query = (
-            select(Service)
-            .where(
-                Service.studio_id.in_(studio_ids),
-                Service.is_active.is_(True),
-            )
+        query = select(Service).where(
+            Service.studio_id.in_(studio_ids),
+            Service.is_active.is_(True),
         )
         if category is not None:
             query = query.where(Service.category == category)

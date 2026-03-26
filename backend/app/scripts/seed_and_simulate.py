@@ -13,17 +13,18 @@
 Запуск (из директории backend):
     uv run python -m app.scripts.seed_and_simulate
 """
+
 from __future__ import annotations
 
 import argparse
 import asyncio
 import random
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import UTC, date, datetime, time, timedelta
 
 from sqlalchemy import select, text
 
-from app.core.database import async_session_maker
 from app.core.config import settings
+from app.core.database import async_session_maker
 from app.core.exceptions import AppError
 from app.core.uow import UnitOfWork, create_uow
 from app.models.service import Service, ServiceType
@@ -36,8 +37,8 @@ from app.schemas.service import (
     ServiceCreate,
     StudioPublicResponse,
 )
-from app.schemas.studio import StudioCreate
 from app.schemas.slot import SlotCreate
+from app.schemas.studio import StudioCreate
 from app.services.booking import create_booking
 from app.services.payment import (
     create_checkout_session,
@@ -50,8 +51,8 @@ from app.services.service import (
     get_studio_public,
     occurrence_generator,
 )
-from app.services.studio import create_studio, get_studios, get_studios_count
 from app.services.slot import create_slot
+from app.services.studio import create_studio, get_studios, get_studios_count
 
 
 async def _get_or_create_owner(uow: UnitOfWork, idx: int) -> User:
@@ -79,7 +80,7 @@ def _random_future_datetime(days_ahead: int, duration_minutes: int) -> tuple[dat
     """Случайные start/end в будущем (UTC)."""
     d = date.today() + timedelta(days=random.randint(1, days_ahead))
     hour = random.choice([9, 10, 12, 14, 18, 19, 20])
-    start = datetime.combine(d, time(hour, 0), tzinfo=timezone.utc)
+    start = datetime.combine(d, time(hour, 0), tzinfo=UTC)
     end = start + timedelta(minutes=duration_minutes)
     return start, end
 
@@ -122,11 +123,7 @@ async def seed_demo_data(
             duration = random.choice([45, 60, 90])
             max_capacity = random.choice([8, 10, 12, 15])
             price_single = random.choice([1200, 1500, 1800])
-            price_course = (
-                price_single * weeks_count
-                if is_course
-                else None
-            )
+            price_course = price_single * weeks_count if is_course else None
 
             service_schema = ServiceCreate(
                 studio_id=studio.id,
@@ -189,19 +186,21 @@ async def simulate_bookings(
     services = list(services_result.scalars().all())
 
     slots_result = await uow.session.execute(
-        select(Slot).where(Slot.start_time >= datetime.now(timezone.utc))
+        select(Slot).where(Slot.start_time >= datetime.now(UTC))
     )
     slots = list(slots_result.scalars().all())
 
     course_services = [s for s in services if s.type == ServiceType.COURSE]
     single_slots = [
-        s for s in slots
+        s
+        for s in slots
         if s.service_id is not None
         and any(srv.id == s.service_id and srv.type == ServiceType.SINGLE_CLASS for srv in services)
     ]
 
     course_slots = [
-        s for s in slots
+        s
+        for s in slots
         if any(srv.id == s.service_id and srv.type == ServiceType.COURSE for srv in services)
     ]
 
@@ -295,10 +294,12 @@ async def simulate_bookings(
 async def simulate_public_flows(uow: UnitOfWork) -> None:
     """Публичные сценарии: студия по slug, доступность курса."""
     studios_result = await uow.session.execute(
-        select(Studio).where(
+        select(Studio)
+        .where(
             Studio.slug.is_not(None),
             Studio.is_active.is_(True),
-        ).limit(10)
+        )
+        .limit(10)
     )
     studios = list(studios_result.scalars().all())
     if not studios:
@@ -317,17 +318,20 @@ async def simulate_public_flows(uow: UnitOfWork) -> None:
 
         total_services += len(public.services)
         course_ids = [
-            svc.id for svc in public.services
+            svc.id
+            for svc in public.services
             if svc.type == ServiceType.COURSE and svc.occurrences_count > 0
         ]
         for service_id in course_ids[:3]:
             try:
-                availability = await get_service_availability(uow, service_id=service_id)
+                await get_service_availability(uow, service_id=service_id)
                 total_availability_calls += 1
             except AppError:
                 pass
 
-    print(f"[public] studios_checked={len(studios)}, services={total_services}, availability_calls={total_availability_calls}")
+    print(
+        f"[public] studios_checked={len(studios)}, services={total_services}, availability_calls={total_availability_calls}"
+    )
 
 
 async def simulate_list_and_search(uow: UnitOfWork, *, rounds: int = 30) -> None:
@@ -344,9 +348,7 @@ async def simulate_list_and_search(uow: UnitOfWork, *, rounds: int = 30) -> None
 
 async def truncate_studios_services(uow: UnitOfWork) -> None:
     """Очистить студии и услуги (CASCADE удалит слоты, бронирования, заказы)."""
-    await uow.session.execute(
-        text("TRUNCATE TABLE services, studios RESTART IDENTITY CASCADE")
-    )
+    await uow.session.execute(text("TRUNCATE TABLE services, studios RESTART IDENTITY CASCADE"))
     await uow.session.flush()
     print("[seed] truncated studios and services.")
 

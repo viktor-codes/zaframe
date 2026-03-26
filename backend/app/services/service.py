@@ -5,11 +5,12 @@
 - генерация расписания на основе Schedule / параметров
 - проверка доступности курса с учётом soft/hard лимитов (overbooking)
 """
+
 from __future__ import annotations
 
 from collections.abc import Iterable
 from dataclasses import dataclass
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import UTC, date, datetime, time, timedelta
 
 from app.core.datetime_utils import to_naive_utc
 from app.core.exceptions import NotFoundError, ValidationError
@@ -33,12 +34,10 @@ from app.schemas import (
     OrderResponse,
     PublicService,
     ScheduleCreate,
-    StudioPublicResponse,
-    ServiceUpdate,
-    ServiceResponse,
-    ScheduleResponse,
     ServiceAvailabilityResponse,
     ServiceAvailabilityScheduleItem,
+    ServiceUpdate,
+    StudioPublicResponse,
 )
 
 
@@ -66,7 +65,7 @@ async def get_service_or_raise(uow: UnitOfWork, service_id: int) -> Service:
     """Получить услугу по ID или выбросить NotFoundError."""
     service = await uow.services.get_by_id(service_id)
     if service is None:
-        raise NotFoundError("Услуга не найдена")
+        raise NotFoundError("Service not found")
     return service
 
 
@@ -95,7 +94,7 @@ async def deactivate_service(uow: UnitOfWork, service: Service) -> Service:
 async def create_schedule(uow: UnitOfWork, schema: ScheduleCreate) -> Schedule:
     """Создать шаблон расписания для услуги."""
     if await uow.services.get_by_id(schema.service_id) is None:
-        raise NotFoundError("Услуга не найдена")
+        raise NotFoundError("Service not found")
 
     schedule = Schedule(
         service_id=schema.service_id,
@@ -134,7 +133,7 @@ async def get_schedule_or_raise(uow: UnitOfWork, schedule_id: int) -> Schedule:
     """Получить шаблон расписания или выбросить NotFoundError."""
     schedule = await uow.schedules.get_by_id(schedule_id)
     if schedule is None:
-        raise NotFoundError("Расписание не найдено")
+        raise NotFoundError("Schedule not found")
     return schedule
 
 
@@ -164,13 +163,13 @@ async def occurrence_generator(
     Payload: {service_id, days: [1,3], start_time, weeks_count}
     """
     if weeks_count <= 0:
-        raise ValidationError("weeks_count должен быть > 0")
+        raise ValidationError("weeks_count must be greater than 0")
     if not days:
-        raise ValidationError("Список days не может быть пустым")
+        raise ValidationError("days list cannot be empty")
 
     service = await uow.services.get_by_studio_and_id(studio_id, service_id)
     if service is None:
-        raise NotFoundError("Услуга не найдена в этой студии")
+        raise NotFoundError("Service not found in this studio")
 
     start_date = start_date or date.today()
 
@@ -185,7 +184,7 @@ async def occurrence_generator(
     for week_start in _iterate_weeks(start_monday, weeks_count):
         for dow in days:
             if not 0 <= dow <= 6:
-                raise ValidationError("day_of_week должен быть в диапазоне 0-6")
+                raise ValidationError("day_of_week must be between 0 and 6")
             day_date = week_start + timedelta(days=dow)
             if day_date < start_date:
                 # Пропускаем занятия до стартовой даты
@@ -197,25 +196,17 @@ async def occurrence_generator(
 
     if not planned_intervals:
         raise ValidationError(
-            (
-                "Не удалось сгенерировать ни одного занятия "
-                "для заданных параметров"
-            )
+            "Could not generate any sessions for the given parameters",
         )
 
     min_start = min(s for s, _ in planned_intervals)
     max_end = max(e for _, e in planned_intervals)
 
-    existing_slots = await uow.slots.list_overlapping(
-        studio_id, service_id, min_start, max_end
-    )
+    existing_slots = await uow.slots.list_overlapping(studio_id, service_id, min_start, max_end)
 
     if existing_slots:
         raise ValidationError(
-            (
-                "Найдены уже существующие занятия этого курса в указанный период. "
-                "Сначала удалите старые занятия или выберите другой интервал."
-            )
+            "Existing course sessions overlap this period. Remove old sessions or pick another range.",
         )
 
     created_slots: list[Slot] = []
@@ -258,16 +249,12 @@ async def _get_course_slots_with_capacity(
     for_update: bool = False,
 ) -> list[_CapacityStats]:
     """Получить все слоты курса и их текущую заполненность."""
-    slots = await uow.slots.list_by_service_active(
-        service.id, for_update=for_update
-    )
+    slots = await uow.slots.list_by_service_active(service.id, for_update=for_update)
     if not slots:
         return []
 
     slot_ids = [s.id for s in slots]
-    counts_map = await uow.bookings.get_confirmed_pending_counts_by_slot_ids(
-        slot_ids
-    )
+    counts_map = await uow.bookings.get_confirmed_pending_counts_by_slot_ids(slot_ids)
 
     return [
         _CapacityStats(
@@ -290,9 +277,9 @@ async def check_course_availability(
     """
     service = await uow.services.get_by_id(service_id)
     if service is None:
-        raise NotFoundError("Услуга не найдена")
+        raise NotFoundError("Service not found")
     if service.type != ServiceType.COURSE:
-        raise ValidationError("Услуга не является курсом")
+        raise ValidationError("Service is not a course")
 
     stats = await _get_course_slots_with_capacity(
         uow,
@@ -305,7 +292,7 @@ async def check_course_availability(
             requires_warning=False,
             hard_block=True,
             overbooked_slots=[],
-            message="Для этого курса ещё не создано ни одного занятия",
+            message="No sessions have been created for this course yet",
         )
 
     overbooked_items: list[CourseBookingPreviewItem] = []
@@ -348,13 +335,13 @@ async def check_course_availability(
             requires_warning=False,
             hard_block=True,
             overbooked_slots=overbooked_items,
-            message="Недостаточно мест в нескольких занятиях курса. Свяжитесь с владельцем студии.",
+            message="Not enough seats in several course sessions. Contact the studio owner.",
         )
 
     requires_warning = len(overbooked_items) > 0
     message = None
     if requires_warning:
-        message = "Некоторые занятия курса будут более плотными по количеству участников, но бронирование возможно."
+        message = "Some course sessions will be fuller, but booking is still allowed."
 
     return CourseAvailabilityResult(
         can_book=True,
@@ -382,22 +369,20 @@ async def create_course_booking(
     )
     if not availability.can_book:
         raise ValidationError(
-            availability.message or "Недостаточно мест для курса",
+            availability.message or "Not enough seats for the course",
         )
 
     service = await uow.services.get_by_id_with_slots(schema.service_id)
     if service is None:
-        raise NotFoundError("Услуга не найдена")
+        raise NotFoundError("Service not found")
 
     slots = sorted(service.slots, key=lambda s: s.start_time)
     if not slots:
         raise ValidationError(
-            "Для этого курса ещё не создано ни одного занятия",
+            "No sessions have been created for this course yet",
         )
 
-    total_amount_cents = service.price_course_cents or (
-        service.price_single_cents * len(slots)
-    )
+    total_amount_cents = service.price_course_cents or (service.price_single_cents * len(slots))
 
     # Распределяем стоимость курса по занятиям так, чтобы сумма unit_price_cents
     # строго совпадала с total_amount_cents (решаем "The Cent Problem").
@@ -471,28 +456,22 @@ async def get_studio_public(
     """
     studio = await uow.studios.get_by_slug_with_services_slots(slug)
     if studio is None:
-        raise NotFoundError("Студия не найдена")
+        raise NotFoundError("Studio not found")
 
     services_public: list[PublicService] = []
 
     # Собираем все будущие слоты студии, чтобы одним запросом посчитать заполненность.
-    now_utc = datetime.now(timezone.utc)
+    now_utc = datetime.now(UTC)
     all_upcoming_slots: list[Slot] = []
     for service in studio.services:
         for slot in service.slots:
-            if (
-                slot.start_time >= now_utc
-                and slot.is_active
-                and slot.status == "active"
-            ):
+            if slot.start_time >= now_utc and slot.is_active and slot.status == "active":
                 all_upcoming_slots.append(slot)
 
     slot_capacity_map: dict[int, tuple[int, int]] = {}
     if all_upcoming_slots:
         slot_ids = [s.id for s in all_upcoming_slots]
-        slot_capacity_map = await uow.bookings.get_confirmed_pending_counts_by_slot_ids(
-            slot_ids
-        )
+        slot_capacity_map = await uow.bookings.get_confirmed_pending_counts_by_slot_ids(slot_ids)
 
     for service in studio.services:
         # Берём только будущие слоты этого сервиса (уже загружены через selectinload)
@@ -543,11 +522,7 @@ async def get_studio_public(
                 if overbooked_ratio > service.max_overbooked_ratio:
                     hard_block = True
 
-            can_book = (
-                occurrences_count > 0
-                and total_remaining_capacity > 0
-                and not hard_block
-            )
+            can_book = occurrences_count > 0 and total_remaining_capacity > 0 and not hard_block
 
             availability_schema = PublicService.Availability(
                 can_book=can_book,
@@ -596,9 +571,9 @@ async def get_service_availability(
     """
     service = await uow.services.get_by_id(service_id)
     if service is None:
-        raise NotFoundError("Услуга не найдена")
+        raise NotFoundError("Service not found")
     if service.type != ServiceType.COURSE:
-        raise ValidationError("Услуга не является курсом")
+        raise ValidationError("Service is not a course")
 
     availability = await check_course_availability(
         uow,
@@ -608,11 +583,7 @@ async def get_service_availability(
 
     stats = await _get_course_slots_with_capacity(uow, service=service)
     if start_date is not None:
-        stats = [
-            s
-            for s in stats
-            if s.slot.start_time.date() >= start_date
-        ]
+        stats = [s for s in stats if s.slot.start_time.date() >= start_date]
 
     details: list[ServiceAvailabilityScheduleItem] = []
     for s in stats:
@@ -649,4 +620,3 @@ async def get_service_availability(
         warning_message=availability.message,
         schedule_details=details,
     )
-

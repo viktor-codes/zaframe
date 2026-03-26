@@ -54,4 +54,3 @@ class SearchResult(BaseModel):
 
     studio: StudioResponse
     matched_services: list[ServiceResponse]
-

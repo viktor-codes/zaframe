@@ -13,12 +13,12 @@ from app.api.deps import get_current_user_required, get_uow
 from app.core.config import settings
 from app.core.rate_limit import limiter
 from app.core.uow import UnitOfWork
+from app.models.user import User
 from app.schemas.auth import (
     MagicLinkRequest,
     MagicLinkSentResponse,
     TokenResponse,
 )
-from app.models.user import User
 from app.schemas.user import UserResponse
 from app.services.auth import (
     logout_current_session,
@@ -60,10 +60,9 @@ async def magic_link_request(
     uow: UnitOfWork = Depends(get_uow),
 ) -> MagicLinkSentResponse:
     """
-    Запросить Magic Link на email.
+    Request a magic link email.
 
-    Создаёт пользователя при первом запросе.
-    Отправляет письмо со ссылкой (или логирует в dev).
+    Creates the user on first request. Sends the email (or logs in dev).
     """
     await request_magic_link(uow, schema.email, schema.name)
     return MagicLinkSentResponse()
@@ -74,14 +73,14 @@ async def magic_link_request(
 async def magic_link_verify(
     request: Request,
     response: Response,
-    token: str = Query(..., description="Токен из ссылки в письме"),
+    token: str = Query(..., description="Token from the email link"),
     uow: UnitOfWork = Depends(get_uow),
 ):
     """
-    Проверить Magic Link токен и выдать JWT.
+    Verify magic link token and issue JWTs.
 
-    Вызывается когда пользователь переходит по ссылке из письма.
-    Frontend обычно получает token из query и вызывает этот endpoint.
+    Called when the user follows the email link. The frontend reads `token`
+    from the query string and calls this endpoint.
     """
     user, access_token, refresh_token = await verify_magic_link(uow, token)
     _set_refresh_cookie(response, refresh_token)
@@ -121,9 +120,9 @@ async def logout(
     user: User = Depends(get_current_user_required),
 ) -> None:
     """
-    Выйти из текущей сессии.
+    Sign out of the current session.
 
-    Revokes current refresh session (from cookie) and clears the cookie.
+    Revokes the refresh session from the cookie and clears the cookie.
     """
     refresh_token = request.cookies.get(REFRESH_TOKEN_COOKIE_NAME)
     _clear_refresh_cookie(response)
@@ -136,8 +135,8 @@ async def get_current_user_me(
     user: User = Depends(get_current_user_required),
 ) -> UserResponse:
     """
-    Получить текущего пользователя по Bearer token.
+    Return the current user from the Bearer access token.
 
-    Защищённый эндпоинт — требует Authorization: Bearer <access_token>.
+    Protected endpoint — requires `Authorization: Bearer <access_token>`.
     """
     return user

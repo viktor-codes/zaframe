@@ -7,11 +7,13 @@ order_id/booking_id в metadata, невалидные id, отсутствие m
 Интеграционные тесты (mark integration): реальная БД + rollback, webhook
 использует ту же сессию, проверка смены статуса.
 """
+
 import hashlib
 import hmac
 import json
 import re
 import time
+from datetime import UTC
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -89,9 +91,9 @@ async def _authenticate_and_create_booking(client: AsyncClient) -> int:
     assert r_studio.status_code == 201
     studio_id = r_studio.json()["id"]
 
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timedelta
 
-    start = datetime.now(timezone.utc) + timedelta(hours=2)
+    start = datetime.now(UTC) + timedelta(hours=2)
     end = start + timedelta(hours=1)
     r_slot = await client.post(
         "/api/v1/slots",
@@ -467,11 +469,12 @@ async def test_webhook_order_integration(rollback_client, app_with_rollback_uow)
     Интеграционный тест: создаём заказ (курс) и бронирования, вызываем webhook
     с order_id, проверяем смену статуса заказа и бронирований на paid/confirmed.
     """
+    from sqlalchemy import select
+
     from app.api import webhooks
     from app.core.uow import create_uow
     from app.models.booking import Booking, BookingStatus
     from app.models.order import Order, OrderStatus
-    from sqlalchemy import select
 
     # Создаём пользователя и студию, услугу, слоты, заказ через сервис (минимально)
     booking_id = await _authenticate_and_create_booking(rollback_client)

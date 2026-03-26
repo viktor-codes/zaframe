@@ -1,14 +1,13 @@
 """
-Доменные исключения приложения.
+Domain exceptions for the application.
 
-Сервисы бросают только эти исключения; маппинг в HTTP (статус + body)
-выполняется в одном месте — в exception handler'ах FastAPI.
-Роутеры не зависят от HTTPException.
+Services raise only these exceptions; mapping to HTTP (status + body) is done
+in one place — FastAPI exception handlers. Routers do not use HTTPException.
 """
 
 
 class AppError(Exception):
-    """Базовое исключение приложения."""
+    """Base application exception."""
 
     def __init__(self, detail: str, status_code: int = 500) -> None:
         self.detail = detail
@@ -17,28 +16,28 @@ class AppError(Exception):
 
 
 class NotFoundError(AppError):
-    """Ресурс не найден (404)."""
+    """Resource not found (404)."""
 
-    def __init__(self, detail: str = "Ресурс не найден") -> None:
+    def __init__(self, detail: str = "Resource not found") -> None:
         super().__init__(detail=detail, status_code=404)
 
 
 class ForbiddenError(AppError):
-    """Нет прав доступа (403)."""
+    """Insufficient permissions (403)."""
 
-    def __init__(self, detail: str = "Нет доступа") -> None:
+    def __init__(self, detail: str = "Access denied") -> None:
         super().__init__(detail=detail, status_code=403)
 
 
 class ValidationError(AppError):
-    """Ошибка валидации / бизнес-правило (400)."""
+    """Validation or business rule failure (400)."""
 
     def __init__(self, detail: str) -> None:
         super().__init__(detail=detail, status_code=400)
 
 
 class UnauthorizedError(AppError):
-    """Требуется аутентификация или невалидные учётные данные (401)."""
+    """Authentication required or invalid credentials (401)."""
 
-    def __init__(self, detail: str = "Требуется аутентификация") -> None:
+    def __init__(self, detail: str = "Authentication required") -> None:
         super().__init__(detail=detail, status_code=401)

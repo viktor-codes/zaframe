@@ -11,6 +11,7 @@ CRUD операции:
 Вложенные маршруты:
 - GET /studios/{studio_id}/slots — расписание конкретной студии
 """
+
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Query
@@ -18,19 +19,18 @@ from fastapi import APIRouter, Depends, Query
 from app.api.deps import get_current_user_required, get_uow
 from app.core.uow import UnitOfWork
 from app.models.user import User
-from app.services.studio import ensure_studio_owner, get_studio_or_raise
 from app.schemas.booking import BookingResponse
 from app.schemas.slot import SlotCreate, SlotResponse, SlotUpdate
 from app.services.booking import get_bookings
 from app.services.slot import (
     create_slot,
     delete_slot,
-    get_slot,
     get_slot_or_raise,
     get_slots,
     get_slots_count,
     update_slot,
 )
+from app.services.studio import ensure_studio_owner, get_studio_or_raise
 
 router = APIRouter(prefix="/slots", tags=["slots"])
 
@@ -91,9 +91,7 @@ async def list_slot_bookings(
 ) -> list[BookingResponse]:
     """Бронирования слота."""
     await get_slot_or_raise(uow, slot_id)
-    return await get_bookings(
-        uow, skip=skip, limit=limit, slot_id=slot_id, status=status
-    )
+    return await get_bookings(uow, skip=skip, limit=limit, slot_id=slot_id, status=status)
 
 
 @router.get("/{slot_id}", response_model=SlotResponse)

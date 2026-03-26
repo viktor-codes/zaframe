@@ -1,9 +1,10 @@
 """
-Юнит-тесты для app.services.payment.
+Unit tests for app.services.payment.
 
-Покрывают: create_checkout_session, create_order_checkout_session,
+Covers: create_checkout_session, create_order_checkout_session,
 confirm_booking_after_payment, confirm_order_after_payment.
 """
+
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -35,7 +36,7 @@ def mock_uow():
 @pytest.mark.asyncio
 async def test_create_checkout_session_booking_not_found(mock_uow):
     mock_uow.bookings.get_by_id_with_slot = AsyncMock(return_value=None)
-    with pytest.raises(NotFoundError, match="Бронирование не найдено"):
+    with pytest.raises(NotFoundError, match="Booking not found"):
         await create_checkout_session(
             mock_uow, 1, success_url="https://a/s", cancel_url="https://a/c"
         )
@@ -50,7 +51,7 @@ async def test_create_checkout_session_wrong_status(mock_uow):
     booking.slot.price_cents = 1000
     booking.guest_email = "g@x.com"
     mock_uow.bookings.get_by_id_with_slot = AsyncMock(return_value=booking)
-    with pytest.raises(ValidationError, match="уже оплачено"):
+    with pytest.raises(ValidationError, match="already paid or cancelled"):
         await create_checkout_session(
             mock_uow, 1, success_url="https://a/s", cancel_url="https://a/c"
         )
@@ -63,7 +64,7 @@ async def test_create_checkout_session_already_has_session_id(mock_uow):
     booking.checkout_session_id = "cs_old"
     booking.slot = MagicMock(spec=Slot)
     mock_uow.bookings.get_by_id_with_slot = AsyncMock(return_value=booking)
-    with pytest.raises(ValidationError, match="Checkout Session уже создан"):
+    with pytest.raises(ValidationError, match="Checkout Session already created"):
         await create_checkout_session(
             mock_uow, 1, success_url="https://a/s", cancel_url="https://a/c"
         )
@@ -82,7 +83,7 @@ async def test_create_checkout_session_slot_price_zero(mock_uow):
     booking.slot = slot
     booking.guest_email = None
     mock_uow.bookings.get_by_id_with_slot = AsyncMock(return_value=booking)
-    with pytest.raises(ValidationError, match="не имеет цены"):
+    with pytest.raises(ValidationError, match="no price for checkout"):
         await create_checkout_session(
             mock_uow, 1, success_url="https://a/s", cancel_url="https://a/c"
         )
@@ -151,7 +152,7 @@ async def test_create_checkout_session_success(mock_uow):
 @pytest.mark.asyncio
 async def test_create_order_checkout_session_order_not_found(mock_uow):
     mock_uow.orders.get_by_id_with_service = AsyncMock(return_value=None)
-    with pytest.raises(NotFoundError, match="Заказ не найден"):
+    with pytest.raises(NotFoundError, match="Order not found"):
         await create_order_checkout_session(
             mock_uow, 1, success_url="https://a/s", cancel_url="https://a/c"
         )
@@ -167,7 +168,7 @@ async def test_create_order_checkout_session_wrong_status(mock_uow):
     order.id = 1
     order.guest_email = None
     mock_uow.orders.get_by_id_with_service = AsyncMock(return_value=order)
-    with pytest.raises(ValidationError, match="уже оплачен"):
+    with pytest.raises(ValidationError, match="already paid or cancelled"):
         await create_order_checkout_session(
             mock_uow, 1, success_url="https://a/s", cancel_url="https://a/c"
         )
@@ -181,7 +182,7 @@ async def test_create_order_checkout_session_zero_amount(mock_uow):
     order.service = None
     order.id = 1
     mock_uow.orders.get_by_id_with_service = AsyncMock(return_value=order)
-    with pytest.raises(ValidationError, match="не имеет суммы"):
+    with pytest.raises(ValidationError, match="no payable amount"):
         await create_order_checkout_session(
             mock_uow, 1, success_url="https://a/s", cancel_url="https://a/c"
         )
@@ -242,9 +243,7 @@ async def test_confirm_booking_after_payment_success(mock_uow):
     booking = MagicMock(spec=Booking)
     booking.status = BookingStatus.PENDING
     mock_uow.bookings.get_by_id = AsyncMock(return_value=booking)
-    ok = await confirm_booking_after_payment(
-        mock_uow, 1, payment_intent_id="pi_123"
-    )
+    ok = await confirm_booking_after_payment(mock_uow, 1, payment_intent_id="pi_123")
     assert ok is True
     assert booking.status == BookingStatus.CONFIRMED
     assert booking.payment_status == "succeeded"
@@ -254,7 +253,7 @@ async def test_confirm_booking_after_payment_success(mock_uow):
 
 @pytest.mark.asyncio
 async def test_confirm_booking_after_payment_success_no_payment_intent(mock_uow):
-    """Без payment_intent_id поле payment_intent_id не перезаписывается."""
+    """Without payment_intent_id the field is not overwritten."""
     booking = MagicMock(spec=Booking)
     booking.status = BookingStatus.PENDING
     booking.payment_intent_id = None
@@ -298,9 +297,7 @@ async def test_confirm_order_after_payment_success_confirms_bookings(mock_uow):
     b2 = MagicMock(spec=Booking)
     b2.status = BookingStatus.CONFIRMED
     mock_uow.bookings.list_ = AsyncMock(return_value=[b1, b2])
-    ok = await confirm_order_after_payment(
-        mock_uow, 10, payment_intent_id="pi_ord"
-    )
+    ok = await confirm_order_after_payment(mock_uow, 10, payment_intent_id="pi_ord")
     assert ok is True
     assert order.status == OrderStatus.PAID
     assert b1.status == BookingStatus.CONFIRMED

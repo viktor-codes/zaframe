@@ -8,6 +8,7 @@
 
 Если RESEND_API_KEY не задан — логируем ссылку (для разработки).
 """
+
 import structlog
 
 from app.core.config import settings
@@ -34,7 +35,7 @@ async def send_magic_link_email(email: str, magic_link_url: str) -> bool:
             resend_api_key_configured=True,
         )
         resend.api_key = settings.RESEND_API_KEY
-        
+
         params: resend.Emails.SendParams = {
             "from": "ZaFrame <onboarding@resend.dev>",
             "to": [email],
@@ -63,7 +64,7 @@ async def send_magic_link_email(email: str, magic_link_url: str) -> bool:
             </div>
             """,
         }
-        
+
         result = resend.Emails.send(params)
         logger.info(
             "magic_link_email_sent",

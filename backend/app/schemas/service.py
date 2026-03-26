@@ -1,13 +1,14 @@
 """
 Pydantic схемы для Service, Schedule и Order.
 """
+
 from __future__ import annotations
 
 from datetime import date, datetime, time
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
-from app.models import BookingType, OrderStatus, ServiceType, ServiceCategory
+from app.models import ServiceCategory, ServiceType
 
 
 class ServiceBase(BaseModel):
@@ -235,7 +236,7 @@ class CourseBookingResponse(BaseModel):
     """
 
     order: OrderResponse
-    bookings: list["BookingResponse"]
+    bookings: list[BookingResponse]
     availability: CourseAvailabilityResult | None = None
 
 
@@ -317,7 +318,7 @@ class PublicService(BaseModel):
             description="Даты занятий, где произойдёт overbooking",
         )
 
-    availability: "PublicService.Availability | None" = Field(
+    availability: PublicService.Availability | None = Field(
         None,
         description="Информация о доступности для бронирования курса",
     )
@@ -331,4 +332,3 @@ class StudioPublicResponse(BaseModel):
     slug: str | None
     description: str | None
     services: list[PublicService] = Field(default_factory=list)
-

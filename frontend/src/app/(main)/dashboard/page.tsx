@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Card, Button, Skeleton } from "@/components/ui";
 import { useAuth } from "@/lib/auth";
 import { fetchStudios } from "@/lib/api";
+import type { StudioResponse } from "@/types/studio";
 
 export default function DashboardPage() {
   return (
@@ -59,6 +60,8 @@ function MyStudios() {
     );
   }
 
+  const ownerStudios = studios as StudioResponse[];
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -68,7 +71,7 @@ function MyStudios() {
         </Button>
       </div>
       <div className="grid gap-4">
-        {studios.map((studio) => (
+        {ownerStudios.map((studio) => (
           <Link key={studio.id} href={`/dashboard/studios/${studio.id}`}>
             <Card variant="interactive">
               <div className="flex justify-between items-start">

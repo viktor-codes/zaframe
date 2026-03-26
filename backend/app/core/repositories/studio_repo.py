@@ -3,6 +3,7 @@
 
 Выборки студий с фильтрами и по slug (для публичной страницы).
 """
+
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -16,9 +17,7 @@ class StudioRepository:
         self._session = session
 
     async def get_by_id(self, studio_id: int) -> Studio | None:
-        result = await self._session.execute(
-            select(Studio).where(Studio.id == studio_id)
-        )
+        result = await self._session.execute(select(Studio).where(Studio.id == studio_id))
         return result.scalar_one_or_none()
 
     async def get_by_slug_with_services_slots(
@@ -103,9 +102,7 @@ class StudioRepository:
         )
         need_join = category or (query and query.strip())
         if need_join:
-            join_conditions = self._join_conditions(
-                conditions, category=category, query=query
-            )
+            join_conditions = self._join_conditions(conditions, category=category, query=query)
             subq = (
                 select(Studio.id)
                 .join(Service, Service.studio_id == Studio.id)
@@ -123,11 +120,7 @@ class StudioRepository:
             stmt = select(Studio)
             if conditions:
                 stmt = stmt.where(*conditions)
-            stmt = (
-                stmt.order_by(Studio.created_at.desc())
-                .offset(skip)
-                .limit(limit)
-            )
+            stmt = stmt.order_by(Studio.created_at.desc()).offset(skip).limit(limit)
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
@@ -149,9 +142,7 @@ class StudioRepository:
         )
         need_join = category or (query and query.strip())
         if need_join:
-            join_conditions = self._join_conditions(
-                conditions, category=category, query=query
-            )
+            join_conditions = self._join_conditions(conditions, category=category, query=query)
             subq = (
                 select(Studio.id)
                 .join(Service, Service.studio_id == Studio.id)

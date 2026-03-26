@@ -16,13 +16,13 @@
 - Поддерживает type hints через Mapped и mapped_column
 - Совместим с async операциями
 """
+
 from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
 from app.core.config import settings
-
 
 # === Engine: пул соединений к БД ===
 # create_async_engine создаёт асинхронный engine с connection pooling.
@@ -31,13 +31,12 @@ from app.core.config import settings
 engine = create_async_engine(
     settings.DATABASE_URL,
     pool_pre_ping=True,  # Проверка соединений перед использованием
-    pool_size=20,          # Увеличиваем количество постоянных соединений
-    max_overflow=10,      # Сколько можно открыть сверх лимита в пике
-    pool_timeout=30,      # Сколько ждать свободного слота
-    pool_recycle=3600,    # Пересоздавать соединение раз в час
+    pool_size=20,  # Увеличиваем количество постоянных соединений
+    max_overflow=10,  # Сколько можно открыть сверх лимита в пике
+    pool_timeout=30,  # Сколько ждать свободного слота
+    pool_recycle=3600,  # Пересоздавать соединение раз в час
     echo=settings.DEBUG,  # Логирование SQL в режиме отладки
 )
-
 
 
 # === Session Factory ===
@@ -59,7 +58,7 @@ class Base(DeclarativeBase):
     pass
 
 
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
+async def get_db() -> AsyncGenerator[AsyncSession]:
     """
     Dependency для получения сессии БД в роутерах.
 

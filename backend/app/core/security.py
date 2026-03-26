@@ -6,11 +6,12 @@ JWT и Magic Link: создание и проверка токенов.
 - Поддержка HS256, RS256
 - Простой API: encode/decode
 """
-from datetime import datetime, timedelta, timezone
-from secrets import token_urlsafe
+
 import hashlib
 import hmac
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
+from secrets import token_urlsafe
 
 from jose import JWTError, jwt
 
@@ -19,7 +20,7 @@ from app.core.config import settings
 
 def _utcnow() -> datetime:
     """Возвращает текущий момент времени в UTC (aware datetime)."""
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def create_access_token(
@@ -129,7 +130,7 @@ def parse_refresh_token(token: str) -> RefreshTokenData | None:
         jti = str(payload["jti"])
         exp_raw = payload["exp"]
         exp_ts = float(exp_raw)
-        expires_at = datetime.fromtimestamp(exp_ts, tz=timezone.utc)
+        expires_at = datetime.fromtimestamp(exp_ts, tz=UTC)
     except (KeyError, TypeError, ValueError):
         return None
 

@@ -11,9 +11,10 @@
 2. Хранит временные данные (email, name, phone)
 3. После Magic Link → данные переносятся в User, сессия удаляется
 """
-from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import String, func, DateTime
+from datetime import UTC, datetime, timedelta
+
+from sqlalchemy import DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models import Base
@@ -23,22 +24,23 @@ from app.models.mixins import TimestampMixin
 class GuestSession(TimestampMixin, Base):
     """
     Временная сессия для гостевых бронирований.
-    
+
     Используется для хранения данных клиента до активации аккаунта через Magic Link.
     После активации данные переносятся в User, сессия удаляется.
     """
+
     __tablename__ = "guest_sessions"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    
+
     # Уникальный идентификатор сессии (хранится в cookie)
     session_id: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
-    
+
     # Данные гостя
     email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
-    
+
     # Срок действия сессии (по умолчанию 30 дней, хранится в UTC)
     expires_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -49,9 +51,9 @@ class GuestSession(TimestampMixin, Base):
     # Метод для проверки истечения сессии
     def is_expired(self) -> bool:
         """Проверка, истекла ли сессия."""
-        return datetime.now(timezone.utc) > self.expires_at
-    
+        return datetime.now(UTC) > self.expires_at
+
     @classmethod
     def create_default_expires_at(cls) -> datetime:
         """Создаёт дату истечения по умолчанию (30 дней)."""
-        return datetime.now(timezone.utc) + timedelta(days=30)
+        return datetime.now(UTC) + timedelta(days=30)

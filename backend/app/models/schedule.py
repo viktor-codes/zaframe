@@ -9,11 +9,12 @@ Schedule описывает:
 Конкретные занятия создаются как Slot (occurrence) и могут ссылаться
 на Schedule через внешние ключи.
 """
+
 from __future__ import annotations
 
-from datetime import date, datetime, time
+from datetime import date, time
 
-from sqlalchemy import ForeignKey, Integer, Time, Date, func, DateTime
+from sqlalchemy import Date, ForeignKey, Integer, Time
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models import Base
@@ -27,9 +28,7 @@ class Schedule(TimestampMixin, Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
 
-    service_id: Mapped[int] = mapped_column(
-        ForeignKey("services.id"), nullable=False, index=True
-    )
+    service_id: Mapped[int] = mapped_column(ForeignKey("services.id"), nullable=False, index=True)
 
     # День недели 0-6 (Пн-Вс)
     day_of_week: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -42,9 +41,8 @@ class Schedule(TimestampMixin, Base):
     valid_to: Mapped[date | None] = mapped_column(Date, nullable=True)
 
     # Связи
-    service: Mapped["Service"] = relationship("Service", back_populates="schedules")
-    slots: Mapped[list["Slot"]] = relationship(
+    service: Mapped[Service] = relationship("Service", back_populates="schedules")
+    slots: Mapped[list[Slot]] = relationship(
         "Slot",
         back_populates="schedule",
     )
-

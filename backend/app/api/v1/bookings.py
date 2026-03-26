@@ -7,6 +7,7 @@ API роутер для бронирований.
 - GET /bookings/{id} — одно бронирование
 - PATCH /bookings/{id}/cancel — отменить
 """
+
 from fastapi import APIRouter, Depends, Query, Request
 
 from app.api.deps import get_uow

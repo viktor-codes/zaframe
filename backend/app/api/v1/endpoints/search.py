@@ -3,6 +3,7 @@
 
 MVP‑поиск с фильтрами по категории, городу, запросу, удобствам и гео‑координатам.
 """
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Query
@@ -13,7 +14,6 @@ from app.core.uow import UnitOfWork
 from app.models.service import Service, ServiceCategory
 from app.models.studio import Studio
 from app.schemas import SearchResult, ServiceResponse, StudioResponse
-
 
 router = APIRouter(prefix="/search", tags=["search"])
 
@@ -87,9 +87,9 @@ async def search_endpoint(
     )
     # Фильтр по категории: сравниваем с raw value enum ('yoga', 'boxing', ...)
     if category is not None:
-        studios_stmt = studios_stmt.where(
-            text("services.category = :category_filter")
-        ).params(category_filter=category.value)
+        studios_stmt = studios_stmt.where(text("services.category = :category_filter")).params(
+            category_filter=category.value
+        )
     studios_result = await uow.session.execute(studios_stmt)
     studios: list[Studio] = list(studios_result.scalars().all())
 
@@ -108,9 +108,9 @@ async def search_endpoint(
 
     services_stmt = select(Service).where(*service_conditions)
     if category is not None:
-        services_stmt = services_stmt.where(
-            text("services.category = :category_filter")
-        ).params(category_filter=category.value)
+        services_stmt = services_stmt.where(text("services.category = :category_filter")).params(
+            category_filter=category.value
+        )
     services_result = await uow.session.execute(services_stmt)
     services: list[Service] = list(services_result.scalars().all())
 
@@ -125,11 +125,8 @@ async def search_endpoint(
         results.append(
             SearchResult(
                 studio=StudioResponse.model_validate(studio),
-                matched_services=[
-                    ServiceResponse.model_validate(s) for s in matched_services
-                ],
+                matched_services=[ServiceResponse.model_validate(s) for s in matched_services],
             )
         )
 
     return results
-

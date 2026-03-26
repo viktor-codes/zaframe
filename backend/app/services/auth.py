@@ -1,23 +1,23 @@
 """
-Бизнес-логика аутентификации: Magic Link, JWT.
+Authentication business logic: magic link and JWT.
 """
-from datetime import datetime, timezone
+
+from datetime import UTC, datetime
 
 from app.core.config import settings
 from app.core.exceptions import UnauthorizedError, ValidationError
-from app.core.uow import UnitOfWork
 from app.core.security import (
     create_access_token,
     create_refresh_token,
-    decode_token,
     generate_magic_link_token,
     get_magic_link_expires_at,
     get_user_id_from_access_token,
     hash_magic_link_token,
     parse_refresh_token,
 )
-from app.models.user import User
+from app.core.uow import UnitOfWork
 from app.models.refresh_token import RefreshToken
+from app.models.user import User
 from app.services.email import send_magic_link_email
 from app.services.user import get_or_create_user, get_user_by_id
 
@@ -28,11 +28,11 @@ async def request_magic_link(
     name: str,
 ) -> None:
     """
-    Запросить Magic Link.
+    Request a magic link.
 
-    1. Создаёт пользователя по email/name или обновляет существующего
-    2. Генерирует токен, сохраняет его хэш в БД
-    3. Отправляет email со ссылкой
+    1. Creates or updates user by email/name
+    2. Generates token and stores hash in DB
+    3. Sends email with link
     """
     user = await get_or_create_user(uow, email=email, name=name)
     token = generate_magic_link_token()
@@ -49,16 +49,16 @@ async def verify_magic_link(
     token: str,
 ) -> tuple[User, str, str]:
     """
-    Проверить Magic Link токен.
+    Verify magic link token.
 
-    Возвращает (user, access_token, refresh_token).
-    Raises HTTPException если токен невалиден.
+    Returns (user, access_token, refresh_token).
+    Raises ValidationError if the token is invalid.
     """
-    now_utc = datetime.now(timezone.utc)
+    now_utc = datetime.now(UTC)
     token_hash = hash_magic_link_token(token)
     user = await uow.users.get_by_magic_link_token(token_hash, now_utc)
     if user is None:
-        raise ValidationError("Ссылка недействительна или истекла")
+        raise ValidationError("Magic link is invalid or has expired")
 
     user.magic_link_token = None
     user.magic_link_expires_at = None
@@ -88,29 +88,29 @@ async def refresh_access_token(
     refresh_token: str,
 ) -> tuple[str, str]:
     """
-    Обновить access token по refresh token.
+    Issue new access token from refresh token.
 
-    Возвращает (access_token, refresh_token).
-    Raises HTTPException если refresh token невалиден.
+    Returns (access_token, refresh_token).
+    Raises UnauthorizedError if refresh token is invalid.
     """
     refresh_data = parse_refresh_token(refresh_token)
     if refresh_data is None:
-        raise UnauthorizedError("Недействительный refresh token")
+        raise UnauthorizedError("Invalid refresh token")
 
     user_id = refresh_data.user_id
     jti = refresh_data.jti
-    now_utc = datetime.now(timezone.utc)
+    now_utc = datetime.now(UTC)
 
     refresh_session = await uow.refresh_tokens.get_by_user_and_jti(user_id, jti)
     if refresh_session is None or not refresh_session.is_active(now_utc):
-        raise UnauthorizedError("Недействительный refresh token")
+        raise UnauthorizedError("Invalid refresh token")
 
     refresh_session.revoked_at = now_utc
     refresh_session.last_used_at = now_utc
 
     user = await get_user_by_id(uow, user_id)
     if user is None:
-        raise UnauthorizedError("Пользователь не найден")
+        raise UnauthorizedError("User not found")
 
     access_token = create_access_token(user.id, user.email)
     new_refresh_token = create_refresh_token(user.id)
@@ -133,7 +133,7 @@ async def get_current_user_from_token(
     uow: UnitOfWork,
     token: str,
 ) -> User | None:
-    """Получить пользователя по access token."""
+    """Resolve user from access token."""
     user_id = get_user_id_from_access_token(token)
     if user_id is None:
         return None
@@ -146,17 +146,16 @@ async def logout_current_session(
     refresh_token: str,
 ) -> None:
     """
-    Выйти из текущей сессии (отозвать один refresh-token).
+    Sign out of current session (revoke one refresh token).
 
-    Поведение:
-    - если токен невалиден/не принадлежит пользователю — тихий no-op (idempotent logout)
-    - если сессия найдена и ещё активна — выставляем revoked_at/last_used_at.
+    If token is invalid or not owned by user — silent no-op (idempotent).
+    If session exists and active — sets revoked_at / last_used_at.
     """
     data = parse_refresh_token(refresh_token)
     if data is None or data.user_id != user.id:
         return
 
-    now_utc = datetime.now(timezone.utc)
+    now_utc = datetime.now(UTC)
     refresh_session = await uow.refresh_tokens.get_by_user_and_jti(user.id, data.jti)
     if refresh_session is None:
         return

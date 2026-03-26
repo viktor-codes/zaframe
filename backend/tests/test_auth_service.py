@@ -1,6 +1,8 @@
 """
 Юнит-тесты для app.services.auth с моками БД/UoW.
 """
+
+from datetime import UTC
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -68,9 +70,11 @@ class TestLogoutCurrentSession:
 
     @pytest.mark.asyncio
     async def test_wrong_user_token_no_op(self, mock_uow, mock_user):
+        from datetime import datetime
+
         from app.core.security import RefreshTokenData
-        from datetime import datetime, timezone
-        data = RefreshTokenData(user_id=999, jti="jti", expires_at=datetime.now(timezone.utc))
+
+        data = RefreshTokenData(user_id=999, jti="jti", expires_at=datetime.now(UTC))
         with patch.object(auth_module, "parse_refresh_token", return_value=data):
             await logout_current_session(mock_uow, mock_user, "token")
         mock_uow.refresh_tokens.get_by_user_and_jti.assert_not_called()

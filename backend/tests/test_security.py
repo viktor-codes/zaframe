@@ -1,12 +1,12 @@
 """
 Юнит-тесты для app.core.security: JWT, Magic Link, refresh token.
 """
-from datetime import datetime, timedelta, timezone
+
+from datetime import UTC, datetime
 from unittest.mock import patch
 
-import pytest
-
 from app.core.security import (
+    RefreshTokenData,
     create_access_token,
     create_refresh_token,
     decode_token,
@@ -15,10 +15,7 @@ from app.core.security import (
     get_user_id_from_refresh_token,
     hash_magic_link_token,
     parse_refresh_token,
-    RefreshTokenData,
 )
-
-
 
 
 class TestCreateAccessToken:
@@ -112,7 +109,7 @@ class TestHashMagicLinkToken:
 class TestGetMagicLinkExpiresAt:
     def test_future_utc_aware(self):
         with patch("app.core.security._utcnow") as m:
-            m.return_value = datetime(2025, 3, 5, 12, 0, 0, tzinfo=timezone.utc)
+            m.return_value = datetime(2025, 3, 5, 12, 0, 0, tzinfo=UTC)
             expires = get_magic_link_expires_at()
         assert expires.tzinfo is not None
         assert expires > m.return_value

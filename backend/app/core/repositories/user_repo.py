@@ -1,6 +1,7 @@
 """
 Репозиторий для сущности User.
 """
+
 from datetime import datetime
 
 from sqlalchemy import select
@@ -18,9 +19,7 @@ class UserRepository:
         return result.scalar_one_or_none()
 
     async def get_by_email(self, email: str) -> User | None:
-        result = await self._session.execute(
-            select(User).where(User.email == email)
-        )
+        result = await self._session.execute(select(User).where(User.email == email))
         return result.scalar_one_or_none()
 
     async def get_by_magic_link_token(

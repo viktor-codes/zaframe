@@ -6,6 +6,7 @@
 - Валидация (end_time > start_time) в одном месте
 - Переиспользование при бронировании
 """
+
 from datetime import datetime
 
 from app.core.datetime_utils import to_naive_utc
@@ -24,7 +25,7 @@ async def get_slot_or_raise(uow: UnitOfWork, slot_id: int) -> Slot:
     """Получить слот по ID или выбросить NotFoundError."""
     slot = await uow.slots.get_by_id(slot_id)
     if slot is None:
-        raise NotFoundError("Слот не найден")
+        raise NotFoundError("Slot not found")
     return slot
 
 
@@ -74,9 +75,9 @@ async def get_bookings_count(uow: UnitOfWork, slot_id: int) -> int:
 async def create_slot(uow: UnitOfWork, schema: SlotCreate) -> Slot:
     """Создать слот. Проверяет: студия существует, end_time > start_time."""
     if schema.end_time <= schema.start_time:
-        raise ValidationError("Время окончания должно быть позже времени начала")
+        raise ValidationError("End time must be after start time")
     if await uow.studios.get_by_id(schema.studio_id) is None:
-        raise NotFoundError("Студия не найдена")
+        raise NotFoundError("Studio not found")
 
     slot = Slot(
         studio_id=schema.studio_id,
@@ -104,7 +105,7 @@ async def update_slot(
     start_time = update_data.get("start_time", slot.start_time)
     end_time = update_data.get("end_time", slot.end_time)
     if end_time <= start_time:
-        raise ValidationError("Время окончания должно быть позже времени начала")
+        raise ValidationError("End time must be after start time")
     for field, value in update_data.items():
         if field in ("start_time", "end_time") and value is not None:
             value = to_naive_utc(value)

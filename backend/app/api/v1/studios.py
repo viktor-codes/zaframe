@@ -12,6 +12,7 @@ CRUD операции:
 - Тонкий слой: только HTTP логика, валидация, вызов сервисов
 - Соответствует структуре из .cursorrules
 """
+
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Query
@@ -30,20 +31,19 @@ from app.schemas import (
     StudioResponse,
     StudioUpdate,
 )
+from app.services.service import (
+    get_studio_public,
+    occurrence_generator,
+)
 from app.services.slot import get_slots
 from app.services.studio import (
     create_studio,
     delete_studio,
     ensure_studio_owner,
-    get_studio,
     get_studio_or_raise,
     get_studios,
     get_studios_count,
     update_studio,
-)
-from app.services.service import (
-    get_studio_public,
-    occurrence_generator,
 )
 
 router = APIRouter(prefix="/studios", tags=["studios"])
@@ -60,7 +60,9 @@ async def list_studios(
     category: ServiceCategory | None = Query(None, description="Категория услуги (Explore)"),
     query: str | None = Query(None, description="Поиск по названию студии/услуги (Explore)"),
     amenities: list[str] | None = Query(None, description="Удобства (Explore)"),
-    include_services: bool = Query(False, description="Вернуть услуги для карточек (цена, категория)"),
+    include_services: bool = Query(
+        False, description="Вернуть услуги для карточек (цена, категория)"
+    ),
 ):
     """
     Список студий с пагинацией и опциональными фильтрами для Explore.
@@ -197,7 +199,7 @@ async def generate_studio_schedule_endpoint(
         start_time_str: str = payload["start_time"]
         weeks_count = int(payload["weeks_count"])
     except (KeyError, ValueError, TypeError):
-        raise ValidationError("Неверный формат payload")
+        raise ValidationError("Invalid payload format") from None
 
     try:
         parts = [int(p) for p in start_time_str.split(":")]
@@ -208,7 +210,7 @@ async def generate_studio_schedule_endpoint(
         else:
             raise ValueError
     except ValueError:
-        raise ValidationError("Некорректный формат start_time")
+        raise ValidationError("Invalid start_time format") from None
 
     slots = await occurrence_generator(
         uow,

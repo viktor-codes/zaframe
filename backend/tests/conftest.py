@@ -4,14 +4,17 @@
 Устанавливаем SECRET_KEY до импорта приложения, чтобы Settings() не падал.
 В тестах рейт-лимит по сути отключён (уникальный ключ на запрос).
 """
+
 import os
 import sys
 
 import pytest
 
-# До импорта app — иначе settings не найдёт SECRET_KEY
+# Before any `from app.main import app` — Settings() reads env at import time.
 if "SECRET_KEY" not in os.environ:
     os.environ["SECRET_KEY"] = "test-secret-key-min-32-chars-for-pytest"
+# httpx uses http://test; Secure cookies are not stored/sent over HTTP — force DEBUG for tests.
+os.environ["DEBUG"] = "true"
 
 
 def pytest_configure(config):
@@ -31,12 +34,13 @@ async def app_with_rollback_uow():
     Все запросы в рамках одного теста видят одну транзакцию (данные из первого
     запроса доступны во втором). После теста транзакция откатывается — БД не засоряется.
     """
-    from app.main import app
     from app.api.deps import get_uow
     from app.core.database import async_session_maker
     from app.core.uow import create_uow
+    from app.main import app
 
     async with async_session_maker() as session:
+
         async def get_uow_override():
             uow = create_uow(session)
             yield uow

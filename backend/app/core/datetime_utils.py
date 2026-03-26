@@ -4,7 +4,8 @@
 Политика: время слотов и расписаний хранится и сравнивается в UTC
 (naive datetime в Python); ввод от API конвертируется в UTC при сохранении.
 """
-from datetime import datetime, timezone
+
+from datetime import UTC, datetime
 
 
 def to_naive_utc(dt: datetime) -> datetime:
@@ -14,5 +15,5 @@ def to_naive_utc(dt: datetime) -> datetime:
     Используется для Slot.start_time/end_time и везде, где сравниваем с БД.
     """
     if dt.tzinfo is not None:
-        return dt.astimezone(timezone.utc).replace(tzinfo=None)
+        return dt.astimezone(UTC).replace(tzinfo=None)
     return dt

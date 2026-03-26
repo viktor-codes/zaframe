@@ -3,6 +3,7 @@
 
 Все выборки по бронированиям инкапсулированы здесь.
 """
+
 from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -15,16 +16,12 @@ class BookingRepository:
         self._session = session
 
     async def get_by_id(self, booking_id: int) -> Booking | None:
-        result = await self._session.execute(
-            select(Booking).where(Booking.id == booking_id)
-        )
+        result = await self._session.execute(select(Booking).where(Booking.id == booking_id))
         return result.scalar_one_or_none()
 
     async def get_by_id_with_slot(self, booking_id: int) -> Booking | None:
         result = await self._session.execute(
-            select(Booking)
-            .options(selectinload(Booking.slot))
-            .where(Booking.id == booking_id)
+            select(Booking).options(selectinload(Booking.slot)).where(Booking.id == booking_id)
         )
         return result.scalar_one_or_none()
 
@@ -102,23 +99,24 @@ class BookingRepository:
         """Для каждого slot_id возвращает (confirmed_count, pending_count)."""
         if not slot_ids:
             return {}
-        counts_q = select(
-            Booking.slot_id,
-            func.sum(
-                case(
-                    (Booking.status == BookingStatus.CONFIRMED, 1),
-                    else_=0,
-                )
-            ).label("confirmed"),
-            func.sum(
-                case(
-                    (Booking.status == BookingStatus.PENDING, 1),
-                    else_=0,
-                )
-            ).label("pending"),
-        ).where(Booking.slot_id.in_(slot_ids)).group_by(Booking.slot_id)
+        counts_q = (
+            select(
+                Booking.slot_id,
+                func.sum(
+                    case(
+                        (Booking.status == BookingStatus.CONFIRMED, 1),
+                        else_=0,
+                    )
+                ).label("confirmed"),
+                func.sum(
+                    case(
+                        (Booking.status == BookingStatus.PENDING, 1),
+                        else_=0,
+                    )
+                ).label("pending"),
+            )
+            .where(Booking.slot_id.in_(slot_ids))
+            .group_by(Booking.slot_id)
+        )
         result = await self._session.execute(counts_q)
-        return {
-            row.slot_id: (row.confirmed or 0, row.pending or 0)
-            for row in result
-        }
+        return {row.slot_id: (row.confirmed or 0, row.pending or 0) for row in result}

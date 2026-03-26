@@ -4,19 +4,18 @@
 Проверяем, что end-to-end сценарии записи в БД работают корректно
 поверх текущей UoW-транзакционной модели.
 """
-from datetime import datetime, timedelta, timezone
+
 import re
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from httpx import ASGITransport, AsyncClient
-
-from app.main import app
+from httpx import AsyncClient
 
 
 async def _authenticate_user(client: AsyncClient, email: str = "owner@example.com"):
     """
-    Создаёт пользователя через Magic Link и возвращает access/refresh токены и данные пользователя.
+    Create user via Magic Link; return access token and user (refresh is httpOnly cookie).
     """
     captured_url: list[str] = []
 
@@ -40,7 +39,8 @@ async def _authenticate_user(client: AsyncClient, email: str = "owner@example.co
     r2 = await client.get("/api/v1/auth/magic-link/verify", params={"token": token})
     assert r2.status_code == 200
     data = r2.json()
-    return data["access_token"], data["refresh_token"], data["user"]
+    assert "refresh_token" not in data
+    return data["access_token"], data["user"]
 
 
 @pytest.mark.integration
@@ -53,7 +53,7 @@ async def test_studio_crud_flow(client: AsyncClient):
     - обновляем студию
     - удаляем студию и убеждаемся, что она больше не доступна.
     """
-    access, _refresh, user = await _authenticate_user(client)
+    access, user = await _authenticate_user(client)
     headers = {"Authorization": f"Bearer {access}"}
 
     # Создание студии
@@ -104,7 +104,7 @@ async def test_slot_and_booking_flow(client: AsyncClient):
     - отменяем бронирование
     - удаляем слот и убеждаемся, что он недоступен.
     """
-    access, _refresh, user = await _authenticate_user(client, email="slot-owner@example.com")
+    access, user = await _authenticate_user(client, email="slot-owner@example.com")
     headers = {"Authorization": f"Bearer {access}"}
 
     # Создаём студию, к которой будет привязан слот
@@ -123,7 +123,7 @@ async def test_slot_and_booking_flow(client: AsyncClient):
     assert r_studio.json()["owner_id"] == user["id"]
 
     # Создаём слот в будущем
-    start = datetime.now(timezone.utc) + timedelta(hours=2)
+    start = datetime.now(UTC) + timedelta(hours=2)
     end = start + timedelta(hours=1)
     r_slot = await client.post(
         "/api/v1/slots",
@@ -174,4 +174,3 @@ async def test_slot_and_booking_flow(client: AsyncClient):
     # Слот больше не существует
     r_get_slot = await client.get(f"/api/v1/slots/{slot_id}")
     assert r_get_slot.status_code == 404
-

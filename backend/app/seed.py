@@ -17,8 +17,8 @@ from __future__ import annotations
 import asyncio
 import json
 import random
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Sequence
 
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -171,9 +171,7 @@ async def truncate_studios_and_services(db: AsyncSession) -> None:
     if existing_count and existing_count > 0:
         print(f"[seed] found {existing_count} studios, truncating studios and services...")
         # TRUNCATE с CASCADE, чтобы очистить зависимые записи (slots, bookings и т.п.)
-        await db.execute(
-            text("TRUNCATE TABLE services, studios RESTART IDENTITY CASCADE")
-        )
+        await db.execute(text("TRUNCATE TABLE services, studios RESTART IDENTITY CASCADE"))
         await db.flush()
     else:
         print("[seed] no studios found, seeding fresh data...")
@@ -219,9 +217,7 @@ async def seed_ireland_studios(db: AsyncSession) -> None:
         for _ in range(services_count):
             category = random.choice(all_categories)
             is_course = random.choice([True, False])
-            service_type = (
-                ServiceType.COURSE if is_course else ServiceType.SINGLE_CLASS
-            )
+            service_type = ServiceType.COURSE if is_course else ServiceType.SINGLE_CLASS
 
             duration_minutes = random.choice([45, 60, 75, 90])
             max_capacity = random.choice([8, 10, 12, 14, 16, 18])
@@ -303,4 +299,3 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-

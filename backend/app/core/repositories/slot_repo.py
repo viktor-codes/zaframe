@@ -1,6 +1,7 @@
 """
 Репозиторий для сущности Slot.
 """
+
 from datetime import datetime
 
 from sqlalchemy import func, select

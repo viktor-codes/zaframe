@@ -5,19 +5,19 @@
 Service не является конкретным занятием во времени — для этого есть
 occurrence'ы (модель Slot), которые ссылаются на Service.
 """
+
 from __future__ import annotations
 
-from datetime import datetime
 import enum
 
-from sqlalchemy import ForeignKey, Integer, String, Float, JSON, func, DateTime, Enum
+from sqlalchemy import JSON, Enum, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models import Base
 from app.models.mixins import TimestampMixin
 
 
-class ServiceCategory(str, enum.Enum):
+class ServiceCategory(enum.StrEnum):
     """Категория услуги для поиска и фильтрации."""
 
     YOGA = "yoga"
@@ -50,9 +50,7 @@ class Service(TimestampMixin, Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
 
     # Привязка к студии
-    studio_id: Mapped[int] = mapped_column(
-        ForeignKey("studios.id"), nullable=False, index=True
-    )
+    studio_id: Mapped[int] = mapped_column(ForeignKey("studios.id"), nullable=False, index=True)
 
     # Основная информация
     name: Mapped[str] = mapped_column(String(200), nullable=False)
@@ -126,21 +124,21 @@ class Service(TimestampMixin, Base):
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
 
     # Связи
-    studio: Mapped["Studio"] = relationship("Studio", back_populates="services")
-    slots: Mapped[list["Slot"]] = relationship(
+    studio: Mapped[Studio] = relationship("Studio", back_populates="services")
+    slots: Mapped[list[Slot]] = relationship(
         "Slot",
         back_populates="service",
     )
-    schedules: Mapped[list["Schedule"]] = relationship(
+    schedules: Mapped[list[Schedule]] = relationship(
         "Schedule",
         back_populates="service",
         cascade="all, delete-orphan",
     )
-    bookings: Mapped[list["Booking"]] = relationship(
+    bookings: Mapped[list[Booking]] = relationship(
         "Booking",
         back_populates="service",
     )
-    orders: Mapped[list["Order"]] = relationship(
+    orders: Mapped[list[Order]] = relationship(
         "Order",
         back_populates="service",
     )
@@ -172,4 +170,3 @@ class Service(TimestampMixin, Base):
         if total > soft_limit:
             return "SOFT_LIMIT_REACHED"
         return None
-

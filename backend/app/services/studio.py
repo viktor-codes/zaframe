@@ -6,6 +6,7 @@
 - Бизнес-логика в одном месте — проще тестировать
 - Переиспользование в разных эндпоинтах (API, webhooks, CLI)
 """
+
 from app.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
 from app.models.studio import Studio
@@ -67,23 +68,23 @@ async def get_studio_or_raise(uow: UnitOfWork, studio_id: int) -> Studio:
     """Получить студию по ID или выбросить NotFoundError."""
     studio = await uow.studios.get_by_id(studio_id)
     if studio is None:
-        raise NotFoundError("Студия не найдена")
+        raise NotFoundError("Studio not found")
     return studio
 
 
 def ensure_studio_owner(studio: Studio, user_id: int) -> None:
     """Проверить, что user_id — владелец студии; иначе ForbiddenError."""
     if studio.owner_id != user_id:
-        raise ForbiddenError("Нет доступа к этой студии")
+        raise ForbiddenError("Access denied for this studio")
 
 
 async def create_studio(uow: UnitOfWork, schema: StudioCreate) -> Studio:
     """Создать студию. owner_id должен быть передан в schema (из токена на уровне роутера)."""
     if schema.owner_id is None:
-        raise ValidationError("Владелец не указан или не найден")
+        raise ValidationError("Owner is missing or not found")
     owner = await uow.users.get_by_id(schema.owner_id)
     if owner is None:
-        raise ValidationError("Владелец не указан или не найден")
+        raise ValidationError("Owner is missing or not found")
 
     studio = Studio(
         owner_id=schema.owner_id,
