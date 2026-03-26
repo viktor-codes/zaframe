@@ -94,7 +94,7 @@ const MomentsColumn = ({
         ease: "linear",
         duration: inView ? duration || 10 : 0,
       }}
-      className="flex flex-col gap-6 pb-6 will-change-transform antialiased"
+      className="flex flex-col gap-6 pb-6 antialiased will-change-transform"
       style={{
         transformPerspective: "1000px",
         transformStyle: "preserve-3d",
@@ -106,29 +106,29 @@ const MomentsColumn = ({
           {moments.map(({ text, imageSrc, name, username }, i) => (
             <div
               key={`${name}-${idx}-${i}`}
-              className="relative p-6 rounded-3xl border border-white/20 bg-zinc-900/40 group hover:border-teal-500/30 transition-all duration-500 w-[260px] md:w-[280px] lg:w-[300px] shadow-2xl shadow-black/50"
+              className="group relative w-[260px] rounded-3xl border border-white/20 bg-zinc-900/40 p-6 shadow-2xl shadow-black/50 transition-all duration-500 hover:border-teal-500/30 md:w-[280px] lg:w-[300px]"
             >
-              <div className="absolute top-0 right-0 w-24 h-24 bg-teal-500/5 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="absolute top-4 left-4 w-2 h-2 border-t border-l border-teal-400/60 group-hover:border-teal-400 transition-colors" />
+              <div className="absolute top-0 right-0 h-24 w-24 rounded-full bg-teal-500/5 opacity-0 blur-xl transition-opacity group-hover:opacity-100" />
+              <div className="absolute top-4 left-4 h-2 w-2 border-t border-l border-teal-400/60 transition-colors group-hover:border-teal-400" />
 
-              <div className="relative z-20 text-white text-sm leading-relaxed font-light tracking-wide mb-6">
+              <div className="relative z-20 mb-6 text-sm leading-relaxed font-light tracking-wide text-white">
                 &quot;{text}&quot;
               </div>
 
-              <div className="relative z-10 flex items-center gap-3 pt-4 border-t border-white/10">
-                <div className="relative h-10 w-10 flex-none rounded-full overflow-hidden border border-white/20 bg-zinc-800">
+              <div className="relative z-10 flex items-center gap-3 border-t border-white/10 pt-4">
+                <div className="relative h-10 w-10 flex-none overflow-hidden rounded-full border border-white/20 bg-zinc-800">
                   <Image
                     src={imageSrc}
                     alt={name}
                     fill
-                    className="object-cover grayscale invert-[0.1] group-hover:grayscale-0 group-hover:invert-0 transition-all duration-500"
+                    className="object-cover grayscale invert-[0.1] transition-all duration-500 group-hover:grayscale-0 group-hover:invert-0"
                   />
                 </div>
                 <div className="min-w-0">
-                  <div className="font-semibold text-white text-xs tracking-tight truncate">
+                  <div className="truncate text-xs font-semibold tracking-tight text-white">
                     {name}
                   </div>
-                  <div className="text-teal-400 text-[10px] font-mono tracking-wider truncate uppercase">
+                  <div className="truncate font-mono text-[10px] tracking-wider text-teal-400 uppercase">
                     {username}
                   </div>
                 </div>
@@ -148,7 +148,7 @@ export const Moments = () => {
   return (
     <div className="relative h-full">
       {/* Background Layer */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
+      <div className="pointer-events-none absolute inset-0 z-0">
         <Image
           src="/dark-section-bg.jpg"
           alt="Dark Studio Background"
@@ -158,22 +158,22 @@ export const Moments = () => {
         <div className="absolute inset-0 bg-linear-to-b from-zinc-950 via-zinc-950/80 to-zinc-950" />
         <div className="absolute inset-0 bg-linear-to-r from-zinc-950 via-transparent to-zinc-950" />
 
-        <div className="absolute top-1/3 left-1/4 w-120 h-120 bg-[radial-gradient(circle,rgba(20,184,166,0.15)_0%,transparent_70%)] rounded-full" />
-        <div className="absolute bottom-1/4 right-1/4 w-120 h-120 bg-[radial-gradient(circle,rgba(20,184,166,0.15)_0%,transparent_70%)] rounded-full" />
+        <div className="absolute top-1/3 left-1/4 h-120 w-120 rounded-full bg-[radial-gradient(circle,rgba(20,184,166,0.15)_0%,transparent_70%)]" />
+        <div className="absolute right-1/4 bottom-1/4 h-120 w-120 rounded-full bg-[radial-gradient(circle,rgba(20,184,166,0.15)_0%,transparent_70%)]" />
       </div>
 
-      <div className="container relative z-10 mx-auto px-6 max-w-7xl">
+      <div className="relative z-10 container mx-auto max-w-7xl px-6">
         <div className="mb-24 text-center">
-          <SectionHeading size="label" className="text-teal-500 mb-8 block">
+          <SectionHeading size="label" className="mb-8 block text-teal-500">
             Community
           </SectionHeading>
 
           <SectionHeading size="section" as="h2" className="text-white">
             Real people <br />
-            <span className="relative inline-block mt-4 font-serif italic font-light text-zinc-400">
+            <span className="relative mt-4 inline-block font-serif font-light text-zinc-400 italic">
               real impact
               <svg
-                className="absolute -bottom-8 left-[-10%] w-[120%] h-8"
+                className="absolute -bottom-8 left-[-10%] h-8 w-[120%]"
                 viewBox="0 0 400 30"
                 fill="none"
                 preserveAspectRatio="none"
@@ -204,20 +204,20 @@ export const Moments = () => {
 
           <p
             className={cn(
-              "text-zinc-400 mt-12 text-base md:text-lg max-w-2xl mx-auto font-light leading-relaxed tracking-tight",
-              "transition-all duration-500 ease-out delay-200",
-              inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2",
+              "mx-auto mt-12 max-w-2xl text-base leading-relaxed font-light tracking-tight text-zinc-400 md:text-lg",
+              "transition-all delay-200 duration-500 ease-out",
+              inView ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0",
             )}
           >
             Our community is the heartbeat of Eazee. We curate experiences
             around the people who use them, where your{" "}
-            <span className="text-white font-medium">energy and time</span> are
+            <span className="font-medium text-white">energy and time</span> are
             the ultimate priority.
           </p>
         </div>
 
         {/* Колонки: inView останавливает анимацию когда секция не видна */}
-        <div className="flex justify-center gap-6 md:gap-8 mask-[linear-gradient(to_bottom,transparent,black_15%,black_85%,transparent)] max-h-[700px] overflow-hidden">
+        <div className="flex max-h-[700px] justify-center gap-6 overflow-hidden mask-[linear-gradient(to_bottom,transparent,black_15%,black_85%,transparent)] md:gap-8">
           <MomentsColumn
             moments={moments.slice(0, 3)}
             duration={22}
@@ -226,7 +226,7 @@ export const Moments = () => {
           <MomentsColumn
             moments={moments.slice(3, 6)}
             duration={28}
-            className="hidden md:block mt-12"
+            className="mt-12 hidden md:block"
             inView={inView}
           />
           <MomentsColumn

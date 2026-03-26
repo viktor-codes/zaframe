@@ -54,15 +54,13 @@ function BookingsList() {
 
   const { data: byUser } = useQuery({
     queryKey: ["bookings", "user", user?.id],
-    queryFn: () =>
-      fetchBookings({ user_id: user!.id, limit: 50 }),
+    queryFn: () => fetchBookings({ user_id: user!.id, limit: 50 }),
     enabled: !!user?.id,
   });
 
   const { data: byEmail } = useQuery({
     queryKey: ["bookings", "guest", user?.email],
-    queryFn: () =>
-      fetchBookings({ guest_email: user!.email, limit: 50 }),
+    queryFn: () => fetchBookings({ guest_email: user!.email, limit: 50 }),
     enabled: !!user?.email,
   });
 
@@ -72,11 +70,13 @@ function BookingsList() {
     for (const b of byEmail ?? []) map.set(b.id, b);
     return Array.from(map.values()).sort(
       (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
     );
   }, [byUser, byEmail]);
 
-  const isLoading = (byUser === undefined && !!user?.id) || (byEmail === undefined && !!user?.email);
+  const isLoading =
+    (byUser === undefined && !!user?.id) ||
+    (byEmail === undefined && !!user?.email);
 
   if (isLoading) {
     return <BookingsSkeleton />;
@@ -84,9 +84,11 @@ function BookingsList() {
 
   if (bookings.length === 0) {
     return (
-      <div className="rounded-lg bg-neutral-100 border border-neutral-200 p-12 text-center text-neutral-600">
+      <div className="rounded-lg border border-neutral-200 bg-neutral-100 p-12 text-center text-neutral-600">
         <p className="font-medium">No bookings yet</p>
-        <p className="text-sm mt-1">Book a studio session to see your reservations here.</p>
+        <p className="mt-1 text-sm">
+          Book a studio session to see your reservations here.
+        </p>
         <Button asChild className="mt-4">
           <Link href="/studios">Browse studios</Link>
         </Button>
@@ -121,26 +123,27 @@ function BookingCard({ booking }: { booking: BookingResponse }) {
   return (
     <Link href={`/bookings/${booking.id}/confirm`}>
       <Card variant="interactive">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-semibold text-secondary">
+            <div className="mb-1 flex items-center gap-2">
+              <span className="text-secondary font-semibold">
                 {studio?.name ?? "—"}
               </span>
               {getStatusBadge(booking.status, booking.payment_status)}
             </div>
-            <p className="text-neutral-600 text-sm">
-              {slot?.title ?? "Slot"} · {slot ? formatDateTime(slot.start_time) : "—"}
+            <p className="text-sm text-neutral-600">
+              {slot?.title ?? "Slot"} ·{" "}
+              {slot ? formatDateTime(slot.start_time) : "—"}
             </p>
             {slot && (
-              <p className="font-medium text-primary mt-1">
+              <p className="mt-1 font-medium text-primary">
                 {formatPrice(slot.price_cents)}
               </p>
             )}
           </div>
           <div className="flex items-center gap-2">
             {!isCancelled && !isPast && (
-              <span className="text-sm text-primary font-medium">
+              <span className="text-sm font-medium text-primary">
                 View details →
               </span>
             )}
@@ -156,7 +159,7 @@ function BookingsSkeleton() {
     <div className="space-y-4">
       {Array.from({ length: 4 }).map((_, i) => (
         <Card key={i}>
-          <div className="flex justify-between items-start">
+          <div className="flex items-start justify-between">
             <div className="space-y-2">
               <Skeleton className="h-5 w-40" />
               <Skeleton className="h-4 w-48" />
@@ -172,11 +175,11 @@ function BookingsSkeleton() {
 export default function BookingsPage() {
   return (
     <RequireAuth>
-      <div className="max-w-4xl mx-auto px-6 py-12">
-        <h1 className="font-display font-bold text-3xl text-secondary mb-2">
+      <div className="mx-auto max-w-4xl px-6 py-12">
+        <h1 className="text-secondary mb-2 font-display text-3xl font-bold">
           My bookings
         </h1>
-        <p className="text-neutral-600 mb-8">
+        <p className="mb-8 text-neutral-600">
           View and manage your studio reservations.
         </p>
         <BookingsList />

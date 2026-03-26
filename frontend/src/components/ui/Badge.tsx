@@ -36,14 +36,14 @@ export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(
     return (
       <span
         ref={ref}
-        className={`${["default", "verified", "new", "popular"].includes(variant) ? "inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wide" : ""} ${variantStyles[variant]} ${className}`}
+        className={`${["default", "verified", "new", "popular"].includes(variant) ? "inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold tracking-wide uppercase" : ""} ${variantStyles[variant]} ${className}`}
         {...props}
       >
         {variant === "verified" && "✓ "}
         {children}
       </span>
     );
-  }
+  },
 );
 
 Badge.displayName = "Badge";

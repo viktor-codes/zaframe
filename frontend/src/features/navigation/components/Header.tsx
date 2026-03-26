@@ -26,7 +26,7 @@ export function Header({ minimalSearch }: HeaderProps) {
   const isDark = headerVariant === "on-dark";
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-500">
+    <header className="fixed top-0 right-0 left-0 z-50 transition-all duration-500">
       {/* СЛОЙ ФОНА (Blur Layer) */}
       <div
         className={`absolute inset-0 -z-10 transition-all duration-500 ${
@@ -35,18 +35,18 @@ export function Header({ minimalSearch }: HeaderProps) {
             : "bg-zinc-50/20 backdrop-blur-xs"
         }`}
       />
-      <div className="flex justify-center items-center py-2.5 bg-zinc-950 text-white text-[11px] font-bold uppercase tracking-[0.15em] gap-4">
-        <p className="text-white/50 hidden md:block">
+      <div className="flex items-center justify-center gap-4 bg-zinc-950 py-2.5 text-[11px] font-bold tracking-[0.15em] text-white uppercase">
+        <p className="hidden text-white/50 md:block">
           Revolutionizing the way you move
         </p>
         <Link
           href="/studios"
-          className="flex gap-2 items-center group w-fit cursor-pointer"
+          className="group flex w-fit cursor-pointer items-center gap-2"
         >
-          <p className="text-teal-400 group-hover:text-teal-300 transition-colors">
+          <p className="text-teal-400 transition-colors group-hover:text-teal-300">
             Start your EaZee journey
           </p>
-          <ArrowRight className="w-3 h-3 text-teal-400 group-hover:translate-x-1 transition-transform" />
+          <ArrowRight className="h-3 w-3 text-teal-400 transition-transform group-hover:translate-x-1" />
         </Link>
       </div>
 
@@ -73,7 +73,7 @@ export function Header({ minimalSearch }: HeaderProps) {
                       // document.querySelector(link.href)?.scrollIntoView({ behavior: 'smooth' });
                     }
                   }}
-                  className={`text-sm font-medium transition-colors duration-500 cursor-pointer ${
+                  className={`cursor-pointer text-sm font-medium transition-colors duration-500 ${
                     isDark
                       ? "text-zinc-400 hover:text-white"
                       : "text-zinc-600 hover:text-zinc-900"
@@ -85,17 +85,17 @@ export function Header({ minimalSearch }: HeaderProps) {
             })}
           </nav>
 
-          <div className="flex items-center gap-4 ms-4">
+          <div className="ms-4 flex items-center gap-4">
             {minimalSearch && (
               <Link
                 href={minimalSearch.href}
-                className={`hidden md:flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition-colors ${
+                className={`hidden items-center gap-2 rounded-full border px-4 py-2 text-sm transition-colors md:flex ${
                   isDark
                     ? "border-white/20 text-zinc-400 hover:border-white/40 hover:text-white"
                     : "border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:text-zinc-700"
                 }`}
               >
-                <Search className="w-4 h-4 shrink-0" />
+                <Search className="h-4 w-4 shrink-0" />
                 <span>{minimalSearch.placeholder}</span>
               </Link>
             )}
@@ -103,8 +103,8 @@ export function Header({ minimalSearch }: HeaderProps) {
               href="#signin"
               className={`hidden rounded-lg px-5 py-2.5 text-sm font-semibold transition-all duration-500 md:inline-block ${
                 isDark
-                  ? "bg-white text-zinc-950 hover:scale-105 transition-all duration-300"
-                  : "bg-zinc-900 text-white hover:scale-105 transition-all duration-300"
+                  ? "bg-white text-zinc-950 transition-all duration-300 hover:scale-105"
+                  : "bg-zinc-900 text-white transition-all duration-300 hover:scale-105"
               }`}
             >
               Sign in
@@ -126,7 +126,7 @@ export function Header({ minimalSearch }: HeaderProps) {
                 }}
                 transition={{ ...iconSpring, delay: mobileMenuOpen ? 0 : 0.12 }}
               >
-                <Scan className="h-6 w-6 " />
+                <Scan className="h-6 w-6" />
               </motion.span>
               <motion.span
                 className="absolute inset-0 flex items-center justify-center"

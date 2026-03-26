@@ -36,8 +36,8 @@ export const ManifestoSection = () => {
 
   return (
     <div className="relative h-full">
-      <div className=" inset-0 overflow-hidden pointer-events-none">
-        <div className=" inset-0 z-0">
+      <div className="pointer-events-none inset-0 overflow-hidden">
+        <div className="inset-0 z-0">
           <Image
             src="/dark-section-bg.jpg"
             alt="Dark Studio Background"
@@ -53,22 +53,22 @@ export const ManifestoSection = () => {
         {/* <div className="absolute top-1/2 left-1/4 w-64 h-64 bg-teal-500/10 blur-2xl rounded-full" />
         <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-sky-500/10 blur-2xl rounded-full" /> */}
 
-        <div className="absolute top-1/2 left-1/4 w-120 h-120 bg-[radial-gradient(circle,rgba(20,184,166,0.15)_0%,transparent_70%)] rounded-full" />
-        <div className="absolute bottom-1/4 right-1/4 w-120 h-120 bg-[radial-gradient(circle,rgba(20,184,166,0.15)_0%,transparent_70%)] rounded-full" />
+        <div className="absolute top-1/2 left-1/4 h-120 w-120 rounded-full bg-[radial-gradient(circle,rgba(20,184,166,0.15)_0%,transparent_70%)]" />
+        <div className="absolute right-1/4 bottom-1/4 h-120 w-120 rounded-full bg-[radial-gradient(circle,rgba(20,184,166,0.15)_0%,transparent_70%)]" />
       </div>
 
-      <div className="container relative z-10 mx-auto px-6 max-w-7xl">
+      <div className="relative z-10 container mx-auto max-w-7xl px-6">
         <div className="mb-32 text-center">
-          <SectionHeading size="label" className="text-teal-500 mb-8 block">
+          <SectionHeading size="label" className="mb-8 block text-teal-500">
             Philosophy
           </SectionHeading>
 
           <SectionHeading size="section" as="h2" className="text-white">
             Made for everyone who <br />
-            <span className="relative inline-block mt-4 font-serif italic font-light text-zinc-400">
+            <span className="relative mt-4 inline-block font-serif font-light text-zinc-400 italic">
               values their time
               <svg
-                className="absolute -bottom-6 left-[-10%] w-[120%] h-6"
+                className="absolute -bottom-6 left-[-10%] h-6 w-[120%]"
                 viewBox="0 0 400 20"
                 fill="none"
                 preserveAspectRatio="none"
@@ -108,38 +108,38 @@ export const ManifestoSection = () => {
                 index === 0 ? "md:col-span-2 lg:col-span-1" : "col-span-1"
               }`}
             >
-              <div className="relative h-full p-10 pt-16 rounded-3xl border border-white/10 bg-white/[0.07] shadow-xl transition-all duration-500 group-hover:bg-white/10 group-hover:border-white/20 backdrop-blur-2xl">
-                <div className="absolute inset-0 rounded-3xl bg-linear-to-br from-teal-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="relative h-full rounded-3xl border border-white/10 bg-white/[0.07] p-10 pt-16 shadow-xl backdrop-blur-2xl transition-all duration-500 group-hover:border-white/20 group-hover:bg-white/10">
+                <div className="absolute inset-0 rounded-3xl bg-linear-to-br from-teal-500/5 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
-                <div className="absolute top-6 left-6 w-4 h-4 border-t border-l border-white/20 group-hover:border-teal-400/50 transition-colors" />
-                <div className="absolute bottom-6 right-6 w-4 h-4 border-b border-r border-white/20 group-hover:border-teal-400/50 transition-colors" />
+                <div className="absolute top-6 left-6 h-4 w-4 border-t border-l border-white/20 transition-colors group-hover:border-teal-400/50" />
+                <div className="absolute right-6 bottom-6 h-4 w-4 border-r border-b border-white/20 transition-colors group-hover:border-teal-400/50" />
 
-                <div className="relative mb-12 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5 border border-white/10 shadow-inner group-hover:scale-110 transition-transform duration-500">
+                <div className="relative mb-12 flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/5 shadow-inner transition-transform duration-500 group-hover:scale-110">
                   {(() => {
                     const Icon = ICONS[value.icon];
-                    return <Icon className="w-6 h-6 text-teal-400" />;
+                    return <Icon className="h-6 w-6 text-teal-400" />;
                   })()}
                 </div>
 
                 <div className="relative space-y-6">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-teal-400/80">
+                  <span className="text-[10px] font-bold tracking-[0.3em] text-teal-400/80 uppercase">
                     {value.label}
                   </span>
-                  <h3 className="text-2xl font-semibold text-white tracking-tight">
+                  <h3 className="text-2xl font-semibold tracking-tight text-white">
                     {value.title}
                   </h3>
-                  <p className="text-sm leading-relaxed text-zinc-400 font-light">
+                  <p className="text-sm leading-relaxed font-light text-zinc-400">
                     {value.description}
                   </p>
                 </div>
 
-                <div className="mt-12 pt-6 border-t border-white/5 flex justify-between items-center opacity-40">
-                  <span className="text-[9px] font-mono tracking-tighter text-zinc-500 ">
+                <div className="mt-12 flex items-center justify-between border-t border-white/5 pt-6 opacity-40">
+                  <span className="font-mono text-[9px] tracking-tighter text-zinc-500">
                     ZF_MOMENT_0{index + 1}
                   </span>
                   <div className="flex gap-1">
-                    <div className="w-1 h-1 rounded-full bg-teal-500" />
-                    <div className="w-1 h-1 rounded-full bg-teal-500/40" />
+                    <div className="h-1 w-1 rounded-full bg-teal-500" />
+                    <div className="h-1 w-1 rounded-full bg-teal-500/40" />
                   </div>
                 </div>
               </div>

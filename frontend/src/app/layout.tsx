@@ -18,7 +18,8 @@ const montserrat = Montserrat({
 
 export const metadata: Metadata = {
   title: "ZeeFrame",
-  description: "Book photo and video studios. Professional services with instant booking.",
+  description:
+    "Book photo and video studios. Professional services with instant booking.",
 };
 
 export default function RootLayout({
@@ -28,7 +29,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en-GB">
-      <body className={`${inter.variable} ${montserrat.variable} font-sans antialiased`}>
+      <body
+        className={`${inter.variable} ${montserrat.variable} font-sans antialiased`}
+      >
         <Providers>{children}</Providers>
       </body>
     </html>

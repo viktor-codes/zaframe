@@ -22,9 +22,16 @@ export interface BookingsCountParams {
 }
 
 export async function fetchBookings(
-  params: BookingsListParams = {}
+  params: BookingsListParams = {},
 ): Promise<BookingResponse[]> {
-  const { skip = 0, limit = 20, slot_id, user_id, guest_email, status } = params;
+  const {
+    skip = 0,
+    limit = 20,
+    slot_id,
+    user_id,
+    guest_email,
+    status,
+  } = params;
   const searchParams: Record<string, string | number | undefined> = {
     skip,
     limit,
@@ -40,7 +47,7 @@ export async function fetchBookings(
 }
 
 export async function fetchBookingsCount(
-  params: BookingsCountParams = {}
+  params: BookingsCountParams = {},
 ): Promise<{ count: number }> {
   const { slot_id, user_id, guest_email, status } = params;
   const searchParams: Record<string, string | number | undefined> = {};
@@ -60,7 +67,9 @@ export async function fetchBooking(id: number): Promise<BookingResponse> {
   });
 }
 
-export async function createBooking(data: BookingCreate): Promise<BookingResponse> {
+export async function createBooking(
+  data: BookingCreate,
+): Promise<BookingResponse> {
   return api.post<BookingResponse>("api/v1/bookings", data, {
     skipAuth: true,
   });

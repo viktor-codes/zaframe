@@ -1,7 +1,13 @@
 /**
  * Реэкспорт API клиента и модулей.
  */
-export { api, setAuthTokenProvider, setRefreshTokensFn, ApiError } from "./client";
+export {
+  api,
+  setAuthTokenProvider,
+  setRefreshTokensFn,
+  ApiError,
+} from "./client";
+export { getUserFacingApiMessage } from "./error-message";
 export {
   fetchStudios,
   fetchStudiosCount,

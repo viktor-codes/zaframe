@@ -11,9 +11,9 @@ export interface ChipProps extends React.HTMLAttributes<HTMLDivElement> {
 const tones: Record<ChipTone, string> = {
   neutral:
     "bg-white/85 text-zinc-900 border border-black/10 dark:bg-zinc-800/85 dark:text-zinc-100 dark:border-white/10",
-  brand: "bg-gradient-to-br from-sky-50 to-teal-50 text-zinc-900 border border-teal-200/50",
-  success:
-    "bg-emerald-50 text-emerald-900 border border-emerald-200",
+  brand:
+    "bg-gradient-to-br from-sky-50 to-teal-50 text-zinc-900 border border-teal-200/50",
+  success: "bg-emerald-50 text-emerald-900 border border-emerald-200",
   warning: "bg-amber-50 text-amber-900 border border-amber-200",
   danger: "bg-red-50 text-red-900 border border-red-200",
 };

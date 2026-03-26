@@ -14,11 +14,11 @@ const LOGO_PARTNERS = [
 
 export const LogoTicker = () => {
   return (
-    <div className="py-12 bg-zinc-50">
+    <div className="bg-zinc-50 py-12">
       <div className="container mx-auto">
-        <div className="flex overflow-hidden [mask-image:linear_to_right,transparent,black_20%,black_80%,transparent)]">
+        <div className="[mask-image:linear_to_right,transparent,black_20%,black_80%,transparent)] flex overflow-hidden">
           <motion.div
-            className="flex gap-20 flex-none pr-20"
+            className="flex flex-none gap-20 pr-20"
             animate={{
               translateX: "-50%",
             }}
@@ -37,7 +37,7 @@ export const LogoTicker = () => {
                 key={`first-${index}`}
                 src={logo.src}
                 alt={logo.alt}
-                className="h-9 w-auto opacity-40 grayscale hover:opacity-100 hover:grayscale-0 transition-all duration-300"
+                className="h-9 w-auto opacity-40 grayscale transition-all duration-300 hover:opacity-100 hover:grayscale-0"
               />
             ))}
 
@@ -49,7 +49,7 @@ export const LogoTicker = () => {
                 key={`second-${index}`}
                 src={logo.src}
                 alt={logo.alt}
-                className="h-9 w-auto opacity-40 grayscale hover:opacity-100 hover:grayscale-0 transition-all duration-300"
+                className="h-9 w-auto opacity-40 grayscale transition-all duration-300 hover:opacity-100 hover:grayscale-0"
               />
             ))}
           </motion.div>

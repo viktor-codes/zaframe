@@ -2,14 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Button, Card, Input } from "@/components/ui";
 import { Alert } from "@/components/ui";
 import { requestMagicLink } from "@/lib/api/auth";
-import { ApiError } from "@/lib/api";
+import { getUserFacingApiMessage } from "@/lib/api";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -25,13 +23,7 @@ export default function LoginPage() {
       await requestMagicLink({ email, name });
       setSuccess(true);
     } catch (err) {
-      const detail =
-        err instanceof ApiError
-          ? typeof err.body === "object" && err.body && "detail" in err.body
-            ? String((err.body as { detail: unknown }).detail)
-            : err.message
-          : "Something went wrong. Please try again.";
-      setError(detail);
+      setError(getUserFacingApiMessage(err));
     } finally {
       setIsLoading(false);
     }
@@ -39,20 +31,20 @@ export default function LoginPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-6">
-        <Card className="max-w-md w-full">
+      <div className="flex min-h-screen items-center justify-center bg-neutral-50 p-6">
+        <Card className="w-full max-w-md">
           <Alert variant="success" title="Check your email">
-            If an account exists for {email}, you will receive a link to sign in.
-            The link expires in 15 minutes.
+            If an account exists for {email}, you will receive a link to sign
+            in. The link expires in 15 minutes.
           </Alert>
-          <p className="text-sm text-neutral-600 mt-4">
+          <p className="mt-4 text-sm text-neutral-600">
             Didn&apos;t receive the email?{" "}
             <button
               type="button"
               onClick={() => {
                 setSuccess(false);
               }}
-              className="text-primary hover:text-primary-dark font-medium"
+              className="font-medium text-primary hover:text-primary-dark"
             >
               Try again
             </button>
@@ -63,12 +55,12 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-6">
-      <Card className="max-w-md w-full">
-        <h1 className="font-display font-bold text-3xl text-secondary mb-2">
+    <div className="flex min-h-screen items-center justify-center bg-neutral-50 p-6">
+      <Card className="w-full max-w-md">
+        <h1 className="text-secondary mb-2 font-display text-3xl font-bold">
           Sign in
         </h1>
-        <p className="text-neutral-600 mb-6">
+        <p className="mb-6 text-neutral-600">
           Enter your email and we&apos;ll send you a link to sign in.
         </p>
 
@@ -103,7 +95,7 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <p className="text-sm text-neutral-500 mt-6 text-center">
+        <p className="mt-6 text-center text-sm text-neutral-500">
           <Link href="/" className="text-primary hover:text-primary-dark">
             ← Back to home
           </Link>

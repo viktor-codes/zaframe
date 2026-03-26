@@ -2,7 +2,9 @@
  * Утилита для объединения имён классов (cn — classnames).
  * Поддерживает строки, объекты и условные классы.
  */
-export function cn(...inputs: (string | undefined | null | false | Record<string, boolean>)[]): string {
+export function cn(
+  ...inputs: (string | undefined | null | false | Record<string, boolean>)[]
+): string {
   const classes: string[] = [];
   for (const input of inputs) {
     if (typeof input === "string" && input.trim()) {

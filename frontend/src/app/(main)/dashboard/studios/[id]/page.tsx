@@ -56,8 +56,8 @@ export default function StudioManagePage() {
 
   if (Number.isNaN(id)) {
     return (
-      <div className="max-w-4xl mx-auto px-6 py-12">
-        <div className="rounded-lg bg-red-50 border border-red-200 p-6 text-red-800">
+      <div className="mx-auto max-w-4xl px-6 py-12">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-red-800">
           Invalid studio
         </div>
       </div>
@@ -66,8 +66,8 @@ export default function StudioManagePage() {
 
   if (isLoading || !studio) {
     return (
-      <div className="max-w-4xl mx-auto px-6 py-12">
-        <Skeleton className="h-8 w-48 mb-6" />
+      <div className="mx-auto max-w-4xl px-6 py-12">
+        <Skeleton className="mb-6 h-8 w-48" />
         <Skeleton className="h-32 w-full" />
       </div>
     );
@@ -75,11 +75,16 @@ export default function StudioManagePage() {
 
   if (user && studio.owner_id !== user.id) {
     return (
-      <div className="max-w-4xl mx-auto px-6 py-12">
-        <div className="rounded-lg bg-red-50 border border-red-200 p-6 text-red-800">
+      <div className="mx-auto max-w-4xl px-6 py-12">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-red-800">
           <p className="font-semibold">Access denied</p>
-          <p className="text-sm mt-1">You don&apos;t have permission to manage this studio.</p>
-          <Link href="/dashboard" className="text-primary underline mt-2 inline-block">
+          <p className="mt-1 text-sm">
+            You don&apos;t have permission to manage this studio.
+          </p>
+          <Link
+            href="/dashboard"
+            className="mt-2 inline-block text-primary underline"
+          >
             Back to dashboard
           </Link>
         </div>
@@ -88,10 +93,10 @@ export default function StudioManagePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-12">
+    <div className="mx-auto max-w-4xl px-6 py-12">
       <Link
         href="/dashboard"
-        className="text-primary hover:text-primary-dark text-sm font-medium mb-6 inline-block"
+        className="mb-6 inline-block text-sm font-medium text-primary hover:text-primary-dark"
       >
         ← Back to dashboard
       </Link>
@@ -100,12 +105,14 @@ export default function StudioManagePage() {
         studio={studio}
         editMode={editMode}
         onEditModeChange={setEditMode}
-        onSuccess={() => queryClient.invalidateQueries({ queryKey: ["studio", id] })}
+        onSuccess={() =>
+          queryClient.invalidateQueries({ queryKey: ["studio", id] })
+        }
       />
 
       <section className="mt-10">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="font-display font-semibold text-xl text-secondary">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-secondary font-display text-xl font-semibold">
             Slots (schedule)
           </h2>
           <Button onClick={() => setShowAddSlot((v) => !v)}>
@@ -117,14 +124,16 @@ export default function StudioManagePage() {
           <SlotCreateForm
             studioId={id}
             onSuccess={() => {
-              queryClient.invalidateQueries({ queryKey: ["studio", id, "slots"] });
+              queryClient.invalidateQueries({
+                queryKey: ["studio", id, "slots"],
+              });
               setShowAddSlot(false);
             }}
             onCancel={() => setShowAddSlot(false)}
           />
         )}
 
-        <div className="space-y-4 mt-4">
+        <div className="mt-4 space-y-4">
           {slots?.length === 0 ? (
             <Card className="p-8 text-center text-neutral-600">
               No slots yet. Add a slot to accept bookings.
@@ -135,7 +144,9 @@ export default function StudioManagePage() {
                 key={slot.id}
                 slot={slot}
                 onDeleted={() =>
-                  queryClient.invalidateQueries({ queryKey: ["studio", id, "slots"] })
+                  queryClient.invalidateQueries({
+                    queryKey: ["studio", id, "slots"],
+                  })
                 }
               />
             ))
@@ -152,7 +163,15 @@ function StudioEditForm({
   onEditModeChange,
   onSuccess,
 }: {
-  studio: { id: number; name: string; description?: string | null; email?: string | null; phone?: string | null; address?: string | null; is_active: boolean };
+  studio: {
+    id: number;
+    name: string;
+    description?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    address?: string | null;
+    is_active: boolean;
+  };
   editMode: boolean;
   onEditModeChange: (v: boolean) => void;
   onSuccess: () => void;
@@ -200,7 +219,9 @@ function StudioEditForm({
           <Textarea
             label="Description"
             value={form.description}
-            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, description: e.target.value }))
+            }
           />
           <Input
             label="Email"
@@ -216,7 +237,9 @@ function StudioEditForm({
           <Input
             label="Address"
             value={form.address}
-            onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, address: e.target.value }))
+            }
           />
           <label className="flex items-center gap-2">
             <input
@@ -247,15 +270,15 @@ function StudioEditForm({
 
   return (
     <div className="mb-8">
-      <div className="flex justify-between items-start">
+      <div className="flex items-start justify-between">
         <div>
-          <h1 className="font-display font-bold text-2xl text-secondary">
+          <h1 className="text-secondary font-display text-2xl font-bold">
             {studio.name}
           </h1>
           {studio.description && (
-            <p className="text-neutral-600 mt-1">{studio.description}</p>
+            <p className="mt-1 text-neutral-600">{studio.description}</p>
           )}
-          <p className="text-sm text-neutral-500 mt-2">
+          <p className="mt-2 text-sm text-neutral-500">
             {studio.is_active ? (
               <span className="text-green-600">Active</span>
             ) : (
@@ -330,20 +353,26 @@ function SlotCreateForm({
             type="datetime-local"
             required
             value={form.start_time}
-            onChange={(e) => setForm((f) => ({ ...f, start_time: e.target.value }))}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, start_time: e.target.value }))
+            }
           />
           <Input
             label="End"
             type="datetime-local"
             required
             value={form.end_time}
-            onChange={(e) => setForm((f) => ({ ...f, end_time: e.target.value }))}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, end_time: e.target.value }))
+            }
           />
         </div>
         <Textarea
           label="Description"
           value={form.description}
-          onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+          onChange={(e) =>
+            setForm((f) => ({ ...f, description: e.target.value }))
+          }
         />
         <div className="grid grid-cols-2 gap-4">
           <Input
@@ -352,7 +381,10 @@ function SlotCreateForm({
             min={0}
             value={form.price_cents}
             onChange={(e) =>
-              setForm((f) => ({ ...f, price_cents: parseInt(e.target.value, 10) || 0 }))
+              setForm((f) => ({
+                ...f,
+                price_cents: parseInt(e.target.value, 10) || 0,
+              }))
             }
           />
           <Input
@@ -385,7 +417,14 @@ function SlotCard({
   slot,
   onDeleted,
 }: {
-  slot: { id: number; title: string; start_time: string; end_time: string; price_cents: number; is_active: boolean };
+  slot: {
+    id: number;
+    title: string;
+    start_time: string;
+    end_time: string;
+    price_cents: number;
+    is_active: boolean;
+  };
   onDeleted: () => void;
 }) {
   const [showBookings, setShowBookings] = useState(false);
@@ -404,9 +443,9 @@ function SlotCard({
 
   return (
     <Card>
-      <div className="flex justify-between items-start">
+      <div className="flex items-start justify-between">
         <div>
-          <h3 className="font-semibold text-secondary">{slot.title}</h3>
+          <h3 className="text-secondary font-semibold">{slot.title}</h3>
           <p className="text-sm text-neutral-600">
             {formatDateTime(slot.start_time)} · {formatPrice(slot.price_cents)}
           </p>
@@ -418,14 +457,14 @@ function SlotCard({
           <Button
             variant="ghost"
             onClick={() => setShowBookings((v) => !v)}
-            className="py-2 px-4 text-sm"
+            className="px-4 py-2 text-sm"
           >
             {showBookings ? "Hide" : "Bookings"}
           </Button>
           {!confirmDelete ? (
             <Button
               variant="ghost"
-              className="text-red-600 hover:text-red-700 py-2 px-4 text-sm"
+              className="px-4 py-2 text-sm text-red-600 hover:text-red-700"
               onClick={() => setConfirmDelete(true)}
             >
               Delete
@@ -433,7 +472,7 @@ function SlotCard({
           ) : (
             <>
               <Button
-                className="bg-red-600 hover:bg-red-700 text-white py-2 px-4 text-sm"
+                className="bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700"
                 onClick={() => deleteMutation.mutate()}
                 isLoading={deleteMutation.isPending}
               >
@@ -441,7 +480,7 @@ function SlotCard({
               </Button>
               <Button
                 variant="ghost"
-                className="py-2 px-4 text-sm"
+                className="px-4 py-2 text-sm"
                 onClick={() => setConfirmDelete(false)}
               >
                 Cancel
@@ -451,7 +490,7 @@ function SlotCard({
         </div>
       </div>
       {showBookings && (
-        <div className="mt-4 pt-4 border-t border-neutral-200">
+        <div className="mt-4 border-t border-neutral-200 pt-4">
           {bookings?.length === 0 ? (
             <p className="text-sm text-neutral-600">No bookings</p>
           ) : (

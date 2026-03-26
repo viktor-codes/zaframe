@@ -11,7 +11,7 @@ const steps = [
     title: "Capture",
     description:
       "Browse curated studios. Use filters to find the perfect lighting, vibe, and intensity for your unique practice.",
-    icon: <Camera className="w-6 h-6 text-teal-500" />,
+    icon: <Camera className="h-6 w-6 text-teal-500" />,
     img: "../../step1.webp",
   },
   {
@@ -19,7 +19,7 @@ const steps = [
     title: "Focus",
     description:
       "Secure your spot in one tap. No calls, no waiting. Just a seamless frame for your busy schedule.",
-    icon: <Calendar className="w-6 h-6 text-teal-500" />,
+    icon: <Calendar className="h-6 w-6 text-teal-500" />,
     img: "../../step2.webp",
   },
   {
@@ -27,7 +27,7 @@ const steps = [
     title: "Develop",
     description:
       "Show up and move. Your journey is captured in your profile, tracking every session and milestone automatically.",
-    icon: <Trophy className="w-6 h-6 text-teal-500" />,
+    icon: <Trophy className="h-6 w-6 text-teal-500" />,
     img: "../../step3.webp",
   },
 ];
@@ -39,22 +39,22 @@ export const HowItWorksSection = () => {
   return (
     <div
       ref={containerRef}
-      className="container mx-auto px-6 max-w-7xl relative pb-36"
+      className="relative container mx-auto max-w-7xl px-6 pb-36"
     >
-      <div className="max-w-2xl mb-24">
-        <SectionHeading size="label" className="text-teal-500 block mb-6">
+      <div className="mb-24 max-w-2xl">
+        <SectionHeading size="label" className="mb-6 block text-teal-500">
           Process
         </SectionHeading>
         <SectionHeading size="section" as="h2" className="text-zinc-900">
           Your journey, <br />
-          <span className="font-serif italic font-light text-zinc-400">
+          <span className="font-serif font-light text-zinc-400 italic">
             in three frames.
           </span>
         </SectionHeading>
       </div>
 
       <div className="relative">
-        <div className="absolute top-0 left-0 md:left-1/2 md:-translate-x-1/2 w-full h-full pointer-events-none z-0">
+        <div className="pointer-events-none absolute top-0 left-0 z-0 h-full w-full md:left-1/2 md:-translate-x-1/2">
           <svg
             width="100%"
             height="100%"
@@ -114,7 +114,7 @@ export const HowItWorksSection = () => {
           </svg>
         </div>
 
-        <div className="space-y-48 md:space-y-72 relative z-10">
+        <div className="relative z-10 space-y-48 md:space-y-72">
           {steps.map((step, index) => (
             <StepItem key={step.id} step={step} index={index} />
           ))}
@@ -140,15 +140,14 @@ const StepItem = ({ step, index }: { step: StepItemData; index: number }) => {
   return (
     <div
       ref={ref}
-      className={`flex flex-col md:flex-row items-center gap-12 md:gap-24 
-        ${isEven ? "md:flex-row" : "md:flex-row-reverse"}`}
+      className={`flex flex-col items-center gap-12 md:flex-row md:gap-24 ${isEven ? "md:flex-row" : "md:flex-row-reverse"}`}
     >
       <div className="w-full md:w-1/2">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={isStepInView ? { opacity: 1, scale: 1 } : {}}
           transition={{ duration: 1 }}
-          className="bg-white p-3 shadow-2xl border border-zinc-100 relative group"
+          className="group relative border border-zinc-100 bg-white p-3 shadow-2xl"
           style={{ rotate: isEven ? "-2deg" : "2deg" }}
         >
           <div className="aspect-4/5 overflow-hidden bg-zinc-100">
@@ -159,38 +158,38 @@ const StepItem = ({ step, index }: { step: StepItemData; index: number }) => {
                 filter: isStepInView ? "grayscale(0%)" : "grayscale(100%)",
               }}
               transition={{ duration: 1 }}
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
             />
           </div>
         </motion.div>
       </div>
 
-      <div className="w-full md:w-1/2 flex flex-col justify-center relative">
+      <div className="relative flex w-full flex-col justify-center md:w-1/2">
         <motion.div
           initial={{ opacity: 0, x: isEven ? 20 : -20 }}
           animate={isStepInView ? { opacity: 1, x: 0 } : {}}
-          className="p-8 md:p-12 relative"
+          className="relative p-8 md:p-12"
         >
-          <div className="absolute top-0 right-0 w-12 h-12 border-t-2 border-r-2 border-zinc-100" />
-          <div className="absolute bottom-0 left-0 w-12 h-12 border-b-2 border-l-2 border-teal-500/20" />
+          <div className="absolute top-0 right-0 h-12 w-12 border-t-2 border-r-2 border-zinc-100" />
+          <div className="absolute bottom-0 left-0 h-12 w-12 border-b-2 border-l-2 border-teal-500/20" />
 
-          <div className="flex items-center gap-4 mb-6">
-            <div className="p-3 bg-zinc-950 text-white rounded-lg shadow-xl">
+          <div className="mb-6 flex items-center gap-4">
+            <div className="rounded-lg bg-zinc-950 p-3 text-white shadow-xl">
               {step.icon}
             </div>
             <span
-              className="text-5xl font-black text-transparent stroke-zinc-200"
+              className="stroke-zinc-200 text-5xl font-black text-transparent"
               style={{ WebkitTextStroke: "1px #E4E4E7" }}
             >
               0{index + 1}
             </span>
           </div>
 
-          <h3 className="text-3xl md:text-4xl font-bold mb-6 tracking-tight text-zinc-900">
+          <h3 className="mb-6 text-3xl font-bold tracking-tight text-zinc-900 md:text-4xl">
             {step.title}
           </h3>
 
-          <p className="text-lg text-zinc-500 font-light leading-relaxed max-w-md">
+          <p className="max-w-md text-lg leading-relaxed font-light text-zinc-500">
             {step.description}
           </p>
         </motion.div>

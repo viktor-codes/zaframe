@@ -9,15 +9,15 @@ import type { StudioResponse } from "@/types/studio";
 
 export default function DashboardPage() {
   return (
-    <div className="max-w-4xl mx-auto px-6 py-12">
-        <h1 className="font-display font-bold text-3xl text-secondary mb-2">
-          Dashboard
-        </h1>
-        <p className="text-neutral-600 mb-8">
-          Manage your studios, slots, and bookings.
-        </p>
-        <MyStudios />
-      </div>
+    <div className="mx-auto max-w-4xl px-6 py-12">
+      <h1 className="text-secondary mb-2 font-display text-3xl font-bold">
+        Dashboard
+      </h1>
+      <p className="mb-8 text-neutral-600">
+        Manage your studios, slots, and bookings.
+      </p>
+      <MyStudios />
+    </div>
   );
 }
 
@@ -26,8 +26,7 @@ function MyStudios() {
 
   const { data: studios, isLoading } = useQuery({
     queryKey: ["studios", "owner", user?.id],
-    queryFn: () =>
-      fetchStudios({ owner_id: user!.id, limit: 50 }),
+    queryFn: () => fetchStudios({ owner_id: user!.id, limit: 50 }),
     enabled: !!user?.id,
   });
 
@@ -36,7 +35,7 @@ function MyStudios() {
       <div className="space-y-4">
         {Array.from({ length: 3 }).map((_, i) => (
           <Card key={i}>
-            <Skeleton className="h-6 w-48 mb-2" />
+            <Skeleton className="mb-2 h-6 w-48" />
             <Skeleton className="h-4 w-64" />
           </Card>
         ))}
@@ -47,10 +46,10 @@ function MyStudios() {
   if (!studios || studios.length === 0) {
     return (
       <Card className="p-12 text-center">
-        <p className="font-medium text-neutral-700 mb-2">
+        <p className="mb-2 font-medium text-neutral-700">
           You don&apos;t have any studios yet
         </p>
-        <p className="text-sm text-neutral-600 mb-6">
+        <p className="mb-6 text-sm text-neutral-600">
           Create your first studio to start accepting bookings.
         </p>
         <Button asChild>
@@ -64,8 +63,8 @@ function MyStudios() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="font-semibold text-secondary text-lg">My studios</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-secondary text-lg font-semibold">My studios</h2>
         <Button asChild>
           <Link href="/dashboard/studios/new">Add studio</Link>
         </Button>
@@ -74,15 +73,17 @@ function MyStudios() {
         {ownerStudios.map((studio) => (
           <Link key={studio.id} href={`/dashboard/studios/${studio.id}`}>
             <Card variant="interactive">
-              <div className="flex justify-between items-start">
+              <div className="flex items-start justify-between">
                 <div>
-                  <h3 className="font-semibold text-secondary">{studio.name}</h3>
+                  <h3 className="text-secondary font-semibold">
+                    {studio.name}
+                  </h3>
                   {studio.description && (
-                    <p className="text-sm text-neutral-600 mt-1 line-clamp-2">
+                    <p className="mt-1 line-clamp-2 text-sm text-neutral-600">
                       {studio.description}
                     </p>
                   )}
-                  <p className="text-xs text-neutral-500 mt-2">
+                  <p className="mt-2 text-xs text-neutral-500">
                     {studio.is_active ? (
                       <span className="text-green-600">Active</span>
                     ) : (
@@ -90,7 +91,7 @@ function MyStudios() {
                     )}
                   </p>
                 </div>
-                <span className="text-primary text-sm font-medium">
+                <span className="text-sm font-medium text-primary">
                   Manage →
                 </span>
               </div>

@@ -15,7 +15,9 @@ export function proxy(request: NextRequest) {
   }
 
   const pathname = request.nextUrl.pathname;
-  const isAppRoute = APP_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  const isAppRoute = APP_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`),
+  );
   if (isAppRoute) {
     return NextResponse.redirect(new URL("/", request.url));
   }
@@ -24,5 +26,10 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/studios/:path*", "/dashboard/:path*", "/bookings/:path*", "/auth/:path*"],
+  matcher: [
+    "/studios/:path*",
+    "/dashboard/:path*",
+    "/bookings/:path*",
+    "/auth/:path*",
+  ],
 };

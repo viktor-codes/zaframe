@@ -3,7 +3,12 @@
 import React, { forwardRef } from "react";
 
 export type ButtonSize = "sm" | "md" | "lg";
-export type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "danger";
+export type ButtonVariant =
+  | "primary"
+  | "secondary"
+  | "outline"
+  | "ghost"
+  | "danger";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
@@ -47,7 +52,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       disabled,
       ...props
     },
-    ref
+    ref,
   ) => {
     const classes = [
       base,
@@ -104,7 +109,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         )}
       </button>
     );
-  }
+  },
 );
 
 Button.displayName = "Button";

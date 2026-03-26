@@ -29,7 +29,7 @@ export function Tabs({ tabs, activeTab, onChange, className = "" }: TabsProps) {
           {tab.label}
           {activeTab === tab.id && (
             <div
-              className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-sky-400 via-teal-400 to-lime-300"
+              className="absolute right-0 bottom-0 left-0 h-0.5 bg-gradient-to-r from-sky-400 via-teal-400 to-lime-300"
               aria-hidden
             />
           )}

@@ -17,11 +17,7 @@ import {
   useState,
 } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  api,
-  setAuthTokenProvider,
-  setRefreshTokensFn,
-} from "@/lib/api";
+import { api, setAuthTokenProvider, setRefreshTokensFn } from "@/lib/api";
 import {
   clearStoredTokens,
   getStoredAccessToken,
@@ -36,8 +32,7 @@ type AuthContextValue = AuthState & AuthActions;
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 function useAuthQuery(loginTrigger: number) {
-  const hasToken =
-    typeof window !== "undefined" && !!getStoredAccessToken();
+  const hasToken = typeof window !== "undefined" && !!getStoredAccessToken();
 
   return useQuery({
     queryKey: ["auth", "me", loginTrigger],
@@ -54,14 +49,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const { data: user, isLoading } = useAuthQuery(loginTrigger);
 
-  const login = useCallback(
-    (accessToken: string, _userData: UserResponse) => {
-      setStoredTokens(accessToken);
-      setAuthTokenProvider(getStoredAccessToken);
-      setLoginTrigger((prev) => prev + 1);
-    },
-    []
-  );
+  const login = useCallback((accessToken: string, _userData: UserResponse) => {
+    setStoredTokens(accessToken);
+    setAuthTokenProvider(getStoredAccessToken);
+    setLoginTrigger((prev) => prev + 1);
+  }, []);
 
   const logout = useCallback(() => {
     void logoutSession().finally(() => {
@@ -93,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login,
       logout,
     }),
-    [user, isInitialized, isLoading, login, logout]
+    [user, isInitialized, isLoading, login, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -133,7 +133,7 @@ export const StudiosSearchPage = () => {
       <motion.div
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-zinc-100 shadow-sm"
+        className="sticky top-0 z-40 border-b border-zinc-100 bg-white/80 shadow-sm backdrop-blur-xl"
       >
         <div className="container mx-auto px-4 py-6">
           {/* Title */}
@@ -144,7 +144,7 @@ export const StudiosSearchPage = () => {
             className="mb-6 text-center text-3xl font-bold tracking-tight text-zinc-900 md:text-4xl"
           >
             Find your{" "}
-            <span className="font-serif italic bg-gradient-to-r from-teal-500 to-lime-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-teal-500 to-lime-400 bg-clip-text font-serif text-transparent italic">
               perfect moment
             </span>
           </motion.h1>
@@ -159,9 +159,9 @@ export const StudiosSearchPage = () => {
                   placeholder="Search studios, classes..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full rounded-lg border border-zinc-200 bg-white px-5 py-3.5 pl-12 text-zinc-900 placeholder-zinc-400 outline-none transition-all focus:border-teal-400 focus:ring-2 focus:ring-teal-100"
+                  className="w-full rounded-lg border border-zinc-200 bg-white px-5 py-3.5 pl-12 text-zinc-900 placeholder-zinc-400 transition-all outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100"
                 />
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-xl">
+                <div className="absolute top-1/2 left-4 -translate-y-1/2 text-xl">
                   🔍
                 </div>
               </div>
@@ -170,7 +170,7 @@ export const StudiosSearchPage = () => {
               <select
                 value={selectedLocation}
                 onChange={(e) => setSelectedLocation(e.target.value)}
-                className="rounded-lg border border-zinc-200 bg-white px-5 py-3.5 text-zinc-900 outline-none transition-all focus:border-teal-400 focus:ring-2 focus:ring-teal-100 sm:w-48"
+                className="rounded-lg border border-zinc-200 bg-white px-5 py-3.5 text-zinc-900 transition-all outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 sm:w-48"
               >
                 {LOCATIONS.map((loc) => (
                   <option key={loc} value={loc}>
@@ -182,13 +182,13 @@ export const StudiosSearchPage = () => {
 
             {/* Quick Filters */}
             <div className="mt-4 flex items-center gap-2 overflow-x-auto pb-2">
-              <span className="text-sm text-zinc-500 whitespace-nowrap">
+              <span className="text-sm whitespace-nowrap text-zinc-500">
                 Quick:
               </span>
               {["Today", "This Week", "Beginners"].map((filter) => (
                 <button
                   key={filter}
-                  className="whitespace-nowrap rounded-full border border-zinc-200 bg-white px-4 py-1.5 text-sm text-zinc-600 transition-all hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700"
+                  className="rounded-full border border-zinc-200 bg-white px-4 py-1.5 text-sm whitespace-nowrap text-zinc-600 transition-all hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700"
                 >
                   {filter}
                 </button>
@@ -206,7 +206,7 @@ export const StudiosSearchPage = () => {
               <button
                 key={category}
                 onClick={() => setSelectedCategory(category)}
-                className={`whitespace-nowrap rounded-full px-5 py-2 text-sm font-medium transition-all ${
+                className={`rounded-full px-5 py-2 text-sm font-medium whitespace-nowrap transition-all ${
                   selectedCategory === category
                     ? "bg-teal-500 text-white shadow-md shadow-teal-200"
                     : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
@@ -259,7 +259,7 @@ export const StudiosSearchPage = () => {
                 className="group relative"
               >
                 {/* Polaroid Card */}
-                <div className="overflow-hidden rounded-lg bg-white p-3 shadow-lg transition-all duration-300 hover:shadow-2xl hover:shadow-teal-500/10 hover:-translate-y-2">
+                <div className="overflow-hidden rounded-lg bg-white p-3 shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-teal-500/10">
                   {/* Image Container */}
                   <div className="relative aspect-[4/5] overflow-hidden rounded-lg bg-zinc-100">
                     <img
@@ -270,7 +270,7 @@ export const StudiosSearchPage = () => {
 
                     {/* Verified Badge */}
                     {studio.verified && (
-                      <div className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-teal-500 px-2.5 py-1 text-xs font-bold text-white shadow-lg">
+                      <div className="absolute top-3 left-3 flex items-center gap-1 rounded-full bg-teal-500 px-2.5 py-1 text-xs font-bold text-white shadow-lg">
                         ✓ Verified
                       </div>
                     )}
@@ -278,7 +278,7 @@ export const StudiosSearchPage = () => {
                     {/* Save Heart */}
                     <button
                       onClick={() => toggleSave(studio.id)}
-                      className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm transition-all hover:scale-110 hover:bg-white"
+                      className="absolute top-3 right-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm transition-all hover:scale-110 hover:bg-white"
                     >
                       <span
                         className={
@@ -293,13 +293,13 @@ export const StudiosSearchPage = () => {
 
                     {/* Spots Left Badge */}
                     {studio.spotsLeft <= 5 && (
-                      <div className="absolute bottom-3 left-3 rounded-lg bg-amber-400 px-2.5 py-1 text-xs font-black uppercase tracking-wide text-zinc-900">
+                      <div className="absolute bottom-3 left-3 rounded-lg bg-amber-400 px-2.5 py-1 text-xs font-black tracking-wide text-zinc-900 uppercase">
                         🔥 {studio.spotsLeft} spots left
                       </div>
                     )}
 
                     {/* Type Label */}
-                    <div className="absolute bottom-3 right-3 rounded-lg bg-white/90 px-2.5 py-1 text-xs font-bold uppercase tracking-widest text-zinc-600 backdrop-blur-sm">
+                    <div className="absolute right-3 bottom-3 rounded-lg bg-white/90 px-2.5 py-1 text-xs font-bold tracking-widest text-zinc-600 uppercase backdrop-blur-sm">
                       {studio.type}
                     </div>
                   </div>
@@ -329,7 +329,7 @@ export const StudiosSearchPage = () => {
 
                     {/* Price & Next Class */}
                     <div className="flex items-center justify-between">
-                      <div className="text-lg font-mono font-bold text-teal-600">
+                      <div className="font-mono text-lg font-bold text-teal-600">
                         €{studio.price}/class
                       </div>
                       <div className="text-xs text-zinc-500">

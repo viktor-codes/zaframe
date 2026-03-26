@@ -6,7 +6,7 @@ import { api } from "./client";
 import type { SearchQueryParams, SearchResult } from "@/types/search";
 
 export async function fetchSearch(
-  params: SearchQueryParams = {}
+  params: SearchQueryParams = {},
 ): Promise<SearchResult[]> {
   const searchParams: Record<
     string,
@@ -16,7 +16,8 @@ export async function fetchSearch(
     searchParams.query = params.query;
   if (params.category != null && params.category !== "")
     searchParams.category = params.category;
-  if (params.city != null && params.city !== "") searchParams.city = params.city;
+  if (params.city != null && params.city !== "")
+    searchParams.city = params.city;
   if (params.lat != null) searchParams.lat = params.lat;
   if (params.lng != null) searchParams.lng = params.lng;
   if (params.radius_km != null) searchParams.radius_km = params.radius_km;

@@ -18,10 +18,10 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
 
   if (!isInitialized || !user) {
     return (
-      <div className="min-h-[50vh] flex items-center justify-center">
+      <div className="flex min-h-[50vh] items-center justify-center">
         <div className="text-center">
-          <Skeleton className="h-12 w-48 mx-auto mb-4" />
-          <Skeleton className="h-4 w-64 mx-auto" />
+          <Skeleton className="mx-auto mb-4 h-12 w-48" />
+          <Skeleton className="mx-auto h-4 w-64" />
         </div>
       </div>
     );

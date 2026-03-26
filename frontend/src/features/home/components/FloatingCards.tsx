@@ -27,7 +27,7 @@ const FloatingCards = () => {
   };
 
   return (
-    <div className="relative h-[550px] w-full max-w-3xl flex items-center justify-center">
+    <div className="relative flex h-[550px] w-full max-w-3xl items-center justify-center">
       <AnimatePresence mode="popLayout">
         {cards.map((card, index) => {
           const isActive = index === 1;
@@ -55,7 +55,7 @@ const FloatingCards = () => {
                   ease: "easeInOut",
                 },
               }}
-              className={`absolute left-1/2 -translate-x-1/2 rounded-lg bg-white p-3 shadow-2xl border transition-colors duration-700 ${
+              className={`absolute left-1/2 -translate-x-1/2 rounded-lg border bg-white p-3 shadow-2xl transition-colors duration-700 ${
                 isActive
                   ? "border-teal-400/50 shadow-teal-500/15"
                   : "border-zinc-100 shadow-black/5"
@@ -80,12 +80,12 @@ const FloatingCards = () => {
                       repeat: Infinity,
                       repeatDelay: 1,
                     }}
-                    className="absolute inset-0 bg-linear-to-r from-transparent via-white/40 to-transparent -skew-x-12"
+                    className="absolute inset-0 -skew-x-12 bg-linear-to-r from-transparent via-white/40 to-transparent"
                   />
                 )}
 
                 <div
-                  className={`absolute bottom-3 left-3 rounded-lg px-2.5 py-1 text-[10px] font-black uppercase tracking-widest transition-all duration-500 ${
+                  className={`absolute bottom-3 left-3 rounded-lg px-2.5 py-1 text-[10px] font-black tracking-widest uppercase transition-all duration-500 ${
                     isActive
                       ? "bg-teal-400 text-zinc-900 shadow-lg shadow-teal-500/50"
                       : "bg-white/90 text-zinc-600"
@@ -95,16 +95,16 @@ const FloatingCards = () => {
                 </div>
               </div>
 
-              <div className="mt-5 px-1 flex flex-col gap-2">
-                <div className="flex justify-between items-center">
+              <div className="mt-5 flex flex-col gap-2 px-1">
+                <div className="flex items-center justify-between">
                   <div
                     className={`h-1.5 w-16 rounded-lg transition-colors duration-500 ${isActive ? "bg-teal-200" : "bg-zinc-100"}`}
                   />
                   <div className="h-1.5 w-8 rounded-lg bg-zinc-50" />
                 </div>
-                <div className="text-[9px] font-mono text-zinc-400 tracking-wider flex justify-between uppercase">
+                <div className="flex justify-between font-mono text-[9px] tracking-wider text-zinc-400 uppercase">
                   <span>Moment 00{card.id + 1}</span>
-                  <span className={isActive ? "text-teal-500 font-bold" : ""}>
+                  <span className={isActive ? "font-bold text-teal-500" : ""}>
                     {isActive ? "● Live" : "Static"}
                   </span>
                 </div>
@@ -114,12 +114,12 @@ const FloatingCards = () => {
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="absolute inset-0 pointer-events-none"
+                  className="pointer-events-none absolute inset-0"
                 >
-                  <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-teal-500/60 rounded-tl-xl" />
-                  <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-teal-500/60 rounded-tr-xl" />
-                  <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-teal-500/60 rounded-bl-xl" />
-                  <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-teal-500/60 rounded-br-xl" />
+                  <div className="absolute top-2 left-2 h-4 w-4 rounded-tl-xl border-t-2 border-l-2 border-teal-500/60" />
+                  <div className="absolute top-2 right-2 h-4 w-4 rounded-tr-xl border-t-2 border-r-2 border-teal-500/60" />
+                  <div className="absolute bottom-2 left-2 h-4 w-4 rounded-bl-xl border-b-2 border-l-2 border-teal-500/60" />
+                  <div className="absolute right-2 bottom-2 h-4 w-4 rounded-br-xl border-r-2 border-b-2 border-teal-500/60" />
                 </motion.div>
               )}
             </motion.div>

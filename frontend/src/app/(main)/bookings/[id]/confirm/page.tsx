@@ -39,7 +39,11 @@ export default function BookingConfirmPage() {
   const [error, setError] = useState<string | null>(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
-  const { data: booking, isLoading: loadingBooking, isError: errorBooking } = useQuery({
+  const {
+    data: booking,
+    isLoading: loadingBooking,
+    isError: errorBooking,
+  } = useQuery({
     queryKey: ["booking", id],
     queryFn: () => fetchBooking(id),
   });
@@ -93,10 +97,13 @@ export default function BookingConfirmPage() {
 
   if (Number.isNaN(id)) {
     return (
-      <div className="max-w-2xl mx-auto px-6 py-12">
-        <div className="rounded-lg bg-red-50 border border-red-200 p-6 text-red-800">
+      <div className="mx-auto max-w-2xl px-6 py-12">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-red-800">
           <p className="font-semibold">Invalid booking</p>
-          <Link href="/studios" className="text-primary underline mt-2 inline-block">
+          <Link
+            href="/studios"
+            className="mt-2 inline-block text-primary underline"
+          >
             Back to studios
           </Link>
         </div>
@@ -106,10 +113,13 @@ export default function BookingConfirmPage() {
 
   if (errorBooking) {
     return (
-      <div className="max-w-2xl mx-auto px-6 py-12">
-        <div className="rounded-lg bg-red-50 border border-red-200 p-6 text-red-800">
+      <div className="mx-auto max-w-2xl px-6 py-12">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-red-800">
           <p className="font-semibold">Booking not found</p>
-          <Link href="/studios" className="text-primary underline mt-2 inline-block">
+          <Link
+            href="/studios"
+            className="mt-2 inline-block text-primary underline"
+          >
             Back to studios
           </Link>
         </div>
@@ -119,8 +129,8 @@ export default function BookingConfirmPage() {
 
   if (loadingBooking || !booking) {
     return (
-      <div className="max-w-2xl mx-auto px-6 py-12">
-        <Skeleton className="h-8 w-48 mb-6" />
+      <div className="mx-auto max-w-2xl px-6 py-12">
+        <Skeleton className="mb-6 h-8 w-48" />
         <Skeleton className="h-32 w-full" />
       </div>
     );
@@ -131,19 +141,19 @@ export default function BookingConfirmPage() {
 
   if (isCancelled) {
     return (
-      <div className="max-w-2xl mx-auto px-6 py-12">
+      <div className="mx-auto max-w-2xl px-6 py-12">
         <Link
           href="/bookings"
-          className="text-primary hover:text-primary-dark text-sm font-medium mb-6 inline-block"
+          className="mb-6 inline-block text-sm font-medium text-primary hover:text-primary-dark"
         >
           ← My bookings
         </Link>
-        <div className="rounded-lg bg-neutral-100 border border-neutral-200 p-8 text-center">
+        <div className="rounded-lg border border-neutral-200 bg-neutral-100 p-8 text-center">
           <p className="font-semibold text-neutral-700">Booking cancelled</p>
-          <p className="text-sm text-neutral-600 mt-1">
+          <p className="mt-1 text-sm text-neutral-600">
             This booking has been cancelled.
           </p>
-          <div className="flex gap-4 justify-center mt-4">
+          <div className="mt-4 flex justify-center gap-4">
             <Link href="/bookings" className="text-primary underline">
               My bookings
             </Link>
@@ -160,17 +170,17 @@ export default function BookingConfirmPage() {
   const canCancel = !isPast && !isCancelled;
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-12">
-      <div className="flex items-center gap-4 mb-6">
+    <div className="mx-auto max-w-2xl px-6 py-12">
+      <div className="mb-6 flex items-center gap-4">
         <Link
           href="/bookings"
-          className="text-primary hover:text-primary-dark text-sm font-medium"
+          className="text-sm font-medium text-primary hover:text-primary-dark"
         >
           ← My bookings
         </Link>
       </div>
 
-      <h1 className="font-display font-bold text-2xl text-secondary mb-6">
+      <h1 className="text-secondary mb-6 font-display text-2xl font-bold">
         Booking details
       </h1>
 
@@ -179,13 +189,13 @@ export default function BookingConfirmPage() {
           <div>
             <p className="text-sm text-neutral-500">Booking #{booking.id}</p>
             {studio && (
-              <p className="font-semibold text-secondary">{studio.name}</p>
+              <p className="text-secondary font-semibold">{studio.name}</p>
             )}
           </div>
           {slot && (
             <>
               <p className="font-medium">{slot.title}</p>
-              <p className="text-neutral-600 text-sm">
+              <p className="text-sm text-neutral-600">
                 {formatDateTime(slot.start_time)}
               </p>
               <p className="font-semibold text-primary">
@@ -203,17 +213,14 @@ export default function BookingConfirmPage() {
       </Card>
 
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 p-4 text-red-800 mb-6">
+        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800">
           {error}
         </div>
       )}
 
       {!isPaid && slot && slot.price_cents > 0 && (
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <Button
-            onClick={handlePay}
-            isLoading={checkoutMutation.isPending}
-          >
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row">
+          <Button onClick={handlePay} isLoading={checkoutMutation.isPending}>
             Pay with card (Stripe)
           </Button>
           <Button variant="outline" asChild>
@@ -226,14 +233,14 @@ export default function BookingConfirmPage() {
         <div className="mb-6">
           {showCancelConfirm ? (
             <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-              <p className="font-medium text-red-800 mb-2">
+              <p className="mb-2 font-medium text-red-800">
                 Cancel this booking? This cannot be undone.
               </p>
               <div className="flex gap-2">
                 <Button
                   onClick={() => cancelMutation.mutate(id)}
                   isLoading={cancelMutation.isPending}
-                  className="bg-red-600 hover:bg-red-700 text-white border-0"
+                  className="border-0 bg-red-600 text-white hover:bg-red-700"
                 >
                   Confirm cancel
                 </Button>
@@ -250,7 +257,7 @@ export default function BookingConfirmPage() {
             <Button
               variant="ghost"
               onClick={() => setShowCancelConfirm(true)}
-              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              className="text-red-600 hover:bg-red-50 hover:text-red-700"
             >
               Cancel booking
             </Button>
@@ -259,16 +266,18 @@ export default function BookingConfirmPage() {
       )}
 
       {isPaid && (
-        <div className="rounded-lg bg-green-50 border border-green-200 p-4 text-green-800">
+        <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-green-800">
           <p className="font-semibold">Paid</p>
-          <p className="text-sm mt-1">Your booking is confirmed and paid.</p>
+          <p className="mt-1 text-sm">Your booking is confirmed and paid.</p>
         </div>
       )}
 
       {slot && slot.price_cents === 0 && !isPaid && (
-        <div className="rounded-lg bg-green-50 border border-green-200 p-4 text-green-800">
+        <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-green-800">
           <p className="font-semibold">Free session</p>
-          <p className="text-sm mt-1">No payment required. Your booking is confirmed.</p>
+          <p className="mt-1 text-sm">
+            No payment required. Your booking is confirmed.
+          </p>
         </div>
       )}
     </div>

@@ -16,7 +16,10 @@ export async function createSlot(data: SlotCreate): Promise<SlotResponse> {
   return api.post<SlotResponse>("api/v1/slots", data);
 }
 
-export async function updateSlot(id: number, data: SlotUpdate): Promise<SlotResponse> {
+export async function updateSlot(
+  id: number,
+  data: SlotUpdate,
+): Promise<SlotResponse> {
   return api.patch<SlotResponse>(`api/v1/slots/${id}`, data);
 }
 
@@ -26,7 +29,7 @@ export async function deleteSlot(id: number): Promise<void> {
 
 export async function fetchSlotBookings(
   slotId: number,
-  params?: { skip?: number; limit?: number; status?: string }
+  params?: { skip?: number; limit?: number; status?: string },
 ): Promise<BookingResponse[]> {
   const { skip = 0, limit = 50, status } = params ?? {};
   const searchParams: Record<string, string | number | undefined> = {

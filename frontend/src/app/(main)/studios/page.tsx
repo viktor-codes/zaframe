@@ -95,7 +95,9 @@ function StudiosPageContent() {
     retry: (failureCount, err) => {
       const msg = err instanceof Error ? err.message.toLowerCase() : "";
       const isNetworkError =
-        msg.includes("fetch") || msg.includes("network") || msg.includes("failed");
+        msg.includes("fetch") ||
+        msg.includes("network") ||
+        msg.includes("failed");
       return isNetworkError && failureCount < 3;
     },
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 4000),
@@ -134,22 +136,28 @@ function StudiosPageContent() {
     [router, searchParams],
   );
 
-  const toggleCategory = useCallback((value: ServiceCategory) => {
-    const next = new URLSearchParams(searchParams.toString());
-    if (category === value) next.delete("category");
-    else next.set("category", value);
-    router.replace(`/studios?${next.toString()}`, { scroll: false });
-  }, [router, searchParams, category]);
+  const toggleCategory = useCallback(
+    (value: ServiceCategory) => {
+      const next = new URLSearchParams(searchParams.toString());
+      if (category === value) next.delete("category");
+      else next.set("category", value);
+      router.replace(`/studios?${next.toString()}`, { scroll: false });
+    },
+    [router, searchParams, category],
+  );
 
-  const toggleAmenity = useCallback((a: string) => {
-    const next = new URLSearchParams(searchParams.toString());
-    const nextList = amenities.includes(a)
-      ? amenities.filter((x) => x !== a)
-      : [...amenities, a];
-    if (nextList.length) next.set("amenities", nextList.join(","));
-    else next.delete("amenities");
-    router.replace(`/studios?${next.toString()}`, { scroll: false });
-  }, [router, searchParams, amenities]);
+  const toggleAmenity = useCallback(
+    (a: string) => {
+      const next = new URLSearchParams(searchParams.toString());
+      const nextList = amenities.includes(a)
+        ? amenities.filter((x) => x !== a)
+        : [...amenities, a];
+      if (nextList.length) next.set("amenities", nextList.join(","));
+      else next.delete("amenities");
+      router.replace(`/studios?${next.toString()}`, { scroll: false });
+    },
+    [router, searchParams, amenities],
+  );
 
   const resetFilters = useCallback(() => {
     router.replace("/studios", { scroll: false });
@@ -165,18 +173,24 @@ function StudiosPageContent() {
   return (
     <div className="min-h-screen bg-white">
       <Header
-        minimalSearch={{ href: "#studios-search", placeholder: "Search studios…" }}
+        minimalSearch={{
+          href: "#studios-search",
+          placeholder: "Search studios…",
+        }}
       />
 
       <div className="container mx-auto px-4 pt-28 pb-12">
-        <nav className="flex items-center gap-1.5 text-xs text-zinc-500 mb-6 border-b border-zinc-100 pb-4" aria-label="Breadcrumb">
-          <Link href="/" className="hover:text-zinc-700 transition-colors">
+        <nav
+          className="mb-6 flex items-center gap-1.5 border-b border-zinc-100 pb-4 text-xs text-zinc-500"
+          aria-label="Breadcrumb"
+        >
+          <Link href="/" className="transition-colors hover:text-zinc-700">
             Home
           </Link>
           <span aria-hidden>/</span>
           <span>Ireland</span>
           <span aria-hidden>/</span>
-          <span className="text-zinc-900 font-medium">Studios</span>
+          <span className="font-medium text-zinc-900">Studios</span>
         </nav>
 
         <div className="mb-8">
@@ -188,18 +202,18 @@ function StudiosPageContent() {
           />
         </div>
 
-        <div className="border-b border-zinc-100 pb-6 mb-8">
+        <div className="mb-8 border-b border-zinc-100 pb-6">
           <button
             type="button"
             onClick={() => setCategoriesOpen((prev) => !prev)}
-            className="flex items-center gap-2 w-full text-left py-2 text-sm font-semibold text-zinc-900"
+            className="flex w-full items-center gap-2 py-2 text-left text-sm font-semibold text-zinc-900"
           >
             Categories
             <motion.span
               animate={{ rotate: categoriesOpen ? 180 : 0 }}
               transition={{ duration: 0.2 }}
             >
-              <ChevronDown className="w-4 h-4 text-zinc-500" />
+              <ChevronDown className="h-4 w-4 text-zinc-500" />
             </motion.span>
           </button>
           <AnimatePresence initial={false}>
@@ -217,7 +231,9 @@ function StudiosPageContent() {
                     onClick={() => {
                       const next = new URLSearchParams(searchParams.toString());
                       next.delete("category");
-                      router.replace(`/studios?${next.toString()}`, { scroll: false });
+                      router.replace(`/studios?${next.toString()}`, {
+                        scroll: false,
+                      });
                     }}
                     className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                       !category
@@ -246,7 +262,7 @@ function StudiosPageContent() {
                   })}
                 </div>
                 <div className="border-t border-zinc-100 pt-4">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-2">
+                  <p className="mb-2 text-xs font-semibold tracking-wider text-zinc-500 uppercase">
                     Amenities
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -273,8 +289,13 @@ function StudiosPageContent() {
             )}
           </AnimatePresence>
           {hasFilters && (
-            <Button variant="ghost" size="sm" onClick={resetFilters} className="mt-2">
-              <X className="w-4 h-4 mr-1" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={resetFilters}
+              className="mt-2"
+            >
+              <X className="mr-1 h-4 w-4" />
               Clear filters
             </Button>
           )}
@@ -282,7 +303,7 @@ function StudiosPageContent() {
 
         <main>
           {isError && (
-            <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-red-800 text-sm mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="mb-8 flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 sm:flex-row sm:items-center sm:justify-between">
               <span>
                 {error instanceof Error
                   ? error.message
@@ -307,7 +328,7 @@ function StudiosPageContent() {
 
           {!isLoading && !isError && results.length > 0 && (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {results.map((result, index) => (
                   <StudioSearchCard
                     key={result.studio.id}

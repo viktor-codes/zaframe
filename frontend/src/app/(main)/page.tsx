@@ -27,7 +27,7 @@ export default function HomePage() {
       <Section
         id="manifesto"
         variant="on-dark"
-        className="relative py-32 md:py-48 bg-zinc-950 overflow-hidden"
+        className="relative overflow-hidden bg-zinc-950 py-32 md:py-48"
       >
         <ManifestoSection />
       </Section>
@@ -35,7 +35,7 @@ export default function HomePage() {
       <Section
         id="how-it-works"
         variant="on-light"
-        className="py-32 md:py-64 bg-white overflow-hidden relative"
+        className="relative overflow-hidden bg-white py-32 md:py-64"
       >
         <HowItWorksSection />
       </Section>
@@ -43,7 +43,7 @@ export default function HomePage() {
       <Section
         id="search"
         variant="on-light"
-        className="relative bg-white pt-0 pb-32 overflow-hidden"
+        className="relative overflow-hidden bg-white pt-0 pb-32"
       >
         <SearchSection />
       </Section>
@@ -51,7 +51,7 @@ export default function HomePage() {
       <Section
         id="moments"
         variant="on-dark"
-        className="relative py-32 bg-zinc-950 overflow-hidden"
+        className="relative overflow-hidden bg-zinc-950 py-32"
       >
         <Moments />
       </Section>

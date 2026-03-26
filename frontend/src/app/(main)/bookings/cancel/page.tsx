@@ -10,16 +10,16 @@ function CancelContent() {
   const bookingId = searchParams.get("booking");
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-12">
-      <Card className="text-center py-12">
-        <h1 className="font-display font-bold text-2xl text-secondary mb-2">
+    <div className="mx-auto max-w-2xl px-6 py-12">
+      <Card className="py-12 text-center">
+        <h1 className="text-secondary mb-2 font-display text-2xl font-bold">
           Payment cancelled
         </h1>
-        <p className="text-neutral-600 mb-8">
+        <p className="mb-8 text-neutral-600">
           Your payment was cancelled. Your booking is still pending. You can
           complete the payment later or browse other studios.
         </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <div className="flex flex-col justify-center gap-4 sm:flex-row">
           {bookingId && (
             <Button asChild>
               <Link href={`/bookings/${bookingId}/confirm`}>
@@ -38,7 +38,13 @@ function CancelContent() {
 
 export default function BookingCancelPage() {
   return (
-    <Suspense fallback={<div className="max-w-2xl mx-auto px-6 py-12"><Skeleton className="h-48 w-full" /></div>}>
+    <Suspense
+      fallback={
+        <div className="mx-auto max-w-2xl px-6 py-12">
+          <Skeleton className="h-48 w-full" />
+        </div>
+      }
+    >
       <CancelContent />
     </Suspense>
   );

@@ -43,14 +43,14 @@ export default function NewStudioPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-12">
+    <div className="mx-auto max-w-2xl px-6 py-12">
       <Link
         href="/dashboard"
-        className="text-primary hover:text-primary-dark text-sm font-medium mb-6 inline-block"
+        className="mb-6 inline-block text-sm font-medium text-primary hover:text-primary-dark"
       >
         ← Back to dashboard
       </Link>
-      <h1 className="font-display font-bold text-2xl text-secondary mb-6">
+      <h1 className="text-secondary mb-6 font-display text-2xl font-bold">
         Create studio
       </h1>
       <Card>
@@ -88,14 +88,16 @@ export default function NewStudioPage() {
             label="Address"
             placeholder="123 Main St, City"
             value={form.address}
-            onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, address: e.target.value }))
+            }
           />
           {error && (
-            <div className="rounded-lg bg-red-50 border border-red-200 p-6 text-red-800">
+            <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-red-800">
               {error}
             </div>
           )}
-          <div className="flex gap-4 justify-end">
+          <div className="flex justify-end gap-4">
             <Button variant="outline" asChild type="button">
               <Link href="/dashboard">Cancel</Link>
             </Button>

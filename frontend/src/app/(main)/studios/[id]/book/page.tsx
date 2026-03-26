@@ -5,11 +5,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { Card, Button, Input, Skeleton } from "@/components/ui";
-import {
-  fetchStudio,
-  fetchStudioSlots,
-  createBooking,
-} from "@/lib/api";
+import { fetchStudio, fetchStudioSlots, createBooking } from "@/lib/api";
 
 function formatPrice(cents: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -76,10 +72,13 @@ function BookPageContent() {
 
   if (Number.isNaN(studioId) || !studioId) {
     return (
-      <div className="max-w-2xl mx-auto px-6 py-12">
-        <div className="rounded-lg bg-red-50 border border-red-200 p-6 text-red-800">
+      <div className="mx-auto max-w-2xl px-6 py-12">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-red-800">
           <p className="font-semibold">Invalid studio</p>
-          <Link href="/studios" className="text-primary underline mt-2 inline-block">
+          <Link
+            href="/studios"
+            className="mt-2 inline-block text-primary underline"
+          >
             Back to studios
           </Link>
         </div>
@@ -89,15 +88,15 @@ function BookPageContent() {
 
   if (!slotId) {
     return (
-      <div className="max-w-2xl mx-auto px-6 py-12">
-        <div className="rounded-lg bg-amber-50 border border-amber-200 p-6 text-amber-800">
+      <div className="mx-auto max-w-2xl px-6 py-12">
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-800">
           <p className="font-semibold">Select a slot</p>
-          <p className="text-sm mt-1">
+          <p className="mt-1 text-sm">
             Choose a time slot from the studio page to book.
           </p>
           <Link
             href={`/studios/${studioId}`}
-            className="text-primary underline mt-2 inline-block"
+            className="mt-2 inline-block text-primary underline"
           >
             View studio schedule
           </Link>
@@ -108,10 +107,10 @@ function BookPageContent() {
 
   if (!studio || !slot) {
     return (
-      <div className="max-w-2xl mx-auto px-6 py-12">
+      <div className="mx-auto max-w-2xl px-6 py-12">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-neutral-200 rounded w-48" />
-          <div className="h-32 bg-neutral-200 rounded" />
+          <div className="h-8 w-48 rounded bg-neutral-200" />
+          <div className="h-32 rounded bg-neutral-200" />
         </div>
       </div>
     );
@@ -120,15 +119,15 @@ function BookPageContent() {
   const now = new Date();
   if (new Date(slot.start_time) < now) {
     return (
-      <div className="max-w-2xl mx-auto px-6 py-12">
-        <div className="rounded-lg bg-amber-50 border border-amber-200 p-6 text-amber-800">
+      <div className="mx-auto max-w-2xl px-6 py-12">
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-800">
           <p className="font-semibold">Slot has passed</p>
-          <p className="text-sm mt-1">
+          <p className="mt-1 text-sm">
             This slot is no longer available. Please choose another.
           </p>
           <Link
             href={`/studios/${studioId}`}
-            className="text-primary underline mt-2 inline-block"
+            className="mt-2 inline-block text-primary underline"
           >
             View studio schedule
           </Link>
@@ -138,33 +137,33 @@ function BookPageContent() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-12">
+    <div className="mx-auto max-w-2xl px-6 py-12">
       <Link
         href={`/studios/${studioId}`}
-        className="text-primary hover:text-primary-dark text-sm font-medium mb-6 inline-block"
+        className="mb-6 inline-block text-sm font-medium text-primary hover:text-primary-dark"
       >
         ← Back to {studio.name}
       </Link>
 
-      <h1 className="font-display font-bold text-2xl text-secondary mb-6">
+      <h1 className="text-secondary mb-6 font-display text-2xl font-bold">
         Book a session
       </h1>
 
       <div className="grid gap-8 lg:grid-cols-2">
         <Card>
-          <h2 className="font-semibold text-secondary mb-2">Booking details</h2>
-          <p className="text-neutral-600 text-sm mb-1">{studio.name}</p>
-          <p className="font-medium text-secondary">{slot.title}</p>
-          <p className="text-neutral-500 text-sm mt-1">
+          <h2 className="text-secondary mb-2 font-semibold">Booking details</h2>
+          <p className="mb-1 text-sm text-neutral-600">{studio.name}</p>
+          <p className="text-secondary font-medium">{slot.title}</p>
+          <p className="mt-1 text-sm text-neutral-500">
             {formatDateTime(slot.start_time)}
           </p>
-          <p className="font-semibold text-primary mt-2">
+          <p className="mt-2 font-semibold text-primary">
             {formatPrice(slot.price_cents)}
           </p>
         </Card>
 
         <Card>
-          <h2 className="font-semibold text-secondary mb-4">
+          <h2 className="text-secondary mb-4 font-semibold">
             Your information
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -217,7 +216,13 @@ function BookPageContent() {
 
 export default function BookPage() {
   return (
-    <Suspense fallback={<div className="max-w-2xl mx-auto px-6 py-12"><Skeleton className="h-64 w-full" /></div>}>
+    <Suspense
+      fallback={
+        <div className="mx-auto max-w-2xl px-6 py-12">
+          <Skeleton className="h-64 w-full" />
+        </div>
+      }
+    >
       <BookPageContent />
     </Suspense>
   );

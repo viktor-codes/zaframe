@@ -26,7 +26,7 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public status: number,
-    public body?: unknown
+    public body?: unknown,
   ) {
     super(message);
     this.name = "ApiError";
@@ -43,14 +43,12 @@ export interface RequestConfig extends RequestInit {
 
 async function buildUrl(
   path: string,
-  params?: RequestConfig["params"]
+  params?: RequestConfig["params"],
 ): Promise<string> {
   if (!config.apiUrl) {
-    throw new ApiError(
-      "Backend not configured (static landing mode)",
-      0,
-      { code: "BACKEND_NOT_CONFIGURED" }
-    );
+    throw new ApiError("Backend not configured (static landing mode)", 0, {
+      code: "BACKEND_NOT_CONFIGURED",
+    });
   }
   const base = config.apiUrl.replace(/\/$/, "");
   const url = new URL(path.startsWith("/") ? path : `/${path}`, base);
@@ -74,7 +72,7 @@ async function buildUrl(
 async function request<T>(
   path: string,
   options: RequestConfig = {},
-  retryOn401 = true
+  retryOn401 = true,
 ): Promise<T> {
   const { params, skipAuth = false, ...init } = options;
 
@@ -88,7 +86,11 @@ async function request<T>(
     }
   }
 
-  if (!headers.has("Content-Type") && init.body && typeof init.body === "string") {
+  if (
+    !headers.has("Content-Type") &&
+    init.body &&
+    typeof init.body === "string"
+  ) {
     headers.set("Content-Type", "application/json");
   }
 
@@ -102,12 +104,16 @@ async function request<T>(
     const newTokens = await refreshTokens();
     if (newTokens) {
       headers.set("Authorization", `Bearer ${newTokens.access_token}`);
-      const retryResponse = await fetch(url, { ...init, headers, credentials: "include" });
+      const retryResponse = await fetch(url, {
+        ...init,
+        headers,
+        credentials: "include",
+      });
       if (!retryResponse.ok) {
         throw new ApiError(
           retryResponse.statusText,
           retryResponse.status,
-          await safeParseJson(retryResponse)
+          await safeParseJson(retryResponse),
         );
       }
       return retryResponse.json() as Promise<T>;
@@ -119,7 +125,7 @@ async function request<T>(
     throw new ApiError(
       (body as { detail?: string })?.detail ?? response.statusText,
       response.status,
-      body
+      body,
     );
   }
 
@@ -145,10 +151,18 @@ export const api = {
     request<T>(path, { ...config, method: "GET" }),
 
   post: <T>(path: string, body?: unknown, config?: RequestConfig) =>
-    request<T>(path, { ...config, method: "POST", body: body ? JSON.stringify(body) : undefined }),
+    request<T>(path, {
+      ...config,
+      method: "POST",
+      body: body ? JSON.stringify(body) : undefined,
+    }),
 
   patch: <T>(path: string, body?: unknown, config?: RequestConfig) =>
-    request<T>(path, { ...config, method: "PATCH", body: body ? JSON.stringify(body) : undefined }),
+    request<T>(path, {
+      ...config,
+      method: "PATCH",
+      body: body ? JSON.stringify(body) : undefined,
+    }),
 
   delete: <T>(path: string, config?: RequestConfig) =>
     request<T>(path, { ...config, method: "DELETE" }),

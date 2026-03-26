@@ -70,27 +70,27 @@ export const MobileMenu = ({
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-x-0 z-50 flex h-[calc(100svh-100px)] flex-col bg-white md:hidden will-change-transform"
+            className="fixed inset-x-0 z-50 flex h-[calc(100svh-100px)] flex-col bg-white will-change-transform md:hidden"
           >
-            <div className="absolute inset-4 pointer-events-none">
+            <div className="pointer-events-none absolute inset-4">
               {/* Top Left */}
               <div
-                className={`${cornerClass} top-0 left-0 border-r-0 border-b-0 opacity-0 animate-corner-tl`}
+                className={`${cornerClass} top-0 left-0 animate-corner-tl border-r-0 border-b-0 opacity-0`}
               />
 
               {/* Top Right */}
               <div
-                className={`${cornerClass} top-0 right-0 border-l-0 border-b-0 opacity-0 animate-corner-tr`}
+                className={`${cornerClass} top-0 right-0 animate-corner-tr border-b-0 border-l-0 opacity-0`}
               />
 
               {/* Bottom Left */}
               <div
-                className={`${cornerClass} bottom-0 left-0 border-r-0 border-t-0 opacity-0 animate-corner-bl`}
+                className={`${cornerClass} bottom-0 left-0 animate-corner-bl border-t-0 border-r-0 opacity-0`}
               />
 
               {/* Bottom Right */}
               <div
-                className={`${cornerClass} bottom-0 right-0 border-l-0 border-t-0 opacity-0 animate-corner-br`}
+                className={`${cornerClass} right-0 bottom-0 animate-corner-br border-t-0 border-l-0 opacity-0`}
               />
             </div>
             <div className="flex flex-1 flex-col px-8 py-10">

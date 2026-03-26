@@ -3,7 +3,11 @@
 import { Button } from "@/components/ui/Button";
 
 export interface SearchBarProps {
-  onSearch?: (params: { location?: string; date?: string; activity?: string }) => void;
+  onSearch?: (params: {
+    location?: string;
+    date?: string;
+    activity?: string;
+  }) => void;
   defaultValue?: { location?: string; date?: string; activity?: string };
   className?: string;
 }
@@ -16,9 +20,11 @@ export function SearchBar({
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
-    const location = (form.elements.namedItem("location") as HTMLInputElement)?.value;
+    const location = (form.elements.namedItem("location") as HTMLInputElement)
+      ?.value;
     const date = (form.elements.namedItem("date") as HTMLInputElement)?.value;
-    const activity = (form.elements.namedItem("activity") as HTMLInputElement)?.value;
+    const activity = (form.elements.namedItem("activity") as HTMLInputElement)
+      ?.value;
     onSearch?.({ location, date, activity });
   };
 

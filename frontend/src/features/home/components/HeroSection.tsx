@@ -10,15 +10,15 @@ export const HeroSection = () => {
     <>
       <div className="absolute -left-24 h-96 w-96 rounded-sm bg-teal-100/50 blur-3xl" />
 
-      <div className="container relative mx-auto px-4">
-        <div className="flex flex-col items-center xl:flex-row xl:justify-between xl:gap-16 mt-24">
+      <div className="relative container mx-auto px-4">
+        <div className="mt-24 flex flex-col items-center xl:flex-row xl:justify-between xl:gap-16">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="relative z-10 flex flex-1 flex-col xl:max-w-2xl"
           >
-            <div className="mb-4 xl:mb-2 mx-auto xl:mx-0 w-fit inline-flex justify-center items-center gap-2 rounded-sm border border-teal-200 px-4 py-2 text-sm font-semibold text-teal-900">
+            <div className="mx-auto mb-4 inline-flex w-fit items-center justify-center gap-2 rounded-sm border border-teal-200 px-4 py-2 text-sm font-semibold text-teal-900 xl:mx-0 xl:mb-2">
               <span className="">📸</span>
               <span className="font-light tracking-normal uppercase">
                 Book it like a moment
@@ -27,14 +27,14 @@ export const HeroSection = () => {
             <SectionHeading
               size="hero"
               as="h1"
-              className="text-center xl:text-left mb-6 text-zinc-900"
+              className="mb-6 text-center text-zinc-900 xl:text-left"
             >
               Ea
-              <span className="font-serif italic font-light bg-linear-to-r from-lime-400 to-teal-500 bg-clip-text text-transparent pl-0.5 pr-1.5">
+              <span className="bg-linear-to-r from-lime-400 to-teal-500 bg-clip-text pr-1.5 pl-0.5 font-serif font-light text-transparent italic">
                 Zee
               </span>{" "}
               booking
-              <span className="font-serif italic ms-5 font-light tracking-normal">
+              <span className="ms-5 font-serif font-light tracking-normal italic">
                 for
               </span>
               <br />
@@ -43,7 +43,7 @@ export const HeroSection = () => {
               </span>
             </SectionHeading>
 
-            <p className="text-center xl:text-left mb-10 max-w-2xl text-lg leading-relaxed text-zinc-600 md:text-xl xl:mx-0">
+            <p className="mb-10 max-w-2xl text-center text-lg leading-relaxed text-zinc-600 md:text-xl xl:mx-0 xl:text-left">
               Discover and book classes at verified studios.{" "}
               <br className="hidden md:block" />
               Every session is a{" "}
@@ -55,23 +55,23 @@ export const HeroSection = () => {
               {/* Обернули первую кнопку в Link */}
               <Link
                 href="/studios"
-                className="group relative w-full sm:w-auto overflow-hidden rounded-sm bg-zinc-900 px-8 py-4 text-center text-white transition-all hover:scale-105 cursor-pointer"
+                className="group relative w-full cursor-pointer overflow-hidden rounded-sm bg-zinc-900 px-8 py-4 text-center text-white transition-all hover:scale-105 sm:w-auto"
               >
-                <span className="relative z-10 font-semibold ">
+                <span className="relative z-10 font-semibold">
                   Explore Studios
                 </span>
               </Link>
 
               <a
                 href="#how-it-works"
-                className="w-full sm:w-auto flex items-center justify-center rounded-sm border border-teal-200 bg-white px-8 py-4 font-semibold hover:scale-105 text-zinc-900 text-center"
+                className="flex w-full items-center justify-center rounded-sm border border-teal-200 bg-white px-8 py-4 text-center font-semibold text-zinc-900 hover:scale-105 sm:w-auto"
               >
                 How it works
               </a>
             </div>
           </motion.div>
 
-          <div className="relative z-0 flex w-full flex-1 justify-center min-w-0">
+          <div className="relative z-0 flex w-full min-w-0 flex-1 justify-center">
             <FloatingCards />
           </div>
         </div>

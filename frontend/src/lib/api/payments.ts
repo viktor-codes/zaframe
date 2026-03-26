@@ -9,11 +9,11 @@ import type {
 } from "@/types/payment";
 
 export async function createCheckoutSession(
-  data: CheckoutSessionCreate
+  data: CheckoutSessionCreate,
 ): Promise<CheckoutSessionResponse> {
   return api.post<CheckoutSessionResponse>(
     "api/v1/payments/checkout-session",
     data,
-    { skipAuth: true }
+    { skipAuth: true },
   );
 }

@@ -7,12 +7,12 @@ export const Skeleton = forwardRef<HTMLDivElement, SkeletonProps>(
     return (
       <div
         ref={ref}
-        className={`animate-pulse bg-neutral-200 rounded ${className}`}
+        className={`animate-pulse rounded bg-neutral-200 ${className}`}
         aria-hidden
         {...props}
       />
     );
-  }
+  },
 );
 
 Skeleton.displayName = "Skeleton";

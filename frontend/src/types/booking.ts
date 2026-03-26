@@ -11,7 +11,8 @@ export const BookingStatus = {
   CANCELLED: "cancelled",
 } as const;
 
-export type BookingStatusType = (typeof BookingStatus)[keyof typeof BookingStatus];
+export type BookingStatusType =
+  (typeof BookingStatus)[keyof typeof BookingStatus];
 
 export interface BookingBase {
   slot_id: number;

@@ -41,7 +41,7 @@ export const Logo = ({ variant = "light", className }: LogoProps) => {
         )}
       >
         Zee
-        <span className="pr-0.5 bg-linear-to-r from-sky-600 to-teal-500 bg-clip-text text-transparent">
+        <span className="bg-linear-to-r from-sky-600 to-teal-500 bg-clip-text pr-0.5 text-transparent">
           Frame
         </span>
         .

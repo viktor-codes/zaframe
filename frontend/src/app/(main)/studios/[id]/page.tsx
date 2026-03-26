@@ -78,7 +78,13 @@ export default function StudioDetailPage() {
     isLoading: loadingSlots,
     isError: errorSlots,
   } = useQuery({
-    queryKey: ["studio", id, "slots", dateRange?.start_from, dateRange?.start_to],
+    queryKey: [
+      "studio",
+      id,
+      "slots",
+      dateRange?.start_from,
+      dateRange?.start_to,
+    ],
     queryFn: () =>
       fetchStudioSlots(id, {
         is_active: true,
@@ -89,10 +95,13 @@ export default function StudioDetailPage() {
 
   if (Number.isNaN(id)) {
     return (
-      <div className="max-w-6xl mx-auto px-6 py-12">
-        <div className="rounded-lg bg-red-50 border border-red-200 p-6 text-red-800">
+      <div className="mx-auto max-w-6xl px-6 py-12">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-red-800">
           <p className="font-semibold">Invalid studio ID</p>
-          <Link href="/studios" className="text-primary underline mt-2 inline-block">
+          <Link
+            href="/studios"
+            className="mt-2 inline-block text-primary underline"
+          >
             Back to studios
           </Link>
         </div>
@@ -102,13 +111,18 @@ export default function StudioDetailPage() {
 
   if (errorStudio) {
     return (
-      <div className="max-w-6xl mx-auto px-6 py-12">
-        <div className="rounded-lg bg-red-50 border border-red-200 p-6 text-red-800">
+      <div className="mx-auto max-w-6xl px-6 py-12">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-red-800">
           <p className="font-semibold">Failed to load studio</p>
-          <p className="text-sm mt-1">
-            {studioError instanceof Error ? studioError.message : "Unknown error"}
+          <p className="mt-1 text-sm">
+            {studioError instanceof Error
+              ? studioError.message
+              : "Unknown error"}
           </p>
-          <Link href="/studios" className="text-primary underline mt-2 inline-block">
+          <Link
+            href="/studios"
+            className="mt-2 inline-block text-primary underline"
+          >
             Back to studios
           </Link>
         </div>
@@ -118,7 +132,7 @@ export default function StudioDetailPage() {
 
   if (loadingStudio || !studio) {
     return (
-      <div className="max-w-6xl mx-auto px-6 py-12">
+      <div className="mx-auto max-w-6xl px-6 py-12">
         <StudioDetailSkeleton />
       </div>
     );
@@ -129,25 +143,23 @@ export default function StudioDetailPage() {
     slots?.filter((s) => new Date(s.start_time) >= now) ?? [];
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-12">
+    <div className="mx-auto max-w-6xl px-6 py-12">
       <Link
         href="/studios"
-        className="text-primary hover:text-primary-dark text-sm font-medium mb-6 inline-block"
+        className="mb-6 inline-block text-sm font-medium text-primary hover:text-primary-dark"
       >
         ← Back to studios
       </Link>
 
       <div className="mb-10">
-        <h1 className="font-display font-bold text-3xl text-secondary mb-2">
+        <h1 className="text-secondary mb-2 font-display text-3xl font-bold">
           {studio.name}
         </h1>
         {studio.description && (
-          <p className="text-neutral-600 mb-4">{studio.description}</p>
+          <p className="mb-4 text-neutral-600">{studio.description}</p>
         )}
         <div className="flex flex-wrap gap-4 text-sm text-neutral-600">
-          {studio.address && (
-            <span title="Address">{studio.address}</span>
-          )}
+          {studio.address && <span title="Address">{studio.address}</span>}
           {studio.phone && (
             <a href={`tel:${studio.phone}`} className="hover:text-primary">
               {studio.phone}
@@ -162,8 +174,8 @@ export default function StudioDetailPage() {
       </div>
 
       <section>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-          <h2 className="font-display font-semibold text-xl text-secondary">
+        <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-secondary font-display text-xl font-semibold">
             Available slots
           </h2>
           <label className="flex items-center gap-2 text-sm text-neutral-600">
@@ -179,34 +191,34 @@ export default function StudioDetailPage() {
         </div>
 
         {errorSlots ? (
-          <div className="rounded-lg bg-amber-50 border border-amber-200 p-4 text-amber-800">
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800">
             <p className="text-sm">Could not load schedule. Try again later.</p>
           </div>
         ) : loadingSlots ? (
           <SlotsSkeleton />
         ) : upcomingSlots.length === 0 ? (
-          <div className="rounded-lg bg-neutral-100 border border-neutral-200 p-8 text-center text-neutral-600">
+          <div className="rounded-lg border border-neutral-200 bg-neutral-100 p-8 text-center text-neutral-600">
             <p className="font-medium">No available slots</p>
-            <p className="text-sm mt-1">
+            <p className="mt-1 text-sm">
               There are no upcoming sessions. Check back later.
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {upcomingSlots.map((slot) => {
               const { date, time } = formatDateTime(slot.start_time);
               const endTime = new Date(slot.end_time).toLocaleTimeString(
                 "en-US",
-                { hour: "2-digit", minute: "2-digit" }
+                { hour: "2-digit", minute: "2-digit" },
               );
               return (
                 <Card key={slot.id} variant="interactive">
                   <div className="space-y-2">
-                    <h3 className="font-semibold text-secondary">
+                    <h3 className="text-secondary font-semibold">
                       {slot.title}
                     </h3>
                     {slot.description && (
-                      <p className="text-neutral-600 text-sm line-clamp-2">
+                      <p className="line-clamp-2 text-sm text-neutral-600">
                         {slot.description}
                       </p>
                     )}
@@ -216,7 +228,7 @@ export default function StudioDetailPage() {
                     <p className="font-semibold text-primary">
                       {formatPrice(slot.price_cents)}
                     </p>
-                    <Button asChild className="mt-2 py-2 px-4 text-sm">
+                    <Button asChild className="mt-2 px-4 py-2 text-sm">
                       <Link href={`/studios/${id}/book?slot=${slot.id}`}>
                         Book this slot
                       </Link>
@@ -239,8 +251,8 @@ function StudioDetailSkeleton() {
       <Skeleton className="h-4 w-full max-w-2xl" />
       <Skeleton className="h-4 w-full max-w-xl" />
       <div className="pt-4">
-        <Skeleton className="h-6 w-40 mb-4" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Skeleton className="mb-4 h-6 w-40" />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <Card key={i}>
               <div className="space-y-2">
@@ -259,7 +271,7 @@ function StudioDetailSkeleton() {
 
 function SlotsSkeleton() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
       {Array.from({ length: 6 }).map((_, i) => (
         <Card key={i}>
           <div className="space-y-2">

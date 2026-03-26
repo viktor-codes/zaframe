@@ -52,12 +52,12 @@ export function PolaroidModal({
         role="dialog"
         aria-modal
         aria-labelledby={title ? "polaroid-modal-title" : undefined}
-        className={`relative w-full ${sizeClasses[size]} rounded-[32px] bg-white p-8 shadow-[0_60px_140px_rgba(16,17,20,0.35)] polaroid-modal-in`}
+        className={`relative w-full ${sizeClasses[size]} polaroid-modal-in rounded-[32px] bg-white p-8 shadow-[0_60px_140px_rgba(16,17,20,0.35)]`}
       >
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-6 top-6 flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 transition hover:bg-zinc-200 hover:text-zinc-900"
+          className="absolute top-6 right-6 flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 transition hover:bg-zinc-200 hover:text-zinc-900"
           aria-label="Close"
         >
           ✕

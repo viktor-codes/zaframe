@@ -14,7 +14,7 @@ const variantStyles = {
 const variantIcons = {
   success: (
     <svg
-      className="w-6 h-6 text-primary flex-shrink-0"
+      className="h-6 w-6 flex-shrink-0 text-primary"
       fill="currentColor"
       viewBox="0 0 20 20"
       aria-hidden
@@ -28,7 +28,7 @@ const variantIcons = {
   ),
   error: (
     <svg
-      className="w-6 h-6 text-red-500 flex-shrink-0"
+      className="h-6 w-6 flex-shrink-0 text-red-500"
       fill="currentColor"
       viewBox="0 0 20 20"
       aria-hidden
@@ -42,7 +42,7 @@ const variantIcons = {
   ),
   info: (
     <svg
-      className="w-6 h-6 text-blue-500 flex-shrink-0"
+      className="h-6 w-6 flex-shrink-0 text-blue-500"
       fill="currentColor"
       viewBox="0 0 20 20"
       aria-hidden
@@ -66,7 +66,7 @@ export const Alert = forwardRef<HTMLDivElement, AlertProps>(
       role = "alert",
       ...props
     },
-    ref
+    ref,
   ) => {
     return (
       <div
@@ -78,15 +78,13 @@ export const Alert = forwardRef<HTMLDivElement, AlertProps>(
         <div className="flex gap-3">
           {variantIcons[variant]}
           <div>
-            {title && (
-              <h4 className="font-semibold text-secondary">{title}</h4>
-            )}
+            {title && <h4 className="text-secondary font-semibold">{title}</h4>}
             <div className="text-sm text-neutral-600">{children}</div>
           </div>
         </div>
       </div>
     );
-  }
+  },
 );
 
 Alert.displayName = "Alert";

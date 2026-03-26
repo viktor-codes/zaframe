@@ -30,8 +30,7 @@ const sizeStyles: Record<
   },
 };
 
-const transitionClasses =
-  "transition-all duration-500 ease-out";
+const transitionClasses = "transition-all duration-500 ease-out";
 const inViewClasses = "opacity-100 translate-y-0";
 const notInViewClasses = "opacity-0 translate-y-4";
 

@@ -44,7 +44,7 @@ export interface StudioSlotsParams {
 const PAGE_SIZE = 12;
 
 export async function fetchStudios(
-  params: StudiosListParams = {}
+  params: StudiosListParams = {},
 ): Promise<StudioResponse[] | SearchResult[]> {
   const {
     skip = 0,
@@ -79,7 +79,7 @@ export async function fetchStudios(
 }
 
 export async function fetchStudiosCount(
-  params: StudiosCountParams = {}
+  params: StudiosCountParams = {},
 ): Promise<{ count: number }> {
   const { owner_id, is_active, city, category, query, amenities } = params;
   const searchParams: Record<
@@ -99,7 +99,9 @@ export async function fetchStudiosCount(
   });
 }
 
-export async function createStudio(data: Omit<StudioCreate, "owner_id">): Promise<StudioResponse> {
+export async function createStudio(
+  data: Omit<StudioCreate, "owner_id">,
+): Promise<StudioResponse> {
   return api.post<StudioResponse>("api/v1/studios", data);
 }
 
@@ -112,7 +114,7 @@ export async function updateStudio(
     phone: string | null;
     address: string | null;
     is_active: boolean;
-  }>
+  }>,
 ): Promise<StudioResponse> {
   return api.patch<StudioResponse>(`api/v1/studios/${id}`, data);
 }
@@ -129,7 +131,7 @@ export async function fetchStudio(id: number): Promise<StudioResponse> {
 
 export async function fetchStudioSlots(
   studioId: number,
-  params: StudioSlotsParams = {}
+  params: StudioSlotsParams = {},
 ): Promise<SlotResponse[]> {
   const { skip = 0, limit = 50, start_from, start_to, is_active } = params;
   const searchParams: Record<string, string | number | boolean | undefined> = {

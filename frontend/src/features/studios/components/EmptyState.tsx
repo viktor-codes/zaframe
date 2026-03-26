@@ -13,13 +13,13 @@ export function EmptyState({ onReset }: EmptyStateProps) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="flex flex-col items-center justify-center py-24 px-6 text-center"
+      className="flex flex-col items-center justify-center px-6 py-24 text-center"
     >
-      <div className="w-12 h-px bg-zinc-200 mb-8" aria-hidden />
-      <p className="text-2xl md:text-3xl font-serif italic font-light text-zinc-700 tracking-tight max-w-lg">
+      <div className="mb-8 h-px w-12 bg-zinc-200" aria-hidden />
+      <p className="max-w-lg font-serif text-2xl font-light tracking-tight text-zinc-700 italic md:text-3xl">
         The vibe you&apos;re looking for is currently off the radar.
       </p>
-      <p className="text-zinc-500 mt-4 text-sm max-w-md">
+      <p className="mt-4 max-w-md text-sm text-zinc-500">
         Try another city or category, or clear filters to see all studios.
       </p>
       <Button variant="secondary" className="mt-8" onClick={onReset}>

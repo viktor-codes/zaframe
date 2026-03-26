@@ -55,15 +55,15 @@ export const SearchSection = () => {
 
   return (
     <>
-      <div className="container relative z-10 mx-auto px-6 max-w-5xl">
-        <div className="text-left md:text-center mb-20 md:mb-32">
+      <div className="relative z-10 container mx-auto max-w-5xl px-6">
+        <div className="mb-20 text-left md:mb-32 md:text-center">
           <SectionHeading
             size="section"
             as="h2"
-            className="text-zinc-900 leading-[0.9]"
+            className="leading-[0.9] text-zinc-900"
           >
             Ready to find <br />
-            <span className="font-serif italic font-light text-zinc-400">
+            <span className="font-serif font-light text-zinc-400 italic">
               your frame?
             </span>
           </SectionHeading>
@@ -71,16 +71,16 @@ export const SearchSection = () => {
 
         <div
           className={cn(
-            "w-full relative transition-all duration-500 ease-out delay-200",
-            inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6",
+            "relative w-full transition-all delay-200 duration-500 ease-out",
+            inView ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0",
           )}
         >
-          <div className="relative flex flex-col md:flex-row items-stretch bg-zinc-50 rounded-2xl p-2 border border-zinc-100 shadow-sm focus-within:shadow-xl focus-within:bg-white transition-all duration-500">
-            <div className="flex-1 relative flex items-center px-6 py-4 border-b md:border-b-0 md:border-r border-zinc-200/50">
-              <Search className="w-5 h-5 text-zinc-400 mr-4" />
+          <div className="relative flex flex-col items-stretch rounded-2xl border border-zinc-100 bg-zinc-50 p-2 shadow-sm transition-all duration-500 focus-within:bg-white focus-within:shadow-xl md:flex-row">
+            <div className="relative flex flex-1 items-center border-b border-zinc-200/50 px-6 py-4 md:border-r md:border-b-0">
+              <Search className="mr-4 h-5 w-5 text-zinc-400" />
 
               <div className="flex-1">
-                <span className="block text-[9px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+                <span className="mb-1 block text-[9px] font-bold tracking-wider text-zinc-400 uppercase">
                   What to do?
                 </span>
 
@@ -90,16 +90,16 @@ export const SearchSection = () => {
                   value={activity}
                   onFocus={() => setActiveField("activity")}
                   onChange={(e) => setActivity(e.target.value)}
-                  className="w-full bg-transparent text-lg font-medium text-zinc-900 focus:outline-none placeholder:text-zinc-300"
+                  className="w-full bg-transparent text-lg font-medium text-zinc-900 placeholder:text-zinc-300 focus:outline-none"
                 />
               </div>
             </div>
 
-            <div className="flex-1 relative flex items-center px-6 py-4">
-              <MapPin className="w-5 h-5 text-zinc-400 mr-4" />
+            <div className="relative flex flex-1 items-center px-6 py-4">
+              <MapPin className="mr-4 h-5 w-5 text-zinc-400" />
 
               <div className="flex-1">
-                <span className="block text-[9px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+                <span className="mb-1 block text-[9px] font-bold tracking-wider text-zinc-400 uppercase">
                   Where?
                 </span>
 
@@ -109,7 +109,7 @@ export const SearchSection = () => {
                   value={location}
                   onFocus={() => setActiveField("location")}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="w-full bg-transparent text-lg font-medium text-zinc-900 focus:outline-none placeholder:text-zinc-300"
+                  className="w-full bg-transparent text-lg font-medium text-zinc-900 placeholder:text-zinc-300 focus:outline-none"
                 />
               </div>
             </div>
@@ -134,12 +134,12 @@ export const SearchSection = () => {
                 router.push(`/studios?${query.toString()}`);
               }}
               disabled={isNavigating}
-              className="bg-zinc-900 hover:bg-teal-500 text-white rounded-xl px-8 py-4 flex items-center justify-center transition-all duration-300 group disabled:opacity-70 disabled:cursor-wait min-w-[140px]"
+              className="group flex min-w-[140px] items-center justify-center rounded-xl bg-zinc-900 px-8 py-4 text-white transition-all duration-300 hover:bg-teal-500 disabled:cursor-wait disabled:opacity-70"
             >
               {isNavigating ? (
                 <>
                   <svg
-                    className="animate-spin h-5 w-5 text-white"
+                    className="h-5 w-5 animate-spin text-white"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
@@ -159,16 +159,16 @@ export const SearchSection = () => {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     />
                   </svg>
-                  <span className="ml-2 font-bold text-sm uppercase tracking-widest">
+                  <span className="ml-2 text-sm font-bold tracking-widest uppercase">
                     Searching…
                   </span>
                 </>
               ) : (
                 <>
-                  <span className="mr-2 font-bold text-sm uppercase tracking-widest">
+                  <span className="mr-2 text-sm font-bold tracking-widest uppercase">
                     Search
                   </span>
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </>
               )}
             </button>
@@ -179,11 +179,11 @@ export const SearchSection = () => {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
-                  className="absolute top-full left-0 right-0 mt-4 bg-white rounded-2xl border border-zinc-100 shadow-2xl z-50 overflow-hidden p-2"
+                  className="absolute top-full right-0 left-0 z-50 mt-4 overflow-hidden rounded-2xl border border-zinc-100 bg-white p-2 shadow-2xl"
                 >
-                  <div className="grid md:grid-cols-2 gap-2">
+                  <div className="grid gap-2 md:grid-cols-2">
                     <div className="p-4">
-                      <p className="text-[10px] font-black uppercase text-zinc-400 mb-4 ml-2">
+                      <p className="mb-4 ml-2 text-[10px] font-black text-zinc-400 uppercase">
                         Suggested {activeField}
                       </p>
 
@@ -197,21 +197,21 @@ export const SearchSection = () => {
 
                             setActiveField(null);
                           }}
-                          className="w-full text-left px-4 py-3 rounded-xl hover:bg-zinc-50 text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors flex items-center"
+                          className="flex w-full items-center rounded-xl px-4 py-3 text-left text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-50 hover:text-zinc-900"
                         >
-                          <Navigation className="w-3 h-3 mr-3 opacity-30" />
+                          <Navigation className="mr-3 h-3 w-3 opacity-30" />
 
                           {item}
                         </button>
                       ))}
                     </div>
 
-                    <div className="hidden md:block bg-zinc-50 rounded-xl p-6">
-                      <p className="text-xs font-bold text-zinc-900 mb-2">
+                    <div className="hidden rounded-xl bg-zinc-50 p-6 md:block">
+                      <p className="mb-2 text-xs font-bold text-zinc-900">
                         Popular this month
                       </p>
 
-                      <p className="text-xs text-zinc-500 leading-relaxed">
+                      <p className="text-xs leading-relaxed text-zinc-500">
                         Join 2,000+ people framing their morning routine in
                         Downtown.
                       </p>
@@ -222,18 +222,18 @@ export const SearchSection = () => {
             </AnimatePresence>
           </div>
 
-          <div className="mt-16 flex flex-wrap justify-center items-center gap-x-8 gap-y-4">
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-300">
+          <div className="mt-16 flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
+            <span className="text-[10px] font-black tracking-[0.3em] text-zinc-300 uppercase">
               Popular:
             </span>
             {["Reformer", "Boxing", "Hot Yoga", "Crossfit"].map((tag) => (
               <button
                 key={tag}
                 onClick={() => setActivity(tag)}
-                className="text-sm font-medium text-zinc-400 hover:text-zinc-950 transition-colors relative group"
+                className="group relative text-sm font-medium text-zinc-400 transition-colors hover:text-zinc-950"
               >
                 {tag}
-                <span className="absolute -bottom-1 left-0 w-0 h-px bg-teal-500 transition-all group-hover:w-full" />
+                <span className="absolute -bottom-1 left-0 h-px w-0 bg-teal-500 transition-all group-hover:w-full" />
               </button>
             ))}
           </div>
@@ -241,8 +241,8 @@ export const SearchSection = () => {
       </div>
 
       {/* Лёгкий декор: на мобильном большой blur под меню даёт лаги при открытии overlay */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-64 h-64 md:w-72 md:h-72 bg-teal-50/30 blur-xl rounded-full opacity-50" />
+      <div className="pointer-events-none absolute top-1/2 left-1/2 h-full w-full -translate-x-1/2 -translate-y-1/2">
+        <div className="absolute top-0 left-1/4 h-64 w-64 rounded-full bg-teal-50/30 opacity-50 blur-xl md:h-72 md:w-72" />
       </div>
     </>
   );

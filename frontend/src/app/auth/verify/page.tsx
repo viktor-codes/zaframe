@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { verifyMagicLink } from "@/lib/api/auth";
-import { ApiError } from "@/lib/api";
+import { getUserFacingApiMessage } from "@/lib/api";
 import { Alert } from "@/components/ui";
 import { Skeleton } from "@/components/ui";
 
@@ -16,7 +16,7 @@ function VerifyContent() {
   const searchParams = useSearchParams();
   const { login } = useAuth();
   const [status, setStatus] = useState<"loading" | "success" | "error">(
-    "loading"
+    "loading",
   );
   const [errorMessage, setErrorMessage] = useState<string>("");
 
@@ -38,13 +38,7 @@ function VerifyContent() {
       })
       .catch((err) => {
         setStatus("error");
-        const detail =
-          err instanceof ApiError
-            ? typeof err.body === "object" && err.body && "detail" in err.body
-              ? String((err.body as { detail: unknown }).detail)
-              : err.message
-            : "Link is invalid or expired. Please request a new one.";
-        setErrorMessage(detail);
+        setErrorMessage(getUserFacingApiMessage(err));
       })
       .finally(() => {
         verifyInFlight.delete(token);
@@ -53,14 +47,14 @@ function VerifyContent() {
 
   if (!token) {
     return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-6">
-        <div className="max-w-md w-full">
+      <div className="flex min-h-screen items-center justify-center bg-neutral-50 p-6">
+        <div className="w-full max-w-md">
           <Alert variant="error" title="Verification failed">
             Missing token. Please use the link from your email.
           </Alert>
           <a
             href="/auth/login"
-            className="block text-center mt-6 text-primary hover:text-primary-dark font-medium"
+            className="mt-6 block text-center font-medium text-primary hover:text-primary-dark"
           >
             Request a new magic link
           </a>
@@ -71,11 +65,11 @@ function VerifyContent() {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-6">
-        <div className="max-w-md w-full text-center">
-          <Skeleton className="h-12 w-48 mx-auto mb-4" />
-          <Skeleton className="h-4 w-full mb-2" />
-          <Skeleton className="h-4 w-3/4 mx-auto" />
+      <div className="flex min-h-screen items-center justify-center bg-neutral-50 p-6">
+        <div className="w-full max-w-md text-center">
+          <Skeleton className="mx-auto mb-4 h-12 w-48" />
+          <Skeleton className="mb-2 h-4 w-full" />
+          <Skeleton className="mx-auto h-4 w-3/4" />
         </div>
       </div>
     );
@@ -83,14 +77,14 @@ function VerifyContent() {
 
   if (status === "error") {
     return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-6">
-        <div className="max-w-md w-full">
+      <div className="flex min-h-screen items-center justify-center bg-neutral-50 p-6">
+        <div className="w-full max-w-md">
           <Alert variant="error" title="Verification failed">
             {errorMessage}
           </Alert>
           <a
             href="/auth/login"
-            className="block text-center mt-6 text-primary hover:text-primary-dark font-medium"
+            className="mt-6 block text-center font-medium text-primary hover:text-primary-dark"
           >
             Request a new magic link
           </a>
@@ -100,8 +94,8 @@ function VerifyContent() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-6">
-      <div className="max-w-md w-full text-center">
+    <div className="flex min-h-screen items-center justify-center bg-neutral-50 p-6">
+      <div className="w-full max-w-md text-center">
         <p className="text-neutral-600">Redirecting...</p>
       </div>
     </div>
@@ -112,7 +106,7 @@ export default function VerifyPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-6">
+        <div className="flex min-h-screen items-center justify-center bg-neutral-50 p-6">
           <Skeleton className="h-12 w-48" />
         </div>
       }

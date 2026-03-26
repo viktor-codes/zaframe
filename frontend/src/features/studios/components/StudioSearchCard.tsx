@@ -76,7 +76,7 @@ export function StudioSearchCard({ result, index = 0 }: StudioSearchCardProps) {
         ease: [0.25, 0.46, 0.45, 0.94],
       }}
     >
-      <article className="group overflow-hidden rounded-2xl bg-white p-3 shadow-lg transition-all duration-300 hover:shadow-2xl hover:shadow-teal-500/10 hover:-translate-y-2">
+      <article className="group overflow-hidden rounded-2xl bg-white p-3 shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-teal-500/10">
         <div className="relative aspect-9/10 overflow-hidden rounded-xl bg-zinc-100">
           <Image
             src={imageUrl}
@@ -87,9 +87,9 @@ export function StudioSearchCard({ result, index = 0 }: StudioSearchCardProps) {
             unoptimized={imageUrl.startsWith("http")}
           />
 
-          <div className="absolute inset-x-3 top-3 flex justify-between items-start">
-            <div className="flex items-center gap-1 rounded-full bg-teal-500 px-2.5 py-1 text-[10px] font-bold text-white shadow-lg uppercase">
-              <Check className="w-3 h-3" strokeWidth={3} />
+          <div className="absolute inset-x-3 top-3 flex items-start justify-between">
+            <div className="flex items-center gap-1 rounded-full bg-teal-500 px-2.5 py-1 text-[10px] font-bold text-white uppercase shadow-lg">
+              <Check className="h-3 w-3" strokeWidth={3} />
               Verified
             </div>
             <button
@@ -103,27 +103,27 @@ export function StudioSearchCard({ result, index = 0 }: StudioSearchCardProps) {
               aria-label={saved ? "Unsave" : "Save"}
             >
               <Heart
-                className={`w-4 h-4 ${saved ? "fill-red-500 text-red-500" : "text-zinc-400"}`}
+                className={`h-4 w-4 ${saved ? "fill-red-500 text-red-500" : "text-zinc-400"}`}
                 strokeWidth={2}
               />
             </button>
           </div>
 
-          <div className="absolute inset-x-3 bottom-3 flex justify-between items-end">
+          <div className="absolute inset-x-3 bottom-3 flex items-end justify-between">
             {showSpotsLeft && (
-              <div className="rounded-lg bg-amber-400 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-zinc-900">
+              <div className="rounded-lg bg-amber-400 px-2.5 py-1 text-[10px] font-black tracking-wide text-zinc-900 uppercase">
                 🔥 5 spots left
               </div>
             )}
             {!showSpotsLeft && <div />}
-            <div className="rounded-lg bg-white/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-zinc-600 backdrop-blur-sm">
+            <div className="rounded-lg bg-white/90 px-2.5 py-1 text-[10px] font-bold tracking-widest text-zinc-600 uppercase backdrop-blur-sm">
               {typeLabel}
             </div>
           </div>
         </div>
 
         <div className="mt-4 px-1">
-          <h3 className="mb-1 text-xl font-bold text-zinc-900 truncate">
+          <h3 className="mb-1 truncate text-xl font-bold text-zinc-900">
             {studio.name}
           </h3>
           <div className="mb-3 flex items-center gap-2 text-xs text-zinc-500">
@@ -134,10 +134,10 @@ export function StudioSearchCard({ result, index = 0 }: StudioSearchCardProps) {
             <span>📍 {studio.city ?? "—"}</span>
           </div>
           <div className="flex items-center justify-between border-t border-zinc-100 pt-3">
-            <div className="text-lg font-mono font-bold text-teal-600">
+            <div className="font-mono text-lg font-bold text-teal-600">
               {minPrice != null ? formatPrice(minPrice) : "—"}
             </div>
-            <div className="text-[10px] font-mono uppercase text-zinc-400">
+            <div className="font-mono text-[10px] text-zinc-400 uppercase">
               From session
             </div>
           </div>

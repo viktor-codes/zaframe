@@ -1,7 +1,6 @@
 import { forwardRef } from "react";
 
-export interface TextareaProps
-  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
   error?: string;
 }
@@ -23,7 +22,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         <textarea
           ref={ref}
           id={inputId}
-          className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition-colors resize-none ${
+          className={`w-full resize-none rounded-lg border-2 px-4 py-3 transition-colors focus:outline-none ${
             error
               ? "border-red-500 focus:border-red-500"
               : "border-neutral-200 focus:border-primary"
@@ -35,11 +34,11 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         {error && (
           <p
             id={`${inputId}-error`}
-            className="text-sm text-red-600 flex items-center gap-1"
+            className="flex items-center gap-1 text-sm text-red-600"
             role="alert"
           >
             <svg
-              className="w-4 h-4 flex-shrink-0"
+              className="h-4 w-4 flex-shrink-0"
               fill="currentColor"
               viewBox="0 0 20 20"
               aria-hidden
@@ -55,7 +54,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         )}
       </div>
     );
-  }
+  },
 );
 
 Textarea.displayName = "Textarea";
