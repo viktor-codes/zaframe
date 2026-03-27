@@ -8,6 +8,8 @@
 
 import { config } from "@/lib/config";
 
+import { buildApiUrl, type QueryParams } from "./build-url";
+
 export type AuthTokenProvider = () => string | null;
 export type RefreshTokensFn = () => Promise<{ access_token: string } | null>;
 
@@ -34,39 +36,24 @@ export class ApiError extends Error {
 }
 
 export interface RequestConfig extends RequestInit {
-  params?: Record<
-    string,
-    string | number | boolean | undefined | (string | number)[]
-  >;
+  params?: QueryParams;
   skipAuth?: boolean;
 }
 
-async function buildUrl(
+function resolveRequestUrl(
   path: string,
   params?: RequestConfig["params"],
-): Promise<string> {
+): string {
   if (!config.apiUrl) {
-    throw new ApiError("Backend URL is not configured (set NEXT_PUBLIC_API_URL)", 0, {
-      code: "BACKEND_NOT_CONFIGURED",
-    });
+    throw new ApiError(
+      "Backend URL is not configured (set NEXT_PUBLIC_API_URL)",
+      0,
+      {
+        code: "BACKEND_NOT_CONFIGURED",
+      },
+    );
   }
-  const base = config.apiUrl.replace(/\/$/, "");
-  const url = new URL(path.startsWith("/") ? path : `/${path}`, base);
-
-  if (params) {
-    for (const [key, value] of Object.entries(params)) {
-      if (value === undefined) continue;
-      if (Array.isArray(value)) {
-        for (const v of value) {
-          url.searchParams.append(key, String(v));
-        }
-      } else {
-        url.searchParams.set(key, String(value));
-      }
-    }
-  }
-
-  return url.toString();
+  return buildApiUrl(config.apiUrl, path, params);
 }
 
 async function request<T>(
@@ -76,7 +63,7 @@ async function request<T>(
 ): Promise<T> {
   const { params, skipAuth = false, ...init } = options;
 
-  const url = await buildUrl(path, params);
+  const url = resolveRequestUrl(path, params);
   const headers = new Headers(init.headers);
 
   if (!skipAuth && getAccessToken) {

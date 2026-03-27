@@ -23,19 +23,52 @@ export function getUserFacingApiMessage(error: unknown): string {
   if (error instanceof ApiError) {
     const fromBody = formatProblemDetail(error.body);
     if (fromBody) return fromBody;
-    if (error.message && !isTechnicalNoise(error.message)) {
+    if (isNetworkOrNoiseErrorMessage(error.message)) {
+      return defaultMessageForStatus(error.status);
+    }
+    // Prefer status-based copy when the API did not return a Problem `detail` string/list.
+    if (error.status > 0) {
+      return defaultMessageForStatus(error.status);
+    }
+    if (error.message) {
       return error.message;
     }
     return defaultMessageForStatus(error.status);
   }
   if (error instanceof Error) {
-    return error.message;
+    const msg = error.message.trim();
+    if (isNetworkOrNoiseErrorMessage(msg)) {
+      return defaultMessageForStatus(0);
+    }
+    if (isSafeToShowGenericErrorMessage(msg)) {
+      return msg;
+    }
+    return "Something went wrong. Please try again.";
   }
   return "Something went wrong. Please try again.";
 }
 
-function isTechnicalNoise(message: string): boolean {
-  return message === "Failed to fetch" || message.startsWith("NetworkError");
+function isNetworkOrNoiseErrorMessage(message: string): boolean {
+  return (
+    message === "Failed to fetch" ||
+    message.startsWith("NetworkError") ||
+    message === "Load failed" ||
+    message === "The user aborted a request." ||
+    message === "The operation was aborted."
+  );
+}
+
+/**
+ * Avoid surfacing stack fragments, paths, or verbose runtime dumps as UI copy.
+ */
+function isSafeToShowGenericErrorMessage(message: string): boolean {
+  if (message.length === 0 || message.length > 120) return false;
+  if (/[\r\n]/.test(message)) return false;
+  if (/\bat\s+[A-Za-z_$][\w$]*\s*\(/m.test(message)) return false;
+  if (/file:\/\//i.test(message)) return false;
+  if (/(?:\/|\\)(?:[\w.-]+)\/(?:[\w.-]+\/){1,}/.test(message)) return false;
+  if (/:\d+:\d+/.test(message)) return false;
+  return true;
 }
 
 function defaultMessageForStatus(status: number): string {
