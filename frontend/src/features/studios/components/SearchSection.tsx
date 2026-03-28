@@ -191,9 +191,11 @@ export const SearchSection = () => {
                         <button
                           key={item}
                           onMouseDown={() => {
-                            activeField === "activity"
-                              ? setActivity(item)
-                              : setLocation(item);
+                            if (activeField === "activity") {
+                              setActivity(item);
+                            } else {
+                              setLocation(item);
+                            }
 
                             setActiveField(null);
                           }}
