@@ -7,6 +7,16 @@ import type {
   RefreshTokenResponse,
 } from "@/types/auth";
 
+function getCookieValue(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const parts = document.cookie.split(";").map((p) => p.trim());
+  for (const p of parts) {
+    if (!p.startsWith(`${name}=`)) continue;
+    return decodeURIComponent(p.slice(name.length + 1));
+  }
+  return null;
+}
+
 export async function requestMagicLink(params: {
   email: string;
   name: string;
@@ -28,8 +38,10 @@ export async function verifyMagicLink(
 }
 
 export async function refreshAccessToken(): Promise<RefreshTokenResponse> {
+  const csrf = getCookieValue("csrf_token");
   return api.post<RefreshTokenResponse>("/api/v1/auth/refresh", undefined, {
     skipAuth: true,
+    headers: csrf ? { "X-CSRF-Token": csrf } : undefined,
   });
 }
 

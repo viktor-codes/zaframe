@@ -9,6 +9,7 @@ from app.core.exceptions import UnauthorizedError, ValidationError
 from app.core.security import (
     create_access_token,
     create_refresh_token,
+    create_csrf_token,
     generate_magic_link_token,
     get_magic_link_expires_at,
     get_user_id_from_access_token,
@@ -47,11 +48,11 @@ async def request_magic_link(
 async def verify_magic_link(
     uow: UnitOfWork,
     token: str,
-) -> tuple[User, str, str]:
+) -> tuple[User, str, str, str]:
     """
     Verify magic link token.
 
-    Returns (user, access_token, refresh_token).
+    Returns (user, access_token, refresh_token, csrf_token).
     Raises ValidationError if the token is invalid.
     """
     now_utc = datetime.now(UTC)
@@ -68,6 +69,7 @@ async def verify_magic_link(
 
     access_token = create_access_token(user.id, user.email)
     refresh_token = create_refresh_token(user.id)
+    csrf_token = create_csrf_token()
 
     refresh_data = parse_refresh_token(refresh_token)
     if refresh_data is not None:
@@ -80,17 +82,17 @@ async def verify_magic_link(
         )
         await uow.session.flush()
 
-    return user, access_token, refresh_token
+    return user, access_token, refresh_token, csrf_token
 
 
 async def refresh_access_token(
     uow: UnitOfWork,
     refresh_token: str,
-) -> tuple[str, str]:
+) -> tuple[str, str, str]:
     """
     Issue new access token from refresh token.
 
-    Returns (access_token, refresh_token).
+    Returns (access_token, refresh_token, csrf_token).
     Raises UnauthorizedError if refresh token is invalid.
     """
     refresh_data = parse_refresh_token(refresh_token)
@@ -114,6 +116,7 @@ async def refresh_access_token(
 
     access_token = create_access_token(user.id, user.email)
     new_refresh_token = create_refresh_token(user.id)
+    new_csrf_token = create_csrf_token()
 
     new_data = parse_refresh_token(new_refresh_token)
     if new_data is not None:
@@ -126,7 +129,7 @@ async def refresh_access_token(
         )
 
     await uow.session.flush()
-    return access_token, new_refresh_token
+    return access_token, new_refresh_token, new_csrf_token
 
 
 async def get_current_user_from_token(

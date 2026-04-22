@@ -31,38 +31,48 @@ type AuthContextValue = AuthState & AuthActions;
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function useAuthQuery(loginTrigger: number) {
-  const hasToken = typeof window !== "undefined" && !!getStoredAccessToken();
-
+function useAuthQuery(loginTrigger: number, isReady: boolean) {
   return useQuery({
     queryKey: ["auth", "me", loginTrigger],
     queryFn: () => api.get<UserResponse>("/api/v1/auth/me"),
-    enabled: hasToken,
+    enabled: isReady,
     staleTime: 5 * 60 * 1000,
     retry: false,
   });
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [isBootstrapped, setIsBootstrapped] = useState(false);
   const [loginTrigger, setLoginTrigger] = useState(0);
 
-  const { data: user, isLoading } = useAuthQuery(loginTrigger);
+  const { data: user, isLoading } = useAuthQuery(loginTrigger, isBootstrapped);
 
   const login = useCallback((accessToken: string, _userData: UserResponse) => {
     setStoredTokens(accessToken);
     setAuthTokenProvider(getStoredAccessToken);
     setLoginTrigger((prev) => prev + 1);
+    setIsBootstrapped(true);
   }, []);
 
   const logout = useCallback(() => {
     void logoutSession().finally(() => {
       clearStoredTokens();
       setLoginTrigger((prev) => prev + 1);
+      setIsBootstrapped(true);
     });
   }, []);
 
   useEffect(() => {
+    // Migration: remove legacy token left from previous implementation.
+    // Access token is memory-only now.
+    try {
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem("zaframe_access_token");
+      }
+    } catch {
+      // ignore storage errors (private mode, denied, etc.)
+    }
+
     setAuthTokenProvider(getStoredAccessToken);
     setRefreshTokensFn(async () => {
       try {
@@ -74,18 +84,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return null;
       }
     });
-    const t = setTimeout(() => setIsInitialized(true), 0);
-    return () => clearTimeout(t);
+
+    setTimeout(() => setIsBootstrapped(true), 0);
   }, []);
 
   const value = useMemo<AuthContextValue>(
     () => ({
       user: user ?? null,
-      isInitialized: isInitialized && !isLoading,
+      isInitialized: isBootstrapped && !isLoading,
       login,
       logout,
     }),
-    [user, isInitialized, isLoading, login, logout],
+    [user, isBootstrapped, isLoading, login, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

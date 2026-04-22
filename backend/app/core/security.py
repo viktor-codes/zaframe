@@ -142,6 +142,16 @@ def generate_magic_link_token() -> str:
     return token_urlsafe(32)
 
 
+def create_csrf_token() -> str:
+    """
+    Create a CSRF token for double-submit cookie pattern.
+
+    Random, unguessable token stored in a non-httpOnly cookie and echoed by the client
+    in X-CSRF-Token header for sensitive cookie-auth endpoints.
+    """
+    return token_urlsafe(32)
+
+
 def hash_magic_link_token(token: str) -> str:
     """
     Получить безопасный хэш токена Magic Link для хранения в БД.

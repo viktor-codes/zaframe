@@ -101,12 +101,17 @@ async def test_full_auth_flow_refresh_logout_me(client):
     assert data2["user"]["email"] == "flow@example.com"
     refresh_cookie_after_verify = client.cookies.get("refresh_token")
     assert refresh_cookie_after_verify is not None
+    csrf_cookie_after_verify = client.cookies.get("csrf_token")
+    assert csrf_cookie_after_verify is not None
 
     r3 = await client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {access}"})
     assert r3.status_code == 200
     assert r3.json()["email"] == "flow@example.com"
 
-    r4 = await client.post("/api/v1/auth/refresh")
+    r4 = await client.post(
+        "/api/v1/auth/refresh",
+        headers={"X-CSRF-Token": csrf_cookie_after_verify},
+    )
     assert r4.status_code == 200
     data4 = r4.json()
     assert "refresh_token" not in data4
@@ -114,6 +119,9 @@ async def test_full_auth_flow_refresh_logout_me(client):
     refresh_cookie_after_refresh = client.cookies.get("refresh_token")
     assert refresh_cookie_after_refresh is not None
     assert refresh_cookie_after_refresh != refresh_cookie_after_verify
+    csrf_cookie_after_refresh = client.cookies.get("csrf_token")
+    assert csrf_cookie_after_refresh is not None
+    assert csrf_cookie_after_refresh != csrf_cookie_after_verify
 
     r5 = await client.post(
         "/api/v1/auth/logout",
@@ -121,8 +129,11 @@ async def test_full_auth_flow_refresh_logout_me(client):
     )
     assert r5.status_code == 204
 
-    r6 = await client.post("/api/v1/auth/refresh")
-    assert r6.status_code == 401
+    r6 = await client.post(
+        "/api/v1/auth/refresh",
+        headers={"X-CSRF-Token": csrf_cookie_after_refresh},
+    )
+    assert r6.status_code in (401, 403)
 
     r7 = await client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {new_access}"})
     assert r7.status_code == 200
@@ -146,6 +157,32 @@ async def test_refresh_with_invalid_token_returns_401():
     ) as fresh_client:
         r = await fresh_client.post("/api/v1/auth/refresh")
     assert r.status_code == 401
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_refresh_missing_csrf_header_returns_403(client):
+    """POST /auth/refresh without CSRF header returns 403 (double-submit)."""
+    # Bootstrap cookies via verify
+    captured_url = []
+
+    async def capture_email(to: str, url: str) -> None:
+        captured_url.append(url)
+
+    with patch("app.services.auth.send_magic_link_email", side_effect=capture_email):
+        r1 = await client.post(
+            "/api/v1/auth/magic-link/request",
+            json={"email": "csrf@example.com", "name": "CSRF User"},
+        )
+    assert r1.status_code == 200
+    token = re.search(r"token=([^&]+)", captured_url[0]).group(1)
+    r2 = await client.get("/api/v1/auth/magic-link/verify", params={"token": token})
+    assert r2.status_code == 200
+    assert client.cookies.get("refresh_token") is not None
+    assert client.cookies.get("csrf_token") is not None
+
+    r3 = await client.post("/api/v1/auth/refresh")
+    assert r3.status_code == 403
 
 
 @pytest.mark.integration
