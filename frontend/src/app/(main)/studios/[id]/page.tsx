@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Card, Button, Skeleton, Input } from "@/components/ui";
-import { fetchStudio, fetchStudioSlots } from "@/lib/api";
+import { fetchStudio, fetchStudioSlots, getUserFacingApiMessage } from "@/lib/api";
 
 function toISOStartOfDay(d: Date): string {
   const c = new Date(d);
@@ -115,9 +115,7 @@ export default function StudioDetailPage() {
         <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-red-800">
           <p className="font-semibold">Failed to load studio</p>
           <p className="mt-1 text-sm">
-            {studioError instanceof Error
-              ? studioError.message
-              : "Unknown error"}
+            {getUserFacingApiMessage(studioError)}
           </p>
           <Link
             href="/studios"

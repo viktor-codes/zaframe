@@ -17,6 +17,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { fetchStudios } from "@/lib/api/studios";
 import type { SearchResult } from "@/types/search";
 import type { ServiceCategory } from "@/types/service";
+import { getUserFacingApiMessage } from "@/lib/api";
 import { Header } from "@/features/navigation/components";
 import {
   StudioSearchCard,
@@ -305,9 +306,7 @@ function StudiosPageContent() {
           {isError && (
             <div className="mb-8 flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 sm:flex-row sm:items-center sm:justify-between">
               <span>
-                {error instanceof Error
-                  ? error.message
-                  : "Failed to load results"}
+                {getUserFacingApiMessage(error)}
               </span>
               <Button
                 variant="secondary"

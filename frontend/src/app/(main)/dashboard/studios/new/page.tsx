@@ -5,7 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, Button, Input, Textarea } from "@/components/ui";
-import { createStudio } from "@/lib/api";
+import { createStudio, getUserFacingApiMessage } from "@/lib/api";
 
 export default function NewStudioPage() {
   const router = useRouter();
@@ -26,7 +26,7 @@ export default function NewStudioPage() {
       router.push(`/dashboard/studios/${studio.id}`);
     },
     onError: (err) => {
-      setError(err instanceof Error ? err.message : "Failed to create studio");
+      setError(getUserFacingApiMessage(err));
     },
   });
 

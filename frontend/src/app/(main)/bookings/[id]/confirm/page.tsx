@@ -11,6 +11,7 @@ import {
   fetchStudio,
   createCheckoutSession,
   cancelBooking,
+  getUserFacingApiMessage,
 } from "@/lib/api";
 
 function formatPrice(cents: number): string {
@@ -68,7 +69,7 @@ export default function BookingConfirmPage() {
       }
     },
     onError: (err) => {
-      setError(err instanceof Error ? err.message : "Payment failed");
+      setError(getUserFacingApiMessage(err));
     },
   });
 
@@ -80,7 +81,7 @@ export default function BookingConfirmPage() {
       setShowCancelConfirm(false);
     },
     onError: (err) => {
-      setError(err instanceof Error ? err.message : "Failed to cancel");
+      setError(getUserFacingApiMessage(err));
     },
   });
 
