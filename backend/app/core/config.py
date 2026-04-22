@@ -97,6 +97,14 @@ class Settings(BaseSettings):
         default="eur", description="Default currency for Stripe (eur for Ireland)"
     )
 
+    # === Bookings ===
+    BOOKING_HOLD_MINUTES: int = Field(
+        default=15,
+        ge=1,
+        le=120,
+        description="WHY: pending bookings should expire to avoid locking capacity indefinitely",
+    )
+
     # === Pydantic Settings конфигурация ===
     model_config = SettingsConfigDict(
         env_file=".env",  # Load from .env file
