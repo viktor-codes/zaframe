@@ -9,6 +9,8 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from app.models.booking import BookingType
+from app.schemas.slot import SlotResponse
+from app.schemas.studio import StudioResponse
 
 
 class BookingBase(BaseModel):
@@ -88,6 +90,19 @@ class BookingWithUser(BookingResponse):
     """Бронирование с информацией о пользователе."""
 
     user: UserPublic | None = Field(None, description="Информация о пользователе")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class BookingListItem(BookingResponse):
+    """
+    Элемент списка бронирований для кабинета.
+
+    Возвращает все поля BookingResponse плюс вложенные slot+studio, чтобы фронт не делал N+1.
+    """
+
+    slot: SlotResponse = Field(..., description="Информация о слоте")
+    studio: StudioResponse = Field(..., description="Информация о студии")
 
     model_config = ConfigDict(from_attributes=True)
 

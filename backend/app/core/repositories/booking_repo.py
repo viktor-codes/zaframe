@@ -9,6 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.booking import Booking, BookingStatus
+from app.models.slot import Slot
+from app.models.studio import Studio
 
 
 class BookingRepository:
@@ -24,6 +26,37 @@ class BookingRepository:
             select(Booking).options(selectinload(Booking.slot)).where(Booking.id == booking_id)
         )
         return result.scalar_one_or_none()
+
+    async def list_my_with_slot_and_studio(
+        self,
+        *,
+        skip: int = 0,
+        limit: int = 50,
+        user_id: int,
+        user_email: str,
+        include_guest_email: bool = True,
+    ) -> list[Booking]:
+        """
+        List bookings for the current user with slot + studio preloaded (no N+1).
+
+        include_guest_email=True makes the endpoint backward-compatible with guest bookings
+        created before account activation (matched by guest_email == user.email).
+        """
+        query = (
+            select(Booking)
+            .options(
+                selectinload(Booking.slot).selectinload(Slot.studio),
+            )
+            .where(
+                (Booking.user_id == user_id)
+                | ((Booking.guest_email == user_email) if include_guest_email else False)
+            )
+            .order_by(Booking.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+        )
+        result = await self._session.execute(query)
+        return list(result.scalars().all())
 
     async def list_(
         self,

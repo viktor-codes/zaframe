@@ -10,11 +10,13 @@ API роутер для бронирований.
 
 from fastapi import APIRouter, Depends, Query, Request
 
-from app.api.deps import get_uow
+from app.api.deps import get_current_user_required, get_uow
 from app.core.rate_limit import limiter
 from app.core.uow import UnitOfWork
+from app.models.user import User
 from app.schemas import (
     BookingCreate,
+    BookingListItem,
     BookingResponse,
     CourseBookingCreate,
     CourseBookingResponse,
@@ -25,6 +27,7 @@ from app.services.booking import (
     get_booking_or_raise,
     get_bookings,
     get_bookings_count,
+    get_my_bookings,
 )
 from app.services.service import create_course_booking
 
@@ -73,6 +76,41 @@ async def list_bookings(
         status=status,
     )
     return bookings
+
+
+@router.get("/my", response_model=list[BookingListItem])
+async def list_my_bookings(
+    uow: UnitOfWork = Depends(get_uow),
+    user: User = Depends(get_current_user_required),
+    skip: int = Query(0, ge=0, description="Пропустить N записей"),
+    limit: int = Query(50, ge=1, le=100, description="Максимум записей"),
+    include_guest_email: bool = Query(
+        True,
+        description="Включать гостевые бронирования по совпадению guest_email с email пользователя",
+    ),
+) -> list[BookingListItem]:
+    """
+    Кабинетный список бронирований текущего пользователя (без N+1).
+
+    Возвращает Booking + Slot + Studio, чтобы фронт не делал дополнительные запросы.
+    """
+    bookings = await get_my_bookings(
+        uow,
+        user=user,
+        skip=skip,
+        limit=limit,
+        include_guest_email=include_guest_email,
+    )
+    # Map ORM -> response with explicit studio field.
+    return [
+        BookingListItem(
+            **BookingResponse.model_validate(b).model_dump(),
+            slot=b.slot,
+            studio=b.slot.studio,
+        )
+        for b in bookings
+        if getattr(b, "slot", None) is not None and getattr(b.slot, "studio", None) is not None
+    ]
 
 
 @router.get("/count")

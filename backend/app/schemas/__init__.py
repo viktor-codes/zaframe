@@ -9,6 +9,7 @@ from app.schemas.booking import (
     BookingUpdate,
     BookingWithSlot,
     BookingWithUser,
+    BookingListItem,
 )
 from app.schemas.guest_session import (
     GuestSessionBase,
@@ -66,6 +67,7 @@ from app.schemas.user import (
 # Явно пересобираем модели с взаимными ссылками, чтобы Pydantic v2
 # корректно обработал forward references перед использованием в Union.
 BookingResponse.model_rebuild()
+BookingListItem.model_rebuild()
 CourseBookingResponse.model_rebuild()
 
 __all__ = [
@@ -96,6 +98,7 @@ __all__ = [
     "BookingResponse",
     "BookingWithSlot",
     "BookingWithUser",
+    "BookingListItem",
     "BookingCancel",
     # Service / Schedule / Order / Public
     "ServiceBase",

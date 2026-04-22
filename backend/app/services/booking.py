@@ -13,6 +13,7 @@ from app.core.exceptions import NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
 from app.models.booking import Booking, BookingStatus, BookingType
 from app.schemas.booking import BookingCreate, BookingUpdate
+from app.models.user import User
 
 
 async def get_booking(uow: UnitOfWork, booking_id: int) -> Booking | None:
@@ -70,6 +71,28 @@ async def get_bookings_count(
         user_id=user_id,
         guest_email=guest_email,
         status=status,
+    )
+
+
+async def get_my_bookings(
+    uow: UnitOfWork,
+    *,
+    user: User,
+    skip: int = 0,
+    limit: int = 50,
+    include_guest_email: bool = True,
+) -> list[Booking]:
+    """
+    Bookings list for personal cabinet (slot+studio embedded).
+
+    include_guest_email=True merges legacy guest bookings by guest_email == user.email.
+    """
+    return await uow.bookings.list_my_with_slot_and_studio(
+        skip=skip,
+        limit=limit,
+        user_id=user.id,
+        user_email=user.email,
+        include_guest_email=include_guest_email,
     )
 
 
