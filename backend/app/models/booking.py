@@ -85,6 +85,12 @@ class Booking(TimestampMixin, Base):
         String(20), default=BookingStatus.PENDING, nullable=False, index=True
     )
 
+    # WHY: pending must not hold capacity forever; expiry is driven by this timestamp.
+    reserved_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
     # Платежи (Stripe)
     checkout_session_id: Mapped[str | None] = mapped_column(
         String(255), nullable=True, index=True
