@@ -112,7 +112,7 @@ export const MobileMenu = ({
 
               <div className="mt-auto pb-10">
                 <Link
-                  href="#signin"
+                  href="/auth/login"
                   onClick={onClose}
                   className="block w-full rounded-lg bg-zinc-900 py-5 text-center text-lg font-medium text-white shadow-xl"
                 >

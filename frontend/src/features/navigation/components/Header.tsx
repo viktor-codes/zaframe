@@ -100,7 +100,7 @@ export function Header({ minimalSearch }: HeaderProps) {
               </Link>
             )}
             <Link
-              href="#signin"
+              href="/auth/login"
               className={`hidden rounded-lg px-5 py-2.5 text-sm font-semibold transition-all duration-500 md:inline-block ${
                 isDark
                   ? "bg-white text-zinc-950 transition-all duration-300 hover:scale-105"
