@@ -1,172 +1,172 @@
-# ZaFrame — Анализ проекта и фазы работы по фронтенду
+# ZaFrame — Project analysis and frontend work phases
 
-## 1. Анализ текущего состояния
+## 1. Current state analysis
 
-### 1.1 Бэкенд (контекст для фронта)
+### 1.1 Backend (context for the frontend)
 
-- **Стек**: FastAPI, SQLAlchemy 2, Pydantic v2, uv
-- **API**: версионированный `/api/v1/`
+- **Stack**: FastAPI, SQLAlchemy 2, Pydantic v2, uv
+- **API**: versioned `/api/v1/`
   - **auth** — Magic Link (request, verify, refresh)
-  - **studios** — CRUD, публичный профиль студии
-  - **services** — услуги студий, курсы, доступность
-  - **slots** — слоты (расписание)
-  - **bookings** — создание/отмена бронирований
+  - **studios** — CRUD, public studio profile
+  - **services** — studio services, courses, availability
+  - **slots** — slots (schedule)
+  - **bookings** — create/cancel bookings
   - **payments** — Stripe Checkout (single/course)
   - **webhooks** — Stripe webhooks
 
-Домен: студии (фото/видео), услуги, слоты, бронирования, оплата, владельцы студий, гости (без аккаунта).
+Domain: studios (photo/video), services, slots, bookings, payment, studio owners, guests (no account).
 
-### 1.2 Фронтенд (что уже есть)
+### 1.2 Frontend (what already exists)
 
-| Область | Состояние |
-|--------|-----------|
-| **Фреймворк** | Next.js 16 (App Router), React 19 |
-| **Язык** | TypeScript |
-| **Стили** | Tailwind CSS 4, кастомная тема в `globals.css` (mint/navy, polaroid) |
-| **Данные** | TanStack React Query v5 |
-| **Шрифты** | Inter, Montserrat (next/font) |
-| **Страницы** | Главная, список/карточка студии, бронирование слота, список бронирований, confirm/cancel/success, dashboard владельца (студии CRUD), auth (login, verify) |
-| **Компоненты** | Header, RequireAuth, UI-kit: Button, Card, Input, Textarea, Alert, Badge, Skeleton |
-| **Типы** | auth, booking, payment, slot, studio, user (соответствуют бэкенду) |
+| Area | Status |
+|------|--------|
+| **Framework** | Next.js 16 (App Router), React 19 |
+| **Language** | TypeScript |
+| **Styles** | Tailwind CSS 4, custom theme in `globals.css` (mint/navy, polaroid) |
+| **Data** | TanStack React Query v5 |
+| **Fonts** | Inter, Montserrat (next/font) |
+| **Pages** | Home, studio list/card, slot booking, booking list, confirm/cancel/success, owner dashboard (studio CRUD), auth (login, verify) |
+| **Components** | Header, RequireAuth, UI kit: Button, Card, Input, Textarea, Alert, Badge, Skeleton |
+| **Types** | auth, booking, payment, slot, studio, user (aligned with backend) |
 
-### 1.3 Обнаруженные пробелы
+### 1.3 Gaps identified
 
-- **Отсутствует папка `src/lib`**: в коде используются `@/lib/auth` (AuthProvider, useAuth) и `@/lib/api` (fetchStudio, createBooking, ApiError, requestMagicLink, verifyMagicLink и др.). Без этих модулей сборка/запуск фронта будут падать. Нужно добавить `lib/auth` и `lib/api` в первую фазу.
+- **Missing `src/lib` folder**: the code references `@/lib/auth` (AuthProvider, useAuth) and `@/lib/api` (fetchStudio, createBooking, ApiError, requestMagicLink, verifyMagicLink, etc.). Without these modules, the frontend build/run will fail. Add `lib/auth` and `lib/api` in the first phase.
 
 ---
 
-## 2. Технологии: что используем и что добавить
+## 2. Technology: what we use and what to add
 
-### 2.1 Уже выбранные (оставляем)
+### 2.1 Already chosen (keep as-is)
 
-| Технология | Версия | Назначение |
-|------------|--------|------------|
-| **Next.js** | 16.x | App Router, RSC, API routes при необходимости |
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| **Next.js** | 16.x | App Router, RSC, API routes when needed |
 | **React** | 19.x | UI |
-| **TypeScript** | 5.x | Типизация |
-| **Tailwind CSS** | 4.x | Стили, дизайн-система |
-| **TanStack Query** | 5.x | Кэш, запросы, мутации |
-| **React Compiler** | (babel) | Оптимизация рендеров (уже в devDependencies) |
+| **TypeScript** | 5.x | Typing |
+| **Tailwind CSS** | 4.x | Styles, design system |
+| **TanStack Query** | 5.x | Cache, queries, mutations |
+| **React Compiler** | (babel) | Render optimization (already in devDependencies) |
 
-### 2.2 Рекомендуемые добавления
+### 2.2 Recommended additions
 
-| Технология | Назначение | Приоритет |
-|------------|------------|-----------|
-| **zod** | Валидация форм и ответов API на клиенте | Высокий |
-| **React Hook Form** (опционально) | Формы с минимальными ре-рендерами, удобная интеграция с zod | Средний |
-| **Единый API-клиент** | `src/lib/api` — один модуль с `baseURL`, обработкой 401/refresh, типами ошибок (ApiError) | Высокий |
-| **Хранение токенов** | httpOnly cookie (если бэкенд отдаёт Set-Cookie) или безопасное хранение в памяти + refresh; не localStorage для access token в продакшене | Высокий |
-| **Тестирование** | Vitest + React Testing Library для unit/интеграции компонентов и хуков | Средний |
-| **E2E** | Playwright (по желанию) для критичных сценариев: студия → слот → бронь → оплата | Низкий |
+| Technology | Purpose | Priority |
+|------------|---------|----------|
+| **zod** | Form validation and API response validation on the client | High |
+| **React Hook Form** (optional) | Forms with minimal re-renders, easy zod integration | Medium |
+| **Unified API client** | `src/lib/api` — single module with `baseURL`, 401/refresh handling, error types (ApiError) | High |
+| **Token storage** | httpOnly cookie (if backend sets Set-Cookie) or secure in-memory storage + refresh; not localStorage for access token in production | High |
+| **Testing** | Vitest + React Testing Library for unit/integration of components and hooks | Medium |
+| **E2E** | Playwright (optional) for critical paths: studio → slot → booking → payment | Low |
 
-### 2.3 Чего избегаем на текущем этапе
+### 2.3 What we avoid at this stage
 
-- Тяжёлых UI-библиотек (MUI, Ant) — уже есть свой UI-kit и дизайн-система.
-- Redux/MobX — TanStack Query + контекст (Auth) достаточно для текущего объёма состояния.
-- Отдельного state manager’а для форм — сначала React state + при необходимости React Hook Form.
+- Heavy UI libraries (MUI, Ant) — a custom UI kit and design system already exist.
+- Redux/MobX — TanStack Query + context (Auth) is enough for current state size.
+- A separate form state manager — start with React state and add React Hook Form if needed.
 
-### 2.4 Итог по технологиям
+### 2.4 Technology summary
 
-- **Ядро**: Next.js 16, React 19, TypeScript, Tailwind 4, TanStack Query.
-- **Добавляем в первую очередь**: `src/lib/api`, `src/lib/auth`, валидация (zod), единый API-клиент с учётом CORS и cookie/токенов.
-- **Далее по фазам**: React Hook Form (при росте форм), Vitest + RTL, при необходимости Playwright.
-
----
-
-## 3. Фазы работы по фронтенду
-
-### Фаза 0 — Основа (обязательно перед развитием фич)
-
-**Цель**: проект собирается, авторизация и API работают.
-
-- [ ] Добавить **`src/lib/api`**:
-  - base URL из env (`NEXT_PUBLIC_API_URL`),
-  - общий `fetch`/wrapper с подстановкой токена (из cookie или из auth context),
-  - обработка 401 (refresh или редирект на login),
-  - класс/тип **ApiError** с полем `body` для деталей с бэкенда,
-  - функции под все используемые эндпоинты: studios, slots, bookings, auth (magic link request/verify), payments (по мере надобности).
-- [ ] Добавить **`src/lib/auth`**:
-  - **AuthProvider** (контекст): хранение user, access/refresh (или только флаг «залогинен» при cookie-based),
-  - **useAuth**: доступ к user, login/logout, проверка авторизации.
-- [ ] Проверить **.env.example** фронта: наличие `NEXT_PUBLIC_API_URL`.
-- [ ] Убедиться, что логин (magic link) и verify доводят до залогиненного состояния и что защищённые страницы (dashboard, bookings) работают.
-
-**Результат**: приложение запускается, можно залогиниться и ходить по студиям/бронированиям/dashboard.
+- **Core**: Next.js 16, React 19, TypeScript, Tailwind 4, TanStack Query.
+- **Add first**: `src/lib/api`, `src/lib/auth`, validation (zod), unified API client with CORS and cookie/token handling.
+- **Later phases**: React Hook Form (as forms grow), Vitest + RTL, Playwright if needed.
 
 ---
 
-### Фаза 1 — Стабильность и валидация
+## 3. Frontend work phases
 
-**Цель**: предсказуемые формы и типы, меньше runtime-ошибок.
+### Phase 0 — Foundation (required before feature growth)
 
-- [ ] Ввести **zod** для:
-  - схем ответов API (где нужно — парсинг после fetch),
-  - схем форм (логин, бронирование, создание/редактирование студии).
-- [ ] По желанию подключить **React Hook Form** + `@hookform/resolvers/zod` для страниц с формами (логин, бронь, студия).
-- [ ] Унифицировать обработку ошибок API на страницах (использование ApiError и сообщений с бэкенда).
-- [ ] Добавить базовые unit-тесты (Vitest + RTL) для критичных компонентов и для `lib/api`/`lib/auth` (моки fetch).
+**Goal**: the project builds; auth and API work.
 
-**Результат**: формы валидируются, ошибки обрабатываются единообразно, есть задел под тесты.
+- [ ] Add **`src/lib/api`**:
+  - base URL from env (`NEXT_PUBLIC_API_URL`),
+  - shared `fetch`/wrapper with token injection (from cookie or auth context),
+  - 401 handling (refresh or redirect to login),
+  - **ApiError** class/type with a `body` field for backend details,
+  - functions for all used endpoints: studios, slots, bookings, auth (magic link request/verify), payments (as needed).
+- [ ] Add **`src/lib/auth`**:
+  - **AuthProvider** (context): user, access/refresh (or only a “logged in” flag for cookie-based),
+  - **useAuth**: access to user, login/logout, auth checks.
+- [ ] Verify frontend **.env.example**: include `NEXT_PUBLIC_API_URL`.
+- [ ] Ensure login (magic link) and verify reach a logged-in state and that protected pages (dashboard, bookings) work.
 
----
-
-### Фаза 2 — UX и полировка публичных страниц
-
-**Цель**: удобный и быстрый сценарий «выбор студии → слот → бронь».
-
-- [ ] **Список студий**: фильтры (по городу/адресу, по типу услуги), сортировка, скелетоны, пустые состояния.
-- [ ] **Карточка студии**: галерея фото (если бэкенд даёт ссылки), чёткое отображение услуг и цен, календарь/выбор даты для слотов.
-- [ ] **Бронирование**: шаги (слот → данные гостя → подтверждение), проверка доступности слота перед отправкой, понятные сообщения при конфликте/ошибке.
-- [ ] **Оплата**: после создания брони — переход в Stripe Checkout; после возврата с Stripe — страницы success/cancel с понятными сообщениями и ссылками «мои брони» / «на главную».
-- [ ] Адаптивность и доступность (фокус, семантика, aria при необходимости).
-
-**Результат**: публичный флоу от списка студий до оплаты понятен и устойчив.
+**Outcome**: the app runs; you can log in and navigate studios/bookings/dashboard.
 
 ---
 
-### Фаза 3 — Личный кабинет и бронирования
+### Phase 1 — Stability and validation
 
-**Цель**: пользователь и владелец видят нужную информацию и действия.
+**Goal**: predictable forms and types; fewer runtime errors.
 
-- [ ] **Мои бронирования**: список с фильтрами (активные/прошедшие/отменённые), отмена с подтверждением, переход к оплате если бронь ещё не оплачена.
-- [ ] **Подтверждение брони** (`/bookings/[id]/confirm`): отображение деталей, кнопка «Оплатить» → Stripe, учёт уже оплаченных.
-- [ ] **Dashboard владельца**: список студий, создание/редактирование студии, управление услугами и расписанием (если API готово), простые метрики (количество бронирований по студии).
-- [ ] Уведомления/тосты при успешных действиях (создание студии, отмена брони и т.д.) — можно простой контекст + компонент Toast.
+- [ ] Introduce **zod** for:
+  - API response schemas (where needed — parse after fetch),
+  - form schemas (login, booking, create/edit studio).
+- [ ] Optionally wire **React Hook Form** + `@hookform/resolvers/zod` for form-heavy pages (login, booking, studio).
+- [ ] Unify API error handling on pages (ApiError and backend messages).
+- [ ] Add basic unit tests (Vitest + RTL) for critical components and `lib/api`/`lib/auth` (fetch mocks).
 
-**Результат**: полный цикл для гостя и базовое управление для владельца.
-
----
-
-### Фаза 4 — Расширения и масштаб
-
-**Цель**: курсы, расписание, производительность.
-
-- [ ] **Курсы**: отображение курсов студии, запись на курс, оплата курса (использовать существующие payment/order API).
-- [ ] **Расписание**: календарное представление слотов (библиотека календаря по выбору), повторяющиеся слоты.
-- [ ] Оптимизация: lazy loading страниц, оптимизация изображений (next/image), кэширование запросов (TanStack Query уже даёт базу).
-- [ ] При необходимости — E2E (Playwright) для сценариев: гость бронирует и оплачивает; владелец создаёт студию.
-
-**Результат**: поддержка курсов и расписания, быстрый и стабильный фронт.
+**Outcome**: forms validate; errors are handled consistently; foundation for tests.
 
 ---
 
-## 4. Краткая сводка по технологиям
+### Phase 2 — UX and polish for public pages
 
-| Категория | Выбор |
-|-----------|--------|
-| Фреймворк | Next.js 16 (App Router) |
+**Goal**: a smooth, fast path: choose studio → slot → book.
+
+- [ ] **Studio list**: filters (city/address, service type), sorting, skeletons, empty states.
+- [ ] **Studio card**: photo gallery (if backend returns URLs), clear services and pricing, calendar/date selection for slots.
+- [ ] **Booking**: steps (slot → guest details → confirmation), slot availability check before submit, clear messages on conflict/error.
+- [ ] **Payment**: after creating booking — redirect to Stripe Checkout; after return from Stripe — success/cancel pages with clear copy and links to “my bookings” / “home”.
+- [ ] Responsiveness and accessibility (focus, semantics, aria where needed).
+
+**Outcome**: the public flow from studio list through payment is clear and robust.
+
+---
+
+### Phase 3 — Account and bookings
+
+**Goal**: users and owners see the right information and actions.
+
+- [ ] **My bookings**: list with filters (active/past/cancelled), cancellation with confirmation, pay flow if booking is unpaid.
+- [ ] **Booking confirmation** (`/bookings/[id]/confirm`): show details, “Pay” → Stripe, handle already-paid cases.
+- [ ] **Owner dashboard**: studio list, create/edit studio, services and schedule management (if API ready), simple metrics (bookings per studio).
+- [ ] Notifications/toasts for successful actions (studio created, booking cancelled, etc.) — simple context + Toast component.
+
+**Outcome**: full guest journey and basic owner management.
+
+---
+
+### Phase 4 — Extensions and scale
+
+**Goal**: courses, scheduling, performance.
+
+- [ ] **Courses**: display studio courses, enroll, course payment (use existing payment/order API).
+- [ ] **Schedule**: calendar view of slots (calendar library of choice), recurring slots.
+- [ ] Optimization: lazy-loaded pages, image optimization (next/image), request caching (TanStack Query already provides basics).
+- [ ] If needed — E2E (Playwright) for: guest books and pays; owner creates studio.
+
+**Outcome**: course and schedule support; fast, stable frontend.
+
+---
+
+## 4. Short technology summary
+
+| Category | Choice |
+|----------|--------|
+| Framework | Next.js 16 (App Router) |
 | UI | React 19, TypeScript |
-| Стили | Tailwind CSS 4, текущая дизайн-система |
-| Данные/кэш | TanStack Query |
-| Авторизация | Контекст (AuthProvider) + lib/auth, токены/cookie |
-| API | Единый слой в lib/api с ApiError и refresh |
-| Валидация | zod (+ опционально React Hook Form) |
-| Тесты | Vitest + React Testing Library; позже Playwright |
+| Styles | Tailwind CSS 4, current design system |
+| Data/cache | TanStack Query |
+| Auth | Context (AuthProvider) + lib/auth, tokens/cookie |
+| API | Unified layer in lib/api with ApiError and refresh |
+| Validation | zod (+ optional React Hook Form) |
+| Tests | Vitest + React Testing Library; Playwright later |
 
 ---
 
-## 5. Следующий шаг
+## 5. Next step
 
-Начать с **Фазы 0**: реализовать `src/lib/api` и `src/lib/auth`, проверить переменные окружения и сценарий входа. После этого можно последовательно проходить Фазы 1–4.
+Start with **Phase 0**: implement `src/lib/api` and `src/lib/auth`, verify environment variables and the login flow. Then proceed through Phases 1–4 in order.
 
-Если нужно, могу расписать конкретную реализацию `lib/api` и `lib/auth` под твой бэкенд (формат токенов, cookie, refresh endpoint).
+If useful, a concrete `lib/api` and `lib/auth` implementation can be spelled out for your backend (token format, cookie, refresh endpoint).
