@@ -3,6 +3,7 @@
  */
 
 import type { SlotResponse } from "./slot";
+import type { StudioResponse } from "./studio";
 import type { UserPublic } from "./user";
 
 export const BookingStatus = {
@@ -46,4 +47,9 @@ export interface BookingWithSlot extends BookingResponse {
 
 export interface BookingWithUser extends BookingResponse {
   user: UserPublic | null;
+}
+
+export interface BookingListItem extends BookingResponse {
+  slot: SlotResponse;
+  studio: StudioResponse;
 }

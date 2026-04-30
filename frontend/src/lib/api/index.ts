@@ -26,6 +26,7 @@ export {
 } from "./slots";
 export {
   fetchBookings,
+  fetchMyBookings,
   fetchBookingsCount,
   fetchBooking,
   createBooking,

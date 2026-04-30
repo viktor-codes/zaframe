@@ -121,7 +121,7 @@ async def create_booking(uow: UnitOfWork, schema: BookingCreate) -> Booking:
         raise ValidationError("Cannot book a slot in the past")
 
     confirmed_count = await uow.bookings.count_confirmed_by_slot(slot.id)
-    pending_count = await uow.bookings.count_pending_by_slot(slot.id)
+    pending_count = await uow.bookings.count_pending_by_slot(slot.id, now=now_utc)
     if confirmed_count + pending_count >= slot.max_capacity:
         raise ValidationError("No seats available")
 

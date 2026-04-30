@@ -105,7 +105,26 @@ function StudiosPageContent() {
   });
 
   const results = useMemo(
-    () => (data?.pages.flat() ?? []) as SearchResult[],
+    () => {
+      const items = (data?.pages.flat() ?? []) as SearchResult[];
+      const byStudioId = new Map<number, SearchResult>();
+
+      for (const item of items) {
+        const existing = byStudioId.get(item.studio.id);
+        if (!existing) {
+          byStudioId.set(item.studio.id, item);
+          continue;
+        }
+
+        // Merge matched services (avoid duplicates by id).
+        const mergedById = new Map<number, SearchResult["matched_services"][number]>();
+        for (const s of existing.matched_services ?? []) mergedById.set(s.id, s);
+        for (const s of item.matched_services ?? []) mergedById.set(s.id, s);
+        existing.matched_services = Array.from(mergedById.values());
+      }
+
+      return Array.from(byStudioId.values());
+    },
     [data],
   );
 

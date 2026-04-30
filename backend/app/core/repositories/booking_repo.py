@@ -4,7 +4,9 @@
 Все выборки по бронированиям инкапсулированы здесь.
 """
 
-from sqlalchemy import case, func, select
+from datetime import UTC, datetime
+
+from sqlalchemy import and_, case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -16,6 +18,19 @@ from app.models.studio import Studio
 class BookingRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
+
+    @staticmethod
+    def _pending_holds_capacity(*, now: datetime) -> bool:
+        """
+        Pending bookings only reserve capacity while the hold window is active.
+
+        WHY: legacy rows may have reserved_until=NULL; those holds must not lock seats forever.
+        """
+        return and_(
+            Booking.status == BookingStatus.PENDING,
+            Booking.reserved_until.is_not(None),
+            Booking.reserved_until > now,
+        )
 
     async def get_by_id(self, booking_id: int) -> Booking | None:
         result = await self._session.execute(select(Booking).where(Booking.id == booking_id))
@@ -115,23 +130,25 @@ class BookingRepository:
         )
         return result.scalar_one_or_none() or 0
 
-    async def count_pending_by_slot(self, slot_id: int) -> int:
+    async def count_pending_by_slot(self, slot_id: int, *, now: datetime | None = None) -> int:
+        now_utc = now or datetime.now(UTC)
         result = await self._session.execute(
             select(func.count())
             .select_from(Booking)
             .where(
                 Booking.slot_id == slot_id,
-                Booking.status == BookingStatus.PENDING,
+                self._pending_holds_capacity(now=now_utc),
             )
         )
         return result.scalar_one_or_none() or 0
 
     async def get_confirmed_pending_counts_by_slot_ids(
-        self, slot_ids: list[int]
+        self, slot_ids: list[int], *, now: datetime | None = None
     ) -> dict[int, tuple[int, int]]:
         """Для каждого slot_id возвращает (confirmed_count, pending_count)."""
         if not slot_ids:
             return {}
+        now_utc = now or datetime.now(UTC)
         counts_q = (
             select(
                 Booking.slot_id,
@@ -143,7 +160,7 @@ class BookingRepository:
                 ).label("confirmed"),
                 func.sum(
                     case(
-                        (Booking.status == BookingStatus.PENDING, 1),
+                        (self._pending_holds_capacity(now=now_utc), 1),
                         else_=0,
                     )
                 ).label("pending"),

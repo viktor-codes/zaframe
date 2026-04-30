@@ -3,7 +3,7 @@
  */
 
 import { api } from "./client";
-import type { BookingCreate, BookingResponse } from "@/types/booking";
+import type { BookingCreate, BookingListItem, BookingResponse } from "@/types/booking";
 
 export interface BookingsListParams {
   skip?: number;
@@ -42,6 +42,22 @@ export async function fetchBookings(
   if (status) searchParams.status = status;
 
   return api.get<BookingResponse[]>("api/v1/bookings", {
+    params: searchParams,
+  });
+}
+
+export async function fetchMyBookings(params?: {
+  skip?: number;
+  limit?: number;
+  include_guest_email?: boolean;
+}): Promise<BookingListItem[]> {
+  const searchParams: Record<string, string | number | boolean | undefined> = {};
+  if (params?.skip !== undefined) searchParams.skip = params.skip;
+  if (params?.limit !== undefined) searchParams.limit = params.limit;
+  if (params?.include_guest_email !== undefined)
+    searchParams.include_guest_email = params.include_guest_email;
+
+  return api.get<BookingListItem[]>("api/v1/bookings/my", {
     params: searchParams,
   });
 }

@@ -5,9 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { RequireAuth } from "@/features/auth/components";
 import { Card, Button, Skeleton } from "@/components/ui";
-import { useAuth } from "@/lib/auth";
-import { fetchBookings, fetchSlot, fetchStudio } from "@/lib/api";
-import type { BookingResponse } from "@/types/booking";
+import { fetchMyBookings } from "@/lib/api";
+import type { BookingListItem } from "@/types/booking";
 
 function formatPrice(cents: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -50,39 +49,16 @@ function getStatusBadge(status: string, paymentStatus: string | null) {
 }
 
 function BookingsList() {
-  const { user } = useAuth();
-
-  const { data: byUser } = useQuery({
-    queryKey: ["bookings", "user", user?.id],
-    queryFn: () => fetchBookings({ user_id: user!.id, limit: 50 }),
-    enabled: !!user?.id,
+  const { data: bookings, isLoading } = useQuery({
+    queryKey: ["bookings", "my"],
+    queryFn: () => fetchMyBookings({ limit: 50, include_guest_email: true }),
   });
-
-  const { data: byEmail } = useQuery({
-    queryKey: ["bookings", "guest", user?.email],
-    queryFn: () => fetchBookings({ guest_email: user!.email, limit: 50 }),
-    enabled: !!user?.email,
-  });
-
-  const bookings = useMemo(() => {
-    const map = new Map<number, BookingResponse>();
-    for (const b of byUser ?? []) map.set(b.id, b);
-    for (const b of byEmail ?? []) map.set(b.id, b);
-    return Array.from(map.values()).sort(
-      (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-    );
-  }, [byUser, byEmail]);
-
-  const isLoading =
-    (byUser === undefined && !!user?.id) ||
-    (byEmail === undefined && !!user?.email);
 
   if (isLoading) {
     return <BookingsSkeleton />;
   }
 
-  if (bookings.length === 0) {
+  if (!bookings || bookings.length === 0) {
     return (
       <div className="rounded-lg border border-neutral-200 bg-neutral-100 p-12 text-center text-neutral-600">
         <p className="font-medium">No bookings yet</p>
@@ -105,19 +81,9 @@ function BookingsList() {
   );
 }
 
-function BookingCard({ booking }: { booking: BookingResponse }) {
-  const { data: slot } = useQuery({
-    queryKey: ["slot", booking.slot_id],
-    queryFn: () => fetchSlot(booking.slot_id),
-  });
-
-  const { data: studio } = useQuery({
-    queryKey: ["studio", slot?.studio_id],
-    queryFn: () => fetchStudio(slot!.studio_id),
-    enabled: !!slot?.studio_id,
-  });
-
-  const isPast = slot ? new Date(slot.start_time) < new Date() : false;
+function BookingCard({ booking }: { booking: BookingListItem }) {
+  const { slot, studio } = booking;
+  const isPast = new Date(slot.start_time) < new Date();
   const isCancelled = booking.status === "cancelled";
 
   return (
@@ -127,19 +93,16 @@ function BookingCard({ booking }: { booking: BookingResponse }) {
           <div>
             <div className="mb-1 flex items-center gap-2">
               <span className="text-secondary font-semibold">
-                {studio?.name ?? "—"}
+                {studio.name}
               </span>
               {getStatusBadge(booking.status, booking.payment_status)}
             </div>
             <p className="text-sm text-neutral-600">
-              {slot?.title ?? "Slot"} ·{" "}
-              {slot ? formatDateTime(slot.start_time) : "—"}
+              {slot.title} · {formatDateTime(slot.start_time)}
             </p>
-            {slot && (
-              <p className="mt-1 font-medium text-primary">
-                {formatPrice(slot.price_cents)}
-              </p>
-            )}
+            <p className="mt-1 font-medium text-primary">
+              {formatPrice(slot.price_cents)}
+            </p>
           </div>
           <div className="flex items-center gap-2">
             {!isCancelled && !isPast && (

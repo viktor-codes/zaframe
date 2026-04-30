@@ -247,14 +247,19 @@ async def _get_course_slots_with_capacity(
     *,
     service: Service,
     for_update: bool = False,
+    now: datetime | None = None,
 ) -> list[_CapacityStats]:
     """Получить все слоты курса и их текущую заполненность."""
+    now_utc = now or datetime.now(UTC)
     slots = await uow.slots.list_by_service_active(service.id, for_update=for_update)
     if not slots:
         return []
 
     slot_ids = [s.id for s in slots]
-    counts_map = await uow.bookings.get_confirmed_pending_counts_by_slot_ids(slot_ids)
+    counts_map = await uow.bookings.get_confirmed_pending_counts_by_slot_ids(
+        slot_ids,
+        now=now_utc,
+    )
 
     return [
         _CapacityStats(
@@ -271,6 +276,7 @@ async def check_course_availability(
     *,
     service_id: int,
     for_update: bool = False,
+    now: datetime | None = None,
 ) -> CourseAvailabilityResult:
     """
     Проверка доступности курса с учётом overbooking‑логики.
@@ -281,10 +287,12 @@ async def check_course_availability(
     if service.type != ServiceType.COURSE:
         raise ValidationError("Service is not a course")
 
+    now_utc = now or datetime.now(UTC)
     stats = await _get_course_slots_with_capacity(
         uow,
         service=service,
         for_update=for_update,
+        now=now_utc,
     )
     if not stats:
         return CourseAvailabilityResult(
@@ -362,10 +370,12 @@ async def create_course_booking(
 
     Важно: операция атомарна в рамках AsyncSession/транзакции.
     """
+    now_utc = datetime.now(UTC)
     availability = await check_course_availability(
         uow,
         service_id=schema.service_id,
         for_update=True,
+        now=now_utc,
     )
     if not availability.can_book:
         raise ValidationError(
@@ -471,7 +481,10 @@ async def get_studio_public(
     slot_capacity_map: dict[int, tuple[int, int]] = {}
     if all_upcoming_slots:
         slot_ids = [s.id for s in all_upcoming_slots]
-        slot_capacity_map = await uow.bookings.get_confirmed_pending_counts_by_slot_ids(slot_ids)
+        slot_capacity_map = await uow.bookings.get_confirmed_pending_counts_by_slot_ids(
+            slot_ids,
+            now=now_utc,
+        )
 
     for service in studio.services:
         # Берём только будущие слоты этого сервиса (уже загружены через selectinload)
@@ -575,13 +588,19 @@ async def get_service_availability(
     if service.type != ServiceType.COURSE:
         raise ValidationError("Service is not a course")
 
+    now_utc = datetime.now(UTC)
     availability = await check_course_availability(
         uow,
         service_id=service_id,
         for_update=False,
+        now=now_utc,
     )
 
-    stats = await _get_course_slots_with_capacity(uow, service=service)
+    stats = await _get_course_slots_with_capacity(
+        uow,
+        service=service,
+        now=now_utc,
+    )
     if start_date is not None:
         stats = [s for s in stats if s.slot.start_time.date() >= start_date]
 
