@@ -1,14 +1,14 @@
-# ZaFrame
+# ZeeFrame
 
 **A full-stack booking and payments platform for movement studios** — classes, courses, time slots, capacity rules, and Stripe-powered checkout, exposed through a versioned HTTP API and a modern web client.
 
-ZaFrame is built as a production-minded monorepo: clear layering on the server, strict typing end to end, and operational basics (structured logging, request tracing, rate limiting, and consistent error responses) treated as first-class concerns.
+ZeeFrame is built as a production-minded monorepo: clear layering on the server, strict typing end to end, and operational basics (structured logging, request tracing, rate limiting, and consistent error responses) treated as first-class concerns.
 
 ---
 
 ## Why this project exists
 
-Small and mid-size studios often juggle calendars, payments, and waitlists in separate tools. ZaFrame models the domain **studios → services → scheduled slots → bookings → orders** in one place, so owners can sell drop-ins and multi-session courses while clients discover offerings, reserve seats, and pay without leaving the product flow.
+Small and mid-size studios often juggle calendars, payments, and waitlists in separate tools. ZeeFrame models the domain **studios → services → scheduled slots → bookings → orders** in one place, so owners can sell drop-ins and multi-session courses while clients discover offerings, reserve seats, and pay without leaving the product flow.
 
 ---
 
@@ -25,16 +25,16 @@ Small and mid-size studios often juggle calendars, payments, and waitlists in se
 
 ## Tech stack
 
-| Layer | Choices |
-|--------|---------|
-| **API** | Python 3.13+, **FastAPI**, **Pydantic v2**, **uv** |
-| **Data** | **PostgreSQL**, **SQLAlchemy 2** (async), **Alembic** migrations |
-| **Auth & security** | **python-jose** (JWT), **passlib** (bcrypt), refresh-token persistence |
-| **Payments & email** | **Stripe**, **Resend** |
-| **Resilience** | **slowapi** rate limiting, **structlog** |
-| **Web** | **Next.js 16**, **React 19**, **TypeScript** (strict) |
-| **UI & data on client** | **Tailwind CSS v4**, **TanStack Query**, **Zustand**, **Zod** |
-| **Quality** | **Ruff**, **pytest** + **pytest-asyncio**, **Vitest**, **Playwright** |
+| Layer                   | Choices                                                                |
+| ----------------------- | ---------------------------------------------------------------------- |
+| **API**                 | Python 3.13+, **FastAPI**, **Pydantic v2**, **uv**                     |
+| **Data**                | **PostgreSQL**, **SQLAlchemy 2** (async), **Alembic** migrations       |
+| **Auth & security**     | **python-jose** (JWT), **passlib** (bcrypt), refresh-token persistence |
+| **Payments & email**    | **Stripe**, **Resend**                                                 |
+| **Resilience**          | **slowapi** rate limiting, **structlog**                               |
+| **Web**                 | **Next.js 16**, **React 19**, **TypeScript** (strict)                  |
+| **UI & data on client** | **Tailwind CSS v4**, **TanStack Query**, **Zustand**, **Zod**          |
+| **Quality**             | **Ruff**, **pytest** + **pytest-asyncio**, **Vitest**, **Playwright**  |
 
 ---
 
@@ -49,7 +49,7 @@ flowchart LR
   subgraph client [Web client]
     Next[Next.js]
   end
-  subgraph api [ZaFrame API]
+  subgraph api [ZeeFrame API]
     R[Routers]
     S[Services]
     Rep[Repositories]
@@ -67,7 +67,7 @@ flowchart LR
   S --> Mail
 ```
 
-*Routers orchestrate HTTP; services encode rules; repositories talk to the database; external providers are invoked from documented boundaries (payments, transactional email, webhooks).*
+_Routers orchestrate HTTP; services encode rules; repositories talk to the database; external providers are invoked from documented boundaries (payments, transactional email, webhooks)._
 
 ---
 
@@ -90,7 +90,7 @@ The web app is organised by **feature modules** (navigation, home, studios, book
 ## Repository layout
 
 ```
-zaframe/
+Zeeframe/
 ├── backend/          # FastAPI application, domain models, migrations, tests
 └── frontend/         # Next.js application, features, E2E and unit tests
 ```
