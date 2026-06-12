@@ -24,8 +24,8 @@ from app.models import Base
 from app.models.mixins import TimestampMixin
 
 
-class OccurrenceStatus:
-    """Статус конкретного занятия (occurrence)."""
+class SlotStatus:
+    """Статусы слота (занятия)."""
 
     ACTIVE = "active"
     CANCELLED = "cancelled"
@@ -88,7 +88,7 @@ class Slot(TimestampMixin, Base):
     )  # Активен ли слот для бронирования в принципе
     status: Mapped[str] = mapped_column(
         String(20),
-        default=OccurrenceStatus.ACTIVE,
+        default=SlotStatus.ACTIVE,
         nullable=False,
         index=True,
     )  # Доменный статус занятия (active/cancelled)
@@ -109,5 +109,10 @@ class Slot(TimestampMixin, Base):
         "Booking", back_populates="slot", cascade="all, delete-orphan"
     )
 
-    # Вычисляемое свойство: сколько мест занято
-    # Будет реализовано через SQL запрос или property в схеме
+    def is_bookable(self) -> bool:
+        """Слот доступен для новых бронирований (не выключен админом и не отменён)."""
+        return self.is_active and self.status == SlotStatus.ACTIVE
+
+    def is_cancelled(self) -> bool:
+        """Занятие отменено (occurrence cancelled)."""
+        return self.status == SlotStatus.CANCELLED

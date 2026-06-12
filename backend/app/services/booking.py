@@ -12,8 +12,8 @@ from datetime import UTC, datetime
 from app.core.exceptions import NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
 from app.models.booking import Booking, BookingStatus, BookingType
-from app.schemas.booking import BookingCreate, BookingUpdate
 from app.models.user import User
+from app.schemas.booking import BookingCreate, BookingUpdate
 
 
 async def get_booking(uow: UnitOfWork, booking_id: int) -> Booking | None:
@@ -110,7 +110,7 @@ async def create_booking(uow: UnitOfWork, schema: BookingCreate) -> Booking:
     slot = await uow.slots.get_by_id_for_update(schema.slot_id)
     if slot is None:
         raise NotFoundError("Slot not found")
-    if not slot.is_active:
+    if not slot.is_bookable():
         raise ValidationError("Slot is not available for booking")
 
     now_utc = datetime.now(UTC)

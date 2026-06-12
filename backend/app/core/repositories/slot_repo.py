@@ -8,7 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.datetime_utils import to_naive_utc
-from app.models.slot import Slot
+from app.models.slot import Slot, SlotStatus
 
 
 class SlotRepository:
@@ -73,7 +73,7 @@ class SlotRepository:
     ) -> list[Slot]:
         query = select(Slot).where(
             Slot.service_id == service_id,
-            Slot.status == "active",
+            Slot.status == SlotStatus.ACTIVE,
             Slot.is_active.is_(True),
         )
         if for_update:

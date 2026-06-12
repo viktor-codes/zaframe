@@ -24,7 +24,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import async_session_maker
-from app.models import Service, ServiceCategory, ServiceType, Slot, Studio, User
+from app.models import Service, ServiceCategory, ServiceType, Slot, SlotStatus, Studio, User
 
 
 @dataclass(frozen=True)
@@ -310,7 +310,7 @@ async def seed_100_studios(db: AsyncSession) -> None:
                 price_cents=int(price_single_cents),
                 course_price_cents=None,
                 is_active=True,
-                status="active",
+                status=SlotStatus.ACTIVE,
             )
             db.add(slot)
 

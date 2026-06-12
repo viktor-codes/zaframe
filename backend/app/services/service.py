@@ -475,7 +475,7 @@ async def get_studio_public(
     all_upcoming_slots: list[Slot] = []
     for service in studio.services:
         for slot in service.slots:
-            if slot.start_time >= now_utc and slot.is_active and slot.status == "active":
+            if slot.start_time >= now_utc and slot.is_bookable():
                 all_upcoming_slots.append(slot)
 
     slot_capacity_map: dict[int, tuple[int, int]] = {}
@@ -491,7 +491,7 @@ async def get_studio_public(
         upcoming_slots = [
             s
             for s in service.slots
-            if s.start_time >= now_utc and s.is_active and s.status == "active"
+            if s.start_time >= now_utc and s.is_bookable()
         ]
         upcoming_slots.sort(key=lambda s: s.start_time)
 
