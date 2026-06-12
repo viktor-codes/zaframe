@@ -47,7 +47,7 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 ignore = [
     "E501",
     "B008",  # FastAPI Depends() / Query() in defaults — framework idiom
-    "E402",  # Late imports in seed.py / schema cycles
+    "E402",  # Late imports in scripts / schema cycles
 ]
 
 [tool.ruff.format]
