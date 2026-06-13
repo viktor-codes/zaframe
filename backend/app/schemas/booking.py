@@ -68,6 +68,10 @@ class BookingResponse(BookingBase):
     guest_email: str | None
     guest_phone: str | None
     status: str
+    reserved_until: datetime | None = Field(
+        None,
+        description="UTC timestamp until which a pending booking reserves slot capacity",
+    )
     checkout_session_id: str | None
     payment_intent_id: str | None
     payment_status: str | None

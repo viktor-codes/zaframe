@@ -9,6 +9,7 @@
 
 from datetime import UTC, datetime
 
+from app.core.booking_holds import get_booking_reserved_until
 from app.core.exceptions import NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
 from app.models.booking import Booking, BookingStatus, BookingType
@@ -131,6 +132,7 @@ async def create_booking(uow: UnitOfWork, schema: BookingCreate) -> Booking:
         guest_email=schema.guest_email,
         guest_phone=schema.guest_phone,
         status=BookingStatus.PENDING,
+        reserved_until=get_booking_reserved_until(now=now_utc),
         booking_type=getattr(schema, "booking_type", BookingType.SINGLE),
         service_id=getattr(schema, "service_id", None),
     )

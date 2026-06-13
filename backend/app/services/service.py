@@ -12,6 +12,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, time, timedelta
 
+from app.core.booking_holds import get_booking_reserved_until
 from app.core.datetime_utils import to_naive_utc
 from app.core.exceptions import NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
@@ -410,6 +411,7 @@ async def create_course_booking(
                 guest_email=schema.guest_email,
                 guest_phone=schema.guest_phone,
                 status=BookingStatus.PENDING,
+                reserved_until=get_booking_reserved_until(now=now_utc),
                 booking_type=BookingType.COURSE,
                 service_id=service.id,
                 order_id=order.id,

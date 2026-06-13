@@ -9,8 +9,11 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 import stripe
 
+from app.core.booking_holds import is_active_pending_hold
 from app.core.config import settings
 from app.core.exceptions import AppError, NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
@@ -43,6 +46,13 @@ async def create_checkout_session(
         raise NotFoundError("Booking not found")
     if booking.status != BookingStatus.PENDING:
         raise ValidationError("Booking is already paid or cancelled")
+    now_utc = datetime.now(UTC)
+    if not is_active_pending_hold(
+        status=booking.status,
+        reserved_until=booking.reserved_until,
+        now=now_utc,
+    ):
+        raise ValidationError("Booking hold has expired; please book again")
     if booking.checkout_session_id:
         raise ValidationError("Checkout Session already created for this booking")
 
@@ -98,6 +108,18 @@ async def create_order_checkout_session(
         raise NotFoundError("Order not found")
     if order.status != OrderStatus.PENDING:
         raise ValidationError("Order is already paid or cancelled")
+
+    now_utc = datetime.now(UTC)
+    bookings = await uow.bookings.list_(order_id=order_id, limit=1000)
+    for booking in bookings:
+        if booking.status != BookingStatus.PENDING:
+            continue
+        if not is_active_pending_hold(
+            status=booking.status,
+            reserved_until=booking.reserved_until,
+            now=now_utc,
+        ):
+            raise ValidationError("Booking hold has expired; please book again")
 
     if order.total_amount_cents <= 0:
         raise ValidationError("Order has no payable amount")

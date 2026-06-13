@@ -5,6 +5,7 @@ Covers: create_checkout_session, create_order_checkout_session,
 confirm_booking_after_payment, confirm_order_after_payment.
 """
 
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -30,6 +31,10 @@ def mock_uow():
     return uow
 
 
+def _active_hold_until() -> datetime:
+    return datetime.now(UTC) + timedelta(minutes=15)
+
+
 # --- create_checkout_session ---
 
 
@@ -37,6 +42,20 @@ def mock_uow():
 async def test_create_checkout_session_booking_not_found(mock_uow):
     mock_uow.bookings.get_by_id_with_slot = AsyncMock(return_value=None)
     with pytest.raises(NotFoundError, match="Booking not found"):
+        await create_checkout_session(
+            mock_uow, 1, success_url="https://a/s", cancel_url="https://a/c"
+        )
+
+
+@pytest.mark.asyncio
+async def test_create_checkout_session_expired_hold(mock_uow):
+    booking = MagicMock(spec=Booking)
+    booking.status = BookingStatus.PENDING
+    booking.reserved_until = datetime.now(UTC) - timedelta(minutes=1)
+    booking.checkout_session_id = None
+    booking.slot = MagicMock(spec=Slot)
+    mock_uow.bookings.get_by_id_with_slot = AsyncMock(return_value=booking)
+    with pytest.raises(ValidationError, match="hold has expired"):
         await create_checkout_session(
             mock_uow, 1, success_url="https://a/s", cancel_url="https://a/c"
         )
@@ -61,6 +80,7 @@ async def test_create_checkout_session_wrong_status(mock_uow):
 async def test_create_checkout_session_already_has_session_id(mock_uow):
     booking = MagicMock(spec=Booking)
     booking.status = BookingStatus.PENDING
+    booking.reserved_until = _active_hold_until()
     booking.checkout_session_id = "cs_old"
     booking.slot = MagicMock(spec=Slot)
     mock_uow.bookings.get_by_id_with_slot = AsyncMock(return_value=booking)
@@ -79,6 +99,7 @@ async def test_create_checkout_session_slot_price_zero(mock_uow):
     slot.id = 1
     booking = MagicMock(spec=Booking)
     booking.status = BookingStatus.PENDING
+    booking.reserved_until = _active_hold_until()
     booking.checkout_session_id = None
     booking.slot = slot
     booking.guest_email = None
@@ -98,6 +119,7 @@ async def test_create_checkout_session_no_stripe_key(mock_uow):
     slot.id = 1
     booking = MagicMock(spec=Booking)
     booking.status = BookingStatus.PENDING
+    booking.reserved_until = _active_hold_until()
     booking.checkout_session_id = None
     booking.slot = slot
     booking.guest_email = "g@x.com"
@@ -121,6 +143,7 @@ async def test_create_checkout_session_success(mock_uow):
     slot.id = 1
     booking = MagicMock(spec=Booking)
     booking.status = BookingStatus.PENDING
+    booking.reserved_until = _active_hold_until()
     booking.checkout_session_id = None
     booking.slot = slot
     booking.guest_email = "g@x.com"
@@ -159,6 +182,26 @@ async def test_create_order_checkout_session_order_not_found(mock_uow):
 
 
 @pytest.mark.asyncio
+async def test_create_order_checkout_session_expired_hold(mock_uow):
+    order = MagicMock(spec=Order)
+    order.status = OrderStatus.PENDING
+    order.total_amount_cents = 5000
+    order.service = MagicMock(spec=Service)
+    order.service.name = "Service"
+    order.id = 1
+    order.guest_email = None
+    expired_booking = MagicMock(spec=Booking)
+    expired_booking.status = BookingStatus.PENDING
+    expired_booking.reserved_until = datetime.now(UTC) - timedelta(minutes=1)
+    mock_uow.orders.get_by_id_with_service = AsyncMock(return_value=order)
+    mock_uow.bookings.list_ = AsyncMock(return_value=[expired_booking])
+    with pytest.raises(ValidationError, match="hold has expired"):
+        await create_order_checkout_session(
+            mock_uow, 1, success_url="https://a/s", cancel_url="https://a/c"
+        )
+
+
+@pytest.mark.asyncio
 async def test_create_order_checkout_session_wrong_status(mock_uow):
     order = MagicMock(spec=Order)
     order.status = OrderStatus.PAID
@@ -182,6 +225,7 @@ async def test_create_order_checkout_session_zero_amount(mock_uow):
     order.service = None
     order.id = 1
     mock_uow.orders.get_by_id_with_service = AsyncMock(return_value=order)
+    mock_uow.bookings.list_ = AsyncMock(return_value=[])
     with pytest.raises(ValidationError, match="no payable amount"):
         await create_order_checkout_session(
             mock_uow, 1, success_url="https://a/s", cancel_url="https://a/c"
@@ -198,6 +242,10 @@ async def test_create_order_checkout_session_success(mock_uow):
     order.id = 1
     order.guest_email = "o@x.com"
     mock_uow.orders.get_by_id_with_service = AsyncMock(return_value=order)
+    active_booking = MagicMock(spec=Booking)
+    active_booking.status = BookingStatus.PENDING
+    active_booking.reserved_until = _active_hold_until()
+    mock_uow.bookings.list_ = AsyncMock(return_value=[active_booking])
     mock_session = MagicMock()
     mock_session.id = "cs_order_1"
     mock_session.url = "https://checkout.stripe.com/order"

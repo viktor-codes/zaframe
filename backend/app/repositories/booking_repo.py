@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from sqlalchemy import and_, case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from sqlalchemy.sql.elements import ColumnElement
 
 from app.models.booking import Booking, BookingStatus
 from app.models.slot import Slot
@@ -20,9 +21,9 @@ class BookingRepository(WriteRepositoryMixin):
         self._session = session
 
     @staticmethod
-    def _pending_holds_capacity(*, now: datetime) -> bool:
+    def _active_pending_hold_clause(*, now: datetime) -> ColumnElement[bool]:
         """
-        Pending bookings only reserve capacity while the hold window is active.
+        SQL WHERE fragment: pending bookings that still reserve slot capacity.
 
         WHY: legacy rows may have reserved_until=NULL; those holds must not lock seats forever.
         """
@@ -137,7 +138,7 @@ class BookingRepository(WriteRepositoryMixin):
             .select_from(Booking)
             .where(
                 Booking.slot_id == slot_id,
-                self._pending_holds_capacity(now=now_utc),
+                self._active_pending_hold_clause(now=now_utc),
             )
         )
         return result.scalar_one_or_none() or 0
@@ -160,7 +161,7 @@ class BookingRepository(WriteRepositoryMixin):
                 ).label("confirmed"),
                 func.sum(
                     case(
-                        (self._pending_holds_capacity(now=now_utc), 1),
+                        (self._active_pending_hold_clause(now=now_utc), 1),
                         else_=0,
                     )
                 ).label("pending"),
