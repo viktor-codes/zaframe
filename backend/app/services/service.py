@@ -232,19 +232,39 @@ async def _get_course_slots_with_capacity(
     uow: UnitOfWork,
     *,
     service: Service,
-    for_update: bool = False,
     now: datetime | None = None,
 ) -> list[_CapacityStats]:
     """Получить все слоты курса и их текущую заполненность."""
     now_utc = now or datetime.now(UTC)
-    slots = await uow.slots.list_by_service_active(service.id, for_update=for_update)
+    slots = await uow.slots.list_by_service_active(service.id)
+    return await _build_course_capacity_stats(uow, slots=slots, now=now_utc)
+
+
+async def _get_course_slots_with_capacity_for_update(
+    uow: UnitOfWork,
+    *,
+    service: Service,
+    now: datetime | None = None,
+) -> list[_CapacityStats]:
+    """Lock active course slots, then read their fill levels for booking."""
+    now_utc = now or datetime.now(UTC)
+    slots = await uow.slots.list_by_service_active_for_update(service.id)
+    return await _build_course_capacity_stats(uow, slots=slots, now=now_utc)
+
+
+async def _build_course_capacity_stats(
+    uow: UnitOfWork,
+    *,
+    slots: list[Slot],
+    now: datetime,
+) -> list[_CapacityStats]:
     if not slots:
         return []
 
     slot_ids = [s.id for s in slots]
     counts_map = await uow.bookings.get_confirmed_pending_counts_by_slot_ids(
         slot_ids,
-        now=now_utc,
+        now=now,
     )
 
     return [
@@ -257,29 +277,10 @@ async def _get_course_slots_with_capacity(
     ]
 
 
-async def check_course_availability(
-    uow: UnitOfWork,
-    *,
-    service_id: int,
-    for_update: bool = False,
-    now: datetime | None = None,
+def _evaluate_course_availability(
+    service: Service,
+    stats: list[_CapacityStats],
 ) -> CourseAvailabilityResult:
-    """
-    Проверка доступности курса с учётом overbooking‑логики.
-    """
-    service = await uow.services.get_by_id(service_id)
-    if service is None:
-        raise NotFoundError("Service not found")
-    if service.type != ServiceType.COURSE:
-        raise ValidationError("Service is not a course")
-
-    now_utc = now or datetime.now(UTC)
-    stats = await _get_course_slots_with_capacity(
-        uow,
-        service=service,
-        for_update=for_update,
-        now=now_utc,
-    )
     if not stats:
         return CourseAvailabilityResult(
             can_book=False,
@@ -346,6 +347,56 @@ async def check_course_availability(
     )
 
 
+async def check_course_availability(
+    uow: UnitOfWork,
+    *,
+    service_id: int,
+    now: datetime | None = None,
+) -> CourseAvailabilityResult:
+    """
+    Проверка доступности курса с учётом overbooking‑логики.
+    """
+    service = await uow.services.get_by_id(service_id)
+    if service is None:
+        raise NotFoundError("Service not found")
+    if service.type != ServiceType.COURSE:
+        raise ValidationError("Service is not a course")
+
+    now_utc = now or datetime.now(UTC)
+    stats = await _get_course_slots_with_capacity(
+        uow,
+        service=service,
+        now=now_utc,
+    )
+    return _evaluate_course_availability(service, stats)
+
+
+async def check_course_availability_for_update(
+    uow: UnitOfWork,
+    *,
+    service_id: int,
+    now: datetime | None = None,
+) -> CourseAvailabilityResult:
+    """
+    Проверка доступности курса с блокировкой слотов (FOR UPDATE).
+
+    Используется перед созданием бронирования, чтобы исключить гонки по местам.
+    """
+    service = await uow.services.get_by_id(service_id)
+    if service is None:
+        raise NotFoundError("Service not found")
+    if service.type != ServiceType.COURSE:
+        raise ValidationError("Service is not a course")
+
+    now_utc = now or datetime.now(UTC)
+    stats = await _get_course_slots_with_capacity_for_update(
+        uow,
+        service=service,
+        now=now_utc,
+    )
+    return _evaluate_course_availability(service, stats)
+
+
 async def create_course_booking(
     uow: UnitOfWork,
     *,
@@ -357,10 +408,9 @@ async def create_course_booking(
     Важно: операция атомарна в рамках AsyncSession/транзакции.
     """
     now_utc = datetime.now(UTC)
-    availability = await check_course_availability(
+    availability = await check_course_availability_for_update(
         uow,
         service_id=schema.service_id,
-        for_update=True,
         now=now_utc,
     )
     if not availability.can_book:
@@ -576,7 +626,6 @@ async def get_service_availability(
     availability = await check_course_availability(
         uow,
         service_id=service_id,
-        for_update=False,
         now=now_utc,
     )
 
