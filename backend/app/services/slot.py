@@ -12,7 +12,7 @@ from datetime import datetime
 from app.core.datetime_utils import to_naive_utc
 from app.core.exceptions import NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
-from app.models.slot import Slot
+from app.models.slot import Slot, SlotStatus
 from app.schemas.slot import SlotCreate, SlotUpdate
 
 
@@ -37,7 +37,7 @@ async def get_slots(
     studio_id: int | None = None,
     start_from: datetime | None = None,
     start_to: datetime | None = None,
-    is_active: bool | None = None,
+    status: str | None = None,
 ) -> list[Slot]:
     """Список слотов с фильтрами."""
     return await uow.slots.list_(
@@ -46,7 +46,7 @@ async def get_slots(
         studio_id=studio_id,
         start_from=start_from,
         start_to=start_to,
-        is_active=is_active,
+        status=status,
     )
 
 
@@ -56,14 +56,14 @@ async def get_slots_count(
     studio_id: int | None = None,
     start_from: datetime | None = None,
     start_to: datetime | None = None,
-    is_active: bool | None = None,
+    status: str | None = None,
 ) -> int:
     """Подсчёт слотов для пагинации."""
     return await uow.slots.count(
         studio_id=studio_id,
         start_from=start_from,
         start_to=start_to,
-        is_active=is_active,
+        status=status,
     )
 
 
@@ -99,6 +99,11 @@ async def update_slot(
 ) -> Slot:
     """Обновить слот. Проверяет end_time > start_time при обновлении времён."""
     update_data = schema.model_dump(exclude_unset=True)
+    if "status" in update_data and update_data["status"] not in (
+        SlotStatus.ACTIVE,
+        SlotStatus.CANCELLED,
+    ):
+        raise ValidationError("Invalid slot status")
     start_time = update_data.get("start_time", slot.start_time)
     end_time = update_data.get("end_time", slot.end_time)
     if end_time <= start_time:

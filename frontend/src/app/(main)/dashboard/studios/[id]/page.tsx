@@ -423,7 +423,7 @@ function SlotCard({
     start_time: string;
     end_time: string;
     price_cents: number;
-    is_active: boolean;
+    status: "active" | "cancelled";
   };
   onDeleted: () => void;
 }) {
@@ -450,7 +450,7 @@ function SlotCard({
             {formatDateTime(slot.start_time)} · {formatPrice(slot.price_cents)}
           </p>
           <p className="text-xs text-neutral-500">
-            {slot.is_active ? "Active" : "Inactive"}
+            {slot.status === "active" ? "Active" : "Cancelled"}
           </p>
         </div>
         <div className="flex gap-2">

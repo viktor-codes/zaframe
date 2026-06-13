@@ -34,7 +34,7 @@ class SlotRepository(WriteRepositoryMixin):
         studio_id: int | None = None,
         start_from: datetime | None = None,
         start_to: datetime | None = None,
-        is_active: bool | None = None,
+        status: str | None = None,
     ) -> list[Slot]:
         query = select(Slot)
         if studio_id is not None:
@@ -43,8 +43,8 @@ class SlotRepository(WriteRepositoryMixin):
             query = query.where(Slot.start_time >= to_naive_utc(start_from))
         if start_to is not None:
             query = query.where(Slot.start_time <= to_naive_utc(start_to))
-        if is_active is not None:
-            query = query.where(Slot.is_active == is_active)
+        if status is not None:
+            query = query.where(Slot.status == status)
         query = query.offset(skip).limit(limit).order_by(Slot.start_time.asc())
         result = await self._session.execute(query)
         return list(result.scalars().all())
@@ -55,7 +55,7 @@ class SlotRepository(WriteRepositoryMixin):
         studio_id: int | None = None,
         start_from: datetime | None = None,
         start_to: datetime | None = None,
-        is_active: bool | None = None,
+        status: str | None = None,
     ) -> int:
         query = select(func.count()).select_from(Slot)
         if studio_id is not None:
@@ -64,22 +64,34 @@ class SlotRepository(WriteRepositoryMixin):
             query = query.where(Slot.start_time >= to_naive_utc(start_from))
         if start_to is not None:
             query = query.where(Slot.start_time <= to_naive_utc(start_to))
-        if is_active is not None:
-            query = query.where(Slot.is_active == is_active)
+        if status is not None:
+            query = query.where(Slot.status == status)
         result = await self._session.execute(query)
         return result.scalar_one()
 
-    async def list_by_service_active(
-        self, service_id: int, *, for_update: bool = False
-    ) -> list[Slot]:
-        query = select(Slot).where(
-            Slot.service_id == service_id,
-            Slot.status == SlotStatus.ACTIVE,
-            Slot.is_active.is_(True),
+    async def list_by_service_active(self, service_id: int) -> list[Slot]:
+        query = (
+            select(Slot)
+            .where(
+                Slot.service_id == service_id,
+                Slot.status == SlotStatus.ACTIVE,
+            )
+            .order_by(Slot.start_time.asc())
         )
-        if for_update:
-            query = query.with_for_update()
-        query = query.order_by(Slot.start_time.asc())
+        result = await self._session.execute(query)
+        return list(result.scalars().all())
+
+    async def list_by_service_active_for_update(self, service_id: int) -> list[Slot]:
+        """Active course slots locked for booking to prevent concurrent overbooking."""
+        query = (
+            select(Slot)
+            .where(
+                Slot.service_id == service_id,
+                Slot.status == SlotStatus.ACTIVE,
+            )
+            .with_for_update()
+            .order_by(Slot.start_time.asc())
+        )
         result = await self._session.execute(query)
         return list(result.scalars().all())
 

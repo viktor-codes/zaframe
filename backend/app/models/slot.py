@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models import Base
@@ -40,6 +40,14 @@ class Slot(TimestampMixin, Base):
     """
 
     __tablename__ = "slots"
+    __table_args__ = (
+        Index(
+            "idx_slots_studio_service_start_time",
+            "studio_id",
+            "service_id",
+            "start_time",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
 
@@ -82,16 +90,13 @@ class Slot(TimestampMixin, Base):
         Integer, nullable=True
     )  # Опциональная цена "внутри курса" за это занятие
 
-    # Статус
-    is_active: Mapped[bool] = mapped_column(
-        default=True
-    )  # Активен ли слот для бронирования в принципе
+    # Статус занятия (active/cancelled)
     status: Mapped[str] = mapped_column(
         String(20),
         default=SlotStatus.ACTIVE,
         nullable=False,
         index=True,
-    )  # Доменный статус занятия (active/cancelled)
+    )
 
     # Связи
     studio: Mapped[Studio] = relationship("Studio", back_populates="slots")
@@ -110,8 +115,8 @@ class Slot(TimestampMixin, Base):
     )
 
     def is_bookable(self) -> bool:
-        """Слот доступен для новых бронирований (не выключен админом и не отменён)."""
-        return self.is_active and self.status == SlotStatus.ACTIVE
+        """Слот доступен для новых бронирований."""
+        return self.status == SlotStatus.ACTIVE
 
     def is_cancelled(self) -> bool:
         """Занятие отменено (occurrence cancelled)."""

@@ -43,7 +43,7 @@ async def list_slots(
     studio_id: int | None = Query(None, description="Фильтр по студии"),
     start_from: datetime | None = Query(None, description="Начало диапазона дат"),
     start_to: datetime | None = Query(None, description="Конец диапазона дат"),
-    is_active: bool | None = Query(None, description="Фильтр по статусу"),
+    status: str | None = Query(None, description="Фильтр по статусу (active/cancelled)"),
 ) -> list[SlotResponse]:
     """
     Список слотов с фильтрами.
@@ -57,7 +57,7 @@ async def list_slots(
         studio_id=studio_id,
         start_from=start_from,
         start_to=start_to,
-        is_active=is_active,
+        status=status,
     )
     return slots
 
@@ -68,7 +68,7 @@ async def count_slots(
     studio_id: int | None = Query(None, description="Фильтр по студии"),
     start_from: datetime | None = Query(None, description="Начало диапазона дат"),
     start_to: datetime | None = Query(None, description="Конец диапазона дат"),
-    is_active: bool | None = Query(None, description="Фильтр по статусу"),
+    status: str | None = Query(None, description="Фильтр по статусу (active/cancelled)"),
 ) -> dict[str, int]:
     """Количество слотов (для пагинации)."""
     count = await get_slots_count(
@@ -76,7 +76,7 @@ async def count_slots(
         studio_id=studio_id,
         start_from=start_from,
         start_to=start_to,
-        is_active=is_active,
+        status=status,
     )
     return {"count": count}
 

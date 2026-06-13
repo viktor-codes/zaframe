@@ -131,7 +131,7 @@ async def list_studio_slots(
     limit: int = Query(20, ge=1, le=100, description="Максимум записей"),
     start_from: datetime | None = Query(None, description="Начало диапазона дат"),
     start_to: datetime | None = Query(None, description="Конец диапазона дат"),
-    is_active: bool | None = Query(None, description="Фильтр по статусу"),
+    status: str | None = Query(None, description="Фильтр по статусу (active/cancelled)"),
 ) -> list[SlotResponse]:
     """
     Расписание студии: слоты с фильтрами по датам.
@@ -143,7 +143,7 @@ async def list_studio_slots(
         studio_id=studio_id,
         start_from=start_from,
         start_to=start_to,
-        is_active=is_active,
+        status=status,
     )
     return slots
 

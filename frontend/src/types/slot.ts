@@ -14,7 +14,7 @@ export interface SlotBase {
 export interface SlotResponse extends SlotBase {
   id: number;
   studio_id: number;
-  is_active: boolean;
+  status: "active" | "cancelled";
   created_at: string;
   updated_at: string;
 }
@@ -35,5 +35,5 @@ export interface SlotUpdate {
   description?: string | null;
   max_capacity?: number;
   price_cents?: number;
-  is_active?: boolean;
+  status?: "active" | "cancelled";
 }

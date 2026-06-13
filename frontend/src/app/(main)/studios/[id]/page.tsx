@@ -87,7 +87,7 @@ export default function StudioDetailPage() {
     ],
     queryFn: () =>
       fetchStudioSlots(id, {
-        is_active: true,
+        status: "active",
         ...(dateRange ?? {}),
       }),
     enabled: !Number.isNaN(id) && !!studio,

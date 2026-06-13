@@ -38,7 +38,7 @@ export interface StudioSlotsParams {
   limit?: number;
   start_from?: string;
   start_to?: string;
-  is_active?: boolean;
+  status?: "active" | "cancelled";
 }
 
 const PAGE_SIZE = 12;
@@ -133,14 +133,14 @@ export async function fetchStudioSlots(
   studioId: number,
   params: StudioSlotsParams = {},
 ): Promise<SlotResponse[]> {
-  const { skip = 0, limit = 50, start_from, start_to, is_active } = params;
+  const { skip = 0, limit = 50, start_from, start_to, status } = params;
   const searchParams: Record<string, string | number | boolean | undefined> = {
     skip,
     limit,
   };
   if (start_from) searchParams.start_from = start_from;
   if (start_to) searchParams.start_to = start_to;
-  if (is_active !== undefined) searchParams.is_active = is_active;
+  if (status !== undefined) searchParams.status = status;
 
   return api.get<SlotResponse[]>(`api/v1/studios/${studioId}/slots`, {
     params: searchParams,

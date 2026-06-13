@@ -5,8 +5,11 @@ Pydantic schemas для Slot модели.
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+
+SlotStatusLiteral = Literal["active", "cancelled"]
 
 
 class SlotBase(BaseModel):
@@ -44,7 +47,7 @@ class SlotUpdate(BaseModel):
     description: str | None = Field(None, max_length=1000)
     max_capacity: int | None = Field(None, ge=1)
     price_cents: int | None = Field(None, ge=0)
-    is_active: bool | None = None
+    status: SlotStatusLiteral | None = Field(None, description="Статус занятия")
 
 
 class SlotResponse(SlotBase):
@@ -52,7 +55,7 @@ class SlotResponse(SlotBase):
 
     id: int
     studio_id: int
-    is_active: bool
+    status: SlotStatusLiteral
     created_at: datetime
     updated_at: datetime
 

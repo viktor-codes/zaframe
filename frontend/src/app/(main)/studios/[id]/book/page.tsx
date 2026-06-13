@@ -46,7 +46,7 @@ function BookPageContent() {
 
   const { data: slots } = useQuery({
     queryKey: ["studio", studioId, "slots"],
-    queryFn: () => fetchStudioSlots(studioId, { is_active: true }),
+    queryFn: () => fetchStudioSlots(studioId, { status: "active" }),
     enabled: !!studio,
   });
 
