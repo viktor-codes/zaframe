@@ -6,9 +6,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.schedule import Schedule
+from app.repositories.base import WriteRepositoryMixin
 
 
-class ScheduleRepository:
+class ScheduleRepository(WriteRepositoryMixin):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 

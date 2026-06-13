@@ -6,9 +6,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.refresh_token import RefreshToken
+from app.repositories.base import WriteRepositoryMixin
 
 
-class RefreshTokenRepository:
+class RefreshTokenRepository(WriteRepositoryMixin):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 

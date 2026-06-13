@@ -7,9 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.service import Service
+from app.repositories.base import WriteRepositoryMixin
 
 
-class ServiceRepository:
+class ServiceRepository(WriteRepositoryMixin):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 

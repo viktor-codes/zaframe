@@ -12,9 +12,10 @@ from sqlalchemy.orm import selectinload
 
 from app.models.booking import Booking, BookingStatus
 from app.models.slot import Slot
+from app.repositories.base import WriteRepositoryMixin
 
 
-class BookingRepository:
+class BookingRepository(WriteRepositoryMixin):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 

@@ -10,9 +10,10 @@ from sqlalchemy.orm import selectinload
 
 from app.models.service import Service
 from app.models.studio import Studio
+from app.repositories.base import WriteRepositoryMixin
 
 
-class StudioRepository:
+class StudioRepository(WriteRepositoryMixin):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 

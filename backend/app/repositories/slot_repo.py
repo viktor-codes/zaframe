@@ -9,9 +9,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.datetime_utils import to_naive_utc
 from app.models.slot import Slot, SlotStatus
+from app.repositories.base import WriteRepositoryMixin
 
 
-class SlotRepository:
+class SlotRepository(WriteRepositoryMixin):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
