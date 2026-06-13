@@ -24,9 +24,8 @@ from datetime import UTC, date, datetime, time, timedelta
 from sqlalchemy import select, text
 
 from app.core.config import settings
-from app.core.database import async_session_maker
 from app.core.exceptions import AppError
-from app.core.uow import UnitOfWork, create_uow
+from app.core.uow import UnitOfWork, uow_scope
 from app.models.service import Service, ServiceType
 from app.models.slot import Slot
 from app.models.studio import Studio
@@ -360,32 +359,26 @@ async def main(force_seed: bool = False) -> None:
     3) Публичные флоу (студия по slug, доступность)
     4) Нагрузка листингов и поиска
     """
-    async with async_session_maker() as session:
-        uow = create_uow(session)
-        try:
-            result = await uow.session.execute(select(Service))
-            existing = list(result.scalars().all())
-            if force_seed and existing:
-                await truncate_studios_services(uow)
-                existing = []
-            if not existing:
-                print("[seed] seeding demo data...")
-                await seed_demo_data(uow)
-            else:
-                print(f"[seed] found {len(existing)} services, skipping seed.")
+    async with uow_scope() as uow:
+        result = await uow.session.execute(select(Service))
+        existing = list(result.scalars().all())
+        if force_seed and existing:
+            await truncate_studios_services(uow)
+            existing = []
+        if not existing:
+            print("[seed] seeding demo data...")
+            await seed_demo_data(uow)
+        else:
+            print(f"[seed] found {len(existing)} services, skipping seed.")
 
-            print("[simulate] bookings...")
-            await simulate_bookings(uow)
-            print("[simulate] public flows...")
-            await simulate_public_flows(uow)
-            print("[simulate] list/search load...")
-            await simulate_list_and_search(uow)
+        print("[simulate] bookings...")
+        await simulate_bookings(uow)
+        print("[simulate] public flows...")
+        await simulate_public_flows(uow)
+        print("[simulate] list/search load...")
+        await simulate_list_and_search(uow)
 
-            await uow.commit()
-            print("[done] commit ok.")
-        except Exception:
-            await uow.rollback()
-            raise
+        print("[done] commit ok.")
 
 
 if __name__ == "__main__":

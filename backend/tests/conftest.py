@@ -36,15 +36,14 @@ async def app_with_rollback_uow():
     """
     from app.api.deps import get_uow
     from app.core.database import async_session_maker
-    from app.core.uow import create_uow
+    from app.core.uow import uow_scope
     from app.main import app
 
     async with async_session_maker() as session:
 
         async def get_uow_override():
-            uow = create_uow(session)
-            yield uow
-            # Не коммитим — в конце теста делаем rollback
+            async with uow_scope(session=session, auto_commit=False) as uow:
+                yield uow
 
         app.dependency_overrides[get_uow] = get_uow_override
         # Для интеграционных тестов webhook: одна и та же сессия на весь тест

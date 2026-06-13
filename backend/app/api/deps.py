@@ -13,10 +13,10 @@ from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from starlette.requests import Request
 
-from app.core.database import async_session_maker, get_db
+from app.core.database import get_db
 from app.core.exceptions import UnauthorizedError
 from app.core.middleware.logging_middleware import USER_ID_STATE_KEY
-from app.core.uow import UnitOfWork, create_uow
+from app.core.uow import UnitOfWork, uow_scope
 from app.models.user import User
 from app.services.auth import get_current_user_from_token
 
@@ -30,14 +30,8 @@ async def get_uow() -> AsyncGenerator[UnitOfWork]:
     Creates AsyncSession, wraps UnitOfWork with repositories, commits on success
     and rolls back on error.
     """
-    async with async_session_maker() as session:
-        uow = create_uow(session)
-        try:
-            yield uow
-            await uow.commit()
-        except Exception:
-            await uow.rollback()
-            raise
+    async with uow_scope() as uow:
+        yield uow
 
 
 async def get_current_user(
