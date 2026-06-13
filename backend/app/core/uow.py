@@ -10,6 +10,7 @@ from app.repositories import (
     OrderRepository,
     RefreshTokenRepository,
     ScheduleRepository,
+    SearchRepository,
     ServiceRepository,
     SlotRepository,
     StudioRepository,
@@ -35,6 +36,7 @@ class UnitOfWork:
     schedules: ScheduleRepository
     refresh_tokens: RefreshTokenRepository
     orders: OrderRepository
+    search: SearchRepository
     _committed: bool = field(default=False, init=False, repr=False)
 
     async def commit(self) -> None:
@@ -58,6 +60,7 @@ def create_uow(session: AsyncSession) -> UnitOfWork:
         schedules=ScheduleRepository(session),
         refresh_tokens=RefreshTokenRepository(session),
         orders=OrderRepository(session),
+        search=SearchRepository(session),
     )
 
 
