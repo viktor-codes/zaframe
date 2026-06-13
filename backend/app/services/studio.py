@@ -94,10 +94,7 @@ async def create_studio(uow: UnitOfWork, schema: StudioCreate) -> Studio:
         phone=schema.phone,
         address=schema.address,
     )
-    uow.session.add(studio)
-    await uow.session.flush()
-    await uow.session.refresh(studio)
-    return studio
+    return await uow.studios.add(studio)
 
 
 async def update_studio(
@@ -109,12 +106,9 @@ async def update_studio(
     update_data = schema.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(studio, field, value)
-    await uow.session.flush()
-    await uow.session.refresh(studio)
-    return studio
+    return await uow.studios.save(studio)
 
 
 async def delete_studio(uow: UnitOfWork, studio: Studio) -> None:
     """Удалить студию. Cascade удалит связанные слоты."""
-    await uow.session.delete(studio)
-    await uow.session.flush()
+    await uow.studios.delete(studio)

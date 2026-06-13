@@ -89,10 +89,7 @@ async def create_slot(uow: UnitOfWork, schema: SlotCreate) -> Slot:
         max_capacity=schema.max_capacity,
         price_cents=schema.price_cents,
     )
-    uow.session.add(slot)
-    await uow.session.flush()
-    await uow.session.refresh(slot)
-    return slot
+    return await uow.slots.add(slot)
 
 
 async def update_slot(
@@ -110,12 +107,9 @@ async def update_slot(
         if field in ("start_time", "end_time") and value is not None:
             value = to_naive_utc(value)
         setattr(slot, field, value)
-    await uow.session.flush()
-    await uow.session.refresh(slot)
-    return slot
+    return await uow.slots.save(slot)
 
 
 async def delete_slot(uow: UnitOfWork, slot: Slot) -> None:
     """Удалить слот. Cascade удалит бронирования."""
-    await uow.session.delete(slot)
-    await uow.session.flush()
+    await uow.slots.delete(slot)

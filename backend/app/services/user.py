@@ -31,7 +31,4 @@ async def get_or_create_user(
     if user is not None:
         return user
     user = User(email=email, name=name, phone=phone)
-    uow.session.add(user)
-    await uow.session.flush()
-    await uow.session.refresh(user)
-    return user
+    return await uow.users.add(user)

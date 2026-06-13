@@ -50,10 +50,7 @@ def _combine_date_time(d: date, t: time) -> datetime:
 async def create_service(uow: UnitOfWork, studio_id: int, data: dict) -> Service:
     """Создать услугу."""
     service = Service(studio_id=studio_id, **data)
-    uow.session.add(service)
-    await uow.session.flush()
-    await uow.session.refresh(service)
-    return service
+    return await uow.services.add(service)
 
 
 async def get_service(uow: UnitOfWork, service_id: int) -> Service | None:
@@ -78,17 +75,13 @@ async def update_service(
     update_data = schema.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(service, field, value)
-    await uow.session.flush()
-    await uow.session.refresh(service)
-    return service
+    return await uow.services.save(service)
 
 
 async def deactivate_service(uow: UnitOfWork, service: Service) -> Service:
     """Деактивировать услугу (не удаляем, чтобы не ломать слоты/бронирования)."""
     service.is_active = False
-    await uow.session.flush()
-    await uow.session.refresh(service)
-    return service
+    return await uow.services.save(service)
 
 
 async def create_schedule(uow: UnitOfWork, schema: ScheduleCreate) -> Schedule:
@@ -103,10 +96,7 @@ async def create_schedule(uow: UnitOfWork, schema: ScheduleCreate) -> Schedule:
         valid_from=schema.valid_from,
         valid_to=schema.valid_to,
     )
-    uow.session.add(schedule)
-    await uow.session.flush()
-    await uow.session.refresh(schedule)
-    return schedule
+    return await uow.schedules.add(schedule)
 
 
 async def get_schedules_for_service(
@@ -125,8 +115,7 @@ async def get_schedule(uow: UnitOfWork, schedule_id: int) -> Schedule | None:
 
 async def delete_schedule(uow: UnitOfWork, schedule: Schedule) -> None:
     """Удалить шаблон расписания."""
-    await uow.session.delete(schedule)
-    await uow.session.flush()
+    await uow.schedules.delete(schedule)
 
 
 async def get_schedule_or_raise(uow: UnitOfWork, schedule_id: int) -> Schedule:
@@ -222,13 +211,9 @@ async def occurrence_generator(
             price_cents=service.price_single_cents,
             course_price_cents=service.price_course_cents,
         )
-        uow.session.add(slot)
         created_slots.append(slot)
 
-    await uow.session.flush()
-    for slot in created_slots:
-        await uow.session.refresh(slot)
-    return created_slots
+    return await uow.slots.add_all(created_slots)
 
 
 @dataclass
@@ -400,42 +385,39 @@ async def create_course_booking(
     remainder = total_amount_cents % len(slots)
     prices = [base_unit + 1] * remainder + [base_unit] * (len(slots) - remainder)
 
-    order = Order(
-        studio_id=service.studio_id,
-        service_id=service.id,
-        user_id=None,
-        guest_email=schema.guest_email,
-        guest_name=schema.guest_name,
-        total_amount_cents=total_amount_cents,
-        currency="eur",
-        status=OrderStatus.PENDING,
+    order = await uow.orders.add(
+        Order(
+            studio_id=service.studio_id,
+            service_id=service.id,
+            user_id=None,
+            guest_email=schema.guest_email,
+            guest_name=schema.guest_name,
+            total_amount_cents=total_amount_cents,
+            currency="eur",
+            status=OrderStatus.PENDING,
+        )
     )
-    uow.session.add(order)
-    await uow.session.flush()
-    await uow.session.refresh(order)
 
     bookings: list[Booking] = []
     for idx, slot in enumerate(slots):
         unit_price = prices[idx]
-        booking = Booking(
-            slot_id=slot.id,
-            user_id=None,
-            guest_session_id=None,
-            guest_name=schema.guest_name,
-            guest_email=schema.guest_email,
-            guest_phone=schema.guest_phone,
-            status=BookingStatus.PENDING,
-            booking_type=BookingType.COURSE,
-            service_id=service.id,
-            order_id=order.id,
-            unit_price_cents=unit_price,
+        bookings.append(
+            Booking(
+                slot_id=slot.id,
+                user_id=None,
+                guest_session_id=None,
+                guest_name=schema.guest_name,
+                guest_email=schema.guest_email,
+                guest_phone=schema.guest_phone,
+                status=BookingStatus.PENDING,
+                booking_type=BookingType.COURSE,
+                service_id=service.id,
+                order_id=order.id,
+                unit_price_cents=unit_price,
+            )
         )
-        uow.session.add(booking)
-        bookings.append(booking)
 
-    await uow.session.flush()
-    for b in bookings:
-        await uow.session.refresh(b)
+    bookings = await uow.bookings.add_all(bookings)
 
     order_schema = OrderResponse.model_validate(order)
     # Отложим полноценный маппинг BookingResponse, пока основной поток остаётся single-slot

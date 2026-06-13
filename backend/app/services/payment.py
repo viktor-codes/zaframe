@@ -75,7 +75,7 @@ async def create_checkout_session(
     )
 
     booking.checkout_session_id = session.id
-    await uow.session.flush()
+    await uow.bookings.flush()
 
     return {"checkout_url": session.url or "", "session_id": session.id}
 
@@ -131,7 +131,7 @@ async def create_order_checkout_session(
         }
     )
 
-    await uow.session.flush()
+    await uow.orders.flush()
 
     return {"checkout_url": session.url or "", "session_id": session.id}
 
@@ -157,7 +157,7 @@ async def confirm_booking_after_payment(
     booking.payment_status = "succeeded"
     if payment_intent_id:
         booking.payment_intent_id = payment_intent_id
-    await uow.session.flush()
+    await uow.bookings.flush()
     return True
 
 
@@ -187,5 +187,5 @@ async def confirm_order_after_payment(
         booking.payment_status = "succeeded"
         if payment_intent_id:
             booking.payment_intent_id = payment_intent_id
-    await uow.session.flush()
+    await uow.orders.flush()
     return True

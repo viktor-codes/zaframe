@@ -134,10 +134,7 @@ async def create_booking(uow: UnitOfWork, schema: BookingCreate) -> Booking:
         booking_type=getattr(schema, "booking_type", BookingType.SINGLE),
         service_id=getattr(schema, "service_id", None),
     )
-    uow.session.add(booking)
-    await uow.session.flush()
-    await uow.session.refresh(booking)
-    return booking
+    return await uow.bookings.add(booking)
 
 
 async def cancel_booking(uow: UnitOfWork, booking: Booking) -> Booking:
@@ -151,9 +148,7 @@ async def cancel_booking(uow: UnitOfWork, booking: Booking) -> Booking:
 
     booking.status = BookingStatus.CANCELLED
     booking.cancelled_at = datetime.now(UTC)
-    await uow.session.flush()
-    await uow.session.refresh(booking)
-    return booking
+    return await uow.bookings.save(booking)
 
 
 async def update_booking(
@@ -165,6 +160,4 @@ async def update_booking(
     update_data = schema.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(booking, field, value)
-    await uow.session.flush()
-    await uow.session.refresh(booking)
-    return booking
+    return await uow.bookings.save(booking)

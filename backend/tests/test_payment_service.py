@@ -25,8 +25,8 @@ from app.services.payment import (
 @pytest.fixture
 def mock_uow():
     uow = MagicMock()
-    uow.session = MagicMock()
-    uow.session.flush = AsyncMock()
+    uow.bookings.flush = AsyncMock()
+    uow.orders.flush = AsyncMock()
     return uow
 
 
@@ -143,7 +143,7 @@ async def test_create_checkout_session_success(mock_uow):
     assert result["checkout_url"] == "https://checkout.stripe.com/pay"
     assert result["session_id"] == "cs_123"
     assert booking.checkout_session_id == "cs_123"
-    mock_uow.session.flush.assert_awaited_once()
+    mock_uow.bookings.flush.assert_awaited_once()
 
 
 # --- create_order_checkout_session ---
@@ -215,7 +215,7 @@ async def test_create_order_checkout_session_success(mock_uow):
             )
     assert result["session_id"] == "cs_order_1"
     assert result["checkout_url"] == "https://checkout.stripe.com/order"
-    mock_uow.session.flush.assert_awaited_once()
+    mock_uow.orders.flush.assert_awaited_once()
 
 
 # --- confirm_booking_after_payment ---
@@ -235,7 +235,7 @@ async def test_confirm_booking_after_payment_already_confirmed(mock_uow):
     mock_uow.bookings.get_by_id = AsyncMock(return_value=booking)
     ok = await confirm_booking_after_payment(mock_uow, 1)
     assert ok is True
-    mock_uow.session.flush.assert_not_called()
+    mock_uow.bookings.flush.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -248,7 +248,7 @@ async def test_confirm_booking_after_payment_success(mock_uow):
     assert booking.status == BookingStatus.CONFIRMED
     assert booking.payment_status == "succeeded"
     assert booking.payment_intent_id == "pi_123"
-    mock_uow.session.flush.assert_awaited_once()
+    mock_uow.bookings.flush.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -283,7 +283,7 @@ async def test_confirm_order_after_payment_already_paid(mock_uow):
     ok = await confirm_order_after_payment(mock_uow, 1)
     assert ok is True
     mock_uow.bookings.list_.assert_not_called()
-    mock_uow.session.flush.assert_not_called()
+    mock_uow.orders.flush.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -304,4 +304,4 @@ async def test_confirm_order_after_payment_success_confirms_bookings(mock_uow):
     assert b1.payment_status == "succeeded"
     assert b1.payment_intent_id == "pi_ord"
     assert b2.status == BookingStatus.CONFIRMED
-    mock_uow.session.flush.assert_awaited_once()
+    mock_uow.orders.flush.assert_awaited_once()

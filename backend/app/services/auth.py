@@ -8,8 +8,8 @@ from app.core.config import settings
 from app.core.exceptions import UnauthorizedError, ValidationError
 from app.core.security import (
     create_access_token,
-    create_refresh_token,
     create_csrf_token,
+    create_refresh_token,
     generate_magic_link_token,
     get_magic_link_expires_at,
     get_user_id_from_access_token,
@@ -39,7 +39,7 @@ async def request_magic_link(
     token = generate_magic_link_token()
     user.magic_link_token = hash_magic_link_token(token)
     user.magic_link_expires_at = get_magic_link_expires_at()
-    await uow.session.flush()
+    await uow.users.flush()
 
     magic_link_url = f"{settings.FRONTEND_URL}/auth/verify?token={token}"
     await send_magic_link_email(email, magic_link_url)
@@ -64,8 +64,7 @@ async def verify_magic_link(
     user.magic_link_token = None
     user.magic_link_expires_at = None
     user.last_login_at = now_utc
-    await uow.session.flush()
-    await uow.session.refresh(user)
+    user = await uow.users.save(user)
 
     access_token = create_access_token(user.id, user.email)
     refresh_token = create_refresh_token(user.id)
@@ -73,14 +72,13 @@ async def verify_magic_link(
 
     refresh_data = parse_refresh_token(refresh_token)
     if refresh_data is not None:
-        uow.session.add(
+        await uow.refresh_tokens.add(
             RefreshToken(
                 user_id=user.id,
                 jti=refresh_data.jti,
                 expires_at=refresh_data.expires_at,
             )
         )
-        await uow.session.flush()
 
     return user, access_token, refresh_token, csrf_token
 
@@ -120,7 +118,7 @@ async def refresh_access_token(
 
     new_data = parse_refresh_token(new_refresh_token)
     if new_data is not None:
-        uow.session.add(
+        await uow.refresh_tokens.add(
             RefreshToken(
                 user_id=user.id,
                 jti=new_data.jti,
@@ -128,7 +126,7 @@ async def refresh_access_token(
             )
         )
 
-    await uow.session.flush()
+    await uow.refresh_tokens.flush()
     return access_token, new_refresh_token, new_csrf_token
 
 
@@ -166,4 +164,4 @@ async def logout_current_session(
     if refresh_session.revoked_at is None:
         refresh_session.revoked_at = now_utc
         refresh_session.last_used_at = now_utc
-        await uow.session.flush()
+        await uow.refresh_tokens.save(refresh_session)
