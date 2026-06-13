@@ -9,12 +9,9 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
-
-import stripe
-
 from app.core.booking_holds import is_active_pending_hold
 from app.core.config import settings
+from app.core.datetime_utils import utc_now
 from app.core.exceptions import AppError, NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
 from app.models.booking import BookingStatus
@@ -46,7 +43,7 @@ async def create_checkout_session(
         raise NotFoundError("Booking not found")
     if booking.status != BookingStatus.PENDING:
         raise ValidationError("Booking is already paid or cancelled")
-    now_utc = datetime.now(UTC)
+    now_utc = utc_now()
     if not is_active_pending_hold(
         status=booking.status,
         reserved_until=booking.reserved_until,
@@ -109,7 +106,7 @@ async def create_order_checkout_session(
     if order.status != OrderStatus.PENDING:
         raise ValidationError("Order is already paid or cancelled")
 
-    now_utc = datetime.now(UTC)
+    now_utc = utc_now()
     bookings = await uow.bookings.list_(order_id=order_id, limit=1000)
     for booking in bookings:
         if booking.status != BookingStatus.PENDING:
@@ -177,6 +174,7 @@ async def confirm_booking_after_payment(
         return True
     booking.status = BookingStatus.CONFIRMED
     booking.payment_status = "succeeded"
+    booking.reserved_until = None
     if payment_intent_id:
         booking.payment_intent_id = payment_intent_id
     await uow.bookings.flush()
@@ -207,6 +205,7 @@ async def confirm_order_after_payment(
             continue
         booking.status = BookingStatus.CONFIRMED
         booking.payment_status = "succeeded"
+        booking.reserved_until = None
         if payment_intent_id:
             booking.payment_intent_id = payment_intent_id
     await uow.orders.flush()

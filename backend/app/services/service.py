@@ -10,10 +10,10 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from dataclasses import dataclass
-from datetime import UTC, date, datetime, time, timedelta
+from datetime import date, datetime, time, timedelta
 
 from app.core.booking_holds import get_booking_reserved_until
-from app.core.datetime_utils import to_naive_utc
+from app.core.datetime_utils import studio_local_date_now, studio_local_to_utc, utc_now
 from app.core.exceptions import NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
 from app.models import (
@@ -40,12 +40,6 @@ from app.schemas import (
     ServiceUpdate,
     StudioPublicResponse,
 )
-
-
-def _combine_date_time(d: date, t: time) -> datetime:
-    """Комбинирует date + time и приводит к naive UTC."""
-    dt = datetime.combine(d, t)
-    return to_naive_utc(dt)
 
 
 async def create_service(uow: UnitOfWork, studio_id: int, data: dict) -> Service:
@@ -161,7 +155,11 @@ async def occurrence_generator(
     if service is None:
         raise NotFoundError("Service not found in this studio")
 
-    start_date = start_date or date.today()
+    studio = await uow.studios.get_by_id(studio_id)
+    if studio is None:
+        raise NotFoundError("Studio not found")
+
+    start_date = start_date or studio_local_date_now(studio.timezone)
 
     # Нормализуем start_date к ближайшему понедельнику назад, чтобы удобно идти по неделям.
     start_monday = start_date - timedelta(days=start_date.weekday())
@@ -180,7 +178,7 @@ async def occurrence_generator(
                 # Пропускаем занятия до стартовой даты
                 continue
 
-            start_dt = _combine_date_time(day_date, start_time)
+            start_dt = studio_local_to_utc(day_date, start_time, studio.timezone)
             end_dt = start_dt + duration
             planned_intervals.append((start_dt, end_dt))
 
@@ -235,7 +233,7 @@ async def _get_course_slots_with_capacity(
     now: datetime | None = None,
 ) -> list[_CapacityStats]:
     """Получить все слоты курса и их текущую заполненность."""
-    now_utc = now or datetime.now(UTC)
+    now_utc = now or utc_now()
     slots = await uow.slots.list_by_service_active(service.id)
     return await _build_course_capacity_stats(uow, slots=slots, now=now_utc)
 
@@ -247,7 +245,7 @@ async def _get_course_slots_with_capacity_for_update(
     now: datetime | None = None,
 ) -> list[_CapacityStats]:
     """Lock active course slots, then read their fill levels for booking."""
-    now_utc = now or datetime.now(UTC)
+    now_utc = now or utc_now()
     slots = await uow.slots.list_by_service_active_for_update(service.id)
     return await _build_course_capacity_stats(uow, slots=slots, now=now_utc)
 
@@ -362,7 +360,7 @@ async def check_course_availability(
     if service.type != ServiceType.COURSE:
         raise ValidationError("Service is not a course")
 
-    now_utc = now or datetime.now(UTC)
+    now_utc = now or utc_now()
     stats = await _get_course_slots_with_capacity(
         uow,
         service=service,
@@ -388,7 +386,7 @@ async def check_course_availability_for_update(
     if service.type != ServiceType.COURSE:
         raise ValidationError("Service is not a course")
 
-    now_utc = now or datetime.now(UTC)
+    now_utc = now or utc_now()
     stats = await _get_course_slots_with_capacity_for_update(
         uow,
         service=service,
@@ -407,7 +405,7 @@ async def create_course_booking(
 
     Важно: операция атомарна в рамках AsyncSession/транзакции.
     """
-    now_utc = datetime.now(UTC)
+    now_utc = utc_now()
     availability = await check_course_availability_for_update(
         uow,
         service_id=schema.service_id,
@@ -505,7 +503,7 @@ async def get_studio_public(
     services_public: list[PublicService] = []
 
     # Собираем все будущие слоты студии, чтобы одним запросом посчитать заполненность.
-    now_utc = datetime.now(UTC)
+    now_utc = utc_now()
     all_upcoming_slots: list[Slot] = []
     for service in studio.services:
         for slot in service.slots:
@@ -622,7 +620,7 @@ async def get_service_availability(
     if service.type != ServiceType.COURSE:
         raise ValidationError("Service is not a course")
 
-    now_utc = datetime.now(UTC)
+    now_utc = utc_now()
     availability = await check_course_availability(
         uow,
         service_id=service_id,

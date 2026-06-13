@@ -56,6 +56,15 @@ class Studio(TimestampMixin, Base):
         default=list,
     )
 
+    # IANA timezone for schedule wall-clock and local display (e.g. Europe/Berlin).
+    # DB default 'UTC' is for dev/SQL only; StudioCreate API requires explicit value.
+    timezone: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        default="UTC",
+        server_default="UTC",
+    )
+
     # Настройки
     is_active: Mapped[bool] = mapped_column(default=True)  # Активна ли студия
 

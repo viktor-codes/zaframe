@@ -7,7 +7,7 @@ from datetime import datetime
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.datetime_utils import to_naive_utc
+from app.core.datetime_utils import ensure_utc
 from app.models.slot import Slot, SlotStatus
 from app.repositories.base import WriteRepositoryMixin
 
@@ -40,9 +40,9 @@ class SlotRepository(WriteRepositoryMixin):
         if studio_id is not None:
             query = query.where(Slot.studio_id == studio_id)
         if start_from is not None:
-            query = query.where(Slot.start_time >= to_naive_utc(start_from))
+            query = query.where(Slot.start_time >= ensure_utc(start_from))
         if start_to is not None:
-            query = query.where(Slot.start_time <= to_naive_utc(start_to))
+            query = query.where(Slot.start_time <= ensure_utc(start_to))
         if status is not None:
             query = query.where(Slot.status == status)
         query = query.offset(skip).limit(limit).order_by(Slot.start_time.asc())
@@ -61,9 +61,9 @@ class SlotRepository(WriteRepositoryMixin):
         if studio_id is not None:
             query = query.where(Slot.studio_id == studio_id)
         if start_from is not None:
-            query = query.where(Slot.start_time >= to_naive_utc(start_from))
+            query = query.where(Slot.start_time >= ensure_utc(start_from))
         if start_to is not None:
-            query = query.where(Slot.start_time <= to_naive_utc(start_to))
+            query = query.where(Slot.start_time <= ensure_utc(start_to))
         if status is not None:
             query = query.where(Slot.status == status)
         result = await self._session.execute(query)
@@ -103,12 +103,14 @@ class SlotRepository(WriteRepositoryMixin):
         max_end: datetime,
     ) -> list[Slot]:
         """Слоты этого сервиса, пересекающиеся с интервалом [min_start, max_end]."""
+        min_start_utc = ensure_utc(min_start)
+        max_end_utc = ensure_utc(max_end)
         result = await self._session.execute(
             select(Slot).where(
                 Slot.studio_id == studio_id,
                 Slot.service_id == service_id,
-                Slot.start_time < max_end,
-                Slot.end_time > min_start,
+                Slot.start_time < max_end_utc,
+                Slot.end_time > min_start_utc,
             )
         )
         return list(result.scalars().all())

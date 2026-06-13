@@ -85,6 +85,7 @@ async def _authenticate_and_create_booking(client: AsyncClient) -> int:
             "description": "For webhook test",
             "email": "wh@example.com",
             "address": "Webhook street 1",
+            "timezone": "Europe/Dublin",
         },
         headers=headers,
     )

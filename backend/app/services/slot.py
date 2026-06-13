@@ -9,7 +9,7 @@
 
 from datetime import datetime
 
-from app.core.datetime_utils import to_naive_utc
+from app.core.datetime_utils import ensure_utc
 from app.core.exceptions import NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
 from app.models.slot import Slot, SlotStatus
@@ -82,8 +82,8 @@ async def create_slot(uow: UnitOfWork, schema: SlotCreate) -> Slot:
     slot = Slot(
         studio_id=schema.studio_id,
         service_id=schema.service_id,
-        start_time=to_naive_utc(schema.start_time),
-        end_time=to_naive_utc(schema.end_time),
+        start_time=ensure_utc(schema.start_time),
+        end_time=ensure_utc(schema.end_time),
         title=schema.title,
         description=schema.description,
         max_capacity=schema.max_capacity,
@@ -110,7 +110,7 @@ async def update_slot(
         raise ValidationError("End time must be after start time")
     for field, value in update_data.items():
         if field in ("start_time", "end_time") and value is not None:
-            value = to_naive_utc(value)
+            value = ensure_utc(value)
         setattr(slot, field, value)
     return await uow.slots.save(slot)
 

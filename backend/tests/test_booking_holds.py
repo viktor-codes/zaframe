@@ -61,7 +61,7 @@ def test_active_pending_hold_clause_sql_includes_expiry_filter():
 async def test_count_pending_by_slot_uses_active_hold_filter():
     session = MagicMock()
     session.execute = AsyncMock(
-        return_value=MagicMock(scalar_one_or_none=MagicMock(return_value=2))
+        return_value=MagicMock(scalar_one=MagicMock(return_value=2))
     )
     repo = BookingRepository(session)
     now = datetime(2026, 6, 13, 12, 0, tzinfo=UTC)

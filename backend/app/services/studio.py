@@ -93,6 +93,11 @@ async def create_studio(uow: UnitOfWork, schema: StudioCreate) -> Studio:
         email=schema.email,
         phone=schema.phone,
         address=schema.address,
+        city=schema.city,
+        latitude=schema.latitude,
+        longitude=schema.longitude,
+        amenities=schema.amenities,
+        timezone=schema.timezone,
     )
     return await uow.studios.add(studio)
 
@@ -104,6 +109,10 @@ async def update_studio(
 ) -> Studio:
     """Обновить студию (partial update)."""
     update_data = schema.model_dump(exclude_unset=True)
+    if "timezone" in update_data and update_data["timezone"] != studio.timezone:
+        slot_count = await uow.slots.count(studio_id=studio.id)
+        if slot_count > 0:
+            raise ValidationError("Cannot change timezone after slots have been created")
     for field, value in update_data.items():
         setattr(studio, field, value)
     return await uow.studios.save(studio)

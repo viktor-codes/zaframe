@@ -19,11 +19,12 @@ from __future__ import annotations
 import argparse
 import asyncio
 import random
-from datetime import UTC, date, datetime, time, timedelta
+from datetime import datetime, time, timedelta
 
 from sqlalchemy import select, text
 
 from app.core.config import settings
+from app.core.datetime_utils import studio_local_date_now, studio_local_to_utc, utc_now
 from app.core.exceptions import AppError
 from app.core.uow import UnitOfWork, uow_scope
 from app.models.service import Service, ServiceType
@@ -75,11 +76,18 @@ async def _get_or_create_owner(uow: UnitOfWork, idx: int) -> User:
     return user
 
 
-def _random_future_datetime(days_ahead: int, duration_minutes: int) -> tuple[datetime, datetime]:
-    """Случайные start/end в будущем (UTC)."""
-    d = date.today() + timedelta(days=random.randint(1, days_ahead))
+DEMO_STUDIO_TIMEZONES = ["Europe/Dublin", "Europe/Berlin", "America/New_York", "Asia/Tokyo"]
+
+
+def _random_future_datetime(
+    tz_name: str,
+    days_ahead: int,
+    duration_minutes: int,
+) -> tuple[datetime, datetime]:
+    """Random start/end in the future using studio-local wall-clock."""
+    d = studio_local_date_now(tz_name) + timedelta(days=random.randint(1, days_ahead))
     hour = random.choice([9, 10, 12, 14, 18, 19, 20])
-    start = datetime.combine(d, time(hour, 0), tzinfo=UTC)
+    start = studio_local_to_utc(d, time(hour, 0), tz_name)
     end = start + timedelta(minutes=duration_minutes)
     return start, end
 
@@ -98,10 +106,10 @@ async def seed_demo_data(
     """
     random.seed(42)
 
-    start_date = date.today() + timedelta(days=7)
-
     for i in range(studios_count):
         owner = await _get_or_create_owner(uow, i)
+        tz_name = DEMO_STUDIO_TIMEZONES[i % len(DEMO_STUDIO_TIMEZONES)]
+        start_date = studio_local_date_now(tz_name) + timedelta(days=7)
         studio_schema = StudioCreate(
             name=f"Demo Studio {i + 1}",
             description="Demo studio for load testing",
@@ -109,6 +117,7 @@ async def seed_demo_data(
             phone=None,
             address="Demo Address",
             owner_id=owner.id,
+            timezone=tz_name,
         )
         studio = await create_studio(uow, studio_schema)
         studio.slug = f"demo-studio-{i + 1}"
@@ -154,7 +163,7 @@ async def seed_demo_data(
                 )
             else:
                 for _ in range(single_slots_per_service):
-                    start_dt, end_dt = _random_future_datetime(21, duration)
+                    start_dt, end_dt = _random_future_datetime(studio.timezone, 21, duration)
                     slot_schema = SlotCreate(
                         studio_id=studio.id,
                         service_id=service.id,
@@ -185,7 +194,7 @@ async def simulate_bookings(
     services = list(services_result.scalars().all())
 
     slots_result = await uow.session.execute(
-        select(Slot).where(Slot.start_time >= datetime.now(UTC))
+        select(Slot).where(Slot.start_time >= utc_now())
     )
     slots = list(slots_result.scalars().all())
 

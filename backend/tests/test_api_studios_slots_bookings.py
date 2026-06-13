@@ -65,6 +65,7 @@ async def test_studio_crud_flow(client: AsyncClient):
             "email": "studio@example.com",
             "phone": "+123456789",
             "address": "Test street 1",
+            "timezone": "Europe/Dublin",
         },
         headers=headers,
     )
@@ -115,6 +116,7 @@ async def test_slot_and_booking_flow(client: AsyncClient):
             "description": "For slots",
             "email": "slot-studio@example.com",
             "address": "Slot street 1",
+            "timezone": "Europe/Dublin",
         },
         headers=headers,
     )

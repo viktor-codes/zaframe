@@ -4,7 +4,9 @@ Pydantic schemas для Studio модели.
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+
+from app.core.datetime_utils import validate_iana_timezone
 
 
 class StudioBase(BaseModel):
@@ -28,6 +30,18 @@ class StudioCreate(StudioBase):
     """Схема для создания студии. owner_id передаётся из токена на уровне роутера."""
 
     owner_id: int | None = Field(None, description="ID владельца (устанавливается из токена)")
+    timezone: str = Field(
+        ...,
+        min_length=1,
+        max_length=64,
+        description="IANA timezone of the studio (required at onboarding, e.g. Europe/Berlin)",
+        examples=["Europe/Berlin", "America/New_York", "Asia/Tokyo"],
+    )
+
+    @field_validator("timezone")
+    @classmethod
+    def validate_timezone(cls, value: str) -> str:
+        return validate_iana_timezone(value)
 
 
 class StudioUpdate(BaseModel):
@@ -38,7 +52,24 @@ class StudioUpdate(BaseModel):
     email: EmailStr | None = None
     phone: str | None = Field(None, max_length=20)
     address: str | None = Field(None, max_length=500)
+    city: str | None = Field(None, max_length=100)
+    latitude: float | None = None
+    longitude: float | None = None
+    amenities: list[str] | None = None
     is_active: bool | None = None
+    timezone: str | None = Field(
+        None,
+        min_length=1,
+        max_length=64,
+        description="IANA timezone (immutable after first slot is created)",
+    )
+
+    @field_validator("timezone")
+    @classmethod
+    def validate_timezone(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return validate_iana_timezone(value)
 
 
 class StudioResponse(StudioBase):
@@ -46,6 +77,7 @@ class StudioResponse(StudioBase):
 
     id: int
     owner_id: int
+    timezone: str
     is_active: bool
     created_at: datetime
     updated_at: datetime

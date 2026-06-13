@@ -2,9 +2,8 @@
 Authentication business logic: magic link and JWT.
 """
 
-from datetime import UTC, datetime
-
 from app.core.config import settings
+from app.core.datetime_utils import utc_now
 from app.core.exceptions import UnauthorizedError, ValidationError
 from app.core.security import (
     create_access_token,
@@ -55,7 +54,7 @@ async def verify_magic_link(
     Returns (user, access_token, refresh_token, csrf_token).
     Raises ValidationError if the token is invalid.
     """
-    now_utc = datetime.now(UTC)
+    now_utc = utc_now()
     token_hash = hash_magic_link_token(token)
     user = await uow.users.get_by_magic_link_token(token_hash, now_utc)
     if user is None:
@@ -99,7 +98,7 @@ async def refresh_access_token(
 
     user_id = refresh_data.user_id
     jti = refresh_data.jti
-    now_utc = datetime.now(UTC)
+    now_utc = utc_now()
 
     refresh_session = await uow.refresh_tokens.get_by_user_and_jti(user_id, jti)
     if refresh_session is None or not refresh_session.is_active(now_utc):
@@ -156,7 +155,7 @@ async def logout_current_session(
     if data is None or data.user_id != user.id:
         return
 
-    now_utc = datetime.now(UTC)
+    now_utc = utc_now()
     refresh_session = await uow.refresh_tokens.get_by_user_and_jti(user.id, data.jti)
     if refresh_session is None:
         return

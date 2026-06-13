@@ -7,21 +7,16 @@ then release seats without a background job (capacity queries filter by reserved
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 
 from app.core.config import settings
+from app.core.datetime_utils import ensure_utc, utc_now
 from app.models.booking import BookingStatus
-
-
-def _ensure_utc_aware(dt: datetime) -> datetime:
-    if dt.tzinfo is None:
-        return dt.replace(tzinfo=UTC)
-    return dt.astimezone(UTC)
 
 
 def get_booking_reserved_until(*, now: datetime | None = None) -> datetime:
     """Return UTC-aware timestamp when a new pending hold should expire."""
-    now_utc = _ensure_utc_aware(now or datetime.now(UTC))
+    now_utc = ensure_utc(now) if now is not None else utc_now()
     return now_utc + timedelta(minutes=settings.BOOKING_HOLD_MINUTES)
 
 
@@ -40,4 +35,4 @@ def is_active_pending_hold(
         return False
     if reserved_until is None:
         return False
-    return _ensure_utc_aware(reserved_until) > _ensure_utc_aware(now)
+    return ensure_utc(reserved_until) > ensure_utc(now)

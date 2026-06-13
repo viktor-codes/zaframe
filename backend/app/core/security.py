@@ -16,11 +16,12 @@ from secrets import token_urlsafe
 from jose import JWTError, jwt
 
 from app.core.config import settings
+from app.core.datetime_utils import utc_now
 
 
 def _utcnow() -> datetime:
     """Возвращает текущий момент времени в UTC (aware datetime)."""
-    return datetime.now(UTC)
+    return utc_now()
 
 
 def create_access_token(

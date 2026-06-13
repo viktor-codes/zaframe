@@ -34,24 +34,20 @@
 
 ---
 
-## 3.2 Политика времени (naive UTC) и устранение дублирования
+## 3.2 Политика времени — studio local + UTC instants
 
-**Цель:** Одна точка конвертации времени (UTC), единая политика для БД и сравнений; убрать дублирование `_to_naive_utc` в трёх местах.
+**Статус:** Заменено ADR-001. Старый подход (naive UTC / `to_naive_utc`) **не используется**.
 
-**Файлы:**
-- `backend/app/core/repositories/slot_repo.py`
-- `backend/app/services/slot.py`
-- `backend/app/services/service.py`
+**ADR:** [`docs/adr/001-datetime-and-studio-timezone.md`](adr/001-datetime-and-studio-timezone.md)
 
-**Задачи:**
-1. **Вынести утилиту в одно место.** Варианты:
-   - **Вариант A:** `app/core/datetime_utils.py` — функция `to_naive_utc(dt: datetime) -> datetime` и краткий комментарий о политике: «Все времена в БД и сравнениях — naive UTC».
-   - **Вариант B:** оставить в `slot_repo` и импортировать в `slot` и `service` сервисы из репозитория (минус: сервисный слой зависит от деталей репозитория).
-   - **Рекомендация:** Вариант A — нейтральный модуль в `core`, от него зависят и репозиторий, и сервисы.
-2. В `slot_repo`, `services/slot.py`, `services/service.py` удалить локальные `_to_naive_utc` и использовать общую функцию из `core.datetime_utils`.
-3. В `docs` или в docstring модуля зафиксировать: «Время слотов и расписаний хранится и сравнивается в UTC (naive datetime в Python); ввод от API конвертируется в UTC при сохранении.»
+**Кратко:**
+- `studios.timezone` (IANA) — обязателен при создании студии через API; DB default `UTC` только для dev/SQL
+- `Schedule`: `date` + `time` в TZ студии; `Slot`: instant в UTC (aware Python + TIMESTAMPTZ)
+- `datetime_utils.py`: `utc_now`, `ensure_utc` (422 на naive), `studio_local_to_utc`
+- `reserved_until` + TTL для pending holds
+- Полный rebuild БД + squash миграций
 
-**Критерий готовности:** Одна реализация `to_naive_utc` в core; все сравнения с `Slot.start_time`/`end_time` идут через неё; дублирования нет.
+**Критерий готовности:** ADR-001 реализован; `to_naive_utc` удалён; DST-тесты для `studio_local_to_utc` проходят до seed-скриптов.
 
 ---
 

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime
 
 from sqlalchemy import DateTime, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.core.datetime_utils import utc_now
 
 from app.models import Base
 
@@ -63,7 +65,7 @@ class RefreshToken(Base):
     def is_active(self, now: datetime | None = None) -> bool:
         """Активен ли токен на момент now (по умолчанию сейчас)."""
         if now is None:
-            now = datetime.now(UTC)
+            now = utc_now()
         if self.revoked_at is not None:
             return False
         return self.expires_at > now

@@ -7,9 +7,8 @@
 - Переиспользование при webhook оплаты
 """
 
-from datetime import UTC, datetime
-
 from app.core.booking_holds import get_booking_reserved_until
+from app.core.datetime_utils import ensure_utc, utc_now
 from app.core.exceptions import NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
 from app.models.booking import Booking, BookingStatus, BookingType
@@ -99,7 +98,7 @@ async def get_my_bookings(
 
 async def create_booking(uow: UnitOfWork, schema: BookingCreate) -> Booking:
     """
-    Создать гостевное бронирование.
+    Создать гостевое бронирование.
 
     Проверяет:
     - слот существует и активен
@@ -114,10 +113,8 @@ async def create_booking(uow: UnitOfWork, schema: BookingCreate) -> Booking:
     if not slot.is_bookable():
         raise ValidationError("Slot is not available for booking")
 
-    now_utc = datetime.now(UTC)
-    slot_start = slot.start_time
-    if slot_start.tzinfo is None:
-        slot_start = slot_start.replace(tzinfo=UTC)
+    now_utc = utc_now()
+    slot_start = ensure_utc(slot.start_time)
     if slot_start <= now_utc:
         raise ValidationError("Cannot book a slot in the past")
 
@@ -149,7 +146,8 @@ async def cancel_booking(uow: UnitOfWork, booking: Booking) -> Booking:
         raise ValidationError("Booking is already cancelled")
 
     booking.status = BookingStatus.CANCELLED
-    booking.cancelled_at = datetime.now(UTC)
+    booking.cancelled_at = utc_now()
+    booking.reserved_until = None
     return await uow.bookings.save(booking)
 
 
@@ -162,4 +160,6 @@ async def update_booking(
     update_data = schema.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(booking, field, value)
+    if booking.status in (BookingStatus.CONFIRMED, BookingStatus.CANCELLED):
+        booking.reserved_until = None
     return await uow.bookings.save(booking)

@@ -12,10 +12,12 @@
 3. После Magic Link → данные переносятся в User, сессия удаляется
 """
 
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 
 from sqlalchemy import DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column
+
+from app.core.datetime_utils import utc_now
 
 from app.models import Base
 from app.models.mixins import TimestampMixin
@@ -51,9 +53,9 @@ class GuestSession(TimestampMixin, Base):
     # Метод для проверки истечения сессии
     def is_expired(self) -> bool:
         """Проверка, истекла ли сессия."""
-        return datetime.now(UTC) > self.expires_at
+        return utc_now() > self.expires_at
 
     @classmethod
     def create_default_expires_at(cls) -> datetime:
         """Создаёт дату истечения по умолчанию (30 дней)."""
-        return datetime.now(UTC) + timedelta(days=30)
+        return utc_now() + timedelta(days=30)

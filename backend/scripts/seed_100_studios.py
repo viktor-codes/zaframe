@@ -18,12 +18,13 @@ import json
 import random
 import re
 from dataclasses import dataclass
-from datetime import UTC, date, datetime, time, timedelta
+from datetime import datetime, time, timedelta
 
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import async_session_maker
+from app.core.datetime_utils import studio_local_date_now, studio_local_to_utc, utc_now
 from app.models import Service, ServiceCategory, ServiceType, Slot, SlotStatus, Studio, User
 
 
@@ -203,6 +204,7 @@ async def seed_100_studios(db: AsyncSession) -> None:
                 latitude=lat,
                 longitude=lng,
                 amenities=_random_amenities(),
+                timezone="Europe/Dublin",
                 is_active=True,
             )
             db.add(studio)
@@ -281,20 +283,40 @@ async def seed_100_studios(db: AsyncSession) -> None:
     # Create future slots for single-class services so the booking -> payment flow is testable.
     # For courses we rely on the existing occurrence generator elsewhere; for visual testing
     # single-class slots are sufficient.
-    now = datetime.now(UTC)
-    services_result = await db.execute(select(Service.id, Service.studio_id, Service.type, Service.name, Service.duration_minutes, Service.max_capacity, Service.price_single_cents))
+    now = utc_now()
+    studio_tz_result = await db.execute(select(Studio.id, Studio.timezone))
+    studio_tz_map = {row.id: row.timezone for row in studio_tz_result.all()}
+
+    services_result = await db.execute(
+        select(
+            Service.id,
+            Service.studio_id,
+            Service.type,
+            Service.name,
+            Service.duration_minutes,
+            Service.max_capacity,
+            Service.price_single_cents,
+        )
+    )
     services_rows = list(services_result.all())
 
-    for (service_id, studio_id, service_type, service_name, duration_minutes, max_capacity, price_single_cents) in services_rows:
+    for (
+        service_id,
+        studio_id,
+        service_type,
+        service_name,
+        duration_minutes,
+        max_capacity,
+        price_single_cents,
+    ) in services_rows:
         if service_type != ServiceType.SINGLE_CLASS:
             continue
-        # 3–6 slots per service, spread over next 21 days at common class times.
+        tz_name = studio_tz_map[int(studio_id)]
         slots_count = random.randint(3, 6)
         for _ in range(slots_count):
-            d = date.today() + timedelta(days=random.randint(1, 21))
+            d = studio_local_date_now(tz_name) + timedelta(days=random.randint(1, 21))
             hour = random.choice([7, 8, 9, 12, 17, 18, 19, 20])
-            start_dt = datetime.combine(d, time(hour, 0), tzinfo=UTC)
-            # Avoid generating slots in the past if timezone/date shifts happen.
+            start_dt = studio_local_to_utc(d, time(hour, 0), tz_name)
             if start_dt <= now:
                 start_dt = now + timedelta(hours=2)
             end_dt = start_dt + timedelta(minutes=int(duration_minutes))

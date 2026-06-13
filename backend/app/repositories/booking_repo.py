@@ -4,13 +4,14 @@
 Все выборки по бронированиям инкапсулированы здесь.
 """
 
-from datetime import UTC, datetime
+from datetime import datetime
 
 from sqlalchemy import and_, case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.elements import ColumnElement
 
+from app.core.datetime_utils import ensure_utc, utc_now
 from app.models.booking import Booking, BookingStatus
 from app.models.slot import Slot
 from app.repositories.base import WriteRepositoryMixin
@@ -27,10 +28,11 @@ class BookingRepository(WriteRepositoryMixin):
 
         WHY: legacy rows may have reserved_until=NULL; those holds must not lock seats forever.
         """
+        now_utc = ensure_utc(now)
         return and_(
             Booking.status == BookingStatus.PENDING,
             Booking.reserved_until.is_not(None),
-            Booking.reserved_until > now,
+            Booking.reserved_until > now_utc,
         )
 
     async def get_by_id(self, booking_id: int) -> Booking | None:
@@ -132,7 +134,7 @@ class BookingRepository(WriteRepositoryMixin):
         return result.scalar_one()
 
     async def count_pending_by_slot(self, slot_id: int, *, now: datetime | None = None) -> int:
-        now_utc = now or datetime.now(UTC)
+        now_utc = now or utc_now()
         result = await self._session.execute(
             select(func.count())
             .select_from(Booking)
@@ -149,7 +151,7 @@ class BookingRepository(WriteRepositoryMixin):
         """Для каждого slot_id возвращает (confirmed_count, pending_count)."""
         if not slot_ids:
             return {}
-        now_utc = now or datetime.now(UTC)
+        now_utc = now or utc_now()
         counts_q = (
             select(
                 Booking.slot_id,
