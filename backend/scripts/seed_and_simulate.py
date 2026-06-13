@@ -11,7 +11,7 @@
 Все вызовы идут через UnitOfWork и доменные исключения (AppError).
 
 Запуск (из директории backend):
-    uv run python -m app.scripts.seed_and_simulate
+    uv run python -m scripts.seed_and_simulate
 """
 
 from __future__ import annotations

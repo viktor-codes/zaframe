@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.repositories import (
+from app.repositories import (
     BookingRepository,
     OrderRepository,
     RefreshTokenRepository,

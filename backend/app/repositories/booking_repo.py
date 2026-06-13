@@ -12,7 +12,6 @@ from sqlalchemy.orm import selectinload
 
 from app.models.booking import Booking, BookingStatus
 from app.models.slot import Slot
-from app.models.studio import Studio
 
 
 class BookingRepository:

@@ -2,7 +2,7 @@
 Seed 100 studios with 100 distinct owners for frontend visual testing.
 
 Run (from backend directory):
-    uv run python -m app.scripts.seed_100_studios
+    uv run python -m scripts.seed_100_studios
 
 This script:
 - truncates studios/services (CASCADE clears dependent rows like slots/bookings/orders)
