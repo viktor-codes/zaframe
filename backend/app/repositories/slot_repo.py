@@ -67,7 +67,7 @@ class SlotRepository(WriteRepositoryMixin):
         if is_active is not None:
             query = query.where(Slot.is_active == is_active)
         result = await self._session.execute(query)
-        return result.scalar_one_or_none() or 0
+        return result.scalar_one()
 
     async def list_by_service_active(
         self, service_id: int, *, for_update: bool = False

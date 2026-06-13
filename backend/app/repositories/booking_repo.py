@@ -118,7 +118,7 @@ class BookingRepository(WriteRepositoryMixin):
         if status is not None:
             query = query.where(Booking.status == status)
         result = await self._session.execute(query)
-        return result.scalar_one_or_none() or 0
+        return result.scalar_one()
 
     async def count_confirmed_by_slot(self, slot_id: int) -> int:
         result = await self._session.execute(
@@ -129,7 +129,7 @@ class BookingRepository(WriteRepositoryMixin):
                 Booking.status == BookingStatus.CONFIRMED,
             )
         )
-        return result.scalar_one_or_none() or 0
+        return result.scalar_one()
 
     async def count_pending_by_slot(self, slot_id: int, *, now: datetime | None = None) -> int:
         now_utc = now or datetime.now(UTC)
@@ -141,7 +141,7 @@ class BookingRepository(WriteRepositoryMixin):
                 self._active_pending_hold_clause(now=now_utc),
             )
         )
-        return result.scalar_one_or_none() or 0
+        return result.scalar_one()
 
     async def get_confirmed_pending_counts_by_slot_ids(
         self, slot_ids: list[int], *, now: datetime | None = None

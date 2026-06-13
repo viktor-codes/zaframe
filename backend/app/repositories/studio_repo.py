@@ -156,4 +156,4 @@ class StudioRepository(WriteRepositoryMixin):
             if conditions:
                 stmt = stmt.where(*conditions)
         result = await self._session.execute(stmt)
-        return result.scalar_one_or_none() or 0
+        return result.scalar_one()
