@@ -46,8 +46,6 @@ def upgrade() -> None:
         sa.Column("name", sa.String(100), nullable=False),
         sa.Column("phone", sa.String(20), nullable=True),
         sa.Column("is_active", sa.Boolean(), nullable=False, server_default="true"),
-        sa.Column("magic_link_token", sa.String(255), nullable=True),
-        sa.Column("magic_link_expires_at", TZDT, nullable=True),
         sa.Column("created_at", TZDT, server_default=sa.func.now(), nullable=False),
         sa.Column("updated_at", TZDT, server_default=sa.func.now(), nullable=False),
         sa.Column("last_login_at", TZDT, nullable=True),
@@ -73,20 +71,24 @@ def upgrade() -> None:
     op.create_index("ix_refresh_tokens_revoked_at", "refresh_tokens", ["revoked_at"])
 
     op.create_table(
-        "guest_sessions",
+        "otp_codes",
         sa.Column("id", sa.Integer(), primary_key=True),
-        sa.Column("session_id", sa.String(255), unique=True, nullable=False),
         sa.Column("email", sa.String(255), nullable=False),
+        sa.Column("code_hash", sa.String(64), nullable=False),
         sa.Column("name", sa.String(100), nullable=False),
-        sa.Column("phone", sa.String(20), nullable=True),
         sa.Column("expires_at", TZDT, nullable=False),
+        sa.Column("used_at", TZDT, nullable=True),
+        sa.Column("attempts", sa.Integer(), nullable=False, server_default="0"),
+        sa.Column("request_ip", sa.String(45), nullable=True),
         sa.Column("created_at", TZDT, server_default=sa.func.now(), nullable=False),
         sa.Column("updated_at", TZDT, server_default=sa.func.now(), nullable=False),
     )
-    op.create_index("ix_guest_sessions_id", "guest_sessions", ["id"])
-    op.create_index("ix_guest_sessions_session_id", "guest_sessions", ["session_id"], unique=True)
-    op.create_index("ix_guest_sessions_email", "guest_sessions", ["email"])
-    op.create_index("ix_guest_sessions_expires_at", "guest_sessions", ["expires_at"])
+    op.create_index("ix_otp_codes_id", "otp_codes", ["id"])
+    op.create_index("ix_otp_codes_email", "otp_codes", ["email"])
+    op.create_index("ix_otp_codes_expires_at", "otp_codes", ["expires_at"])
+    op.create_index("ix_otp_codes_created_at", "otp_codes", ["created_at"])
+    op.create_index("ix_otp_codes_email_expires_at", "otp_codes", ["email", "expires_at"])
+    op.create_index("ix_otp_codes_email_created_at", "otp_codes", ["email", "created_at"])
 
     op.create_table(
         "studios",
@@ -213,7 +215,6 @@ def upgrade() -> None:
         sa.Column("service_id", sa.Integer(), sa.ForeignKey("services.id"), nullable=True),
         sa.Column("order_id", sa.Integer(), sa.ForeignKey("orders.id"), nullable=True),
         sa.Column("user_id", sa.Integer(), sa.ForeignKey("users.id"), nullable=True),
-        sa.Column("guest_session_id", sa.String(255), nullable=True),
         sa.Column("guest_name", sa.String(100), nullable=True),
         sa.Column("guest_email", sa.String(255), nullable=True),
         sa.Column("guest_phone", sa.String(20), nullable=True),
@@ -233,7 +234,6 @@ def upgrade() -> None:
     op.create_index("ix_bookings_service_id", "bookings", ["service_id"])
     op.create_index("ix_bookings_order_id", "bookings", ["order_id"])
     op.create_index("ix_bookings_user_id", "bookings", ["user_id"])
-    op.create_index("ix_bookings_guest_session_id", "bookings", ["guest_session_id"])
     op.create_index("ix_bookings_status", "bookings", ["status"])
     op.create_index("ix_bookings_reserved_until", "bookings", ["reserved_until"])
     op.create_index("ix_bookings_checkout_session_id", "bookings", ["checkout_session_id"])
@@ -250,7 +250,7 @@ def downgrade() -> None:
     op.drop_table("schedules")
     op.drop_table("services")
     op.drop_table("studios")
-    op.drop_table("guest_sessions")
+    op.drop_table("otp_codes")
     op.drop_table("refresh_tokens")
     op.drop_table("users")
     service_category_enum.drop(bind, checkfirst=True)

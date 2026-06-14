@@ -2,7 +2,7 @@
 Модель User - пользователь системы.
 
 Почему email как основной идентификатор:
-- Уникальность для Magic Link аутентификации
+- Уникальность для OTP-аутентификации
 - Не требует username (меньше полей для ввода)
 - Email уже используется для уведомлений
 
@@ -27,7 +27,7 @@ class User(TimestampMixin, Base):
     """
     Пользователь системы (клиент или владелец студии).
 
-    Создаётся автоматически при первом использовании Magic Link.
+    Создаётся автоматически при первой успешной OTP-верификации.
     Может быть привязан к студии как владелец (через Studio.owner_id).
     """
 
@@ -40,45 +40,29 @@ class User(TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
-    # Аутентификация (для Magic Link)
-    is_active: Mapped[bool] = mapped_column(default=True)  # Аккаунт активирован через Magic Link
-    magic_link_token: Mapped[str | None] = mapped_column(
-        String(255),
-        nullable=True,
-        index=True,
-    )  # Хэш токена для Magic Link
-    magic_link_expires_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True,
-    )  # Срок действия токена (UTC)
+    is_active: Mapped[bool] = mapped_column(default=True)
 
-    # Временные поля авторизации
     last_login_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
 
     # Связи
-    # Один пользователь может быть владельцем нескольких студий
     studios: Mapped[list[Studio]] = relationship(
         "Studio",
         back_populates="owner",
         cascade="all, delete-orphan",
     )
-
-    # Один пользователь может иметь множество бронирований
     bookings: Mapped[list[Booking]] = relationship(
         "Booking",
         back_populates="user",
         cascade="all, delete-orphan",
     )
-    # И множество заказов
     orders: Mapped[list[Order]] = relationship(
         "Order",
         back_populates="user",
         cascade="all, delete-orphan",
     )
-    # И множество refresh-токенов (сессий)
     refresh_tokens: Mapped[list[RefreshToken]] = relationship(
         "RefreshToken",
         back_populates="user",

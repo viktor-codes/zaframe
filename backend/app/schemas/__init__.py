@@ -11,11 +11,6 @@ from app.schemas.booking import (
     BookingWithUser,
     BookingListItem,
 )
-from app.schemas.guest_session import (
-    GuestSessionBase,
-    GuestSessionCreate,
-    GuestSessionResponse,
-)
 from app.schemas.payment import (
     CheckoutSessionCreate,
     CheckoutSessionResponse,
@@ -123,10 +118,6 @@ __all__ = [
     "CheckoutSessionCreate",
     "OrderCheckoutSessionCreate",
     "CheckoutSessionResponse",
-    # GuestSession
-    "GuestSessionBase",
-    "GuestSessionCreate",
-    "GuestSessionResponse",
     # Search
     "SearchQueryParams",
     "SearchResult",

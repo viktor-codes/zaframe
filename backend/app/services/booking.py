@@ -105,7 +105,7 @@ async def create_booking(uow: UnitOfWork, schema: BookingCreate) -> Booking:
     - слот в будущем
     - есть свободные места
 
-    guest_session_id — опционально (добавим при интеграции Magic Link).
+    user_id проставляется после OTP verify (attach_guest_bookings).
     """
     slot = await uow.slots.get_by_id_for_update(schema.slot_id)
     if slot is None:

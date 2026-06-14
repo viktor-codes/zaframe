@@ -454,7 +454,6 @@ async def create_course_booking(
             Booking(
                 slot_id=slot.id,
                 user_id=None,
-                guest_session_id=None,
                 guest_name=schema.guest_name,
                 guest_email=schema.guest_email,
                 guest_phone=schema.guest_phone,

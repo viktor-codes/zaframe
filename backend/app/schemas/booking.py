@@ -23,8 +23,8 @@ class BookingCreate(BookingBase):
     """
     Схема для создания бронирования (гостевой режим).
 
-    Используется для гостевых бронирований до активации аккаунта.
-    После Magic Link данные переносятся в User.
+    Используется для гостевых бронирований до OTP-верификации.
+    После verify user_id проставляется на booking.
     """
 
     guest_name: str = Field(..., min_length=1, max_length=100, description="Имя гостя")
@@ -63,7 +63,6 @@ class BookingResponse(BookingBase):
 
     id: int
     user_id: int | None
-    guest_session_id: str | None
     guest_name: str | None
     guest_email: str | None
     guest_phone: str | None

@@ -1,14 +1,11 @@
 # SQLAlchemy ORM models
 # Все модели импортируются здесь для Alembic autogenerate
 
-# Экспортируем Base для использования в моделях и Alembic
 from app.core.database import Base
 
-# Импортируем все модели для Alembic autogenerate
-# Alembic должен видеть все модели через Base.metadata
 from app.models.booking import Booking, BookingStatus, BookingType
-from app.models.guest_session import GuestSession
 from app.models.order import Order, OrderStatus
+from app.models.otp_code import OTPCode
 from app.models.refresh_token import RefreshToken
 from app.models.schedule import Schedule
 from app.models.service import Service, ServiceCategory, ServiceType
@@ -25,7 +22,7 @@ __all__ = [
     "Booking",
     "BookingStatus",
     "BookingType",
-    "GuestSession",
+    "OTPCode",
     "Order",
     "OrderStatus",
     "Service",
