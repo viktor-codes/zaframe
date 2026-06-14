@@ -70,3 +70,13 @@ class OTPCodeRepository(WriteRepositoryMixin):
             .limit(1)
         )
         return result.scalar_one_or_none()
+
+    async def delete_expired_before(self, before: datetime) -> int:
+        """Delete OTP rows with expires_at older than `before`. Returns rows removed."""
+        from sqlalchemy import delete
+
+        result = await self._session.execute(
+            delete(OTPCode).where(OTPCode.expires_at < before)
+        )
+        await self._session.flush()
+        return result.rowcount or 0

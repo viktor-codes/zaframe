@@ -72,6 +72,12 @@ class Settings(BaseSettings):
     OTP_MAX_REQUESTS_PER_EMAIL_PER_HOUR: int = Field(
         default=3, ge=1, le=20, description="Max OTP emails sent per email address per hour"
     )
+    OTP_RETENTION_DAYS: int = Field(
+        default=7,
+        ge=1,
+        le=90,
+        description="Delete otp_codes rows expired longer than this many days (cleanup job)",
+    )
     FRONTEND_URL: str = Field(
         default="http://localhost:3000", description="Frontend base URL (Stripe redirects, etc.)"
     )

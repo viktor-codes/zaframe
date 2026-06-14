@@ -117,6 +117,7 @@ async def otp_verify(
         uow,
         schema.email,
         schema.code,
+        booking_id=schema.booking_id,
     )
     _set_refresh_cookie(response, refresh_token)
     _set_csrf_cookie(response, csrf_token)

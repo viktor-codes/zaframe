@@ -6,7 +6,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import and_, case, func, select
+from sqlalchemy import and_, case, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.elements import ColumnElement
@@ -144,6 +144,33 @@ class BookingRepository(WriteRepositoryMixin):
             )
         )
         return result.scalar_one()
+
+    async def attach_guest_bookings_by_email(
+        self,
+        *,
+        user_id: int,
+        guest_email: str,
+        booking_id: int | None = None,
+    ) -> int:
+        """
+        Set user_id on guest bookings where guest_email matches and user_id is NULL.
+
+        When booking_id is set, only that booking is updated (still requires email match).
+        Returns the number of rows updated.
+        """
+        normalized_email = guest_email.strip().lower()
+        conditions = [
+            Booking.user_id.is_(None),
+            func.lower(Booking.guest_email) == normalized_email,
+        ]
+        if booking_id is not None:
+            conditions.append(Booking.id == booking_id)
+
+        result = await self._session.execute(
+            update(Booking).where(*conditions).values(user_id=user_id)
+        )
+        await self._session.flush()
+        return result.rowcount or 0
 
     async def get_confirmed_pending_counts_by_slot_ids(
         self, slot_ids: list[int], *, now: datetime | None = None

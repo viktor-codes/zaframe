@@ -21,6 +21,7 @@ from app.core.uow import UnitOfWork
 from app.models.otp_code import OTPCode
 from app.models.refresh_token import RefreshToken
 from app.models.user import User
+from app.services.booking import attach_guest_bookings
 from app.services.email import send_otp_email
 from app.services.user import get_or_create_user, get_user_by_id
 
@@ -66,6 +67,8 @@ async def verify_otp(
     uow: UnitOfWork,
     email: str,
     code: str,
+    *,
+    booking_id: int | None = None,
 ) -> tuple[User, str, str, str]:
     """
     Verify OTP and issue JWT session tokens.
@@ -81,7 +84,12 @@ async def verify_otp(
             otp.used_at = now_utc
             await uow.otp_codes.save(otp)
             raise ValidationError(_INVALID_OTP_MESSAGE)
-        return await _complete_otp_login(uow, otp, now_utc=now_utc)
+        return await _complete_otp_login(
+            uow,
+            otp,
+            now_utc=now_utc,
+            booking_id=booking_id,
+        )
 
     latest = await uow.otp_codes.get_latest_active_for_email(email, now_utc)
     if latest is None:
@@ -99,6 +107,7 @@ async def _complete_otp_login(
     otp: OTPCode,
     *,
     now_utc: datetime,
+    booking_id: int | None = None,
 ) -> tuple[User, str, str, str]:
     otp.used_at = now_utc
     await uow.otp_codes.save(otp)
@@ -107,6 +116,8 @@ async def _complete_otp_login(
     user = await get_or_create_user(uow, email=otp.email, name=otp.name)
     user.last_login_at = now_utc
     user = await uow.users.save(user)
+
+    await attach_guest_bookings(uow, user, booking_id=booking_id)
 
     access_token = create_access_token(user.id, user.email)
     refresh_token = create_refresh_token(user.id)

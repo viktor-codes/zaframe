@@ -28,6 +28,10 @@ class OTPVerify(BaseModel):
         pattern=r"^\d{6}$",
         description="6-digit code from email",
     )
+    booking_id: int | None = Field(
+        None,
+        description="Optional pending booking to attach to the user after verify",
+    )
 
 
 class TokenResponse(BaseModel):

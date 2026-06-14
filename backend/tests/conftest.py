@@ -84,6 +84,7 @@ async def authenticate_via_otp(
     *,
     email: str,
     name: str = "Test User",
+    booking_id: int | None = None,
 ) -> dict:
     """
     Request + verify OTP in tests; returns verify JSON (access_token, user, ...).
@@ -108,7 +109,11 @@ async def authenticate_via_otp(
 
     r_verify = await client.post(
         "/api/v1/auth/otp/verify",
-        json={"email": email, "code": captured_codes[0]},
+        json={
+            "email": email,
+            "code": captured_codes[0],
+            **({"booking_id": booking_id} if booking_id is not None else {}),
+        },
     )
     assert r_verify.status_code == 200
     return r_verify.json()
