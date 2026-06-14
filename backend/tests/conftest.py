@@ -38,11 +38,16 @@ async def app_with_rollback_uow():
     from app.core.database import async_session_maker
     from app.core.uow import uow_scope
     from app.main import app
+    from sqlalchemy import text
 
     async with async_session_maker() as session:
+        await session.execute(text("DELETE FROM otp_codes"))
+        await session.commit()
 
         async def get_uow_override():
-            async with uow_scope(session=session, auto_commit=False) as uow:
+            # Commit per request so multi-step flows (OTP request → verify) share data;
+            # the outer session.rollback() at teardown still cleans up the test DB.
+            async with uow_scope(session=session, auto_commit=True) as uow:
                 yield uow
 
         app.dependency_overrides[get_uow] = get_uow_override
@@ -72,3 +77,38 @@ async def client(app_with_rollback_uow):
         base_url="http://test",
     ) as ac:
         yield ac
+
+
+async def authenticate_via_otp(
+    client,
+    *,
+    email: str,
+    name: str = "Test User",
+) -> dict:
+    """
+    Request + verify OTP in tests; returns verify JSON (access_token, user, ...).
+
+    Patches send_otp_email to capture the generated code.
+    """
+    from unittest.mock import patch
+
+    captured_codes: list[str] = []
+
+    async def capture_otp(to: str, code: str) -> bool:
+        captured_codes.append(code)
+        return True
+
+    with patch("app.services.auth.send_otp_email", side_effect=capture_otp):
+        r_request = await client.post(
+            "/api/v1/auth/otp/request",
+            json={"email": email, "name": name},
+        )
+    assert r_request.status_code == 200
+    assert len(captured_codes) == 1
+
+    r_verify = await client.post(
+        "/api/v1/auth/otp/verify",
+        json={"email": email, "code": captured_codes[0]},
+    )
+    assert r_verify.status_code == 200
+    return r_verify.json()

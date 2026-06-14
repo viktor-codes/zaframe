@@ -2,6 +2,7 @@
 
 from app.repositories.booking_repo import BookingRepository
 from app.repositories.order_repo import OrderRepository
+from app.repositories.otp_code_repo import OTPCodeRepository
 from app.repositories.refresh_token_repo import RefreshTokenRepository
 from app.repositories.schedule_repo import ScheduleRepository
 from app.repositories.search_repo import SearchRepository
@@ -13,6 +14,7 @@ from app.repositories.user_repo import UserRepository
 __all__ = [
     "BookingRepository",
     "OrderRepository",
+    "OTPCodeRepository",
     "RefreshTokenRepository",
     "ScheduleRepository",
     "SearchRepository",

@@ -24,8 +24,13 @@ async def get_or_create_user(
     phone: str | None = None,
 ) -> User:
     """
-    Получить пользователя по email или создать нового.
-    Используется при Magic Link.
+    Get user by email or create a new one.
+
+    Used at OTP verify.
+
+    Name policy:
+    - Existing user: returned unchanged; `name` argument is ignored.
+    - New user: created with the provided `name`.
     """
     user = await uow.users.get_by_email(email)
     if user is not None:

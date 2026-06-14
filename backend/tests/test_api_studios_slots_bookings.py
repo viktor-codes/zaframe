@@ -5,40 +5,17 @@
 поверх текущей UoW-транзакционной модели.
 """
 
-import re
 from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, patch
 
 import pytest
 from httpx import AsyncClient
 
+from tests.conftest import authenticate_via_otp
+
 
 async def _authenticate_user(client: AsyncClient, email: str = "owner@example.com"):
-    """
-    Create user via Magic Link; return access token and user (refresh is httpOnly cookie).
-    """
-    captured_url: list[str] = []
-
-    async def capture_email(to: str, url: str) -> None:
-        captured_url.append(url)
-
-    with patch("app.services.auth.send_magic_link_email", new_callable=AsyncMock) as mock_send:
-        mock_send.side_effect = capture_email
-        r1 = await client.post(
-            "/api/v1/auth/magic-link/request",
-            json={"email": email, "name": "Owner User"},
-        )
-
-    assert r1.status_code == 200
-    assert len(captured_url) == 1
-
-    match = re.search(r"token=([^&]+)", captured_url[0])
-    assert match is not None
-    token = match.group(1)
-
-    r2 = await client.get("/api/v1/auth/magic-link/verify", params={"token": token})
-    assert r2.status_code == 200
-    data = r2.json()
+    """Create user via OTP; return access token and user (refresh is httpOnly cookie)."""
+    data = await authenticate_via_otp(client, email=email, name="Owner User")
     assert "refresh_token" not in data
     return data["access_token"], data["user"]
 

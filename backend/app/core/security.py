@@ -1,5 +1,5 @@
 """
-JWT и Magic Link: создание и проверка токенов.
+JWT и OTP: создание и проверка токенов.
 
 Почему python-jose:
 - Стандартная библиотека для JWT в Python
@@ -11,7 +11,7 @@ import hashlib
 import hmac
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from secrets import token_urlsafe
+from secrets import randbelow, token_urlsafe
 
 from jose import JWTError, jwt
 
@@ -138,9 +138,10 @@ def parse_refresh_token(token: str) -> RefreshTokenData | None:
     return RefreshTokenData(user_id=user_id, jti=jti, expires_at=expires_at)
 
 
-def generate_magic_link_token() -> str:
-    """Сгенерировать криптографически стойкий токен для Magic Link."""
-    return token_urlsafe(32)
+def generate_otp_code() -> str:
+    """Generate a numeric OTP (zero-padded to OTP_LENGTH digits)."""
+    upper = 10**settings.OTP_LENGTH
+    return str(randbelow(upper)).zfill(settings.OTP_LENGTH)
 
 
 def create_csrf_token() -> str:
@@ -153,21 +154,23 @@ def create_csrf_token() -> str:
     return token_urlsafe(32)
 
 
-def hash_magic_link_token(token: str) -> str:
+def hash_otp_code(code: str) -> str:
     """
-    Получить безопасный хэш токена Magic Link для хранения в БД.
+    HMAC-SHA256 hash of an OTP for storage in the database.
 
-    Используем HMAC-SHA256 с SECRET_KEY как ключом, чтобы даже при компрометации
-    дампа БД нельзя было восстановить исходный токен.
+    Uses SECRET_KEY so a DB dump alone cannot recover plaintext codes.
     """
     key = settings.SECRET_KEY.encode("utf-8")
-    msg = token.encode("utf-8")
+    msg = code.encode("utf-8")
     return hmac.new(key, msg, hashlib.sha256).hexdigest()
 
 
-def get_magic_link_expires_at() -> datetime:
-    """
-    Время истечения Magic Link токена (aware datetime в UTC).
-    """
-    utc_now = _utcnow()
-    return utc_now + timedelta(minutes=settings.MAGIC_LINK_EXPIRE_MINUTES)
+def verify_otp_code(code: str, code_hash: str) -> bool:
+    """Constant-time comparison of OTP plaintext against stored hash."""
+    expected = hash_otp_code(code)
+    return hmac.compare_digest(expected, code_hash)
+
+
+def get_otp_expires_at() -> datetime:
+    """OTP expiry instant (aware UTC)."""
+    return _utcnow() + timedelta(minutes=settings.OTP_EXPIRE_MINUTES)

@@ -8,6 +8,7 @@ from app.core.database import async_session_maker
 from app.repositories import (
     BookingRepository,
     OrderRepository,
+    OTPCodeRepository,
     RefreshTokenRepository,
     ScheduleRepository,
     SearchRepository,
@@ -29,6 +30,7 @@ class UnitOfWork:
 
     session: AsyncSession
     bookings: BookingRepository
+    otp_codes: OTPCodeRepository
     users: UserRepository
     studios: StudioRepository
     slots: SlotRepository
@@ -53,6 +55,7 @@ def create_uow(session: AsyncSession) -> UnitOfWork:
     return UnitOfWork(
         session=session,
         bookings=BookingRepository(session),
+        otp_codes=OTPCodeRepository(session),
         users=UserRepository(session),
         studios=StudioRepository(session),
         slots=SlotRepository(session),

@@ -53,7 +53,7 @@ class Settings(BaseSettings):
 
         return url
 
-    # === Security (JWT, Magic Link) ===
+    # === Security (JWT, OTP) ===
     SECRET_KEY: str = Field(description="Secret key for signing JWT tokens")
     ALGORITHM: str = Field(default="HS256", description="JWT signing algorithm")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(
@@ -62,14 +62,21 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = Field(
         default=7, description="Lifetime of refresh token in days"
     )
-    MAGIC_LINK_EXPIRE_MINUTES: int = Field(
-        default=15, description="Lifetime of Magic Link token in minutes"
+    OTP_EXPIRE_MINUTES: int = Field(
+        default=10, description="Lifetime of email OTP code in minutes"
+    )
+    OTP_LENGTH: int = Field(default=6, ge=4, le=8, description="Number of digits in email OTP")
+    OTP_MAX_ATTEMPTS: int = Field(
+        default=5, ge=1, le=10, description="Max verify attempts before OTP is invalidated"
+    )
+    OTP_MAX_REQUESTS_PER_EMAIL_PER_HOUR: int = Field(
+        default=3, ge=1, le=20, description="Max OTP emails sent per email address per hour"
     )
     FRONTEND_URL: str = Field(
-        default="http://localhost:3000", description="Frontend URL for Magic Link redirect"
+        default="http://localhost:3000", description="Frontend base URL (Stripe redirects, etc.)"
     )
     RESEND_API_KEY: str | None = Field(
-        default=None, description="Resend API key for sending emails (None = log link in dev)"
+        default=None, description="Resend API key for sending emails (None = dev log mode)"
     )
 
     # === CORS ===

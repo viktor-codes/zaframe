@@ -19,10 +19,7 @@ from app.services.auth import (
 
 @pytest.fixture
 def mock_user():
-    u = User(id=1, email="user@example.com", name="Test User")
-    u.magic_link_token = None
-    u.magic_link_expires_at = None
-    return u
+    return User(id=1, email="user@example.com", name="Test User")
 
 
 @pytest.fixture

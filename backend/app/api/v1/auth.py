@@ -1,31 +1,33 @@
 """Authentication API router.
 
-Magic link flow (strict cookie mode):
-1. POST /auth/magic-link/request {email, name}
-2. GET /auth/magic-link/verify?token=xxx -> returns access token JSON + sets refresh token httpOnly cookie
-3. POST /auth/refresh -> reads refresh token from cookie, returns new access token JSON + rotates refresh cookie
-4. POST /auth/logout -> revokes current refresh token (from cookie) and clears the cookie
+Email OTP flow (strict cookie mode):
+1. POST /auth/otp/request {email, name}
+2. POST /auth/otp/verify {email, code} -> access token JSON + refresh httpOnly cookie
+3. POST /auth/refresh -> reads refresh token from cookie, rotates session
+4. POST /auth/logout -> revokes current refresh token and clears cookies
 """
 
-from fastapi import APIRouter, Depends, Query, Request, Response
+from fastapi import APIRouter, Depends, Request, Response
 
 from app.api.deps import get_current_user_required, get_uow
 from app.core.config import settings
-from app.core.exceptions import ForbiddenError
+from app.core.exceptions import ForbiddenError, UnauthorizedError
 from app.core.rate_limit import limiter
 from app.core.uow import UnitOfWork
 from app.models.user import User
 from app.schemas.auth import (
-    MagicLinkRequest,
-    MagicLinkSentResponse,
+    OTPRequest,
+    OTPSentResponse,
+    OTPVerify,
+    OTPVerifyResponse,
     TokenResponse,
 )
 from app.schemas.user import UserResponse
 from app.services.auth import (
     logout_current_session,
     refresh_access_token,
-    request_magic_link,
-    verify_magic_link,
+    request_otp,
+    verify_otp,
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -35,14 +37,13 @@ CSRF_COOKIE_NAME = "csrf_token"
 CSRF_HEADER_NAME = "X-CSRF-Token"
 
 
-def _set_csrf_cookie(response: Response, csrf_token: str) -> None:
-    """
-    Double-submit CSRF token cookie.
+def _client_ip(request: Request) -> str | None:
+    if request.client is None:
+        return None
+    return request.client.host
 
-    - Not httpOnly: must be readable by JS to send X-CSRF-Token.
-    - SameSite=Lax: helps mitigate CSRF for top-level navigations.
-    - Paired with header check on sensitive cookie-auth endpoints (/refresh).
-    """
+
+def _set_csrf_cookie(response: Response, csrf_token: str) -> None:
     max_age_seconds = settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
     response.set_cookie(
         key=CSRF_COOKIE_NAME,
@@ -86,44 +87,43 @@ def _require_csrf_header(request: Request) -> None:
         raise ForbiddenError("CSRF validation failed")
 
 
-@router.post("/magic-link/request", response_model=MagicLinkSentResponse)
-@limiter.limit("5/minute")
-async def magic_link_request(
-    request: Request,
-    schema: MagicLinkRequest,
-    uow: UnitOfWork = Depends(get_uow),
-) -> MagicLinkSentResponse:
-    """
-    Request a magic link email.
-
-    Creates the user on first request. Sends the email (or logs in dev).
-    """
-    await request_magic_link(uow, schema.email, schema.name)
-    return MagicLinkSentResponse()
-
-
-@router.get("/magic-link/verify")
+@router.post("/otp/request", response_model=OTPSentResponse)
 @limiter.limit("10/minute")
-async def magic_link_verify(
+async def otp_request(
+    request: Request,
+    schema: OTPRequest,
+    uow: UnitOfWork = Depends(get_uow),
+) -> OTPSentResponse:
+    """Send a one-time sign-in code to email."""
+    await request_otp(
+        uow,
+        schema.email,
+        schema.name,
+        request_ip=_client_ip(request),
+    )
+    return OTPSentResponse()
+
+
+@router.post("/otp/verify", response_model=OTPVerifyResponse)
+@limiter.limit("20/minute")
+async def otp_verify(
     request: Request,
     response: Response,
-    token: str = Query(..., description="Token from the email link"),
+    schema: OTPVerify,
     uow: UnitOfWork = Depends(get_uow),
-):
-    """
-    Verify magic link token and issue JWTs.
-
-    Called when the user follows the email link. The frontend reads `token`
-    from the query string and calls this endpoint.
-    """
-    user, access_token, refresh_token, csrf_token = await verify_magic_link(uow, token)
+) -> OTPVerifyResponse:
+    """Verify OTP code and issue JWT session."""
+    user, access_token, refresh_token, csrf_token = await verify_otp(
+        uow,
+        schema.email,
+        schema.code,
+    )
     _set_refresh_cookie(response, refresh_token)
     _set_csrf_cookie(response, csrf_token)
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "user": UserResponse.model_validate(user),
-    }
+    return OTPVerifyResponse(
+        access_token=access_token,
+        user=UserResponse.model_validate(user),
+    )
 
 
 @router.post("/refresh", response_model=TokenResponse)
@@ -137,8 +137,6 @@ async def refresh_tokens(
     _require_csrf_header(request)
     refresh_token = request.cookies.get(REFRESH_TOKEN_COOKIE_NAME)
     if not refresh_token:
-        from app.core.exceptions import UnauthorizedError
-
         raise UnauthorizedError("Missing refresh token cookie")
 
     access_token, new_refresh_token, new_csrf_token = await refresh_access_token(
@@ -158,11 +156,7 @@ async def logout(
     uow: UnitOfWork = Depends(get_uow),
     user: User = Depends(get_current_user_required),
 ) -> None:
-    """
-    Sign out of the current session.
-
-    Revokes the refresh session from the cookie and clears the cookie.
-    """
+    """Sign out of the current session."""
     refresh_token = request.cookies.get(REFRESH_TOKEN_COOKIE_NAME)
     _clear_refresh_cookie(response)
     if refresh_token:
@@ -173,9 +167,5 @@ async def logout(
 async def get_current_user_me(
     user: User = Depends(get_current_user_required),
 ) -> UserResponse:
-    """
-    Return the current user from the Bearer access token.
-
-    Protected endpoint — requires `Authorization: Bearer <access_token>`.
-    """
+    """Return the current user from the Bearer access token."""
     return user

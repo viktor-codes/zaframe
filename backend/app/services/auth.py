@@ -1,6 +1,8 @@
 """
-Authentication business logic: magic link and JWT.
+Authentication business logic: email OTP and JWT sessions.
 """
+
+from datetime import datetime, timedelta
 
 from app.core.config import settings
 from app.core.datetime_utils import utc_now
@@ -9,59 +11,100 @@ from app.core.security import (
     create_access_token,
     create_csrf_token,
     create_refresh_token,
-    generate_magic_link_token,
-    get_magic_link_expires_at,
+    generate_otp_code,
+    get_otp_expires_at,
     get_user_id_from_access_token,
-    hash_magic_link_token,
+    hash_otp_code,
     parse_refresh_token,
 )
 from app.core.uow import UnitOfWork
+from app.models.otp_code import OTPCode
 from app.models.refresh_token import RefreshToken
 from app.models.user import User
-from app.services.email import send_magic_link_email
+from app.services.email import send_otp_email
 from app.services.user import get_or_create_user, get_user_by_id
 
+_INVALID_OTP_MESSAGE = "Verification code is invalid or has expired"
+_RATE_LIMIT_MESSAGE = "Too many verification codes requested. Try again later."
 
-async def request_magic_link(
+
+async def request_otp(
     uow: UnitOfWork,
     email: str,
     name: str,
+    *,
+    request_ip: str | None = None,
 ) -> None:
     """
-    Request a magic link.
+    Generate and email an OTP.
 
-    1. Creates or updates user by email/name
-    2. Generates token and stores hash in DB
-    3. Sends email with link
-    """
-    user = await get_or_create_user(uow, email=email, name=name)
-    token = generate_magic_link_token()
-    user.magic_link_token = hash_magic_link_token(token)
-    user.magic_link_expires_at = get_magic_link_expires_at()
-    await uow.users.flush()
-
-    magic_link_url = f"{settings.FRONTEND_URL}/auth/verify?token={token}"
-    await send_magic_link_email(email, magic_link_url)
-
-
-async def verify_magic_link(
-    uow: UnitOfWork,
-    token: str,
-) -> tuple[User, str, str, str]:
-    """
-    Verify magic link token.
-
-    Returns (user, access_token, refresh_token, csrf_token).
-    Raises ValidationError if the token is invalid.
+    Does not create a User — registration happens on successful verify.
     """
     now_utc = utc_now()
-    token_hash = hash_magic_link_token(token)
-    user = await uow.users.get_by_magic_link_token(token_hash, now_utc)
-    if user is None:
-        raise ValidationError("Magic link is invalid or has expired")
+    since = now_utc - timedelta(hours=1)
+    recent_count = await uow.otp_codes.count_recent_requests(email, since)
+    if recent_count >= settings.OTP_MAX_REQUESTS_PER_EMAIL_PER_HOUR:
+        raise ValidationError(_RATE_LIMIT_MESSAGE)
 
-    user.magic_link_token = None
-    user.magic_link_expires_at = None
+    await uow.otp_codes.invalidate_active_for_email(email, now_utc)
+
+    code = generate_otp_code()
+    await uow.otp_codes.add(
+        OTPCode(
+            email=email,
+            code_hash=hash_otp_code(code),
+            name=name,
+            expires_at=get_otp_expires_at(),
+            attempts=0,
+            request_ip=request_ip,
+        )
+    )
+    await send_otp_email(email, code)
+
+
+async def verify_otp(
+    uow: UnitOfWork,
+    email: str,
+    code: str,
+) -> tuple[User, str, str, str]:
+    """
+    Verify OTP and issue JWT session tokens.
+
+    Returns (user, access_token, refresh_token, csrf_token).
+    """
+    now_utc = utc_now()
+    code_hash = hash_otp_code(code)
+    otp = await uow.otp_codes.get_active_by_email_and_hash(email, code_hash, now_utc)
+
+    if otp is not None:
+        if otp.attempts >= settings.OTP_MAX_ATTEMPTS:
+            otp.used_at = now_utc
+            await uow.otp_codes.save(otp)
+            raise ValidationError(_INVALID_OTP_MESSAGE)
+        return await _complete_otp_login(uow, otp, now_utc=now_utc)
+
+    latest = await uow.otp_codes.get_latest_active_for_email(email, now_utc)
+    if latest is None:
+        raise ValidationError(_INVALID_OTP_MESSAGE)
+
+    latest.attempts += 1
+    if latest.attempts >= settings.OTP_MAX_ATTEMPTS:
+        latest.used_at = now_utc
+    await uow.otp_codes.save(latest)
+    raise ValidationError(_INVALID_OTP_MESSAGE)
+
+
+async def _complete_otp_login(
+    uow: UnitOfWork,
+    otp: OTPCode,
+    *,
+    now_utc: datetime,
+) -> tuple[User, str, str, str]:
+    otp.used_at = now_utc
+    await uow.otp_codes.save(otp)
+
+    # WHY: name from OTP is registration-only; existing profiles are not overwritten on login.
+    user = await get_or_create_user(uow, email=otp.email, name=otp.name)
     user.last_login_at = now_utc
     user = await uow.users.save(user)
 

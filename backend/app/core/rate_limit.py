@@ -1,5 +1,5 @@
 """
-Rate limiting для чувствительных эндпоинтов (Magic Link, refresh и т.д.).
+Rate limiting для чувствительных эндпоинтов (OTP, refresh и т.д.).
 
 Используется SlowAPI; лимиты привязаны к IP (get_remote_address).
 In-memory backend по умолчанию; для нескольких инстансов — Redis (см. limits).

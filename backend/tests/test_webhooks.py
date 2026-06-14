@@ -11,7 +11,6 @@ order_id/booking_id в metadata, невалидные id, отсутствие m
 import hashlib
 import hmac
 import json
-import re
 import time
 from datetime import UTC
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -20,6 +19,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from app.main import app
+from tests.conftest import authenticate_via_otp
 
 
 def _build_signed_stripe_webhook(
@@ -61,21 +61,12 @@ def _build_signed_stripe_webhook(
 
 async def _authenticate_and_create_booking(client: AsyncClient) -> int:
     """Создаёт пользователя, студию, слот и гостевое бронирование. Возвращает booking_id."""
-    captured_url: list[str] = []
-
-    async def capture_email(to: str, url: str) -> None:
-        captured_url.append(url)
-
-    with patch("app.services.auth.send_magic_link_email", new_callable=AsyncMock) as mock_send:
-        mock_send.side_effect = capture_email
-        await client.post(
-            "/api/v1/auth/magic-link/request",
-            json={"email": "webhook-owner@example.com", "name": "Owner"},
-        )
-    token = re.search(r"token=([^&]+)", captured_url[0]).group(1)
-    r_verify = await client.get("/api/v1/auth/magic-link/verify", params={"token": token})
-    assert r_verify.status_code == 200
-    access = r_verify.json()["access_token"]
+    verify_data = await authenticate_via_otp(
+        client,
+        email="webhook-owner@example.com",
+        name="Owner",
+    )
+    access = verify_data["access_token"]
     headers = {"Authorization": f"Bearer {access}"}
 
     r_studio = await client.post(

@@ -1,20 +1,23 @@
 """
-Юнит-тесты для app.core.security: JWT, Magic Link, refresh token.
+Юнит-тесты для app.core.security: JWT, OTP, refresh token.
 """
 
 from datetime import UTC, datetime
 from unittest.mock import patch
 
+from app.core.config import settings
 from app.core.security import (
     RefreshTokenData,
     create_access_token,
     create_refresh_token,
     decode_token,
-    get_magic_link_expires_at,
+    generate_otp_code,
+    get_otp_expires_at,
     get_user_id_from_access_token,
     get_user_id_from_refresh_token,
-    hash_magic_link_token,
+    hash_otp_code,
     parse_refresh_token,
+    verify_otp_code,
 )
 
 
@@ -94,22 +97,37 @@ class TestDecodeToken:
         assert decode_token("Bearer abc") is None
 
 
-class TestHashMagicLinkToken:
+class TestHashOtpCode:
     def test_deterministic(self):
-        t = "abc123"
-        assert hash_magic_link_token(t) == hash_magic_link_token(t)
+        assert hash_otp_code("482913") == hash_otp_code("482913")
 
-    def test_different_tokens_different_hashes(self):
-        a = hash_magic_link_token("a")
-        b = hash_magic_link_token("b")
+    def test_different_codes_different_hashes(self):
+        a = hash_otp_code("111111")
+        b = hash_otp_code("222222")
         assert a != b
-        assert len(a) == 64  # hex SHA256
+        assert len(a) == 64
 
 
-class TestGetMagicLinkExpiresAt:
-    def test_future_utc_aware(self):
+class TestGenerateOtpCode:
+    def test_length_matches_settings(self):
+        code = generate_otp_code()
+        assert len(code) == settings.OTP_LENGTH
+        assert code.isdigit()
+
+
+class TestVerifyOtpCode:
+    def test_valid_code(self):
+        code = "123456"
+        assert verify_otp_code(code, hash_otp_code(code)) is True
+
+    def test_invalid_code(self):
+        assert verify_otp_code("000000", hash_otp_code("123456")) is False
+
+
+class TestGetOtpExpiresAt:
+    def test_uses_otp_expire_minutes(self):
         with patch("app.core.security._utcnow") as m:
             m.return_value = datetime(2025, 3, 5, 12, 0, 0, tzinfo=UTC)
-            expires = get_magic_link_expires_at()
-        assert expires.tzinfo is not None
-        assert expires > m.return_value
+            expires = get_otp_expires_at()
+        delta_minutes = (expires - m.return_value).total_seconds() / 60
+        assert delta_minutes == settings.OTP_EXPIRE_MINUTES

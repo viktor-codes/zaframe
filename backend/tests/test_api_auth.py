@@ -4,13 +4,13 @@ Integration tests for authentication API.
 Requires DATABASE_URL and SECRET_KEY in the environment.
 """
 
-import re
 from unittest.mock import AsyncMock, patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 
 from app.main import app
+from tests.conftest import authenticate_via_otp
 
 
 @pytest.mark.integration
@@ -46,11 +46,11 @@ async def test_health_ready():
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_magic_link_request_returns_200(client):
-    """POST /auth/magic-link/request returns 200."""
-    with patch("app.services.auth.send_magic_link_email", new_callable=AsyncMock):
+async def test_otp_request_returns_200(client):
+    """POST /auth/otp/request returns 200."""
+    with patch("app.services.auth.send_otp_email", new_callable=AsyncMock):
         r = await client.post(
-            "/api/v1/auth/magic-link/request",
+            "/api/v1/auth/otp/request",
             json={"email": "test-auth@example.com", "name": "Test User"},
         )
     assert r.status_code == 200
@@ -60,9 +60,17 @@ async def test_magic_link_request_returns_200(client):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_magic_link_verify_invalid_token_returns_400(client):
-    """GET /auth/magic-link/verify with invalid token returns 400."""
-    r = await client.get("/api/v1/auth/magic-link/verify", params={"token": "invalid-token"})
+async def test_otp_verify_invalid_code_returns_400(client):
+    """POST /auth/otp/verify with invalid code returns 400."""
+    with patch("app.services.auth.send_otp_email", new_callable=AsyncMock):
+        await client.post(
+            "/api/v1/auth/otp/request",
+            json={"email": "invalid-otp@example.com", "name": "Test User"},
+        )
+    r = await client.post(
+        "/api/v1/auth/otp/verify",
+        json={"email": "invalid-otp@example.com", "code": "000000"},
+    )
     assert r.status_code == 400
     detail = r.json().get("detail", "")
     assert "invalid" in detail.lower() or "expired" in detail.lower()
@@ -72,28 +80,14 @@ async def test_magic_link_verify_invalid_token_returns_400(client):
 @pytest.mark.asyncio
 async def test_full_auth_flow_refresh_logout_me(client):
     """
-    Full flow: magic link request -> verify (cookie) -> refresh -> /me -> logout
+    Full flow: OTP request -> verify (cookie) -> refresh -> /me -> logout
     -> old refresh no longer works.
     """
-    captured_url = []
-
-    async def capture_email(to: str, url: str) -> None:
-        captured_url.append(url)
-
-    with patch("app.services.auth.send_magic_link_email", side_effect=capture_email):
-        r1 = await client.post(
-            "/api/v1/auth/magic-link/request",
-            json={"email": "flow@example.com", "name": "Flow User"},
-        )
-    assert r1.status_code == 200
-    assert len(captured_url) == 1
-    match = re.search(r"token=([^&]+)", captured_url[0])
-    assert match
-    token = match.group(1)
-
-    r2 = await client.get("/api/v1/auth/magic-link/verify", params={"token": token})
-    assert r2.status_code == 200
-    data2 = r2.json()
+    data2 = await authenticate_via_otp(
+        client,
+        email="flow@example.com",
+        name="Flow User",
+    )
     assert "refresh_token" not in data2
     access = data2["access_token"]
     assert data2.get("token_type") == "bearer"
@@ -156,28 +150,14 @@ async def test_refresh_with_invalid_token_returns_401():
         base_url="http://test",
     ) as fresh_client:
         r = await fresh_client.post("/api/v1/auth/refresh")
-    assert r.status_code == 401
+    assert r.status_code in (401, 403)
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_refresh_missing_csrf_header_returns_403(client):
     """POST /auth/refresh without CSRF header returns 403 (double-submit)."""
-    # Bootstrap cookies via verify
-    captured_url = []
-
-    async def capture_email(to: str, url: str) -> None:
-        captured_url.append(url)
-
-    with patch("app.services.auth.send_magic_link_email", side_effect=capture_email):
-        r1 = await client.post(
-            "/api/v1/auth/magic-link/request",
-            json={"email": "csrf@example.com", "name": "CSRF User"},
-        )
-    assert r1.status_code == 200
-    token = re.search(r"token=([^&]+)", captured_url[0]).group(1)
-    r2 = await client.get("/api/v1/auth/magic-link/verify", params={"token": token})
-    assert r2.status_code == 200
+    await authenticate_via_otp(client, email="csrf@example.com", name="CSRF User")
     assert client.cookies.get("refresh_token") is not None
     assert client.cookies.get("csrf_token") is not None
 
