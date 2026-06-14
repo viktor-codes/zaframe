@@ -16,6 +16,7 @@ from app.core.security import (
     get_user_id_from_access_token,
     hash_otp_code,
     parse_refresh_token,
+    verify_otp_code,
 )
 from app.core.uow import UnitOfWork
 from app.models.otp_code import OTPCode
@@ -76,30 +77,28 @@ async def verify_otp(
     Returns (user, access_token, refresh_token, csrf_token).
     """
     now_utc = utc_now()
-    code_hash = hash_otp_code(code)
-    otp = await uow.otp_codes.get_active_by_email_and_hash(email, code_hash, now_utc)
-
-    if otp is not None:
-        if otp.attempts >= settings.OTP_MAX_ATTEMPTS:
-            otp.used_at = now_utc
-            await uow.otp_codes.save(otp)
-            raise ValidationError(_INVALID_OTP_MESSAGE)
-        return await _complete_otp_login(
-            uow,
-            otp,
-            now_utc=now_utc,
-            booking_id=booking_id,
-        )
-
-    latest = await uow.otp_codes.get_latest_active_for_email(email, now_utc)
-    if latest is None:
+    otp = await uow.otp_codes.get_latest_active_for_email(email, now_utc)
+    if otp is None:
         raise ValidationError(_INVALID_OTP_MESSAGE)
 
-    latest.attempts += 1
-    if latest.attempts >= settings.OTP_MAX_ATTEMPTS:
-        latest.used_at = now_utc
-    await uow.otp_codes.save(latest)
-    raise ValidationError(_INVALID_OTP_MESSAGE)
+    if otp.attempts >= settings.OTP_MAX_ATTEMPTS:
+        otp.used_at = now_utc
+        await uow.otp_codes.save(otp)
+        raise ValidationError(_INVALID_OTP_MESSAGE)
+
+    if not verify_otp_code(code, otp.code_hash):
+        otp.attempts += 1
+        if otp.attempts >= settings.OTP_MAX_ATTEMPTS:
+            otp.used_at = now_utc
+        await uow.otp_codes.save(otp)
+        raise ValidationError(_INVALID_OTP_MESSAGE)
+
+    return await _complete_otp_login(
+        uow,
+        otp,
+        now_utc=now_utc,
+        booking_id=booking_id,
+    )
 
 
 async def _complete_otp_login(

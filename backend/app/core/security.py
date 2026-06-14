@@ -165,10 +165,10 @@ def hash_otp_code(code: str) -> str:
     return hmac.new(key, msg, hashlib.sha256).hexdigest()
 
 
-def verify_otp_code(code: str, code_hash: str) -> bool:
-    """Constant-time comparison of OTP plaintext against stored hash."""
-    expected = hash_otp_code(code)
-    return hmac.compare_digest(expected, code_hash)
+def verify_otp_code(code: str, stored_hash: str) -> bool:
+    """Constant-time comparison of OTP plaintext against stored HMAC-SHA256 hash."""
+    computed_hash = hash_otp_code(code)
+    return hmac.compare_digest(stored_hash, computed_hash)
 
 
 def get_otp_expires_at() -> datetime:

@@ -40,23 +40,6 @@ class OTPCodeRepository(WriteRepositoryMixin):
         )
         await self._session.flush()
 
-    async def get_active_by_email_and_hash(
-        self,
-        email: str,
-        code_hash: str,
-        now: datetime,
-    ) -> OTPCode | None:
-        """Find an unused, non-expired OTP row matching email and code hash."""
-        result = await self._session.execute(
-            select(OTPCode).where(
-                OTPCode.email == email,
-                OTPCode.code_hash == code_hash,
-                OTPCode.used_at.is_(None),
-                OTPCode.expires_at > now,
-            )
-        )
-        return result.scalar_one_or_none()
-
     async def get_latest_active_for_email(self, email: str, now: datetime) -> OTPCode | None:
         """Latest unused non-expired OTP for email (verify wrong-code attempts)."""
         result = await self._session.execute(
