@@ -4,9 +4,7 @@ Order and course-purchase schemas.
 
 from __future__ import annotations
 
-from datetime import datetime
-
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, EmailStr, Field
 
 from app.schemas.booking import BookingSelfResponse
 
@@ -28,8 +26,8 @@ class OrderResponse(OrderBase):
     guest_email: EmailStr | None
     guest_name: str | None
     status: str = Field(..., description="Order status")
-    created_at: datetime
-    updated_at: datetime
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -38,7 +36,7 @@ class CourseBookingPreviewItem(BaseModel):
     """Single occurrence preview when checking course availability."""
 
     occurrence_id: int
-    start_time: datetime
+    start_time: AwareDatetime
     max_capacity: int
     confirmed_count: int
     pending_count: int

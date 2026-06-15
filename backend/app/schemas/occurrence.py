@@ -7,25 +7,24 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator
 
 OccurrenceStatusLiteral = Literal["active", "cancelled"]
 
 
-def _require_timezone_aware(value: datetime) -> datetime:
-    if value.tzinfo is None:
-        raise ValueError("Datetime must include timezone (ISO 8601 with Z or offset)")
+def _normalize_to_utc(value: datetime) -> datetime:
+    """Normalize timezone-aware instants to UTC for a stable API contract."""
     return value.astimezone(UTC)
 
 
 class OccurrenceBase(BaseModel):
     """Base fields for an occurrence."""
 
-    start_time: datetime = Field(
+    start_time: AwareDatetime = Field(
         ...,
         description="Occurrence start instant (timezone-aware ISO 8601)",
     )
-    end_time: datetime = Field(
+    end_time: AwareDatetime = Field(
         ...,
         description="Occurrence end instant (timezone-aware ISO 8601)",
     )
@@ -41,8 +40,8 @@ class OccurrenceBase(BaseModel):
 
     @field_validator("start_time", "end_time")
     @classmethod
-    def validate_instant(cls, value: datetime) -> datetime:
-        return _require_timezone_aware(value)
+    def normalize_instant_to_utc(cls, value: datetime) -> datetime:
+        return _normalize_to_utc(value)
 
 
 class OccurrenceCreate(OccurrenceBase):
@@ -58,8 +57,8 @@ class OccurrenceCreate(OccurrenceBase):
 class OccurrenceUpdate(BaseModel):
     """Partial occurrence update."""
 
-    start_time: datetime | None = None
-    end_time: datetime | None = None
+    start_time: AwareDatetime | None = None
+    end_time: AwareDatetime | None = None
     title: str | None = Field(None, min_length=1, max_length=200)
     description: str | None = Field(None, max_length=1000)
     max_capacity: int | None = Field(None, ge=1)
@@ -68,10 +67,10 @@ class OccurrenceUpdate(BaseModel):
 
     @field_validator("start_time", "end_time")
     @classmethod
-    def validate_instant(cls, value: datetime | None) -> datetime | None:
+    def normalize_instant_to_utc(cls, value: datetime | None) -> datetime | None:
         if value is None:
             return None
-        return _require_timezone_aware(value)
+        return _normalize_to_utc(value)
 
 
 class OccurrenceResponse(OccurrenceBase):
@@ -80,8 +79,8 @@ class OccurrenceResponse(OccurrenceBase):
     id: int
     studio_id: int
     status: OccurrenceStatusLiteral
-    created_at: datetime
-    updated_at: datetime
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
 
     model_config = ConfigDict(from_attributes=True)
 

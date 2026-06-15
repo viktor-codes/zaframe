@@ -4,9 +4,9 @@ ScheduleTemplate template and bulk occurrence generation schemas.
 
 from __future__ import annotations
 
-from datetime import date, datetime, time
+from datetime import date, time
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator
 
 
 class ScheduleTemplateBase(BaseModel):
@@ -32,8 +32,8 @@ class ScheduleTemplateResponse(ScheduleTemplateBase):
 
     id: int
     service_id: int
-    created_at: datetime
-    updated_at: datetime
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
 
     model_config = ConfigDict(from_attributes=True)
 

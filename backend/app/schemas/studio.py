@@ -2,9 +2,7 @@
 Pydantic schemas для Studio модели.
 """
 
-from datetime import datetime
-
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from app.core.datetime_utils import validate_iana_timezone
 
@@ -79,8 +77,8 @@ class StudioResponse(StudioBase):
     owner_id: int
     timezone: str
     is_active: bool
-    created_at: datetime
-    updated_at: datetime
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -4,9 +4,7 @@ Pydantic schemas for Booking model.
 
 from __future__ import annotations
 
-from datetime import datetime
-
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, computed_field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, EmailStr, Field, computed_field
 
 from app.models.booking import BookingType
 from app.schemas.occurrence import OccurrenceResponse
@@ -58,7 +56,7 @@ class BookingResponseBase(BookingBase):
     id: int
     user_id: int | None
     status: str
-    reserved_until: datetime | None = Field(
+    reserved_until: AwareDatetime | None = Field(
         None,
         description="UTC timestamp until which a pending booking reserves occurrence capacity",
     )
@@ -66,9 +64,9 @@ class BookingResponseBase(BookingBase):
         None,
         description="Payment status (no internal Stripe IDs)",
     )
-    created_at: datetime
-    updated_at: datetime
-    cancelled_at: datetime | None
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+    cancelled_at: AwareDatetime | None
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 

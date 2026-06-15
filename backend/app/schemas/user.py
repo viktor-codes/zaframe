@@ -12,9 +12,7 @@ Pydantic schemas для User модели.
 - Гибкость: можем добавлять вычисляемые поля в Response
 """
 
-from datetime import datetime
-
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, EmailStr, Field
 
 
 class UserBase(BaseModel):
@@ -44,9 +42,9 @@ class UserResponse(UserBase):
 
     id: int
     is_active: bool
-    created_at: datetime
-    updated_at: datetime
-    last_login_at: datetime | None
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+    last_login_at: AwareDatetime | None
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -57,6 +55,6 @@ class UserPublic(UserBase):
     """Публичная информация о пользователе (без внутренних данных)."""
 
     id: int
-    created_at: datetime
+    created_at: AwareDatetime
 
     model_config = ConfigDict(from_attributes=True)
