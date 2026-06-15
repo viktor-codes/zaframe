@@ -72,8 +72,8 @@ class Studio(TimestampMixin, Base):
     owner: Mapped[User] = relationship("User", back_populates="studios")
 
     # Одна студия может иметь множество слотов
-    slots: Mapped[list[Slot]] = relationship(
-        "Slot", back_populates="studio", cascade="all, delete-orphan"
+    occurrences: Mapped[list[Occurrence]] = relationship(
+        "Occurrence", back_populates="studio", cascade="all, delete-orphan"
     )
     # Одна студия может иметь множество услуг
     services: Mapped[list[Service]] = relationship(

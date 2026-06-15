@@ -36,7 +36,7 @@ from app.services.service import (
     get_studio_public,
     occurrence_generator,
 )
-from app.services.slot import get_slots
+from app.services.occurrence import get_occurrences
 from app.services.studio import (
     create_studio,
     delete_studio,
@@ -124,8 +124,8 @@ async def count_studios(
     return {"count": count}
 
 
-@router.get("/{studio_id}/slots", response_model=list[OccurrenceResponse])
-async def list_studio_slots(
+@router.get("/{studio_id}/occurrences", response_model=list[OccurrenceResponse])
+async def list_studio_occurrences(
     studio_id: int,
     uow: UnitOfWork = Depends(get_uow),
     skip: int = Query(0, ge=0, description="Пропустить N записей"),
@@ -137,7 +137,7 @@ async def list_studio_slots(
     """
     Расписание студии: слоты с фильтрами по датам.
     """
-    slots = await get_slots(
+    occurrences = await get_occurrences(
         uow,
         skip=skip,
         limit=limit,
@@ -146,7 +146,7 @@ async def list_studio_slots(
         start_to=start_to,
         status=status,
     )
-    return slots
+    return occurrences
 
 
 @router.get("/{studio_id}", response_model=StudioResponse)
@@ -171,8 +171,8 @@ async def get_studio_public_endpoint(
     return map_studio_public(await get_studio_public(uow, slug=slug))
 
 
-@router.post("/{studio_id}/generate-schedule", response_model=list[OccurrenceResponse])
-async def generate_studio_schedule_endpoint(
+@router.post("/{studio_id}/generate-occurrences", response_model=list[OccurrenceResponse])
+async def generate_studio_occurrences_endpoint(
     studio_id: int,
     schema: ScheduleGenerateRequest,
     user: User = Depends(get_current_user_required),
@@ -186,7 +186,7 @@ async def generate_studio_schedule_endpoint(
     studio = await get_studio_or_raise(uow, studio_id)
     ensure_studio_owner(studio, user.id)
 
-    slots = await occurrence_generator(
+    occurrences = await occurrence_generator(
         uow,
         studio_id=studio_id,
         service_id=schema.service_id,
@@ -194,7 +194,7 @@ async def generate_studio_schedule_endpoint(
         start_time=schema.start_time,
         weeks_count=schema.weeks_count,
     )
-    return [OccurrenceResponse.model_validate(s) for s in slots]
+    return [OccurrenceResponse.model_validate(o) for o in occurrences]
 
 
 @router.post("", response_model=StudioResponse, status_code=201)

@@ -1,5 +1,5 @@
 """
-Integration tests: duplicate booking protection per (slot, guest).
+Integration tests: duplicate booking protection per (occurrence, guest).
 
 - Pre-check returns 400 before insert
 - IntegrityError under concurrency returns 409
@@ -33,7 +33,7 @@ async def _create_bookable_slot(
     owner_email: str = "dup-owner@example.com",
     max_capacity: int = 5,
 ) -> int:
-    """Create studio + future slot; return slot_id."""
+    """Create studio + future slot; return occurrence_id."""
     verify_data = await authenticate_via_otp(client, email=owner_email, name="Dup Owner")
     headers = {"Authorization": f"Bearer {verify_data['access_token']}"}
 
@@ -53,13 +53,13 @@ async def _create_bookable_slot(
 
     start = datetime.now(UTC) + timedelta(hours=4)
     end = start + timedelta(hours=1)
-    r_slot = await client.post(
+    r_occurrence = await client.post(
         "/api/v1/slots",
         json={
             "start_time": start.isoformat(),
             "end_time": end.isoformat(),
             "title": "Dup Class",
-            "description": "Slot for duplicate tests",
+            "description": "Occurrence for duplicate tests",
             "max_capacity": max_capacity,
             "price_cents": 1500,
             "studio_id": studio_id,
@@ -71,9 +71,9 @@ async def _create_bookable_slot(
     return r_slot.json()["id"]
 
 
-def _booking_payload(slot_id: int, *, guest_email: str = "dup-guest@example.com") -> dict:
+def _booking_payload(occurrence_id: int, *, guest_email: str = "dup-guest@example.com") -> dict:
     return {
-        "slot_id": slot_id,
+        "occurrence_id": occurrence_id,
         "guest_name": "Dup Guest",
         "guest_email": guest_email,
         "guest_phone": "+1234567890",
@@ -84,8 +84,8 @@ def _booking_payload(slot_id: int, *, guest_email: str = "dup-guest@example.com"
 @pytest.mark.asyncio
 async def test_duplicate_booking_same_slot_returns_400(client: AsyncClient) -> None:
     """Second booking for the same slot and email is rejected before insert."""
-    slot_id = await _create_bookable_slot(client)
-    payload = _booking_payload(slot_id)
+    occurrence_id = await _create_bookable_slot(client)
+    payload = _booking_payload(occurrence_id)
 
     r_first = await client.post("/api/v1/bookings", json=payload)
     assert r_first.status_code == 201
@@ -99,9 +99,9 @@ async def test_duplicate_booking_same_slot_returns_400(client: AsyncClient) -> N
 @pytest.mark.asyncio
 async def test_rebook_after_cancel_succeeds(client: AsyncClient) -> None:
     """Cancelled booking no longer blocks a new reservation on the same slot."""
-    slot_id = await _create_bookable_slot(client, owner_email="rebook-owner@example.com")
+    occurrence_id = await _create_bookable_slot(client, owner_email="rebook-owner@example.com")
     guest_email = "rebook-guest@example.com"
-    payload = _booking_payload(slot_id, guest_email=guest_email)
+    payload = _booking_payload(occurrence_id, guest_email=guest_email)
 
     r_first = await client.post("/api/v1/bookings", json=payload)
     assert r_first.status_code == 201
@@ -129,9 +129,9 @@ async def test_create_booking_race_one_success_one_conflict(client: AsyncClient)
 
     Pre-check is bypassed so both coroutines reach INSERT (TOCTOU race).
     """
-    slot_id = await _create_bookable_slot(client, owner_email="race-owner@example.com")
+    occurrence_id = await _create_bookable_slot(client, owner_email="race-owner@example.com")
     schema = BookingCreate(
-        occurrence_id=slot_id,
+        occurrence_id=occurrence_id,
         guest_name="Race Guest",
         guest_email="race-guest@example.com",
         guest_phone="+1999888777",

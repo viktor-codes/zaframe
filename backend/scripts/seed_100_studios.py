@@ -25,7 +25,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import async_session_maker
 from app.core.datetime_utils import studio_local_date_now, studio_local_to_utc, utc_now
-from app.models import Service, ServiceCategory, ServiceType, Slot, SlotStatus, Studio, User
+from app.models import Service, ServiceCategory, ServiceType, Occurrence, OccurrenceStatus, Studio, User
 
 
 @dataclass(frozen=True)
@@ -218,7 +218,7 @@ async def seed_100_studios(db: AsyncSession) -> None:
         for _ in range(random.randint(3, 8)):
             category = random.choice(all_categories)
             is_course = random.choice([True, False])
-            service_type = ServiceType.COURSE if is_course else ServiceType.SINGLE_CLASS
+            service_type = ServiceType.COURSE if is_course else ServiceType.SINGLE
 
             duration_minutes = random.choice([45, 60, 75, 90])
             max_capacity = random.choice([8, 10, 12, 14, 16, 18])
@@ -309,7 +309,7 @@ async def seed_100_studios(db: AsyncSession) -> None:
         max_capacity,
         price_single_cents,
     ) in services_rows:
-        if service_type != ServiceType.SINGLE_CLASS:
+        if service_type != ServiceType.SINGLE:
             continue
         tz_name = studio_tz_map[int(studio_id)]
         slots_count = random.randint(3, 6)
@@ -321,7 +321,7 @@ async def seed_100_studios(db: AsyncSession) -> None:
                 start_dt = now + timedelta(hours=2)
             end_dt = start_dt + timedelta(minutes=int(duration_minutes))
 
-            slot = Slot(
+            occurrence = Occurrence(
                 studio_id=int(studio_id),
                 service_id=int(service_id),
                 start_time=start_dt,
@@ -331,20 +331,20 @@ async def seed_100_studios(db: AsyncSession) -> None:
                 max_capacity=int(max_capacity),
                 price_cents=int(price_single_cents),
                 course_price_cents=None,
-                status=SlotStatus.ACTIVE,
+                status=OccurrenceStatus.ACTIVE,
             )
-            db.add(slot)
+            db.add(occurrence)
 
     await db.commit()
 
     studio_count = await db.scalar(select(func.count(Studio.id)))
     service_count = await db.scalar(select(func.count(Service.id)))
-    slot_count = await db.scalar(select(func.count(Slot.id)))
+    occurrence_count = await db.scalar(select(func.count(Occurrence.id)))
     owner_count = await db.scalar(
         select(func.count(User.id)).where(User.email.like("seed-owner-%@example.com"))
     )
     print(
-        f"[seed_100] owners={owner_count}, studios={studio_count}, services={service_count}, slots={slot_count}"
+        f"[seed_100] owners={owner_count}, studios={studio_count}, services={service_count}, occurrences={occurrence_count}"
     )
 
 

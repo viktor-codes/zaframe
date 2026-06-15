@@ -77,7 +77,7 @@ async def list_bookings(
     user: User = Depends(get_current_user_required),
     skip: int = Query(0, ge=0, description="Пропустить N записей"),
     limit: int = Query(20, ge=1, le=100, description="Максимум записей"),
-    slot_id: int | None = Query(None, description="Фильтр по слоту"),
+    occurrence_id: int | None = Query(None, description="Фильтр по слоту"),
     status: str | None = Query(None, description="Фильтр по статусу"),
 ) -> list[BookingOwnerResponse]:
     """Список бронирований студий, которыми владеет текущий пользователь."""
@@ -86,7 +86,7 @@ async def list_bookings(
         user,
         skip=skip,
         limit=limit,
-        slot_id=slot_id,
+        occurrence_id=occurrence_id,
         status=status,
     )
     return [BookingOwnerResponse.model_validate(b) for b in bookings]
@@ -106,7 +106,7 @@ async def list_my_bookings(
     """
     Кабинетный список бронирований текущего пользователя (без N+1).
 
-    Возвращает Booking + Slot + Studio, чтобы фронт не делал дополнительные запросы.
+    Возвращает Booking + Occurrence + Studio, чтобы фронт не делал дополнительные запросы.
     """
     bookings = await get_my_bookings(
         uow,
@@ -118,11 +118,11 @@ async def list_my_bookings(
     return [
         BookingSelfListItem(
             **BookingSelfResponse.model_validate(b).model_dump(),
-            occurrence=b.slot,
-            studio=b.slot.studio,
+            occurrence=b.occurrence,
+            studio=b.occurrence.studio,
         )
         for b in bookings
-        if getattr(b, "slot", None) is not None and getattr(b.slot, "studio", None) is not None
+        if getattr(b, "occurrence", None) is not None and getattr(b.occurrence, "studio", None) is not None
     ]
 
 
@@ -130,14 +130,14 @@ async def list_my_bookings(
 async def count_bookings(
     uow: UnitOfWork = Depends(get_uow),
     user: User = Depends(get_current_user_required),
-    slot_id: int | None = Query(None, description="Фильтр по слоту"),
+    occurrence_id: int | None = Query(None, description="Фильтр по слоту"),
     status: str | None = Query(None, description="Фильтр по статусу"),
 ) -> dict[str, int]:
     """Количество бронирований студий владельца (для пагинации)."""
     count = await get_owner_bookings_count(
         uow,
         user,
-        slot_id=slot_id,
+        occurrence_id=occurrence_id,
         status=status,
     )
     return {"count": count}

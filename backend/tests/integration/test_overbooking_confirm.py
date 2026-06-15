@@ -57,7 +57,7 @@ async def _create_studio_and_slot(
     owner_email: str,
     max_capacity: int = 1,
 ) -> tuple[int, int]:
-    """Return (slot_id, studio_id)."""
+    """Return (occurrence_id, studio_id)."""
     verify_data = await authenticate_via_otp(
         client,
         email=owner_email,
@@ -81,7 +81,7 @@ async def _create_studio_and_slot(
 
     start = datetime.now(UTC) + timedelta(hours=3)
     end = start + timedelta(hours=1)
-    r_slot = await client.post(
+    r_occurrence = await client.post(
         "/api/v1/slots",
         json={
             "start_time": start.isoformat(),
@@ -99,11 +99,11 @@ async def _create_studio_and_slot(
     return r_slot.json()["id"], studio_id
 
 
-async def _create_guest_booking(client: AsyncClient, slot_id: int, *, email: str) -> int:
+async def _create_guest_booking(client: AsyncClient, occurrence_id: int, *, email: str) -> int:
     r_booking = await client.post(
         "/api/v1/bookings",
         json={
-            "slot_id": slot_id,
+            "occurrence_id": occurrence_id,
             "guest_name": "Guest",
             "guest_email": email,
             "guest_phone": "+100",
@@ -169,13 +169,13 @@ async def test_expired_hold_payment_does_not_overbook_slot(
     max_capacity=1: booking A (expired hold) + booking B (confirmed).
     Webhook for A must not create a second confirmed seat; A → manual review.
     """
-    slot_id, _ = await _create_studio_and_slot(
+    occurrence_id, _ = await _create_studio_and_slot(
         rollback_client,
         owner_email="overbook-a@example.com",
         max_capacity=1,
     )
     booking_a_id = await _create_guest_booking(
-        rollback_client, slot_id, email="guest-a@example.com"
+        rollback_client, occurrence_id, email="guest-a@example.com"
     )
 
     session = app_with_rollback_uow.state._integration_session
@@ -187,7 +187,7 @@ async def test_expired_hold_payment_does_not_overbook_slot(
     await session.flush()
 
     booking_b_id = await _create_guest_booking(
-        rollback_client, slot_id, email="guest-b@example.com"
+        rollback_client, occurrence_id, email="guest-b@example.com"
     )
 
     # B pays and confirms while A's hold no longer reserves capacity.
@@ -225,7 +225,7 @@ async def test_expired_hold_payment_does_not_overbook_slot(
         select(func.count())
         .select_from(Booking)
         .where(
-            Booking.slot_id == slot_id,
+            Booking.occurrence_id == occurrence_id,
             Booking.status == BookingStatus.CONFIRMED,
         )
     )
@@ -240,13 +240,13 @@ async def test_repeated_webhook_on_confirmed_booking_is_idempotent(
     rollback_client, app_with_rollback_uow
 ):
     """Second checkout.session.completed for an already confirmed booking changes nothing."""
-    slot_id, _ = await _create_studio_and_slot(
+    occurrence_id, _ = await _create_studio_and_slot(
         rollback_client,
         owner_email="overbook-idem@example.com",
         max_capacity=1,
     )
     booking_id = await _create_guest_booking(
-        rollback_client, slot_id, email="idem@example.com"
+        rollback_client, occurrence_id, email="idem@example.com"
     )
 
     session = app_with_rollback_uow.state._integration_session
@@ -277,16 +277,16 @@ async def test_two_pending_within_hold_both_confirm_when_capacity_allows(
     rollback_client, app_with_rollback_uow
 ):
     """Inside active hold window, two pending bookings on max_capacity=2 both confirm."""
-    slot_id, _ = await _create_studio_and_slot(
+    occurrence_id, _ = await _create_studio_and_slot(
         rollback_client,
         owner_email="overbook-hold@example.com",
         max_capacity=2,
     )
     booking_a_id = await _create_guest_booking(
-        rollback_client, slot_id, email="hold-a@example.com"
+        rollback_client, occurrence_id, email="hold-a@example.com"
     )
     booking_b_id = await _create_guest_booking(
-        rollback_client, slot_id, email="hold-b@example.com"
+        rollback_client, occurrence_id, email="hold-b@example.com"
     )
 
     session = app_with_rollback_uow.state._integration_session
@@ -309,7 +309,7 @@ async def test_two_pending_within_hold_both_confirm_when_capacity_allows(
         select(func.count())
         .select_from(Booking)
         .where(
-            Booking.slot_id == slot_id,
+            Booking.occurrence_id == occurrence_id,
             Booking.status == BookingStatus.CONFIRMED,
         )
     )

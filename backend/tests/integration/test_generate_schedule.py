@@ -20,16 +20,16 @@ async def _create_studio_and_course_service(
     client: AsyncClient,
     email: str = "schedule-owner@example.com",
 ) -> tuple[dict[str, str], int, int]:
-    data = await authenticate_via_otp(client, email=email, name="Schedule Owner")
+    data = await authenticate_via_otp(client, email=email, name="ScheduleTemplate Owner")
     headers = {"Authorization": f"Bearer {data['access_token']}"}
 
     r_studio = await client.post(
         "/api/v1/studios",
         json={
-            "name": "Schedule Studio",
+            "name": "ScheduleTemplate Studio",
             "description": "For generate-schedule tests",
             "email": "schedule-studio@example.com",
-            "address": "Schedule street 1",
+            "address": "ScheduleTemplate street 1",
             "timezone": "Europe/Dublin",
         },
         headers=headers,
@@ -68,11 +68,11 @@ async def test_generate_schedule_happy_path(client: AsyncClient):
     )
 
     assert response.status_code == 200
-    slots = response.json()
-    assert isinstance(slots, list)
-    assert len(slots) > 0
-    assert all(s["studio_id"] == studio_id for s in slots)
-    assert all(s["status"] == "active" for s in slots)
+    occurrences = response.json()
+    assert isinstance(occurrences, list)
+    assert len(occurrences) > 0
+    assert all(s["studio_id"] == studio_id for s in occurrences)
+    assert all(s["status"] == "active" for s in occurrences)
 
 
 @pytest.mark.integration

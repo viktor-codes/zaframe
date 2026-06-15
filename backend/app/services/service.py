@@ -1,8 +1,8 @@
 """
-Бизнес-логика для Service / Schedule и генерации occurrence'ов (Slot).
+Бизнес-логика для Service / ScheduleTemplate и генерации occurrence'ов (Occurrence).
 
 Здесь живут:
-- генерация расписания на основе Schedule / параметров
+- генерация расписания на основе ScheduleTemplate / параметров
 - проверка доступности курса с учётом soft/hard лимитов (overbooking)
 """
 
@@ -22,10 +22,10 @@ from app.models import (
     BookingType,
     Order,
     OrderStatus,
-    Schedule,
+    ScheduleTemplate,
     Service,
     ServiceType,
-    Slot,
+    Occurrence,
 )
 from app.schemas import ScheduleTemplateCreate, ServiceUpdate
 from app.services.dto import (
@@ -79,45 +79,49 @@ async def deactivate_service(uow: UnitOfWork, service: Service) -> Service:
     return await uow.services.save(service)
 
 
-async def create_schedule(uow: UnitOfWork, schema: ScheduleTemplateCreate) -> Schedule:
+async def create_schedule_template(
+    uow: UnitOfWork, schema: ScheduleTemplateCreate
+) -> ScheduleTemplate:
     """Создать шаблон расписания для услуги."""
     if await uow.services.get_by_id(schema.service_id) is None:
         raise NotFoundError("Service not found")
 
-    schedule = Schedule(
+    schedule_template = ScheduleTemplate(
         service_id=schema.service_id,
         day_of_week=schema.day_of_week,
         start_time=schema.start_time,
         valid_from=schema.valid_from,
         valid_to=schema.valid_to,
     )
-    return await uow.schedules.add(schedule)
+    return await uow.schedule_templates.add(schedule_template)
 
 
-async def get_schedules_for_service(
+async def get_schedule_templates_for_service(
     uow: UnitOfWork,
     *,
     service_id: int,
-) -> list[Schedule]:
+) -> list[ScheduleTemplate]:
     """Получить все шаблоны расписания для услуги."""
-    return await uow.schedules.list_by_service_id(service_id)
+    return await uow.schedule_templates.list_by_service_id(service_id)
 
 
-async def get_schedule(uow: UnitOfWork, schedule_id: int) -> Schedule | None:
+async def get_schedule_template(uow: UnitOfWork, schedule_template_id: int) -> ScheduleTemplate | None:
     """Получить один шаблон расписания."""
-    return await uow.schedules.get_by_id(schedule_id)
+    return await uow.schedule_templates.get_by_id(schedule_template_id)
 
 
-async def delete_schedule(uow: UnitOfWork, schedule: Schedule) -> None:
+async def delete_schedule_template(uow: UnitOfWork, schedule: ScheduleTemplate) -> None:
     """Удалить шаблон расписания."""
-    await uow.schedules.delete(schedule)
+    await uow.schedule_templates.delete(schedule)
 
 
-async def get_schedule_or_raise(uow: UnitOfWork, schedule_id: int) -> Schedule:
+async def get_schedule_template_or_raise(
+    uow: UnitOfWork, schedule_template_id: int
+) -> ScheduleTemplate:
     """Получить шаблон расписания или выбросить NotFoundError."""
-    schedule = await uow.schedules.get_by_id(schedule_id)
+    schedule = await uow.schedule_templates.get_by_id(schedule_template_id)
     if schedule is None:
-        raise NotFoundError("Schedule not found")
+        raise NotFoundError("ScheduleTemplate not found")
     return schedule
 
 
@@ -138,9 +142,9 @@ async def occurrence_generator(
     start_time: time,
     weeks_count: int,
     start_date: date | None = None,
-) -> list[Slot]:
+) -> list[Occurrence]:
     """
-    Генератор occurrence'ов (Slot) для курса.
+    Генератор occurrence'ов (Occurrence) для курса.
 
     Используется сценарием:
     POST /studios/{id}/generate-schedule
@@ -190,16 +194,16 @@ async def occurrence_generator(
     min_start = min(s for s, _ in planned_intervals)
     max_end = max(e for _, e in planned_intervals)
 
-    existing_slots = await uow.slots.list_overlapping(studio_id, service_id, min_start, max_end)
+    existing_occurrences = await uow.occurrences.list_overlapping(studio_id, service_id, min_start, max_end)
 
-    if existing_slots:
+    if existing_occurrences:
         raise ValidationError(
             "Existing course sessions overlap this period. Remove old sessions or pick another range.",
         )
 
-    created_slots: list[Slot] = []
+    created_occurrences: list[Occurrence] = []
     for start_dt, end_dt in planned_intervals:
-        slot = Slot(
+        occurrence = Occurrence(
             studio_id=studio_id,
             service_id=service_id,
             start_time=start_dt,
@@ -210,14 +214,14 @@ async def occurrence_generator(
             price_cents=service.price_single_cents,
             course_price_cents=service.price_course_cents,
         )
-        created_slots.append(slot)
+        created_occurrences.append(occurrence)
 
-    return await uow.slots.add_all(created_slots)
+    return await uow.occurrences.add_all(created_occurrences)
 
 
 @dataclass
 class _CapacityStats:
-    slot: Slot
+    occurrence: Occurrence
     confirmed_count: int
     pending_count: int
 
@@ -234,8 +238,8 @@ async def _get_course_slots_with_capacity(
 ) -> list[_CapacityStats]:
     """Получить все слоты курса и их текущую заполненность."""
     now_utc = now or utc_now()
-    slots = await uow.slots.list_by_service_active(service.id)
-    return await _build_course_capacity_stats(uow, slots=slots, now=now_utc)
+    occurrences = await uow.occurrences.list_by_service_active(service.id)
+    return await _build_course_capacity_stats(uow, occurrences=occurrences, now=now_utc)
 
 
 async def _get_course_slots_with_capacity_for_update(
@@ -244,34 +248,34 @@ async def _get_course_slots_with_capacity_for_update(
     service: Service,
     now: datetime | None = None,
 ) -> list[_CapacityStats]:
-    """Lock active course slots, then read their fill levels for booking."""
+    """Lock active course occurrences, then read their fill levels for booking."""
     now_utc = now or utc_now()
-    slots = await uow.slots.list_by_service_active_for_update(service.id)
-    return await _build_course_capacity_stats(uow, slots=slots, now=now_utc)
+    occurrences = await uow.occurrences.list_by_service_active_for_update(service.id)
+    return await _build_course_capacity_stats(uow, occurrences=occurrences, now=now_utc)
 
 
 async def _build_course_capacity_stats(
     uow: UnitOfWork,
     *,
-    slots: list[Slot],
+    occurrences: list[Occurrence],
     now: datetime,
 ) -> list[_CapacityStats]:
-    if not slots:
+    if not occurrences:
         return []
 
-    slot_ids = [s.id for s in slots]
-    counts_map = await uow.bookings.get_confirmed_pending_counts_by_slot_ids(
-        slot_ids,
+    occurrence_ids = [o.id for o in occurrences]
+    counts_map = await uow.bookings.get_confirmed_pending_counts_by_occurrence_ids(
+        occurrence_ids,
         now=now,
     )
 
     return [
         _CapacityStats(
-            slot=slot,
-            confirmed_count=counts_map.get(slot.id, (0, 0))[0],
-            pending_count=counts_map.get(slot.id, (0, 0))[1],
+            occurrence=occurrence,
+            confirmed_count=counts_map.get(occurrence.id, (0, 0))[0],
+            pending_count=counts_map.get(occurrence.id, (0, 0))[1],
         )
-        for slot in slots
+        for occurrence in occurrences
     ]
 
 
@@ -284,7 +288,7 @@ def _evaluate_course_availability(
             can_book=False,
             requires_warning=False,
             hard_block=True,
-            overbooked_slots=[],
+            overbooked_occurrences=[],
             message="No sessions have been created for this course yet",
         )
 
@@ -292,7 +296,7 @@ def _evaluate_course_availability(
     hard_block = False
 
     for s in stats:
-        max_capacity = s.slot.max_capacity
+        max_capacity = s.occurrence.max_capacity
         status = service.get_capacity_status(
             max_capacity=max_capacity,
             current_bookings=s.total,
@@ -308,8 +312,8 @@ def _evaluate_course_availability(
         if is_over_soft or is_over_hard:
             overbooked_items.append(
                 CourseBookingPreviewItemDTO(
-                    slot_id=s.slot.id,
-                    start_time=s.slot.start_time,
+                    occurrence_id=s.occurrence.id,
+                    start_time=s.occurrence.start_time,
                     max_capacity=max_capacity,
                     confirmed_count=s.confirmed_count,
                     pending_count=s.pending_count,
@@ -327,7 +331,7 @@ def _evaluate_course_availability(
             can_book=False,
             requires_warning=False,
             hard_block=True,
-            overbooked_slots=overbooked_items,
+            overbooked_occurrences=overbooked_items,
             message="Not enough seats in several course sessions. Contact the studio owner.",
         )
 
@@ -340,7 +344,7 @@ def _evaluate_course_availability(
         can_book=True,
         requires_warning=requires_warning,
         hard_block=False,
-        overbooked_slots=overbooked_items,
+        overbooked_occurrences=overbooked_items,
         message=message,
     )
 
@@ -416,23 +420,23 @@ async def create_course_booking(
             availability.message or "Not enough seats for the course",
         )
 
-    service = await uow.services.get_by_id_with_slots(data.service_id)
+    service = await uow.services.get_by_id_with_occurrences(data.service_id)
     if service is None:
         raise NotFoundError("Service not found")
 
-    slots = sorted(service.slots, key=lambda s: s.start_time)
-    if not slots:
+    occurrences = sorted(service.occurrences, key=lambda s: s.start_time)
+    if not occurrences:
         raise ValidationError(
             "No sessions have been created for this course yet",
         )
 
-    total_amount_cents = service.price_course_cents or (service.price_single_cents * len(slots))
+    total_amount_cents = service.price_course_cents or (service.price_single_cents * len(occurrences))
 
     # Распределяем стоимость курса по занятиям так, чтобы сумма unit_price_cents
     # строго совпадала с total_amount_cents (решаем "The Cent Problem").
-    base_unit = total_amount_cents // len(slots)
-    remainder = total_amount_cents % len(slots)
-    prices = [base_unit + 1] * remainder + [base_unit] * (len(slots) - remainder)
+    base_unit = total_amount_cents // len(occurrences)
+    remainder = total_amount_cents % len(occurrences)
+    prices = [base_unit + 1] * remainder + [base_unit] * (len(occurrences) - remainder)
 
     order = await uow.orders.add(
         Order(
@@ -448,16 +452,16 @@ async def create_course_booking(
     )
 
     bookings: list[Booking] = []
-    for idx, slot in enumerate(slots):
+    for idx, occurrence in enumerate(occurrences):
         await _ensure_no_active_booking_for_guest(
             uow,
-            slot_id=slot.id,
+            occurrence_id=occurrence.id,
             guest_email=data.guest_email,
         )
         unit_price = prices[idx]
         bookings.append(
             Booking(
-                slot_id=slot.id,
+                occurrence_id=occurrence.id,
                 user_id=None,
                 guest_name=data.guest_name,
                 guest_email=data.guest_email,
@@ -500,52 +504,51 @@ async def get_studio_public(
 
     # Собираем все будущие слоты студии, чтобы одним запросом посчитать заполненность.
     now_utc = utc_now()
-    all_upcoming_slots: list[Slot] = []
+    all_upcoming_occurrences: list[Occurrence] = []
     for service in studio.services:
-        for slot in service.slots:
-            if slot.start_time >= now_utc and slot.is_bookable():
-                all_upcoming_slots.append(slot)
+        for occurrence in service.occurrences:
+            if occurrence.start_time >= now_utc and occurrence.is_bookable():
+                all_upcoming_occurrences.append(occurrence)
 
-    slot_capacity_map: dict[int, tuple[int, int]] = {}
-    if all_upcoming_slots:
-        slot_ids = [s.id for s in all_upcoming_slots]
-        slot_capacity_map = await uow.bookings.get_confirmed_pending_counts_by_slot_ids(
-            slot_ids,
+    occurrence_capacity_map: dict[int, tuple[int, int]] = {}
+    if all_upcoming_occurrences:
+        occurrence_ids = [o.id for o in all_upcoming_occurrences]
+        occurrence_capacity_map = await uow.bookings.get_confirmed_pending_counts_by_occurrence_ids(
+            occurrence_ids,
             now=now_utc,
         )
 
     for service in studio.services:
-        # Берём только будущие слоты этого сервиса (уже загружены через selectinload)
-        upcoming_slots = [
-            s
-            for s in service.slots
-            if s.start_time >= now_utc and s.is_bookable()
+        upcoming_occurrences = [
+            o
+            for o in service.occurrences
+            if o.start_time >= now_utc and o.is_bookable()
         ]
-        upcoming_slots.sort(key=lambda s: s.start_time)
+        upcoming_occurrences.sort(key=lambda o: o.start_time)
 
-        if upcoming_slots:
-            next_term_start = upcoming_slots[0].start_time
-            term_end = upcoming_slots[-1].end_time
-            occurrences_count = len(upcoming_slots)
+        if upcoming_occurrences:
+            next_term_start = upcoming_occurrences[0].start_time
+            term_end = upcoming_occurrences[-1].end_time
+            occurrences_count = len(upcoming_occurrences)
         else:
             next_term_start = None
             term_end = None
             occurrences_count = 0
 
         availability_dto: PublicServiceAvailabilityDTO | None = None
-        if service.type == ServiceType.COURSE and upcoming_slots:
+        if service.type == ServiceType.COURSE and upcoming_occurrences:
             total_remaining_capacity = 0
             overbooked_dates_set: set[date] = set()
-            overbooked_slots_count = 0
+            overbooked_occurrences_count = 0
 
-            for slot in upcoming_slots:
-                confirmed, pending = slot_capacity_map.get(slot.id, (0, 0))
+            for occurrence in upcoming_occurrences:
+                confirmed, pending = occurrence_capacity_map.get(occurrence.id, (0, 0))
                 current_total = confirmed + pending
-                remaining = max(0, slot.max_capacity - current_total)
+                remaining = max(0, occurrence.max_capacity - current_total)
                 total_remaining_capacity += remaining
 
                 status = service.get_capacity_status(
-                    max_capacity=slot.max_capacity,
+                    max_capacity=occurrence.max_capacity,
                     current_bookings=current_total,
                     requested=1,
                 )
@@ -553,13 +556,13 @@ async def get_studio_public(
                 is_over_hard = status == "HARD_LIMIT_REACHED"
 
                 if is_over_soft or is_over_hard:
-                    overbooked_slots_count += 1
-                    overbooked_dates_set.add(slot.start_time.date())
+                    overbooked_occurrences_count += 1
+                    overbooked_dates_set.add(occurrence.start_time.date())
 
-            requires_warning = overbooked_slots_count > 0
+            requires_warning = overbooked_occurrences_count > 0
             hard_block = False
             if occurrences_count > 0:
-                overbooked_ratio = overbooked_slots_count / occurrences_count
+                overbooked_ratio = overbooked_occurrences_count / occurrences_count
                 if overbooked_ratio > service.max_overbooked_ratio:
                     hard_block = True
 
@@ -629,11 +632,11 @@ async def get_service_availability(
         now=now_utc,
     )
     if start_date is not None:
-        stats = [s for s in stats if s.slot.start_time.date() >= start_date]
+        stats = [s for s in stats if s.occurrence.start_time.date() >= start_date]
 
     details: list[ServiceAvailabilityScheduleItemDTO] = []
     for s in stats:
-        max_capacity = s.slot.max_capacity
+        max_capacity = s.occurrence.max_capacity
         status = service.get_capacity_status(
             max_capacity=max_capacity,
             current_bookings=s.total,
@@ -646,7 +649,7 @@ async def get_service_availability(
 
         details.append(
             ServiceAvailabilityScheduleItemDTO(
-                date=s.slot.start_time.date(),
+                date=s.occurrence.start_time.date(),
                 is_overbooked=is_over_soft or is_over_hard,
                 remaining=remaining,
                 overbooking_status=(

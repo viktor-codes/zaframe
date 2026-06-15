@@ -43,7 +43,7 @@ async def _create_studio_slot_and_booking(
 
     start = datetime.now(UTC) + timedelta(hours=3)
     end = start + timedelta(hours=1)
-    r_slot = await client.post(
+    r_occurrence = await client.post(
         "/api/v1/slots",
         json={
             "start_time": start.isoformat(),
@@ -58,12 +58,12 @@ async def _create_studio_slot_and_booking(
         headers=owner_headers,
     )
     assert r_slot.status_code == 201
-    slot_id = r_slot.json()["id"]
+    occurrence_id = r_slot.json()["id"]
 
     r_booking = await client.post(
         "/api/v1/bookings",
         json={
-            "slot_id": slot_id,
+            "occurrence_id": occurrence_id,
             "guest_name": "Guest User",
             "guest_email": guest_email,
             "guest_phone": "+111111111",
@@ -71,7 +71,7 @@ async def _create_studio_slot_and_booking(
     )
     assert r_booking.status_code == 201
     booking_id = r_booking.json()["id"]
-    return studio_id, slot_id, booking_id
+    return studio_id, occurrence_id, booking_id
 
 
 @pytest.mark.integration
@@ -79,13 +79,13 @@ async def _create_studio_slot_and_booking(
 async def test_anonymous_booking_endpoints_return_401(client: AsyncClient):
     owner_access, _ = await _authenticate_user(client, "owner-authz-anon@example.com")
     owner_headers = {"Authorization": f"Bearer {owner_access}"}
-    _, slot_id, booking_id = await _create_studio_slot_and_booking(client, owner_headers)
+    _, occurrence_id, booking_id = await _create_studio_slot_and_booking(client, owner_headers)
 
     assert (await client.get("/api/v1/bookings")).status_code == 401
     assert (await client.get(f"/api/v1/bookings/{booking_id}")).status_code == 401
     assert (await client.get("/api/v1/bookings/count")).status_code == 401
     assert (await client.patch(f"/api/v1/bookings/{booking_id}/cancel")).status_code == 401
-    assert (await client.get(f"/api/v1/slots/{slot_id}/bookings")).status_code == 401
+    assert (await client.get(f"/api/v1/slots/{occurrence_id}/bookings")).status_code == 401
 
 
 @pytest.mark.integration
@@ -113,13 +113,13 @@ async def test_foreign_user_gets_404_on_foreign_booking(client: AsyncClient):
 async def test_foreign_user_gets_403_on_foreign_slot_bookings(client: AsyncClient):
     owner_access, _ = await _authenticate_user(client, "owner-authz-slot-403@example.com")
     owner_headers = {"Authorization": f"Bearer {owner_access}"}
-    _, slot_id, _ = await _create_studio_slot_and_booking(client, owner_headers)
+    _, occurrence_id, _ = await _create_studio_slot_and_booking(client, owner_headers)
 
     stranger_access, _ = await _authenticate_user(client, "stranger-authz-slot-403@example.com")
     stranger_headers = {"Authorization": f"Bearer {stranger_access}"}
 
     assert (
-        await client.get(f"/api/v1/slots/{slot_id}/bookings", headers=stranger_headers)
+        await client.get(f"/api/v1/slots/{occurrence_id}/bookings", headers=stranger_headers)
     ).status_code == 403
 
 
@@ -156,11 +156,11 @@ async def test_guest_can_view_and_cancel_own_booking(client: AsyncClient):
 async def test_studio_owner_sees_slot_bookings_and_single_booking(client: AsyncClient):
     owner_access, _ = await _authenticate_user(client, "owner-authz-view@example.com")
     owner_headers = {"Authorization": f"Bearer {owner_access}"}
-    _, slot_id, booking_id = await _create_studio_slot_and_booking(
+    _, occurrence_id, booking_id = await _create_studio_slot_and_booking(
         client, owner_headers, guest_email="participant-authz@example.com"
     )
 
-    r_list = await client.get(f"/api/v1/slots/{slot_id}/bookings", headers=owner_headers)
+    r_list = await client.get(f"/api/v1/slots/{occurrence_id}/bookings", headers=owner_headers)
     assert r_list.status_code == 200
     bookings = r_list.json()
     assert len(bookings) == 1

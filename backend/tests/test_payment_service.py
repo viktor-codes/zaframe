@@ -13,7 +13,7 @@ from app.core.exceptions import AppError, NotFoundError, ValidationError
 from app.models.booking import Booking, BookingStatus
 from app.models.order import Order, OrderStatus
 from app.models.service import Service
-from app.models.slot import Slot
+from app.models.occurrence import Occurrence
 from app.models.user import User
 from app.services.payment import (
     PAYMENT_STATUS_OVERBOOKED_MANUAL_REVIEW,
@@ -37,14 +37,14 @@ def _active_hold_until() -> datetime:
 
 
 def _mock_slot_capacity_ok(mock_uow, *, max_capacity: int = 10) -> MagicMock:
-    mock_slot = MagicMock(spec=Slot)
+    mock_occurrence = MagicMock(spec=Occurrence)
     mock_slot.id = 1
     mock_slot.max_capacity = max_capacity
-    mock_uow.slots.get_by_id_for_update = AsyncMock(return_value=mock_slot)
-    mock_uow.slots.get_by_id = AsyncMock(return_value=mock_slot)
-    mock_uow.bookings.count_confirmed_by_slot = AsyncMock(return_value=0)
-    mock_uow.bookings.count_pending_by_slot = AsyncMock(return_value=0)
-    return mock_slot
+    mock_uow.occurrences.get_by_id_for_update = AsyncMock(return_value=mock_slot)
+    mock_uow.occurrences.get_by_id = AsyncMock(return_value=mock_slot)
+    mock_uow.bookings.count_confirmed_by_occurrence = AsyncMock(return_value=0)
+    mock_uow.bookings.count_pending_by_occurrence = AsyncMock(return_value=0)
+    return mock_occurrence
 
 
 # --- create_checkout_session ---
@@ -52,7 +52,7 @@ def _mock_slot_capacity_ok(mock_uow, *, max_capacity: int = 10) -> MagicMock:
 
 @pytest.mark.asyncio
 async def test_create_checkout_session_booking_not_found(mock_uow):
-    mock_uow.bookings.get_by_id_with_slot = AsyncMock(return_value=None)
+    mock_uow.bookings.get_by_id_with_occurrence = AsyncMock(return_value=None)
     with pytest.raises(NotFoundError, match="Booking not found"):
         await create_checkout_session(
             mock_uow, 1, success_url="https://a/s", cancel_url="https://a/c"
@@ -64,7 +64,7 @@ async def test_create_checkout_session_foreign_user_gets_not_found(mock_uow):
     booking = MagicMock(spec=Booking)
     booking.user_id = 99
     booking.guest_email = "other@example.com"
-    mock_uow.bookings.get_by_id_with_slot = AsyncMock(return_value=booking)
+    mock_uow.bookings.get_by_id_with_occurrence = AsyncMock(return_value=booking)
     user = MagicMock(spec=User)
     user.id = 1
     user.email = "me@example.com"
@@ -80,7 +80,7 @@ async def test_create_checkout_session_foreign_user_gets_not_found(mock_uow):
 
 @pytest.mark.asyncio
 async def test_create_checkout_session_guest_email_owner_allowed(mock_uow):
-    slot = MagicMock(spec=Slot)
+    occurrence = MagicMock(spec=Occurrence)
     slot.price_cents = 1000
     slot.title = "Paid"
     slot.description = "Desc"
@@ -89,10 +89,10 @@ async def test_create_checkout_session_guest_email_owner_allowed(mock_uow):
     booking.status = BookingStatus.PENDING
     booking.reserved_until = _active_hold_until()
     booking.checkout_session_id = None
-    booking.slot = slot
+    booking.occurrence = occurrence
     booking.user_id = None
     booking.guest_email = "me@example.com"
-    mock_uow.bookings.get_by_id_with_slot = AsyncMock(return_value=booking)
+    mock_uow.bookings.get_by_id_with_occurrence = AsyncMock(return_value=booking)
     user = MagicMock(spec=User)
     user.id = 1
     user.email = "me@example.com"
@@ -125,8 +125,8 @@ async def test_create_checkout_session_expired_hold(mock_uow):
     booking.status = BookingStatus.PENDING
     booking.reserved_until = datetime.now(UTC) - timedelta(minutes=1)
     booking.checkout_session_id = None
-    booking.slot = MagicMock(spec=Slot)
-    mock_uow.bookings.get_by_id_with_slot = AsyncMock(return_value=booking)
+    booking.occurrence = MagicMock(spec=Occurrence)
+    mock_uow.bookings.get_by_id_with_occurrence = AsyncMock(return_value=booking)
     with pytest.raises(ValidationError, match="hold has expired"):
         await create_checkout_session(
             mock_uow, 1, success_url="https://a/s", cancel_url="https://a/c"
@@ -138,10 +138,10 @@ async def test_create_checkout_session_wrong_status(mock_uow):
     booking = MagicMock(spec=Booking)
     booking.status = BookingStatus.CONFIRMED
     booking.checkout_session_id = None
-    booking.slot = MagicMock(spec=Slot)
-    booking.slot.price_cents = 1000
+    booking.occurrence = MagicMock(spec=Occurrence)
+    booking.occurrence.price_cents = 1000
     booking.guest_email = "g@x.com"
-    mock_uow.bookings.get_by_id_with_slot = AsyncMock(return_value=booking)
+    mock_uow.bookings.get_by_id_with_occurrence = AsyncMock(return_value=booking)
     with pytest.raises(ValidationError, match="already paid or cancelled"):
         await create_checkout_session(
             mock_uow, 1, success_url="https://a/s", cancel_url="https://a/c"
@@ -154,8 +154,8 @@ async def test_create_checkout_session_already_has_session_id(mock_uow):
     booking.status = BookingStatus.PENDING
     booking.reserved_until = _active_hold_until()
     booking.checkout_session_id = "cs_old"
-    booking.slot = MagicMock(spec=Slot)
-    mock_uow.bookings.get_by_id_with_slot = AsyncMock(return_value=booking)
+    booking.occurrence = MagicMock(spec=Occurrence)
+    mock_uow.bookings.get_by_id_with_occurrence = AsyncMock(return_value=booking)
     with pytest.raises(ValidationError, match="Checkout Session already created"):
         await create_checkout_session(
             mock_uow, 1, success_url="https://a/s", cancel_url="https://a/c"
@@ -164,7 +164,7 @@ async def test_create_checkout_session_already_has_session_id(mock_uow):
 
 @pytest.mark.asyncio
 async def test_create_checkout_session_slot_price_zero(mock_uow):
-    slot = MagicMock(spec=Slot)
+    occurrence = MagicMock(spec=Occurrence)
     slot.price_cents = 0
     slot.title = "Free"
     slot.description = None
@@ -173,9 +173,9 @@ async def test_create_checkout_session_slot_price_zero(mock_uow):
     booking.status = BookingStatus.PENDING
     booking.reserved_until = _active_hold_until()
     booking.checkout_session_id = None
-    booking.slot = slot
+    booking.occurrence = occurrence
     booking.guest_email = None
-    mock_uow.bookings.get_by_id_with_slot = AsyncMock(return_value=booking)
+    mock_uow.bookings.get_by_id_with_occurrence = AsyncMock(return_value=booking)
     with pytest.raises(ValidationError, match="no price for checkout"):
         await create_checkout_session(
             mock_uow, 1, success_url="https://a/s", cancel_url="https://a/c"
@@ -184,7 +184,7 @@ async def test_create_checkout_session_slot_price_zero(mock_uow):
 
 @pytest.mark.asyncio
 async def test_create_checkout_session_no_stripe_key(mock_uow):
-    slot = MagicMock(spec=Slot)
+    occurrence = MagicMock(spec=Occurrence)
     slot.price_cents = 1000
     slot.title = "Paid"
     slot.description = None
@@ -193,9 +193,9 @@ async def test_create_checkout_session_no_stripe_key(mock_uow):
     booking.status = BookingStatus.PENDING
     booking.reserved_until = _active_hold_until()
     booking.checkout_session_id = None
-    booking.slot = slot
+    booking.occurrence = occurrence
     booking.guest_email = "g@x.com"
-    mock_uow.bookings.get_by_id_with_slot = AsyncMock(return_value=booking)
+    mock_uow.bookings.get_by_id_with_occurrence = AsyncMock(return_value=booking)
     with patch("app.services.payment.settings") as mock_settings:
         mock_settings.STRIPE_SECRET_KEY = None
         with pytest.raises(AppError) as exc_info:
@@ -208,7 +208,7 @@ async def test_create_checkout_session_no_stripe_key(mock_uow):
 
 @pytest.mark.asyncio
 async def test_create_checkout_session_success(mock_uow):
-    slot = MagicMock(spec=Slot)
+    occurrence = MagicMock(spec=Occurrence)
     slot.price_cents = 1000
     slot.title = "Paid"
     slot.description = "Desc"
@@ -217,9 +217,9 @@ async def test_create_checkout_session_success(mock_uow):
     booking.status = BookingStatus.PENDING
     booking.reserved_until = _active_hold_until()
     booking.checkout_session_id = None
-    booking.slot = slot
+    booking.occurrence = occurrence
     booking.guest_email = "g@x.com"
-    mock_uow.bookings.get_by_id_with_slot = AsyncMock(return_value=booking)
+    mock_uow.bookings.get_by_id_with_occurrence = AsyncMock(return_value=booking)
     mock_session = MagicMock()
     mock_session.id = "cs_123"
     mock_session.url = "https://checkout.stripe.com/pay"
@@ -383,7 +383,7 @@ async def test_confirm_booking_after_payment_already_confirmed(mock_uow):
 async def test_confirm_booking_after_payment_success(mock_uow):
     booking = MagicMock(spec=Booking)
     booking.id = 1
-    booking.slot_id = 1
+    booking.occurrence_id = 1
     booking.status = BookingStatus.PENDING
     mock_uow.bookings.get_by_id = AsyncMock(return_value=booking)
     _mock_slot_capacity_ok(mock_uow)
@@ -399,11 +399,11 @@ async def test_confirm_booking_after_payment_success(mock_uow):
 async def test_confirm_booking_after_payment_overbooked_manual_review(mock_uow):
     booking = MagicMock(spec=Booking)
     booking.id = 1
-    booking.slot_id = 1
+    booking.occurrence_id = 1
     booking.status = BookingStatus.PENDING
     mock_uow.bookings.get_by_id = AsyncMock(return_value=booking)
     _mock_slot_capacity_ok(mock_uow, max_capacity=1)
-    mock_uow.bookings.count_confirmed_by_slot = AsyncMock(return_value=1)
+    mock_uow.bookings.count_confirmed_by_occurrence = AsyncMock(return_value=1)
     ok = await confirm_booking_after_payment(mock_uow, 1, payment_intent_id="pi_late")
     assert ok is True
     assert booking.status == BookingStatus.CANCELLED
@@ -417,7 +417,7 @@ async def test_confirm_booking_after_payment_success_no_payment_intent(mock_uow)
     """Without payment_intent_id the field is not overwritten."""
     booking = MagicMock(spec=Booking)
     booking.id = 1
-    booking.slot_id = 1
+    booking.occurrence_id = 1
     booking.status = BookingStatus.PENDING
     booking.payment_intent_id = None
     mock_uow.bookings.get_by_id = AsyncMock(return_value=booking)
@@ -458,11 +458,11 @@ async def test_confirm_order_after_payment_success_confirms_bookings(mock_uow):
     mock_uow.orders.get_by_id = AsyncMock(return_value=order)
     b1 = MagicMock(spec=Booking)
     b1.id = 1
-    b1.slot_id = 1
+    b1.occurrence_id = 1
     b1.status = BookingStatus.PENDING
     b2 = MagicMock(spec=Booking)
     b2.id = 2
-    b2.slot_id = 1
+    b2.occurrence_id = 1
     b2.status = BookingStatus.CONFIRMED
     mock_uow.bookings.list_ = AsyncMock(return_value=[b1, b2])
     _mock_slot_capacity_ok(mock_uow)

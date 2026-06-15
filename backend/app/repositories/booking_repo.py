@@ -1,8 +1,4 @@
-"""
-Репозиторий для сущности Booking.
-
-Все выборки по бронированиям инкапсулированы здесь.
-"""
+"""Repository for Booking entities."""
 
 from datetime import datetime
 
@@ -13,7 +9,7 @@ from sqlalchemy.sql.elements import ColumnElement
 
 from app.core.datetime_utils import ensure_utc, utc_now
 from app.models.booking import Booking, BookingStatus
-from app.models.slot import Slot
+from app.models.occurrence import Occurrence
 from app.models.studio import Studio
 from app.repositories.base import WriteRepositoryMixin
 
@@ -24,11 +20,6 @@ class BookingRepository(WriteRepositoryMixin):
 
     @staticmethod
     def _active_pending_hold_clause(*, now: datetime) -> ColumnElement[bool]:
-        """
-        SQL WHERE fragment: pending bookings that still reserve slot capacity.
-
-        WHY: legacy rows may have reserved_until=NULL; those holds must not lock seats forever.
-        """
         now_utc = ensure_utc(now)
         return and_(
             Booking.status == BookingStatus.PENDING,
@@ -40,16 +31,18 @@ class BookingRepository(WriteRepositoryMixin):
         result = await self._session.execute(select(Booking).where(Booking.id == booking_id))
         return result.scalar_one_or_none()
 
-    async def get_by_id_with_slot(self, booking_id: int) -> Booking | None:
+    async def get_by_id_with_occurrence(self, booking_id: int) -> Booking | None:
         result = await self._session.execute(
-            select(Booking).options(selectinload(Booking.slot)).where(Booking.id == booking_id)
+            select(Booking)
+            .options(selectinload(Booking.occurrence))
+            .where(Booking.id == booking_id)
         )
         return result.scalar_one_or_none()
 
-    async def get_by_id_with_slot_and_studio(self, booking_id: int) -> Booking | None:
+    async def get_by_id_with_occurrence_and_studio(self, booking_id: int) -> Booking | None:
         result = await self._session.execute(
             select(Booking)
-            .options(selectinload(Booking.slot).selectinload(Slot.studio))
+            .options(selectinload(Booking.occurrence).selectinload(Occurrence.studio))
             .where(Booking.id == booking_id)
         )
         return result.scalar_one_or_none()
@@ -64,17 +57,17 @@ class BookingRepository(WriteRepositoryMixin):
         owner_id: int,
         skip: int = 0,
         limit: int = 20,
-        slot_id: int | None = None,
+        occurrence_id: int | None = None,
         status: str | None = None,
     ) -> list[Booking]:
         query = (
             select(Booking)
-            .join(Booking.slot)
-            .join(Slot.studio)
+            .join(Booking.occurrence)
+            .join(Occurrence.studio)
             .where(self._studio_owner_clause(owner_id=owner_id))
         )
-        if slot_id is not None:
-            query = query.where(Booking.slot_id == slot_id)
+        if occurrence_id is not None:
+            query = query.where(Booking.occurrence_id == occurrence_id)
         if status is not None:
             query = query.where(Booking.status == status)
         query = query.order_by(Booking.created_at.desc()).offset(skip).limit(limit)
@@ -85,24 +78,24 @@ class BookingRepository(WriteRepositoryMixin):
         self,
         *,
         owner_id: int,
-        slot_id: int | None = None,
+        occurrence_id: int | None = None,
         status: str | None = None,
     ) -> int:
         query = (
             select(func.count())
             .select_from(Booking)
-            .join(Booking.slot)
-            .join(Slot.studio)
+            .join(Booking.occurrence)
+            .join(Occurrence.studio)
             .where(self._studio_owner_clause(owner_id=owner_id))
         )
-        if slot_id is not None:
-            query = query.where(Booking.slot_id == slot_id)
+        if occurrence_id is not None:
+            query = query.where(Booking.occurrence_id == occurrence_id)
         if status is not None:
             query = query.where(Booking.status == status)
         result = await self._session.execute(query)
         return result.scalar_one()
 
-    async def list_my_with_slot_and_studio(
+    async def list_my_with_occurrence_and_studio(
         self,
         *,
         skip: int = 0,
@@ -111,16 +104,10 @@ class BookingRepository(WriteRepositoryMixin):
         user_email: str,
         include_guest_email: bool = True,
     ) -> list[Booking]:
-        """
-        List bookings for the current user with slot + studio preloaded (no N+1).
-
-        include_guest_email=True makes the endpoint backward-compatible with guest bookings
-        created before account activation (matched by guest_email == user.email).
-        """
         query = (
             select(Booking)
             .options(
-                selectinload(Booking.slot).selectinload(Slot.studio),
+                selectinload(Booking.occurrence).selectinload(Occurrence.studio),
             )
             .where(
                 (Booking.user_id == user_id)
@@ -138,15 +125,15 @@ class BookingRepository(WriteRepositoryMixin):
         *,
         skip: int = 0,
         limit: int = 20,
-        slot_id: int | None = None,
+        occurrence_id: int | None = None,
         user_id: int | None = None,
         guest_email: str | None = None,
         status: str | None = None,
         order_id: int | None = None,
     ) -> list[Booking]:
         query = select(Booking)
-        if slot_id is not None:
-            query = query.where(Booking.slot_id == slot_id)
+        if occurrence_id is not None:
+            query = query.where(Booking.occurrence_id == occurrence_id)
         if user_id is not None:
             query = query.where(Booking.user_id == user_id)
         if guest_email is not None:
@@ -162,14 +149,14 @@ class BookingRepository(WriteRepositoryMixin):
     async def count(
         self,
         *,
-        slot_id: int | None = None,
+        occurrence_id: int | None = None,
         user_id: int | None = None,
         guest_email: str | None = None,
         status: str | None = None,
     ) -> int:
         query = select(func.count()).select_from(Booking)
-        if slot_id is not None:
-            query = query.where(Booking.slot_id == slot_id)
+        if occurrence_id is not None:
+            query = query.where(Booking.occurrence_id == occurrence_id)
         if user_id is not None:
             query = query.where(Booking.user_id == user_id)
         if guest_email is not None:
@@ -179,27 +166,27 @@ class BookingRepository(WriteRepositoryMixin):
         result = await self._session.execute(query)
         return result.scalar_one()
 
-    async def count_confirmed_by_slot(self, slot_id: int) -> int:
+    async def count_confirmed_by_occurrence(self, occurrence_id: int) -> int:
         result = await self._session.execute(
             select(func.count())
             .select_from(Booking)
             .where(
-                Booking.slot_id == slot_id,
+                Booking.occurrence_id == occurrence_id,
                 Booking.status == BookingStatus.CONFIRMED,
             )
         )
         return result.scalar_one()
 
-    async def count_pending_by_slot(
+    async def count_pending_by_occurrence(
         self,
-        slot_id: int,
+        occurrence_id: int,
         *,
         now: datetime | None = None,
         exclude_booking_id: int | None = None,
     ) -> int:
         now_utc = now or utc_now()
         conditions: list[ColumnElement[bool]] = [
-            Booking.slot_id == slot_id,
+            Booking.occurrence_id == occurrence_id,
             self._active_pending_hold_clause(now=now_utc),
         ]
         if exclude_booking_id is not None:
@@ -210,7 +197,6 @@ class BookingRepository(WriteRepositoryMixin):
         return result.scalar_one()
 
     async def list_stale_pending(self, *, now: datetime | None = None) -> list[Booking]:
-        """Pending bookings whose hold window has ended (reserved_until <= now)."""
         now_utc = ensure_utc(now or utc_now())
         result = await self._session.execute(
             select(Booking).where(
@@ -222,43 +208,40 @@ class BookingRepository(WriteRepositoryMixin):
         return list(result.scalars().all())
 
     async def list_past_confirmed(self, *, now: datetime | None = None) -> list[Booking]:
-        """Confirmed bookings whose slot has already ended (slot.end_time < now)."""
         now_utc = ensure_utc(now or utc_now())
         result = await self._session.execute(
             select(Booking)
-            .join(Booking.slot)
+            .join(Booking.occurrence)
             .where(
                 Booking.status == BookingStatus.CONFIRMED,
-                Slot.end_time < now_utc,
+                Occurrence.end_time < now_utc,
             )
         )
         return list(result.scalars().all())
 
-    async def get_active_by_slot_and_guest_email(
+    async def get_active_by_occurrence_and_guest_email(
         self,
-        slot_id: int,
+        occurrence_id: int,
         guest_email: str,
     ) -> Booking | None:
-        """Non-cancelled booking for slot + guest email (case-insensitive)."""
         normalized_email = guest_email.strip().lower()
         result = await self._session.execute(
             select(Booking).where(
-                Booking.slot_id == slot_id,
+                Booking.occurrence_id == occurrence_id,
                 func.lower(Booking.guest_email) == normalized_email,
                 Booking.status.in_(BookingStatus.ACTIVE_STATUSES),
             )
         )
         return result.scalar_one_or_none()
 
-    async def get_active_by_slot_and_user_id(
+    async def get_active_by_occurrence_and_user_id(
         self,
-        slot_id: int,
+        occurrence_id: int,
         user_id: int,
     ) -> Booking | None:
-        """Non-cancelled booking for slot + registered user."""
         result = await self._session.execute(
             select(Booking).where(
-                Booking.slot_id == slot_id,
+                Booking.occurrence_id == occurrence_id,
                 Booking.user_id == user_id,
                 Booking.status.in_(BookingStatus.ACTIVE_STATUSES),
             )
@@ -272,12 +255,6 @@ class BookingRepository(WriteRepositoryMixin):
         guest_email: str,
         booking_id: int | None = None,
     ) -> int:
-        """
-        Set user_id on guest bookings where guest_email matches and user_id is NULL.
-
-        When booking_id is set, only that booking is updated (still requires email match).
-        Returns the number of rows updated.
-        """
         normalized_email = guest_email.strip().lower()
         conditions = [
             Booking.user_id.is_(None),
@@ -292,16 +269,15 @@ class BookingRepository(WriteRepositoryMixin):
         await self._session.flush()
         return result.rowcount or 0
 
-    async def get_confirmed_pending_counts_by_slot_ids(
-        self, slot_ids: list[int], *, now: datetime | None = None
+    async def get_confirmed_pending_counts_by_occurrence_ids(
+        self, occurrence_ids: list[int], *, now: datetime | None = None
     ) -> dict[int, tuple[int, int]]:
-        """Для каждого slot_id возвращает (confirmed_count, pending_count)."""
-        if not slot_ids:
+        if not occurrence_ids:
             return {}
         now_utc = now or utc_now()
         counts_q = (
             select(
-                Booking.slot_id,
+                Booking.occurrence_id,
                 func.sum(
                     case(
                         (Booking.status == BookingStatus.CONFIRMED, 1),
@@ -315,8 +291,10 @@ class BookingRepository(WriteRepositoryMixin):
                     )
                 ).label("pending"),
             )
-            .where(Booking.slot_id.in_(slot_ids))
-            .group_by(Booking.slot_id)
+            .where(Booking.occurrence_id.in_(occurrence_ids))
+            .group_by(Booking.occurrence_id)
         )
         result = await self._session.execute(counts_q)
-        return {row.slot_id: (row.confirmed or 0, row.pending or 0) for row in result}
+        return {
+            row.occurrence_id: (row.confirmed or 0, row.pending or 0) for row in result
+        }

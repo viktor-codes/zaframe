@@ -3,7 +3,7 @@
 разовое занятие (drop‑in) или как курс.
 
 Service не является конкретным занятием во времени — для этого есть
-occurrence'ы (модель Slot), которые ссылаются на Service.
+Occurrence, которые ссылаются на Service.
 """
 
 from __future__ import annotations
@@ -30,9 +30,9 @@ class ServiceCategory(enum.StrEnum):
 
 
 class ServiceType:
-    """Тип услуги."""
+    """Sellable offering type (aligned with BookingType)."""
 
-    SINGLE_CLASS = "single_class"
+    SINGLE = "single"
     COURSE = "course"
 
 
@@ -59,7 +59,7 @@ class Service(TimestampMixin, Base):
     # Тип услуги: разовое занятие или курс
     type: Mapped[str] = mapped_column(
         String(20),
-        default=ServiceType.SINGLE_CLASS,
+        default=ServiceType.SINGLE,
         nullable=False,
         index=True,
     )
@@ -125,12 +125,12 @@ class Service(TimestampMixin, Base):
 
     # Связи
     studio: Mapped[Studio] = relationship("Studio", back_populates="services")
-    slots: Mapped[list[Slot]] = relationship(
-        "Slot",
+    occurrences: Mapped[list[Occurrence]] = relationship(
+        "Occurrence",
         back_populates="service",
     )
-    schedules: Mapped[list[Schedule]] = relationship(
-        "Schedule",
+    schedule_templates: Mapped[list[ScheduleTemplate]] = relationship(
+        "ScheduleTemplate",
         back_populates="service",
         cascade="all, delete-orphan",
     )

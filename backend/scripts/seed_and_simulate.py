@@ -28,7 +28,7 @@ from app.core.datetime_utils import studio_local_date_now, studio_local_to_utc, 
 from app.core.exceptions import AppError
 from app.core.uow import UnitOfWork, uow_scope
 from app.models.service import Service, ServiceType
-from app.models.slot import Slot
+from app.models.occurrence import Occurrence
 from app.models.studio import Studio
 from app.models.user import User
 from app.schemas.booking import BookingCreate
@@ -49,7 +49,7 @@ from app.services.service import (
     get_studio_public,
     occurrence_generator,
 )
-from app.services.slot import create_slot
+from app.services.occurrence import create_occurrence
 from app.services.studio import create_studio, get_studios, get_studios_count
 
 
@@ -125,7 +125,7 @@ async def seed_demo_data(
         services_in_studio = random.randint(min_services, max_services)
         for j in range(services_in_studio):
             is_course = random.choice([True, False])
-            service_type = ServiceType.COURSE if is_course else ServiceType.SINGLE_CLASS
+            service_type = ServiceType.COURSE if is_course else ServiceType.SINGLE
             duration = random.choice([45, 60, 90])
             max_capacity = random.choice([8, 10, 12, 15])
             price_single = random.choice([1200, 1500, 1800])
@@ -172,7 +172,7 @@ async def seed_demo_data(
                         max_capacity=max_capacity,
                         price_cents=price_single,
                     )
-                    await create_slot(uow, slot_schema)
+                    await create_occurrence(uow, slot_schema)
 
     print(f"[seed] created {studios_count} studios with services and slots.")
 
@@ -192,27 +192,27 @@ async def simulate_bookings(
     services = list(services_result.scalars().all())
 
     slots_result = await uow.session.execute(
-        select(Slot).where(Slot.start_time >= utc_now())
+        select(Occurrence).where(Occurrence.start_time >= utc_now())
     )
-    slots = list(slots_result.scalars().all())
+    occurrences = list(slots_result.scalars().all())
 
     course_services = [s for s in services if s.type == ServiceType.COURSE]
-    single_slots = [
+    single_occurrences = [
         s
-        for s in slots
+        for s in occurrences
         if s.service_id is not None
-        and any(srv.id == s.service_id and srv.type == ServiceType.SINGLE_CLASS for srv in services)
+        and any(srv.id == s.service_id and srv.type == ServiceType.SINGLE for srv in services)
     ]
 
-    course_slots = [
+    course_occurrences = [
         s
-        for s in slots
+        for s in occurrences
         if any(srv.id == s.service_id and srv.type == ServiceType.COURSE for srv in services)
     ]
 
     print(
         f"[simulate] services={len(services)}, course_services={len(course_services)}, "
-        f"slots={len(slots)}, single_slots={len(single_slots)}, course_slots={len(course_slots)}"
+        f"slots={len(occurrences)}, single_slots={len(single_occurrences)}, course_slots={len(course_occurrences)}"
     )
 
     course_success = 0
@@ -254,9 +254,9 @@ async def simulate_bookings(
                     course_failed += 1
                 continue
 
-            if not single_slots:
+            if not single_occurrences:
                 continue
-            slot = random.choice(single_slots)
+            occurrence = random.choice(single_occurrences)
             schema = BookingCreate(
                 occurrence_id=slot.id,
                 guest_name=guest_name,

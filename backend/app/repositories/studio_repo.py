@@ -27,7 +27,7 @@ class StudioRepository(WriteRepositoryMixin):
         result = await self._session.execute(
             select(Studio)
             .options(
-                selectinload(Studio.services).selectinload(Service.slots),
+                selectinload(Studio.services).selectinload(Service.occurrences),
             )
             .where(
                 Studio.slug == slug,

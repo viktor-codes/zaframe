@@ -37,7 +37,7 @@ async def test_otp_verify_attaches_guest_bookings_by_email(client: AsyncClient):
 
     start = datetime.now(UTC) + timedelta(hours=3)
     end = start + timedelta(hours=1)
-    r_slot = await client.post(
+    r_occurrence = await client.post(
         "/api/v1/slots",
         json={
             "title": "Attach Slot",
@@ -52,12 +52,12 @@ async def test_otp_verify_attaches_guest_bookings_by_email(client: AsyncClient):
         headers=owner_headers,
     )
     assert r_slot.status_code == 201
-    slot_id = r_slot.json()["id"]
+    occurrence_id = r_slot.json()["id"]
 
     r_booking = await client.post(
         "/api/v1/bookings",
         json={
-            "slot_id": slot_id,
+            "occurrence_id": occurrence_id,
             "guest_name": "Guest User",
             "guest_email": guest_email,
             "guest_phone": "+111111111",
@@ -106,8 +106,8 @@ async def test_otp_verify_attaches_only_specified_booking(client: AsyncClient):
     start = datetime.now(UTC) + timedelta(hours=4)
     end = start + timedelta(hours=1)
 
-    async def create_slot(title: str) -> int:
-        r_slot = await client.post(
+    async def create_occurrence(title: str) -> int:
+        r_occurrence = await client.post(
             "/api/v1/slots",
             json={
                 "title": title,
@@ -122,14 +122,14 @@ async def test_otp_verify_attaches_only_specified_booking(client: AsyncClient):
         assert r_slot.status_code == 201
         return r_slot.json()["id"]
 
-    slot_a = await create_slot("Slot A")
-    slot_b = await create_slot("Slot B")
+    slot_a = await create_occurrence("Occurrence A")
+    slot_b = await create_occurrence("Occurrence B")
 
-    async def create_guest_booking(slot_id: int) -> dict:
+    async def create_guest_booking(occurrence_id: int) -> dict:
         r = await client.post(
             "/api/v1/bookings",
             json={
-                "slot_id": slot_id,
+                "occurrence_id": occurrence_id,
                 "guest_name": "Guest",
                 "guest_email": guest_email,
             },

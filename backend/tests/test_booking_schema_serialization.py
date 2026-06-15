@@ -49,7 +49,7 @@ _STRIPE_INTERNAL_FIELDS = frozenset({"payment_intent_id", "checkout_session_id"}
 def _booking_orm(**overrides: object) -> SimpleNamespace:
     """Minimal ORM-like object with Stripe internals that must not leak to clients."""
     data = {
-        "slot_id": 10,
+        "occurrence_id": 10,
         "id": 1,
         "user_id": None,
         "guest_name": "Guest User",

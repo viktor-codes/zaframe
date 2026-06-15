@@ -16,7 +16,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
-from app.api.v1 import auth, bookings, health, payments, search, services, slots, studios
+from app.api.v1 import auth, bookings, health, payments, search, services, occurrences, studios
 from app.api.webhooks import router as webhooks_router
 from app.core.config import settings
 from app.core.database import engine
@@ -196,7 +196,7 @@ app.include_router(health.router)
 app.include_router(health.router, prefix="/api/v1")
 app.include_router(studios.router, prefix="/api/v1")
 app.include_router(services.router, prefix="/api/v1")
-app.include_router(slots.router, prefix="/api/v1")
+app.include_router(occurrences.router, prefix="/api/v1")
 app.include_router(bookings.router, prefix="/api/v1")
 app.include_router(payments.router, prefix="/api/v1")
 app.include_router(webhooks_router)

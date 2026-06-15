@@ -7,14 +7,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import async_session_maker
 from app.repositories import (
     BookingRepository,
+    OccurrenceRepository,
     OrderRepository,
     OTPCodeRepository,
     ProcessedWebhookEventRepository,
     RefreshTokenRepository,
-    ScheduleRepository,
+    ScheduleTemplateRepository,
     SearchRepository,
     ServiceRepository,
-    SlotRepository,
     StudioRepository,
     UserRepository,
 )
@@ -34,9 +34,9 @@ class UnitOfWork:
     otp_codes: OTPCodeRepository
     users: UserRepository
     studios: StudioRepository
-    slots: SlotRepository
+    occurrences: OccurrenceRepository
     services: ServiceRepository
-    schedules: ScheduleRepository
+    schedule_templates: ScheduleTemplateRepository
     refresh_tokens: RefreshTokenRepository
     orders: OrderRepository
     webhook_events: ProcessedWebhookEventRepository
@@ -60,9 +60,9 @@ def create_uow(session: AsyncSession) -> UnitOfWork:
         otp_codes=OTPCodeRepository(session),
         users=UserRepository(session),
         studios=StudioRepository(session),
-        slots=SlotRepository(session),
+        occurrences=OccurrenceRepository(session),
         services=ServiceRepository(session),
-        schedules=ScheduleRepository(session),
+        schedule_templates=ScheduleTemplateRepository(session),
         refresh_tokens=RefreshTokenRepository(session),
         orders=OrderRepository(session),
         webhook_events=ProcessedWebhookEventRepository(session),

@@ -2,7 +2,7 @@
 Date/time utilities — ADR-001: studio local wall-clock + UTC instants.
 
 All instants are timezone-aware UTC in Python and TIMESTAMPTZ in PostgreSQL.
-Schedule templates use date + time in the studio IANA timezone.
+ScheduleTemplate templates use date + time in the studio IANA timezone.
 """
 
 from __future__ import annotations

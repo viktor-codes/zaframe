@@ -31,7 +31,7 @@ async def _create_pending_booking(
     *,
     guest_email: str = "guest@example.com",
 ) -> int:
-    """Create owner, studio, slot, and guest booking; return booking_id."""
+    """Create owner, studio, occurrence, and guest booking; return booking_id."""
     verify_data = await authenticate_via_otp(
         client,
         email="payments-owner@example.com",
@@ -55,7 +55,7 @@ async def _create_pending_booking(
 
     start = datetime.now(UTC) + timedelta(hours=2)
     end = start + timedelta(hours=1)
-    r_slot = await client.post(
+    r_occurrence = await client.post(
         "/api/v1/slots",
         json={
             "start_time": start.isoformat(),
@@ -70,12 +70,12 @@ async def _create_pending_booking(
         headers=headers,
     )
     assert r_slot.status_code == 201
-    slot_id = r_slot.json()["id"]
+    occurrence_id = r_slot.json()["id"]
 
     r_booking = await client.post(
         "/api/v1/bookings",
         json={
-            "slot_id": slot_id,
+            "occurrence_id": occurrence_id,
             "guest_name": "Guest",
             "guest_email": guest_email,
             "guest_phone": "+111",

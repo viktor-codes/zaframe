@@ -21,7 +21,7 @@ class ServiceBase(BaseModel):
         description="Service description",
     )
     type: str = Field(
-        default=ServiceType.SINGLE_CLASS,
+        default=ServiceType.SINGLE,
         description="Offering type: single or course (DB migration to 'single' pending)",
     )
     category: ServiceCategory = Field(

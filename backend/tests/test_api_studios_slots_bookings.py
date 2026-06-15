@@ -89,10 +89,10 @@ async def test_slot_and_booking_flow(client: AsyncClient):
     r_studio = await client.post(
         "/api/v1/studios",
         json={
-            "name": "Slot Studio",
+            "name": "Occurrence Studio",
             "description": "For slots",
             "email": "slot-studio@example.com",
-            "address": "Slot street 1",
+            "address": "Occurrence street 1",
             "timezone": "Europe/Dublin",
         },
         headers=headers,
@@ -104,7 +104,7 @@ async def test_slot_and_booking_flow(client: AsyncClient):
     # Создаём слот в будущем
     start = datetime.now(UTC) + timedelta(hours=2)
     end = start + timedelta(hours=1)
-    r_slot = await client.post(
+    r_occurrence = await client.post(
         "/api/v1/slots",
         json={
             "start_time": start.isoformat(),
@@ -119,15 +119,15 @@ async def test_slot_and_booking_flow(client: AsyncClient):
         headers=headers,
     )
     assert r_slot.status_code == 201
-    slot = r_slot.json()
-    slot_id = slot["id"]
+    occurrence = r_slot.json()
+    occurrence_id = slot["id"]
     assert slot["studio_id"] == studio_id
 
     # Гостевое бронирование этого слота
     r_booking = await client.post(
         "/api/v1/bookings",
         json={
-            "occurrence_id": slot_id,
+            "occurrence_id": occurrence_id,
             "guest_name": "Guest User",
             "guest_email": "guest@example.com",
             "guest_phone": "+111111111",
@@ -136,7 +136,7 @@ async def test_slot_and_booking_flow(client: AsyncClient):
     assert r_booking.status_code == 201
     booking = r_booking.json()
     booking_id = booking["id"]
-    assert booking["occurrence_id"] == slot_id
+    assert booking["occurrence_id"] == occurrence_id
     assert booking["status"] == "pending"
 
     # Отмена бронирования (только гость, совпадающий по email)
@@ -152,9 +152,9 @@ async def test_slot_and_booking_flow(client: AsyncClient):
     assert cancelled["status"] == "cancelled"
 
     # Удаляем слот
-    r_delete_slot = await client.delete(f"/api/v1/slots/{slot_id}", headers=headers)
-    assert r_delete_slot.status_code == 204
+    r_delete_occurrence = await client.delete(f"/api/v1/slots/{occurrence_id}", headers=headers)
+    assert r_delete_occurrence.status_code == 204
 
     # Слот больше не существует
-    r_get_slot = await client.get(f"/api/v1/slots/{slot_id}")
+    r_get_occurrence = await client.get(f"/api/v1/slots/{occurrence_id}")
     assert r_get_slot.status_code == 404

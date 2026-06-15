@@ -16,7 +16,7 @@ def test_build_booking_checkout_params_structure():
         currency="eur",
         unit_amount_cents=1500,
         product_name="Morning Class",
-        product_description="Slot #7",
+        product_description="Occurrence #7",
         success_url="https://example.com/success",
         cancel_url="https://example.com/cancel",
         guest_email="guest@example.com",
@@ -35,7 +35,7 @@ def test_build_booking_checkout_params_structure():
     assert line_item["price_data"]["currency"] == "eur"
     assert line_item["price_data"]["unit_amount"] == 1500
     assert line_item["price_data"]["product_data"]["name"] == "Morning Class"
-    assert line_item["price_data"]["product_data"]["description"] == "Slot #7"
+    assert line_item["price_data"]["product_data"]["description"] == "Occurrence #7"
 
 
 def test_build_booking_checkout_params_omits_customer_email_when_none():

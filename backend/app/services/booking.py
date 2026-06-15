@@ -27,8 +27,8 @@ DUPLICATE_BOOKING_MESSAGE = "You already have a booking for this session"
 
 _ACTIVE_BOOKING_UNIQUE_INDEX_NAMES = frozenset(
     {
-        "uq_bookings_slot_guest_email_active",
-        "uq_bookings_slot_user_id_active",
+        "uq_bookings_occurrence_guest_email_active",
+        "uq_bookings_occurrence_user_id_active",
     }
 )
 
@@ -48,17 +48,21 @@ def _is_active_booking_unique_violation(exc: IntegrityError) -> bool:
 async def _ensure_no_active_booking_for_guest(
     uow: UnitOfWork,
     *,
-    slot_id: int,
+    occurrence_id: int,
     guest_email: str,
     user_id: int | None = None,
 ) -> None:
-    """Raise ValidationError when guest already has a non-cancelled booking on the slot."""
+    """Raise ValidationError when guest already has a non-cancelled booking on the occurrence."""
     if user_id is not None:
-        existing_by_user = await uow.bookings.get_active_by_slot_and_user_id(slot_id, user_id)
+        existing_by_user = await uow.bookings.get_active_by_occurrence_and_user_id(
+            occurrence_id, user_id
+        )
         if existing_by_user is not None:
             raise ValidationError(DUPLICATE_BOOKING_MESSAGE)
 
-    existing = await uow.bookings.get_active_by_slot_and_guest_email(slot_id, guest_email)
+    existing = await uow.bookings.get_active_by_occurrence_and_guest_email(
+        occurrence_id, guest_email
+    )
     if existing is not None:
         raise ValidationError(DUPLICATE_BOOKING_MESSAGE)
 
@@ -139,12 +143,12 @@ async def get_booking_for_user_or_raise(
     Returns 404 when the booking does not exist or the user has no access,
     so foreign booking IDs are not enumerable.
     """
-    booking = await uow.bookings.get_by_id_with_slot_and_studio(booking_id)
+    booking = await uow.bookings.get_by_id_with_occurrence_and_studio(booking_id)
     if booking is None:
         raise NotFoundError("Booking not found")
     studio_owner_id = None
-    if booking.slot is not None and booking.slot.studio is not None:
-        studio_owner_id = booking.slot.studio.owner_id
+    if booking.occurrence is not None and booking.occurrence.studio is not None:
+        studio_owner_id = booking.occurrence.studio.owner_id
     if not can_access_booking(booking, user, studio_owner_id=studio_owner_id):
         raise NotFoundError("Booking not found")
     return booking
@@ -156,7 +160,7 @@ async def get_owner_bookings(
     *,
     skip: int = 0,
     limit: int = 20,
-    slot_id: int | None = None,
+    occurrence_id: int | None = None,
     status: str | None = None,
 ) -> list[Booking]:
     """Owner dashboard: bookings for slots in studios owned by the user."""
@@ -164,7 +168,7 @@ async def get_owner_bookings(
         owner_id=user.id,
         skip=skip,
         limit=limit,
-        slot_id=slot_id,
+        occurrence_id=occurrence_id,
         status=status,
     )
 
@@ -173,13 +177,13 @@ async def get_owner_bookings_count(
     uow: UnitOfWork,
     user: User,
     *,
-    slot_id: int | None = None,
+    occurrence_id: int | None = None,
     status: str | None = None,
 ) -> int:
     """Count bookings for studios owned by the user."""
     return await uow.bookings.count_for_studio_owner(
         owner_id=user.id,
-        slot_id=slot_id,
+        occurrence_id=occurrence_id,
         status=status,
     )
 
@@ -189,7 +193,7 @@ async def get_bookings(
     *,
     skip: int = 0,
     limit: int = 20,
-    slot_id: int | None = None,
+    occurrence_id: int | None = None,
     user_id: int | None = None,
     guest_email: str | None = None,
     status: str | None = None,
@@ -197,7 +201,7 @@ async def get_bookings(
     """
     Список бронирований с фильтрами.
 
-    slot_id — бронирования слота
+    occurrence_id — bookings for one occurrence
     user_id — бронирования пользователя
     guest_email — бронирования гостя (до активации)
     status — pending, confirmed, cancelled, expired, completed
@@ -205,7 +209,7 @@ async def get_bookings(
     return await uow.bookings.list_(
         skip=skip,
         limit=limit,
-        slot_id=slot_id,
+        occurrence_id=occurrence_id,
         user_id=user_id,
         guest_email=guest_email,
         status=status,
@@ -215,14 +219,14 @@ async def get_bookings(
 async def get_bookings_count(
     uow: UnitOfWork,
     *,
-    slot_id: int | None = None,
+    occurrence_id: int | None = None,
     user_id: int | None = None,
     guest_email: str | None = None,
     status: str | None = None,
 ) -> int:
     """Подсчёт бронирований для пагинации."""
     return await uow.bookings.count(
-        slot_id=slot_id,
+        occurrence_id=occurrence_id,
         user_id=user_id,
         guest_email=guest_email,
         status=status,
@@ -242,7 +246,7 @@ async def get_my_bookings(
 
     include_guest_email=True merges legacy guest bookings by guest_email == user.email.
     """
-    return await uow.bookings.list_my_with_slot_and_studio(
+    return await uow.bookings.list_my_with_occurrence_and_studio(
         skip=skip,
         limit=limit,
         user_id=user.id,
@@ -280,30 +284,30 @@ async def create_booking(uow: UnitOfWork, schema: BookingCreate) -> Booking:
 
     user_id проставляется после OTP verify (attach_guest_bookings).
     """
-    slot = await uow.slots.get_by_id_for_update(schema.occurrence_id)
-    if slot is None:
-        raise NotFoundError("Slot not found")
-    if not slot.is_bookable():
-        raise ValidationError("Slot is not available for booking")
+    occurrence = await uow.occurrences.get_by_id_for_update(schema.occurrence_id)
+    if occurrence is None:
+        raise NotFoundError("Occurrence not found")
+    if not occurrence.is_bookable():
+        raise ValidationError("Occurrence is not available for booking")
 
     now_utc = utc_now()
-    slot_start = ensure_utc(slot.start_time)
-    if slot_start <= now_utc:
-        raise ValidationError("Cannot book a slot in the past")
+    occurrence_start = ensure_utc(occurrence.start_time)
+    if occurrence_start <= now_utc:
+        raise ValidationError("Cannot book an occurrence in the past")
 
-    confirmed_count = await uow.bookings.count_confirmed_by_slot(slot.id)
-    pending_count = await uow.bookings.count_pending_by_slot(slot.id, now=now_utc)
-    if confirmed_count + pending_count >= slot.max_capacity:
+    confirmed_count = await uow.bookings.count_confirmed_by_occurrence(occurrence.id)
+    pending_count = await uow.bookings.count_pending_by_occurrence(occurrence.id, now=now_utc)
+    if confirmed_count + pending_count >= occurrence.max_capacity:
         raise ValidationError("No seats available")
 
     await _ensure_no_active_booking_for_guest(
         uow,
-        slot_id=schema.occurrence_id,
+        occurrence_id=schema.occurrence_id,
         guest_email=schema.guest_email,
     )
 
     booking = Booking(
-        slot_id=schema.occurrence_id,
+        occurrence_id=schema.occurrence_id,
         guest_name=schema.guest_name,
         guest_email=schema.guest_email,
         guest_phone=schema.guest_phone,

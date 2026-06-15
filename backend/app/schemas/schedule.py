@@ -1,5 +1,5 @@
 """
-Schedule template and bulk occurrence generation schemas.
+ScheduleTemplate template and bulk occurrence generation schemas.
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ class ScheduleTemplateCreate(ScheduleTemplateBase):
 
 
 class ScheduleTemplateResponse(ScheduleTemplateBase):
-    """Schedule template API response."""
+    """ScheduleTemplate template API response."""
 
     id: int
     service_id: int

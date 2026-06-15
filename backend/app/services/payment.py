@@ -27,7 +27,7 @@ from app.integrations.stripe.checkout import (
 )
 from app.models.booking import Booking, BookingStatus
 from app.models.order import Order, OrderStatus
-from app.models.slot import Slot
+from app.models.occurrence import Occurrence
 
 # WHY: paid but slot full — studio owner resolves refund/rebook manually (no auto-refund yet).
 PAYMENT_STATUS_SUCCEEDED = "succeeded"
@@ -66,21 +66,21 @@ def _checkout_session_expires_at(now: datetime) -> int:
     return int(ensure_utc(now).timestamp()) + expiry_seconds
 
 
-async def _would_exceed_slot_capacity(
+async def _would_exceed_occurrence_capacity(
     uow: UnitOfWork,
     *,
-    slot: Slot,
+    occurrence: Occurrence,
     booking_id: int,
     now: datetime,
 ) -> bool:
-    """True when confirming booking_id would push the slot past max_capacity."""
-    confirmed_count = await uow.bookings.count_confirmed_by_slot(slot.id)
-    pending_count = await uow.bookings.count_pending_by_slot(
-        slot.id,
+    """True when confirming booking_id would push the occurrence past max_capacity."""
+    confirmed_count = await uow.bookings.count_confirmed_by_occurrence(occurrence.id)
+    pending_count = await uow.bookings.count_pending_by_occurrence(
+        occurrence.id,
         now=now,
         exclude_booking_id=booking_id,
     )
-    return confirmed_count + pending_count + 1 > slot.max_capacity
+    return confirmed_count + pending_count + 1 > occurrence.max_capacity
 
 
 async def _handle_overbooked_payment(
@@ -101,7 +101,7 @@ async def _handle_overbooked_payment(
     logger.warning(
         "payment_confirm_overbooked_manual_review",
         booking_id=booking.id,
-        slot_id=booking.slot_id,
+        occurrence_id=booking.occurrence_id,
         payment_intent_id=payment_intent_id,
     )
 
@@ -122,7 +122,7 @@ async def create_checkout_session(
 
     Возвращает: {"checkout_url": "...", "session_id": "..."}
     """
-    booking = await uow.bookings.get_by_id_with_slot(booking_id)
+    booking = await uow.bookings.get_by_id_with_occurrence(booking_id)
     if booking is None:
         raise NotFoundError("Booking not found")
     if current_user is not None and not is_own_booking(booking, current_user):
@@ -139,18 +139,18 @@ async def create_checkout_session(
     if booking.checkout_session_id:
         raise ValidationError("Checkout Session already created for this booking")
 
-    slot: Slot = booking.slot
-    if slot.price_cents <= 0:
-        raise ValidationError("Slot has no price for checkout")
+    occurrence: Occurrence = booking.occurrence
+    if occurrence.price_cents <= 0:
+        raise ValidationError("Occurrence has no price for checkout")
 
     client = _get_stripe_client()
     session = client.v1.checkout.sessions.create(
         params=build_booking_checkout_params(
             booking_id=booking_id,
             currency=settings.STRIPE_CURRENCY,
-            unit_amount_cents=slot.price_cents,
-            product_name=slot.title,
-            product_description=slot.description or f"Бронирование слота #{slot.id}",
+            unit_amount_cents=occurrence.price_cents,
+            product_name=occurrence.title,
+            product_description=occurrence.description or f"Booking occurrence #{occurrence.id}",
             success_url=success_url,
             cancel_url=cancel_url,
             guest_email=booking.guest_email,
@@ -251,13 +251,13 @@ async def confirm_booking_after_payment(
         return True
 
     now_utc = utc_now()
-    slot = await uow.slots.get_by_id_for_update(booking.slot_id)
-    if slot is None:
+    occurrence = await uow.occurrences.get_by_id_for_update(booking.occurrence_id)
+    if occurrence is None:
         return False
 
-    if await _would_exceed_slot_capacity(
+    if await _would_exceed_occurrence_capacity(
         uow,
-        slot=slot,
+        occurrence=occurrence,
         booking_id=booking.id,
         now=now_utc,
     ):
@@ -295,9 +295,9 @@ async def confirm_order_after_payment(
     now_utc = utc_now()
     bookings = await uow.bookings.list_(order_id=order_id, limit=1000)
 
-    slot_ids_to_lock = sorted({b.slot_id for b in bookings if b.status == BookingStatus.PENDING})
-    for slot_id in slot_ids_to_lock:
-        await uow.slots.get_by_id_for_update(slot_id)
+    occurrence_ids_to_lock = sorted({b.occurrence_id for b in bookings if b.status == BookingStatus.PENDING})
+    for occurrence_id in occurrence_ids_to_lock:
+        await uow.occurrences.get_by_id_for_update(occurrence_id)
 
     order.status = OrderStatus.PAID
     for booking in bookings:
@@ -309,13 +309,13 @@ async def confirm_order_after_payment(
         ):
             continue
 
-        slot = await uow.slots.get_by_id(booking.slot_id)
-        if slot is None:
+        occurrence = await uow.occurrences.get_by_id(booking.occurrence_id)
+        if occurrence is None:
             continue
 
-        if await _would_exceed_slot_capacity(
+        if await _would_exceed_occurrence_capacity(
             uow,
-            slot=slot,
+            occurrence=occurrence,
             booking_id=booking.id,
             now=now_utc,
         ):

@@ -101,7 +101,7 @@ __all__ = [
     "BookingWithUser",
     "BookingSelfListItem",
     "BookingCancel",
-    # Schedule template / generation
+    # ScheduleTemplate template / generation
     "ScheduleTemplateBase",
     "ScheduleTemplateCreate",
     "ScheduleTemplateResponse",

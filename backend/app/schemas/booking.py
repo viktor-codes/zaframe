@@ -17,11 +17,7 @@ from app.schemas.user import UserPublic
 class BookingBase(BaseModel):
     """Base booking fields."""
 
-    occurrence_id: int = Field(
-        ...,
-        description="Occurrence ID to book",
-        validation_alias="slot_id",
-    )
+    occurrence_id: int = Field(..., description="Occurrence ID to book")
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -105,7 +101,7 @@ class BookingWithOccurrence(BookingOwnerResponse):
     occurrence: OccurrenceResponse = Field(
         ...,
         description="Occurrence details",
-        validation_alias="slot",
+        validation_alias="occurrence",
     )
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
@@ -129,7 +125,7 @@ class BookingSelfListItem(BookingSelfResponse):
     occurrence: OccurrenceResponse = Field(
         ...,
         description="Occurrence details",
-        validation_alias="slot",
+        validation_alias="occurrence",
     )
     studio: StudioResponse = Field(..., description="Studio details")
 

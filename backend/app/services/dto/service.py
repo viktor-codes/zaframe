@@ -10,7 +10,7 @@ from app.models import Booking, Order
 
 @dataclass(frozen=True, slots=True)
 class CourseBookingPreviewItemDTO:
-    slot_id: int
+    occurrence_id: int
     start_time: datetime
     max_capacity: int
     confirmed_count: int
@@ -25,7 +25,7 @@ class CourseAvailabilityDTO:
     can_book: bool
     requires_warning: bool
     hard_block: bool
-    overbooked_slots: list[CourseBookingPreviewItemDTO] = field(default_factory=list)
+    overbooked_occurrences: list[CourseBookingPreviewItemDTO] = field(default_factory=list)
     message: str | None = None
 
 

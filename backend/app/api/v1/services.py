@@ -1,9 +1,9 @@
 """
-API роутер для услуг (Service) и шаблонов расписания (Schedule).
+API роутер для услуг (Service) и шаблонов расписания (ScheduleTemplate).
 
 Операции:
 - CRUD для Service
-- Список и создание Schedule для услуги
+- Список и создание ScheduleTemplate для услуги
 """
 
 from datetime import date
@@ -24,12 +24,12 @@ from app.schemas import (
     ServiceUpdate,
 )
 from app.services.service import (
-    create_schedule,
+    create_schedule_template,
     create_service,
     deactivate_service,
-    delete_schedule,
-    get_schedule_or_raise,
-    get_schedules_for_service,
+    delete_schedule_template,
+    get_schedule_template_or_raise,
+    get_schedule_templates_for_service,
     get_service_availability,
     get_service_or_raise,
     update_service,
@@ -125,13 +125,13 @@ async def deactivate_service_endpoint(
     "/{service_id}/schedules",
     response_model=list[ScheduleTemplateResponse],
 )
-async def list_service_schedules_endpoint(
+async def list_service_schedule_templates_endpoint(
     service_id: int,
     uow: UnitOfWork = Depends(get_uow),
 ) -> list[ScheduleTemplateResponse]:
     """Список шаблонов расписания для услуги."""
     await get_service_or_raise(uow, service_id)
-    schedules = await get_schedules_for_service(uow, service_id=service_id)
+    schedules = await get_schedule_templates_for_service(uow, service_id=service_id)
     return [ScheduleTemplateResponse.model_validate(s) for s in schedules]
 
 
@@ -140,7 +140,7 @@ async def list_service_schedules_endpoint(
     response_model=ScheduleTemplateResponse,
     status_code=201,
 )
-async def create_service_schedule_endpoint(
+async def create_service_schedule_template_endpoint(
     service_id: int,
     schema: ScheduleTemplateBase,
     user: User = Depends(get_current_user_required),
@@ -157,19 +157,19 @@ async def create_service_schedule_endpoint(
         service_id=service_id,
         **schema.model_dump(),
     )
-    schedule = await create_schedule(uow, schedule_schema)
+    schedule = await create_schedule_template(uow, schedule_schema)
     return ScheduleTemplateResponse.model_validate(schedule)
 
 
-@router.delete("/schedules/{schedule_id}", status_code=204)
-async def delete_schedule_endpoint(
-    schedule_id: int,
+@router.delete("/schedules/{schedule_template_id}", status_code=204)
+async def delete_schedule_template_endpoint(
+    schedule_template_id: int,
     user: User = Depends(get_current_user_required),
     uow: UnitOfWork = Depends(get_uow),
 ) -> None:
     """Удалить шаблон расписания (только владелец студии услуги)."""
-    schedule = await get_schedule_or_raise(uow, schedule_id)
+    schedule = await get_schedule_template_or_raise(uow, schedule_template_id)
     service = await get_service_or_raise(uow, schedule.service_id)
     studio = await get_studio_or_raise(uow, service.studio_id)
     ensure_studio_owner(studio, user.id)
-    await delete_schedule(uow, schedule)
+    await delete_schedule_template(uow, schedule)

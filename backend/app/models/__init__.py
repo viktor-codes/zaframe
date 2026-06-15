@@ -1,15 +1,15 @@
 # SQLAlchemy ORM models
-# Все модели импортируются здесь для Alembic autogenerate
+# All models imported here for Alembic autogenerate
 
 from app.core.database import Base
 from app.models.booking import Booking, BookingStatus, BookingType
+from app.models.occurrence import Occurrence, OccurrenceStatus
 from app.models.order import Order, OrderStatus
 from app.models.otp_code import OTPCode
 from app.models.processed_webhook_event import ProcessedWebhookEvent
 from app.models.refresh_token import RefreshToken
-from app.models.schedule import Schedule
+from app.models.schedule_template import ScheduleTemplate
 from app.models.service import Service, ServiceCategory, ServiceType
-from app.models.slot import Slot, SlotStatus
 from app.models.studio import Studio
 from app.models.user import User
 
@@ -17,8 +17,8 @@ __all__ = [
     "Base",
     "User",
     "Studio",
-    "Slot",
-    "SlotStatus",
+    "Occurrence",
+    "OccurrenceStatus",
     "Booking",
     "BookingStatus",
     "BookingType",
@@ -28,7 +28,7 @@ __all__ = [
     "Service",
     "ServiceType",
     "ServiceCategory",
-    "Schedule",
+    "ScheduleTemplate",
     "RefreshToken",
     "ProcessedWebhookEvent",
 ]

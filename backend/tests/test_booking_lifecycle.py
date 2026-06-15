@@ -27,7 +27,7 @@ def mock_uow():
 
 def _pending_booking(*, reserved_until: datetime | None) -> Booking:
     booking = Booking(
-        slot_id=1,
+        occurrence_id=1,
         guest_email="guest@example.com",
         status=BookingStatus.PENDING,
         reserved_until=reserved_until,
@@ -107,7 +107,7 @@ async def test_complete_past_confirmed_at_end_time_skipped(mock_uow):
 
 @pytest.mark.asyncio
 async def test_complete_past_confirmed_after_end_time_transitions(mock_uow):
-    booking = Booking(slot_id=1, guest_email="guest@example.com", status=BookingStatus.CONFIRMED)
+    booking = Booking(occurrence_id=1, guest_email="guest@example.com", status=BookingStatus.CONFIRMED)
     booking.id = 2
     mock_uow.bookings.list_past_confirmed = AsyncMock(return_value=[booking])
 
@@ -142,14 +142,14 @@ def test_active_pending_hold_clause_uses_strict_greater_than():
 def test_list_past_confirmed_sql_uses_strict_end_time_comparison():
     from sqlalchemy import select
 
-    from app.models.slot import Slot
+    from app.models.occurrence import Occurrence
 
     query = (
         select(Booking)
-        .join(Booking.slot)
+        .join(Booking.occurrence)
         .where(
             Booking.status == BookingStatus.CONFIRMED,
-            Slot.end_time < NOW,
+            Occurrence.end_time < NOW,
         )
     )
     compiled = str(query)

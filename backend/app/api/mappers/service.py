@@ -27,7 +27,7 @@ def map_course_availability(dto: CourseAvailabilityDTO) -> CourseAvailabilityRes
         hard_block=dto.hard_block,
         overbooked_occurrences=[
             CourseBookingPreviewItem(
-                occurrence_id=item.slot_id,
+                occurrence_id=item.occurrence_id,
                 start_time=item.start_time,
                 max_capacity=item.max_capacity,
                 confirmed_count=item.confirmed_count,
@@ -36,7 +36,7 @@ def map_course_availability(dto: CourseAvailabilityDTO) -> CourseAvailabilityRes
                 is_over_soft_limit=item.is_over_soft_limit,
                 is_over_hard_limit=item.is_over_hard_limit,
             )
-            for item in dto.overbooked_slots
+            for item in dto.overbooked_occurrences
         ],
         message=dto.message,
     )

@@ -58,7 +58,7 @@ def test_active_pending_hold_clause_sql_includes_expiry_filter():
 
 
 @pytest.mark.asyncio
-async def test_count_pending_by_slot_uses_active_hold_filter():
+async def test_count_pending_by_occurrence_uses_active_hold_filter():
     session = MagicMock()
     session.execute = AsyncMock(
         return_value=MagicMock(scalar_one=MagicMock(return_value=2))
@@ -66,7 +66,7 @@ async def test_count_pending_by_slot_uses_active_hold_filter():
     repo = BookingRepository(session)
     now = datetime(2026, 6, 13, 12, 0, tzinfo=UTC)
 
-    count = await repo.count_pending_by_slot(42, now=now)
+    count = await repo.count_pending_by_occurrence(42, now=now)
 
     assert count == 2
     session.execute.assert_awaited_once()

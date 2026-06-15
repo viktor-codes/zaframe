@@ -1,17 +1,5 @@
 """
-Модель Booking - бронирование слота клиентом.
-
-Почему отдельная модель Booking:
-- Один слот может быть забронирован несколькими клиентами
-- Хранит информацию о конкретном бронировании (статус, оплата)
-- Поддерживает гостевые бронирования (guest_email до OTP-верификации)
-
-Статусы бронирования:
-- pending: создано, ожидает оплаты
-- confirmed: оплачено и подтверждено
-- cancelled: отменено (клиентом или автоматически)
-- expired: pending с истёкшим hold (reserved_until)
-- completed: confirmed, слот уже завершился
+Booking model — reservation of a seat on an Occurrence.
 """
 
 from __future__ import annotations
@@ -26,7 +14,7 @@ from app.models.mixins import TimestampMixin
 
 
 class BookingStatus:
-    """Статусы бронирования."""
+    """Booking lifecycle status."""
 
     PENDING = "pending"
     CONFIRMED = "confirmed"
@@ -34,33 +22,25 @@ class BookingStatus:
     EXPIRED = "expired"
     COMPLETED = "completed"
 
-    # WHY: only pending/confirmed block duplicate active bookings per slot+guest.
+    # WHY: only pending/confirmed block duplicate active bookings per occurrence+guest.
     ACTIVE_STATUSES: frozenset[str] = frozenset({PENDING, CONFIRMED})
 
 
 class BookingType:
-    """Тип бронирования."""
+    """Booking granularity aligned with Service.type."""
 
     SINGLE = "single"
     COURSE = "course"
 
 
 class Booking(TimestampMixin, Base):
-    """
-    Бронирование слота клиентом.
-
-    Может быть создано:
-    1. Зарегистрированным пользователем (user_id)
-    2. Гостем (guest_email) — user_id проставляется после OTP verify
-
-    После успешной оплаты статус меняется на CONFIRMED.
-    """
+    """Seat reservation on an occurrence (guest or registered user)."""
 
     __tablename__ = "bookings"
     __table_args__ = (
         Index(
-            "uq_bookings_slot_guest_email_active",
-            "slot_id",
+            "uq_bookings_occurrence_guest_email_active",
+            "occurrence_id",
             "guest_email",
             unique=True,
             postgresql_where=text(
@@ -68,8 +48,8 @@ class Booking(TimestampMixin, Base):
             ),
         ),
         Index(
-            "uq_bookings_slot_user_id_active",
-            "slot_id",
+            "uq_bookings_occurrence_user_id_active",
+            "occurrence_id",
             "user_id",
             unique=True,
             postgresql_where=text(
@@ -80,7 +60,9 @@ class Booking(TimestampMixin, Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
 
-    slot_id: Mapped[int] = mapped_column(ForeignKey("slots.id"), nullable=False, index=True)
+    occurrence_id: Mapped[int] = mapped_column(
+        ForeignKey("occurrences.id"), nullable=False, index=True
+    )
 
     booking_type: Mapped[str] = mapped_column(
         String(20),
@@ -103,7 +85,6 @@ class Booking(TimestampMixin, Base):
         String(20), default=BookingStatus.PENDING, nullable=False, index=True
     )
 
-    # WHY: pending must not hold capacity forever; expiry is driven by this timestamp.
     reserved_until: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
@@ -115,9 +96,7 @@ class Booking(TimestampMixin, Base):
     payment_intent_id: Mapped[str | None] = mapped_column(
         String(255), nullable=True, index=True
     )
-    payment_status: Mapped[str | None] = mapped_column(
-        String(50), nullable=True
-    )
+    payment_status: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     unit_price_cents: Mapped[int | None] = mapped_column(nullable=True)
 
@@ -126,33 +105,22 @@ class Booking(TimestampMixin, Base):
         nullable=True,
     )
 
-    slot: Mapped[Slot] = relationship("Slot", back_populates="bookings")
+    occurrence: Mapped[Occurrence] = relationship("Occurrence", back_populates="bookings")
     user: Mapped[User | None] = relationship("User", back_populates="bookings")
-    service: Mapped[Service | None] = relationship(
-        "Service",
-        back_populates="bookings",
-    )
-    order: Mapped[Order | None] = relationship(
-        "Order",
-        back_populates="bookings",
-    )
+    service: Mapped[Service | None] = relationship("Service", back_populates="bookings")
+    order: Mapped[Order | None] = relationship("Order", back_populates="bookings")
 
     def is_confirmed(self) -> bool:
-        """Проверка, подтверждено ли бронирование."""
         return self.status == BookingStatus.CONFIRMED
 
     def is_pending(self) -> bool:
-        """Проверка, ожидает ли бронирование оплаты."""
         return self.status == BookingStatus.PENDING
 
     def is_cancelled(self) -> bool:
-        """Проверка, отменено ли бронирование."""
         return self.status == BookingStatus.CANCELLED
 
     def is_expired(self) -> bool:
-        """Проверка, истекло ли ожидание оплаты."""
         return self.status == BookingStatus.EXPIRED
 
     def is_completed(self) -> bool:
-        """Проверка, завершено ли бронирование после окончания слота."""
         return self.status == BookingStatus.COMPLETED
