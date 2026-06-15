@@ -28,6 +28,7 @@ from app.models.booking import Booking, BookingStatus
 from app.models.occurrence import Occurrence
 from app.models.order import Order, OrderStatus
 from app.models.user import User
+from app.schemas.payment import validate_checkout_redirect_urls
 from app.services.booking import is_own_booking
 
 # WHY: paid but occurrence full — studio owner resolves refund/rebook manually (no auto-refund yet).
@@ -195,6 +196,7 @@ async def create_checkout_session(
 
     Возвращает: {"checkout_url": "...", "session_id": "..."}
     """
+    validate_checkout_redirect_urls(success_url, cancel_url)
     booking = await uow.bookings.get_by_id_with_occurrence(booking_id)
     if booking is None:
         raise NotFoundError("Booking not found")
@@ -259,6 +261,7 @@ async def create_order_checkout_session(
     Сумма берётся из order.total_amount_cents.
     В metadata сессии обязательно указываем order_id.
     """
+    validate_checkout_redirect_urls(success_url, cancel_url)
     order = await uow.orders.get_by_id_with_service(order_id)
     if order is None:
         raise NotFoundError("Order not found")

@@ -489,6 +489,7 @@ async def create_course_booking(
             user_id=None,
             guest_email=data.guest_email,
             guest_name=data.guest_name,
+            guest_phone=data.guest_phone,
             total_amount_cents=total_amount_cents,
             currency="eur",
             status=OrderStatus.PENDING,

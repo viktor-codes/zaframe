@@ -12,8 +12,8 @@ from httpx import AsyncClient
 from tests.conftest import authenticate_via_otp
 
 _CHECKOUT_PAYLOAD = {
-    "success_url": "https://example.com/payments/success",
-    "cancel_url": "https://example.com/payments/cancel",
+    "success_url": "http://localhost:3000/payments/success",
+    "cancel_url": "http://localhost:3000/payments/cancel",
 }
 
 
@@ -215,3 +215,47 @@ async def test_checkout_session_returns_400_when_session_already_created(client:
 
     assert second.status_code == 400
     assert "Checkout Session already created" in second.json()["detail"]
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_checkout_rejects_foreign_redirect_host(client: AsyncClient):
+    """Checkout with a redirect host outside the allowlist is rejected."""
+    booking_id, access_token = await _create_pending_booking(client)
+
+    response = await client.post(
+        "/api/v1/payments/checkout-session",
+        json={
+            "booking_id": booking_id,
+            "access_token": access_token,
+            "success_url": "https://evil.example/payments/success",
+            "cancel_url": "http://localhost:3000/payments/cancel",
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Redirect URL is not allowed"
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_checkout_accepts_frontend_host(client: AsyncClient):
+    """Checkout accepts redirect URLs on the configured frontend host."""
+    booking_id, access_token = await _create_pending_booking(client)
+    mock_client = _mock_stripe_checkout_session(session_id="cs_allowed_host")
+
+    with patch(
+        "app.services.payment.stripe.StripeClient",
+        return_value=mock_client,
+    ):
+        response = await client.post(
+            "/api/v1/payments/checkout-session",
+            json={
+                "booking_id": booking_id,
+                "access_token": access_token,
+                **_CHECKOUT_PAYLOAD,
+            },
+        )
+
+    assert response.status_code == 201
+    assert response.json()["session_id"] == "cs_allowed_host"

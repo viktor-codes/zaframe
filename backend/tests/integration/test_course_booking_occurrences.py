@@ -130,6 +130,34 @@ async def _book_course(
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+async def test_course_order_persists_guest_phone(client: AsyncClient):
+    """Course order stores guest_phone for owner-facing order responses."""
+    headers, _studio_id, service_id = await _create_studio_and_course(
+        client,
+        email="mid5-guest-phone@example.com",
+    )
+
+    future_id = await _create_occurrence(
+        client,
+        headers,
+        studio_id=_studio_id,
+        service_id=service_id,
+        start_time=FROZEN_NOW + timedelta(days=3),
+    )
+    assert future_id
+
+    with frozen_utc_now():
+        result = await _book_course(
+            client,
+            service_id=service_id,
+            guest_email="course-phone@example.com",
+        )
+
+    assert result["order"]["guest_phone"] == "+100"
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_create_course_booking_skips_past_occurrences(client: AsyncClient):
     headers, studio_id, service_id = await _create_studio_and_course(
         client,

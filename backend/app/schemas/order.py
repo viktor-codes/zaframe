@@ -25,6 +25,7 @@ class OrderResponse(OrderBase):
     user_id: int | None
     guest_email: EmailStr | None
     guest_name: str | None
+    guest_phone: str | None = Field(None, description="Guest phone for contact")
     status: str = Field(..., description="Order status")
     created_at: AwareDatetime
     updated_at: AwareDatetime

@@ -2,7 +2,28 @@
 Pydantic schemas для платежей (Stripe Checkout).
 """
 
+from __future__ import annotations
+
+from urllib.parse import urlparse
+
 from pydantic import BaseModel, Field, HttpUrl
+
+from app.core.config import settings
+from app.core.exceptions import ValidationError
+
+
+def validate_checkout_redirect_urls(success_url: str, cancel_url: str) -> None:
+    """
+    Ensure redirect URLs point to an allowed frontend host.
+
+    Raises:
+        ValidationError: When either URL host is missing or not in the allowlist.
+    """
+    allowed = settings.allowed_redirect_hosts
+    for url in (success_url, cancel_url):
+        host = urlparse(url).hostname
+        if host is None or host.lower() not in allowed:
+            raise ValidationError("Redirect URL is not allowed")
 
 
 class CheckoutSessionCreate(BaseModel):

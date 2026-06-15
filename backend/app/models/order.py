@@ -41,6 +41,7 @@ class Order(TimestampMixin, Base):
     user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
     guest_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     guest_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    guest_phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
     # Финансы
     total_amount_cents: Mapped[int] = mapped_column(Integer, nullable=False)

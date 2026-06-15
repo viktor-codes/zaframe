@@ -42,8 +42,8 @@ _ORDER_CHECKOUT_TOKEN = "test-order-checkout-token"
 
 def _checkout_kwargs(*, access_token: str = _GUEST_CHECKOUT_TOKEN) -> dict[str, str]:
     return {
-        "success_url": "https://a/s",
-        "cancel_url": "https://a/c",
+        "success_url": "http://localhost:3000/s",
+        "cancel_url": "http://localhost:3000/c",
         "access_token": access_token,
     }
 
@@ -90,7 +90,7 @@ async def test_create_checkout_session_booking_not_found(mock_uow):
     mock_uow.bookings.get_by_id_with_occurrence = AsyncMock(return_value=None)
     with pytest.raises(NotFoundError, match="Booking not found"):
         await create_checkout_session(
-            mock_uow, 1, success_url="https://a/s", cancel_url="https://a/c"
+            mock_uow, 1, success_url="http://localhost:3000/s", cancel_url="http://localhost:3000/c"
         )
 
 
@@ -107,8 +107,8 @@ async def test_create_checkout_session_foreign_user_gets_not_found(mock_uow):
         await create_checkout_session(
             mock_uow,
             1,
-            success_url="https://a/s",
-            cancel_url="https://a/c",
+            success_url="http://localhost:3000/s",
+            cancel_url="http://localhost:3000/c",
             current_user=user,
         )
 
@@ -148,8 +148,8 @@ async def test_create_checkout_session_guest_email_owner_allowed(mock_uow):
             result = await create_checkout_session(
                 mock_uow,
                 1,
-                success_url="https://a/s",
-                cancel_url="https://a/c",
+                success_url="http://localhost:3000/s",
+                cancel_url="http://localhost:3000/c",
                 current_user=user,
             )
     assert result["session_id"] == "cs_123"
@@ -282,7 +282,7 @@ async def test_create_order_checkout_session_order_not_found(mock_uow):
     mock_uow.orders.get_by_id_with_service = AsyncMock(return_value=None)
     with pytest.raises(NotFoundError, match="Order not found"):
         await create_order_checkout_session(
-            mock_uow, 1, success_url="https://a/s", cancel_url="https://a/c"
+            mock_uow, 1, success_url="http://localhost:3000/s", cancel_url="http://localhost:3000/c"
         )
 
 
@@ -299,8 +299,8 @@ async def test_create_order_checkout_session_foreign_user_gets_not_found(mock_uo
         await create_order_checkout_session(
             mock_uow,
             1,
-            success_url="https://a/s",
-            cancel_url="https://a/c",
+            success_url="http://localhost:3000/s",
+            cancel_url="http://localhost:3000/c",
             current_user=user,
         )
 

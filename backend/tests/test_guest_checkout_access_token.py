@@ -19,8 +19,8 @@ from app.services.payment import create_checkout_session, create_order_checkout_
 from tests.conftest import authenticate_via_otp
 
 _CHECKOUT_PAYLOAD = {
-    "success_url": "https://example.com/payments/success",
-    "cancel_url": "https://example.com/payments/cancel",
+    "success_url": "http://localhost:3000/payments/success",
+    "cancel_url": "http://localhost:3000/payments/cancel",
 }
 
 
@@ -143,8 +143,8 @@ async def test_guest_checkout_with_valid_token_succeeds(mock_uow):
             result = await create_checkout_session(
                 mock_uow,
                 1,
-                success_url="https://a/s",
-                cancel_url="https://a/c",
+                success_url="http://localhost:3000/s",
+                cancel_url="http://localhost:3000/c",
                 access_token="valid-secret-token",
             )
 
@@ -163,7 +163,7 @@ async def test_guest_checkout_without_token_returns_404(mock_uow):
 
     with pytest.raises(NotFoundError, match="Booking not found"):
         await create_checkout_session(
-            mock_uow, 1, success_url="https://a/s", cancel_url="https://a/c"
+            mock_uow, 1, success_url="http://localhost:3000/s", cancel_url="http://localhost:3000/c"
         )
 
 
@@ -180,8 +180,8 @@ async def test_guest_checkout_with_wrong_token_returns_404(mock_uow):
         await create_checkout_session(
             mock_uow,
             1,
-            success_url="https://a/s",
-            cancel_url="https://a/c",
+            success_url="http://localhost:3000/s",
+            cancel_url="http://localhost:3000/c",
             access_token="wrong-token",
         )
 
@@ -199,8 +199,8 @@ async def test_legacy_booking_without_token_guest_checkout_returns_404(mock_uow)
         await create_checkout_session(
             mock_uow,
             1,
-            success_url="https://a/s",
-            cancel_url="https://a/c",
+            success_url="http://localhost:3000/s",
+            cancel_url="http://localhost:3000/c",
             access_token="any-token",
         )
 
@@ -233,8 +233,8 @@ async def test_order_guest_checkout_with_valid_token_succeeds(mock_uow):
             result = await create_order_checkout_session(
                 mock_uow,
                 1,
-                success_url="https://a/s",
-                cancel_url="https://a/c",
+                success_url="http://localhost:3000/s",
+                cancel_url="http://localhost:3000/c",
                 access_token="order-secret",
             )
 

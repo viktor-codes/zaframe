@@ -1,3 +1,5 @@
+from urllib.parse import urlparse
+
 from pydantic import Field, computed_field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -98,6 +100,17 @@ class Settings(BaseSettings):
     def cors_origins_list(self) -> list[str]:
         """Список origins для CORSMiddleware (парсим из строки)."""
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
+
+    @computed_field
+    @property
+    def allowed_redirect_hosts(self) -> frozenset[str]:
+        """Hosts permitted for Stripe checkout success/cancel redirect URLs."""
+        hosts: set[str] = set()
+        for origin in [self.FRONTEND_URL, *self.cors_origins_list]:
+            hostname = urlparse(origin.strip()).hostname
+            if hostname:
+                hosts.add(hostname.lower())
+        return frozenset(hosts)
 
     # === Stripe ===
     STRIPE_SECRET_KEY: str | None = Field(
