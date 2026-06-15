@@ -24,9 +24,9 @@ from app.schemas import (
 from app.services.booking import (
     cancel_booking,
     create_booking,
-    get_booking_or_raise,
-    get_bookings,
-    get_bookings_count,
+    get_accessible_bookings,
+    get_accessible_bookings_count,
+    get_booking_or_raise_with_access,
     get_my_bookings,
 )
 from app.services.service import create_course_booking
@@ -58,16 +58,18 @@ async def create_booking_endpoint(
 @router.get("", response_model=list[BookingResponse])
 async def list_bookings(
     uow: UnitOfWork = Depends(get_uow),
+    user: User = Depends(get_current_user_required),
     skip: int = Query(0, ge=0, description="Пропустить N записей"),
     limit: int = Query(20, ge=1, le=100, description="Максимум записей"),
     slot_id: int | None = Query(None, description="Фильтр по слоту"),
-    user_id: int | None = Query(None, description="Фильтр по пользователю"),
-    guest_email: str | None = Query(None, description="Фильтр по email гостя"),
+    user_id: int | None = Query(None, description="Фильтр по пользователю (только свой)"),
+    guest_email: str | None = Query(None, description="Фильтр по email гостя (только свой)"),
     status: str | None = Query(None, description="Фильтр по статусу"),
 ) -> list[BookingResponse]:
-    """Список бронирований с фильтрами."""
-    bookings = await get_bookings(
+    """Список бронирований, доступных текущему пользователю."""
+    bookings = await get_accessible_bookings(
         uow,
+        user,
         skip=skip,
         limit=limit,
         slot_id=slot_id,
@@ -116,14 +118,16 @@ async def list_my_bookings(
 @router.get("/count")
 async def count_bookings(
     uow: UnitOfWork = Depends(get_uow),
+    user: User = Depends(get_current_user_required),
     slot_id: int | None = Query(None, description="Фильтр по слоту"),
-    user_id: int | None = Query(None, description="Фильтр по пользователю"),
-    guest_email: str | None = Query(None, description="Фильтр по email гостя"),
+    user_id: int | None = Query(None, description="Фильтр по пользователю (только свой)"),
+    guest_email: str | None = Query(None, description="Фильтр по email гостя (только свой)"),
     status: str | None = Query(None, description="Фильтр по статусу"),
 ) -> dict[str, int]:
-    """Количество бронирований (для пагинации)."""
-    count = await get_bookings_count(
+    """Количество доступных бронирований (для пагинации)."""
+    count = await get_accessible_bookings_count(
         uow,
+        user,
         slot_id=slot_id,
         user_id=user_id,
         guest_email=guest_email,
@@ -136,16 +140,18 @@ async def count_bookings(
 async def get_booking_by_id(
     booking_id: int,
     uow: UnitOfWork = Depends(get_uow),
+    user: User = Depends(get_current_user_required),
 ) -> BookingResponse:
-    """Получить бронирование по ID."""
-    return await get_booking_or_raise(uow, booking_id)
+    """Получить бронирование по ID (только своё или студии владельца)."""
+    return await get_booking_or_raise_with_access(uow, booking_id, user)
 
 
 @router.patch("/{booking_id}/cancel", response_model=BookingResponse)
 async def cancel_booking_endpoint(
     booking_id: int,
     uow: UnitOfWork = Depends(get_uow),
+    user: User = Depends(get_current_user_required),
 ) -> BookingResponse:
-    """Отменить бронирование."""
-    booking = await get_booking_or_raise(uow, booking_id)
+    """Отменить бронирование (только своё или студии владельца)."""
+    booking = await get_booking_or_raise_with_access(uow, booking_id, user)
     return await cancel_booking(uow, booking)

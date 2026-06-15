@@ -139,8 +139,13 @@ async def test_slot_and_booking_flow(client: AsyncClient):
     assert booking["slot_id"] == slot_id
     assert booking["status"] == "pending"
 
-    # Отмена бронирования
-    r_cancel = await client.patch(f"/api/v1/bookings/{booking_id}/cancel")
+    # Отмена бронирования (только гость, совпадающий по email)
+    guest_access, _ = await _authenticate_user(client, email="guest@example.com")
+    guest_headers = {"Authorization": f"Bearer {guest_access}"}
+    r_cancel = await client.patch(
+        f"/api/v1/bookings/{booking_id}/cancel",
+        headers=guest_headers,
+    )
     assert r_cancel.status_code == 200
     cancelled = r_cancel.json()
     assert cancelled["id"] == booking_id

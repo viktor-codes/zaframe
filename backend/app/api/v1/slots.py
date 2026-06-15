@@ -84,13 +84,16 @@ async def count_slots(
 @router.get("/{slot_id}/bookings", response_model=list[BookingResponse])
 async def list_slot_bookings(
     slot_id: int,
+    user: User = Depends(get_current_user_required),
     uow: UnitOfWork = Depends(get_uow),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     status: str | None = Query(None, description="Фильтр по статусу"),
 ) -> list[BookingResponse]:
-    """Бронирования слота."""
-    await get_slot_or_raise(uow, slot_id)
+    """Бронирования слота (только владелец студии)."""
+    slot = await get_slot_or_raise(uow, slot_id)
+    studio = await get_studio_or_raise(uow, slot.studio_id)
+    ensure_studio_owner(studio, user.id)
     return await get_bookings(uow, skip=skip, limit=limit, slot_id=slot_id, status=status)
 
 

@@ -9,7 +9,7 @@
 
 from app.core.booking_holds import get_booking_reserved_until
 from app.core.datetime_utils import ensure_utc, utc_now
-from app.core.exceptions import NotFoundError, ValidationError
+from app.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
 from app.models.booking import Booking, BookingStatus, BookingType
 from app.models.user import User
@@ -27,6 +27,104 @@ async def get_booking_or_raise(uow: UnitOfWork, booking_id: int) -> Booking:
     if booking is None:
         raise NotFoundError("Booking not found")
     return booking
+
+
+def is_own_booking(booking: Booking, user: User) -> bool:
+    """True when booking belongs to the user (by user_id or guest_email)."""
+    if booking.user_id is not None and booking.user_id == user.id:
+        return True
+    if booking.guest_email is not None:
+        return booking.guest_email.strip().lower() == user.email.strip().lower()
+    return False
+
+
+def ensure_booking_access(
+    booking: Booking,
+    user: User,
+    *,
+    studio_owner_id: int | None,
+) -> None:
+    """
+    Allow access when the booking is the user's own or belongs to the user's studio.
+
+    Raises:
+        ForbiddenError: when the user has no access to the booking.
+    """
+    if is_own_booking(booking, user):
+        return
+    if studio_owner_id is not None and studio_owner_id == user.id:
+        return
+    raise ForbiddenError("Access denied for this booking")
+
+
+async def get_booking_or_raise_with_access(
+    uow: UnitOfWork,
+    booking_id: int,
+    user: User,
+) -> Booking:
+    """Load booking with slot+studio and enforce ownership rules."""
+    booking = await uow.bookings.get_by_id_with_slot_and_studio(booking_id)
+    if booking is None:
+        raise NotFoundError("Booking not found")
+    studio_owner_id = None
+    if booking.slot is not None and booking.slot.studio is not None:
+        studio_owner_id = booking.slot.studio.owner_id
+    ensure_booking_access(booking, user, studio_owner_id=studio_owner_id)
+    return booking
+
+
+def _validate_booking_list_filters(
+    user: User,
+    *,
+    user_id: int | None,
+    guest_email: str | None,
+) -> None:
+    if user_id is not None and user_id != user.id:
+        raise ForbiddenError("Cannot list bookings for another user")
+    if guest_email is not None and guest_email.strip().lower() != user.email.strip().lower():
+        raise ForbiddenError("Cannot list bookings for another guest email")
+
+
+async def get_accessible_bookings(
+    uow: UnitOfWork,
+    user: User,
+    *,
+    skip: int = 0,
+    limit: int = 20,
+    slot_id: int | None = None,
+    user_id: int | None = None,
+    guest_email: str | None = None,
+    status: str | None = None,
+) -> list[Booking]:
+    """List bookings visible to the current user (own bookings or studio owner)."""
+    _validate_booking_list_filters(user, user_id=user_id, guest_email=guest_email)
+    return await uow.bookings.list_accessible(
+        user_id=user.id,
+        user_email=user.email,
+        skip=skip,
+        limit=limit,
+        slot_id=slot_id,
+        status=status,
+    )
+
+
+async def get_accessible_bookings_count(
+    uow: UnitOfWork,
+    user: User,
+    *,
+    slot_id: int | None = None,
+    user_id: int | None = None,
+    guest_email: str | None = None,
+    status: str | None = None,
+) -> int:
+    """Count bookings visible to the current user."""
+    _validate_booking_list_filters(user, user_id=user_id, guest_email=guest_email)
+    return await uow.bookings.count_accessible(
+        user_id=user.id,
+        user_email=user.email,
+        slot_id=slot_id,
+        status=status,
+    )
 
 
 async def get_bookings(

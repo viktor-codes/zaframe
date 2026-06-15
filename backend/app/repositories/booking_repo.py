@@ -14,6 +14,7 @@ from sqlalchemy.sql.elements import ColumnElement
 from app.core.datetime_utils import ensure_utc, utc_now
 from app.models.booking import Booking, BookingStatus
 from app.models.slot import Slot
+from app.models.studio import Studio
 from app.repositories.base import WriteRepositoryMixin
 
 
@@ -44,6 +45,69 @@ class BookingRepository(WriteRepositoryMixin):
             select(Booking).options(selectinload(Booking.slot)).where(Booking.id == booking_id)
         )
         return result.scalar_one_or_none()
+
+    async def get_by_id_with_slot_and_studio(self, booking_id: int) -> Booking | None:
+        result = await self._session.execute(
+            select(Booking)
+            .options(selectinload(Booking.slot).selectinload(Slot.studio))
+            .where(Booking.id == booking_id)
+        )
+        return result.scalar_one_or_none()
+
+    @staticmethod
+    def _accessible_bookings_clause(*, user_id: int, user_email: str) -> ColumnElement[bool]:
+        normalized_email = user_email.strip().lower()
+        return (
+            (Booking.user_id == user_id)
+            | (func.lower(Booking.guest_email) == normalized_email)
+            | (Studio.owner_id == user_id)
+        )
+
+    async def list_accessible(
+        self,
+        *,
+        user_id: int,
+        user_email: str,
+        skip: int = 0,
+        limit: int = 20,
+        slot_id: int | None = None,
+        status: str | None = None,
+    ) -> list[Booking]:
+        query = (
+            select(Booking)
+            .join(Booking.slot)
+            .join(Slot.studio)
+            .where(self._accessible_bookings_clause(user_id=user_id, user_email=user_email))
+        )
+        if slot_id is not None:
+            query = query.where(Booking.slot_id == slot_id)
+        if status is not None:
+            query = query.where(Booking.status == status)
+        query = query.order_by(Booking.created_at.desc()).offset(skip).limit(limit)
+        result = await self._session.execute(query)
+        return list(result.scalars().all())
+
+    async def count_accessible(
+        self,
+        *,
+        user_id: int,
+        user_email: str,
+        slot_id: int | None = None,
+        status: str | None = None,
+    ) -> int:
+        query = (
+            select(func.count())
+            .select_from(Booking)
+            .join(Booking.slot)
+            .join(Slot.studio)
+            .where(self._accessible_bookings_clause(user_id=user_id, user_email=user_email))
+        )
+        if slot_id is not None:
+            query = query.where(Booking.slot_id == slot_id)
+        if status is not None:
+            query = query.where(Booking.status == status)
+        result = await self._session.execute(query)
+        return result.scalar_one()
 
     async def list_my_with_slot_and_studio(
         self,
