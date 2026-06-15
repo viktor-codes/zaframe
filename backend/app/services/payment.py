@@ -112,6 +112,47 @@ async def _would_exceed_occurrence_capacity(
     return confirmed_count + pending_count + 1 > occurrence.max_capacity
 
 
+def _booking_counts_as_active_pending_hold(booking: Booking, *, now: datetime) -> bool:
+    return is_active_pending_hold(
+        status=booking.status,
+        reserved_until=booking.reserved_until,
+        now=now,
+    )
+
+
+def _would_exceed_occurrence_capacity_in_memory(
+    *,
+    occurrence: Occurrence,
+    booking: Booking,
+    capacity_state: dict[int, tuple[int, int]],
+    now: datetime,
+) -> bool:
+    """
+    Capacity check using pre-fetched counts plus in-loop confirmations.
+
+    Mirrors per-booking SQL recheck: pending excludes the booking being confirmed;
+    capacity_state tracks earlier confirmations in the same order under the same lock.
+    """
+    confirmed, pending = capacity_state.get(occurrence.id, (0, 0))
+    booking_counts_as_pending = _booking_counts_as_active_pending_hold(booking, now=now)
+    pending_others = pending - (1 if booking_counts_as_pending else 0)
+    return confirmed + pending_others + 1 > occurrence.max_capacity
+
+
+def _apply_in_memory_confirm_to_capacity_state(
+    *,
+    occurrence_id: int,
+    booking: Booking,
+    capacity_state: dict[int, tuple[int, int]],
+    now: datetime,
+) -> None:
+    """Update local counters after confirming a booking (before DB flush)."""
+    confirmed, pending = capacity_state.get(occurrence_id, (0, 0))
+    if _booking_counts_as_active_pending_hold(booking, now=now):
+        pending -= 1
+    capacity_state[occurrence_id] = (confirmed + 1, pending)
+
+
 async def _handle_overbooked_payment(
     uow: UnitOfWork,
     booking: Booking,
@@ -337,9 +378,21 @@ async def confirm_order_after_payment(
     bookings = await uow.bookings.list_(order_id=order_id, limit=1000)
 
     occurrence_ids_to_lock = sorted({b.occurrence_id for b in bookings if b.status == BookingStatus.PENDING})
+    occurrences_by_id: dict[int, Occurrence] = {}
     # WHY: global lock order to prevent deadlocks (matches occurrence_repo FOR UPDATE order)
     for occurrence_id in occurrence_ids_to_lock:
-        await uow.occurrences.get_by_id_for_update(occurrence_id)
+        occurrence = await uow.occurrences.get_by_id_for_update(occurrence_id)
+        if occurrence is not None:
+            occurrences_by_id[occurrence_id] = occurrence
+
+    counts_map = await uow.bookings.get_confirmed_pending_counts_by_occurrence_ids(
+        occurrence_ids_to_lock,
+        now=now_utc,
+    )
+    capacity_state = {
+        occurrence_id: counts_map.get(occurrence_id, (0, 0))
+        for occurrence_id in occurrence_ids_to_lock
+    }
 
     order.status = OrderStatus.PAID
     order.access_token = None
@@ -352,14 +405,14 @@ async def confirm_order_after_payment(
         ):
             continue
 
-        occurrence = await uow.occurrences.get_by_id(booking.occurrence_id)
+        occurrence = occurrences_by_id.get(booking.occurrence_id)
         if occurrence is None:
             continue
 
-        if await _would_exceed_occurrence_capacity(
-            uow,
+        if _would_exceed_occurrence_capacity_in_memory(
             occurrence=occurrence,
-            booking_id=booking.id,
+            booking=booking,
+            capacity_state=capacity_state,
             now=now_utc,
         ):
             await _handle_overbooked_payment(uow, booking, payment_intent_id=payment_intent_id)
@@ -371,6 +424,12 @@ async def confirm_order_after_payment(
         booking.access_token = None
         if payment_intent_id:
             booking.payment_intent_id = payment_intent_id
+        _apply_in_memory_confirm_to_capacity_state(
+            occurrence_id=occurrence.id,
+            booking=booking,
+            capacity_state=capacity_state,
+            now=now_utc,
+        )
 
     await uow.orders.flush()
     return True
