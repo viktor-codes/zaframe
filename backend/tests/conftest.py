@@ -48,6 +48,7 @@ async def app_with_rollback_uow():
 
     async with async_session_maker() as session:
         await session.execute(text("DELETE FROM otp_codes"))
+        await session.execute(text("DELETE FROM processed_webhook_events"))
         await session.commit()
 
         async def get_uow_override():

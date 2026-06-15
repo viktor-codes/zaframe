@@ -11,8 +11,9 @@ import hashlib
 import hmac
 import json
 import time
+import uuid
 from datetime import UTC, datetime, timedelta
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -27,13 +28,14 @@ def _build_signed_stripe_webhook(
     *,
     booking_id: int | None = None,
     payment_intent: str = "pi_test_overbook",
+    event_id: str | None = None,
     secret: str = "whsec_test",
 ) -> tuple[bytes, dict]:
     metadata: dict[str, str] = {}
     if booking_id is not None:
         metadata["booking_id"] = str(booking_id)
     event = {
-        "id": "evt_overbook_test",
+        "id": event_id or f"evt_{uuid.uuid4().hex}",
         "type": "checkout.session.completed",
         "data": {
             "object": {
@@ -117,31 +119,26 @@ async def _post_booking_webhook(
     *,
     booking_id: int,
     payment_intent: str = "pi_test_overbook",
+    event_id: str | None = None,
 ) -> int:
     from contextlib import asynccontextmanager
 
     from app.core.uow import create_uow
 
     integration_session = app.state._integration_session
+    effective_event_id = event_id or f"evt_{uuid.uuid4().hex}"
     payload, headers = _build_signed_stripe_webhook(
         booking_id=booking_id,
         payment_intent=payment_intent,
+        event_id=effective_event_id,
     )
 
     @asynccontextmanager
     async def integration_uow_scope(*, session=None, auto_commit=True):
+        # WHY: no real commit — keeps processed_webhook_events inside session rollback.
         uow = create_uow(integration_session)
-        try:
-            yield uow
-            if auto_commit and not uow._committed:
-                await uow.commit()
-        except Exception:
-            if not uow._committed:
-                await uow.rollback()
-            raise
-        finally:
-            if not auto_commit and not uow._committed:
-                await uow.rollback()
+        uow.commit = AsyncMock()
+        yield uow
 
     with patch("app.api.webhooks.uow_scope", integration_uow_scope):
         with patch("app.api.webhooks.settings") as mock_settings:
@@ -253,6 +250,7 @@ async def test_repeated_webhook_on_confirmed_booking_is_idempotent(
     )
 
     session = app_with_rollback_uow.state._integration_session
+    event_id = f"evt_{uuid.uuid4().hex}"
 
     for _ in range(2):
         assert (
@@ -261,6 +259,7 @@ async def test_repeated_webhook_on_confirmed_booking_is_idempotent(
                 app_with_rollback_uow,
                 booking_id=booking_id,
                 payment_intent="pi_idem",
+                event_id=event_id,
             )
             == 200
         )
