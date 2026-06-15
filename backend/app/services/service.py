@@ -236,9 +236,12 @@ async def _get_course_occurrences_with_capacity(
     service: Service,
     now: datetime | None = None,
 ) -> list[_CapacityStats]:
-    """Load active course occurrences and their fill levels."""
+    """Load active future course occurrences and their fill levels."""
     now_utc = now or utc_now()
-    occurrences = await uow.occurrences.list_by_service_active(service.id)
+    occurrences = await uow.occurrences.list_active_future_by_service(
+        service.id,
+        now=now_utc,
+    )
     return await _build_course_capacity_stats(uow, occurrences=occurrences, now=now_utc)
 
 
@@ -248,9 +251,12 @@ async def _get_course_occurrences_with_capacity_for_update(
     service: Service,
     now: datetime | None = None,
 ) -> list[_CapacityStats]:
-    """Lock active course occurrences, then read their fill levels for booking."""
+    """Lock active future course occurrences, then read fill levels for booking."""
     now_utc = now or utc_now()
-    occurrences = await uow.occurrences.list_by_service_active_for_update(service.id)
+    occurrences = await uow.occurrences.list_active_future_by_service_for_update(
+        service.id,
+        now=now_utc,
+    )
     return await _build_course_capacity_stats(uow, occurrences=occurrences, now=now_utc)
 
 
@@ -289,7 +295,7 @@ def _evaluate_course_availability(
             requires_warning=False,
             hard_block=True,
             overbooked_occurrences=[],
-            message="No sessions have been created for this course yet",
+            message="Course has no upcoming sessions",
         )
 
     overbooked_items: list[CourseBookingPreviewItemDTO] = []
@@ -399,6 +405,40 @@ async def check_course_availability_for_update(
     return _evaluate_course_availability(service, stats)
 
 
+def _calculate_course_order_total_cents(
+    service: Service,
+    *,
+    bookable_occurrence_count: int,
+    total_active_occurrence_count: int,
+) -> int:
+    """
+    Course order total for the bookable (active, future) occurrence set.
+
+    When price_course_cents is set, charge proportionally to remaining sessions
+    vs all active sessions on the course (mid-term joiners pay a fair share).
+    """
+    if bookable_occurrence_count <= 0:
+        raise ValidationError("Course has no upcoming sessions")
+
+    if service.price_course_cents is not None:
+        denominator = total_active_occurrence_count or bookable_occurrence_count
+        return round(
+            service.price_course_cents * bookable_occurrence_count / denominator,
+        )
+
+    return service.price_single_cents * bookable_occurrence_count
+
+
+def _distribute_course_unit_prices(
+    total_amount_cents: int,
+    occurrence_count: int,
+) -> list[int]:
+    """Split order total across occurrences; sum(unit_price_cents) == total_amount_cents."""
+    base_unit = total_amount_cents // occurrence_count
+    remainder = total_amount_cents % occurrence_count
+    return [base_unit + 1] * remainder + [base_unit] * (occurrence_count - remainder)
+
+
 async def create_course_booking(
     uow: UnitOfWork,
     *,
@@ -420,23 +460,24 @@ async def create_course_booking(
             availability.message or "Not enough seats for the course",
         )
 
-    service = await uow.services.get_by_id_with_occurrences(data.service_id)
+    service = await uow.services.get_by_id(data.service_id)
     if service is None:
         raise NotFoundError("Service not found")
 
-    occurrences = sorted(service.occurrences, key=lambda s: s.start_time)
+    occurrences = await uow.occurrences.list_active_future_by_service_for_update(
+        data.service_id,
+        now=now_utc,
+    )
     if not occurrences:
-        raise ValidationError(
-            "No sessions have been created for this course yet",
-        )
+        raise ValidationError("Course has no upcoming sessions")
 
-    total_amount_cents = service.price_course_cents or (service.price_single_cents * len(occurrences))
-
-    # Распределяем стоимость курса по занятиям так, чтобы сумма unit_price_cents
-    # строго совпадала с total_amount_cents (решаем "The Cent Problem").
-    base_unit = total_amount_cents // len(occurrences)
-    remainder = total_amount_cents % len(occurrences)
-    prices = [base_unit + 1] * remainder + [base_unit] * (len(occurrences) - remainder)
+    all_active_occurrences = await uow.occurrences.list_by_service_active(service.id)
+    total_amount_cents = _calculate_course_order_total_cents(
+        service,
+        bookable_occurrence_count=len(occurrences),
+        total_active_occurrence_count=len(all_active_occurrences),
+    )
+    prices = _distribute_course_unit_prices(total_amount_cents, len(occurrences))
 
     order = await uow.orders.add(
         Order(

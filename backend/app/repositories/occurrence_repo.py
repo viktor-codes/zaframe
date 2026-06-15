@@ -81,6 +81,43 @@ class OccurrenceRepository(WriteRepositoryMixin):
         result = await self._session.execute(query)
         return list(result.scalars().all())
 
+    async def list_active_future_by_service(
+        self,
+        service_id: int,
+        *,
+        now: datetime,
+    ) -> list[Occurrence]:
+        query = (
+            select(Occurrence)
+            .where(
+                Occurrence.service_id == service_id,
+                Occurrence.status == OccurrenceStatus.ACTIVE,
+                Occurrence.start_time >= ensure_utc(now),
+            )
+            .order_by(Occurrence.id.asc())
+        )
+        result = await self._session.execute(query)
+        return list(result.scalars().all())
+
+    async def list_active_future_by_service_for_update(
+        self,
+        service_id: int,
+        *,
+        now: datetime,
+    ) -> list[Occurrence]:
+        query = (
+            select(Occurrence)
+            .where(
+                Occurrence.service_id == service_id,
+                Occurrence.status == OccurrenceStatus.ACTIVE,
+                Occurrence.start_time >= ensure_utc(now),
+            )
+            .with_for_update()
+            .order_by(Occurrence.id.asc())
+        )
+        result = await self._session.execute(query)
+        return list(result.scalars().all())
+
     async def list_by_service_active_for_update(self, service_id: int) -> list[Occurrence]:
         query = (
             select(Occurrence)
