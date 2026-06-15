@@ -11,6 +11,7 @@ from datetime import datetime
 
 from sqlalchemy.exc import IntegrityError
 
+from app.core.access_tokens import generate_resource_access_token
 from app.core.booking_holds import get_booking_reserved_until
 from app.core.datetime_utils import ensure_utc, utc_now
 from app.core.exceptions import ConflictError, NotFoundError, ValidationError
@@ -19,6 +20,7 @@ from app.models.booking import Booking, BookingStatus, BookingType
 from app.models.user import User
 from app.schemas.booking import (
     BookingCreate,
+    BookingCreatedResponse,
     BookingOwnerResponse,
     BookingSelfResponse,
 )
@@ -130,6 +132,16 @@ def map_booking_for_user(booking: Booking, user: User) -> BookingSelfResponse | 
     if is_own_booking(booking, user):
         return BookingSelfResponse.model_validate(booking)
     return BookingOwnerResponse.model_validate(booking)
+
+
+def map_booking_created_response(booking: Booking) -> BookingCreatedResponse:
+    """Map a newly created booking including the one-time guest checkout token."""
+    if booking.access_token is None:
+        raise ValidationError("Booking access token is missing")
+    return BookingCreatedResponse(
+        **BookingSelfResponse.model_validate(booking).model_dump(),
+        access_token=booking.access_token,
+    )
 
 
 async def get_booking_for_user_or_raise(
@@ -315,6 +327,7 @@ async def create_booking(uow: UnitOfWork, schema: BookingCreate) -> Booking:
         reserved_until=get_booking_reserved_until(now=now_utc),
         booking_type=getattr(schema, "booking_type", BookingType.SINGLE),
         service_id=getattr(schema, "service_id", None),
+        access_token=generate_resource_access_token(),
     )
     return await _persist_booking(uow, booking)
 

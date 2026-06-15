@@ -30,8 +30,8 @@ async def _create_pending_booking(
     client: AsyncClient,
     *,
     guest_email: str = "guest@example.com",
-) -> int:
-    """Create owner, studio, occurrence, and guest booking; return booking_id."""
+) -> tuple[int, str]:
+    """Create owner, studio, occurrence, and guest booking; return (booking_id, access_token)."""
     verify_data = await authenticate_via_otp(
         client,
         email="payments-owner@example.com",
@@ -84,7 +84,8 @@ async def _create_pending_booking(
     assert r_booking.status_code == 201
     booking = r_booking.json()
     assert booking["status"] == "pending"
-    return booking["id"]
+    assert booking["access_token"]
+    return booking["id"], booking["access_token"]
 
 
 def _mock_stripe_checkout_session(
@@ -104,7 +105,7 @@ def _mock_stripe_checkout_session(
 @pytest.mark.asyncio
 async def test_checkout_session_returns_201_for_pending_booking(client: AsyncClient):
     """POST /payments/checkout-session succeeds with mocked Stripe client."""
-    booking_id = await _create_pending_booking(client)
+    booking_id, access_token = await _create_pending_booking(client)
     mock_client = _mock_stripe_checkout_session()
 
     with patch(
@@ -113,7 +114,7 @@ async def test_checkout_session_returns_201_for_pending_booking(client: AsyncCli
     ):
         response = await client.post(
             "/api/v1/payments/checkout-session",
-            json={"booking_id": booking_id, **_CHECKOUT_PAYLOAD},
+            json={"booking_id": booking_id, "access_token": access_token, **_CHECKOUT_PAYLOAD},
         )
 
     assert response.status_code == 201
@@ -128,7 +129,7 @@ async def test_checkout_session_returns_201_for_pending_booking(client: AsyncCli
 @pytest.mark.asyncio
 async def test_checkout_session_foreign_user_gets_404(client: AsyncClient):
     """Authenticated user cannot create checkout for another guest's booking."""
-    booking_id = await _create_pending_booking(client, guest_email="real-guest-pay@example.com")
+    booking_id, _access_token = await _create_pending_booking(client, guest_email="real-guest-pay@example.com")
     stranger_token = await _authenticate_user(client, "stranger-pay-404@example.com")
     stranger_headers = {"Authorization": f"Bearer {stranger_token}"}
 
@@ -147,7 +148,7 @@ async def test_checkout_session_foreign_user_gets_404(client: AsyncClient):
 async def test_checkout_session_authenticated_owner_succeeds(client: AsyncClient):
     """Guest booking owner can checkout after OTP login (guest_email match)."""
     guest_email = "guest-owner-pay@example.com"
-    booking_id = await _create_pending_booking(client, guest_email=guest_email)
+    booking_id, _access_token = await _create_pending_booking(client, guest_email=guest_email)
     guest_token = await _authenticate_user(client, guest_email, name="Guest Owner")
     guest_headers = {"Authorization": f"Bearer {guest_token}"}
     mock_client = _mock_stripe_checkout_session(session_id="cs_owner")
@@ -194,7 +195,7 @@ async def test_checkout_session_rate_limit_returns_429_on_11th_request(client: A
 @pytest.mark.asyncio
 async def test_checkout_session_returns_400_when_session_already_created(client: AsyncClient):
     """Second checkout-session call for the same booking is rejected."""
-    booking_id = await _create_pending_booking(client)
+    booking_id, access_token = await _create_pending_booking(client)
     mock_client = _mock_stripe_checkout_session()
 
     with patch(
@@ -203,13 +204,13 @@ async def test_checkout_session_returns_400_when_session_already_created(client:
     ):
         first = await client.post(
             "/api/v1/payments/checkout-session",
-            json={"booking_id": booking_id, **_CHECKOUT_PAYLOAD},
+            json={"booking_id": booking_id, "access_token": access_token, **_CHECKOUT_PAYLOAD},
         )
         assert first.status_code == 201
 
         second = await client.post(
             "/api/v1/payments/checkout-session",
-            json={"booking_id": booking_id, **_CHECKOUT_PAYLOAD},
+            json={"booking_id": booking_id, "access_token": access_token, **_CHECKOUT_PAYLOAD},
         )
 
     assert second.status_code == 400

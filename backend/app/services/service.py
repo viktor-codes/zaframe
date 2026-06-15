@@ -12,6 +12,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 
+from app.core.access_tokens import generate_resource_access_token
 from app.core.booking_holds import get_booking_reserved_until
 from app.core.datetime_utils import studio_local_date_now, studio_local_to_utc, utc_now
 from app.core.exceptions import NotFoundError, ValidationError
@@ -491,6 +492,7 @@ async def create_course_booking(
             total_amount_cents=total_amount_cents,
             currency="eur",
             status=OrderStatus.PENDING,
+            access_token=generate_resource_access_token(),
         )
     )
 

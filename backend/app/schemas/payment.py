@@ -21,6 +21,10 @@ class CheckoutSessionCreate(BaseModel):
         ...,
         description="URL перенаправления при отмене",
     )
+    access_token: str | None = Field(
+        None,
+        description="Guest checkout token from booking create response",
+    )
 
 
 class OrderCheckoutSessionCreate(BaseModel):
@@ -38,6 +42,10 @@ class OrderCheckoutSessionCreate(BaseModel):
     cancel_url: HttpUrl = Field(
         ...,
         description="URL перенаправления при отмене",
+    )
+    access_token: str | None = Field(
+        None,
+        description="Guest checkout token from course order create response",
     )
 
 

@@ -84,3 +84,7 @@ class CourseBookingResponse(BaseModel):
     order: OrderResponse
     bookings: list[BookingSelfResponse]
     availability: CourseAvailabilityResult | None = None
+    access_token: str = Field(
+        ...,
+        description="Order checkout token; required for unauthenticated payment",
+    )

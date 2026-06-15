@@ -5,6 +5,7 @@ from app.schemas.booking import (
     BookingCancel,
     BookingCreate,
     BookingCreateAuthenticated,
+    BookingCreatedResponse,
     BookingOwnerResponse,
     BookingResponseBase,
     BookingSelfListItem,
@@ -65,6 +66,7 @@ from app.schemas.user import (
 
 # Rebuild models with forward references before use in unions.
 BookingSelfResponse.model_rebuild()
+BookingCreatedResponse.model_rebuild()
 BookingOwnerResponse.model_rebuild()
 BookingWithUser.model_rebuild()
 BookingSelfListItem.model_rebuild()
@@ -96,6 +98,7 @@ __all__ = [
     "BookingCreateAuthenticated",
     "BookingResponseBase",
     "BookingSelfResponse",
+    "BookingCreatedResponse",
     "BookingOwnerResponse",
     "BookingWithOccurrence",
     "BookingWithUser",

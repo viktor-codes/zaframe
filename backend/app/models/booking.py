@@ -90,6 +90,8 @@ class Booking(TimestampMixin, Base):
         nullable=True,
     )
 
+    access_token: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+
     checkout_session_id: Mapped[str | None] = mapped_column(
         String(255), nullable=True, index=True
     )

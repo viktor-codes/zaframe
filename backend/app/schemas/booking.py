@@ -87,6 +87,15 @@ class BookingSelfResponse(BookingResponseBase):
     guest_phone: str | None = Field(None, description="Phone on the booking")
 
 
+class BookingCreatedResponse(BookingSelfResponse):
+    """Create response — includes one-time guest checkout token (not in lists or GET)."""
+
+    access_token: str = Field(
+        ...,
+        description="Guest checkout token; required for unauthenticated payment",
+    )
+
+
 class BookingOwnerResponse(BookingResponseBase):
     """Owner perspective: studio staff view with guest contact details."""
 

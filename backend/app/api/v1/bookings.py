@@ -11,13 +11,15 @@ API роутер для бронирований.
 from fastapi import APIRouter, Depends, Query, Request
 
 from app.api.deps import get_current_user_required, get_uow
+from app.api.mappers.service import map_course_booking_result
 from app.core.rate_limit import limiter
 from app.core.uow import UnitOfWork
 from app.models.user import User
 from app.schemas import (
     BookingCreate,
-    BookingSelfListItem,
+    BookingCreatedResponse,
     BookingOwnerResponse,
+    BookingSelfListItem,
     BookingSelfResponse,
     CourseBookingCreate,
     CourseBookingResponse,
@@ -29,9 +31,9 @@ from app.services.booking import (
     get_my_bookings,
     get_owner_bookings,
     get_owner_bookings_count,
+    map_booking_created_response,
     map_booking_for_user,
 )
-from app.api.mappers.service import map_course_booking_result
 from app.services.dto import CourseBookingInput
 from app.services.service import create_course_booking
 
@@ -40,7 +42,7 @@ router = APIRouter(prefix="/bookings", tags=["bookings"])
 
 @router.post(
     "",
-    response_model=BookingSelfResponse | CourseBookingResponse,
+    response_model=BookingCreatedResponse | CourseBookingResponse,
     status_code=201,
 )
 @limiter.limit("10/minute")
@@ -48,7 +50,7 @@ async def create_booking_endpoint(
     request: Request,
     schema: BookingCreate | CourseBookingCreate,
     uow: UnitOfWork = Depends(get_uow),
-) -> BookingSelfResponse | CourseBookingResponse:
+) -> BookingCreatedResponse | CourseBookingResponse:
     """
     Создать бронирование.
 
@@ -68,7 +70,7 @@ async def create_booking_endpoint(
         )
         return map_course_booking_result(result)
     booking = await create_booking(uow, schema)  # type: ignore[arg-type]
-    return BookingSelfResponse.model_validate(booking)
+    return map_booking_created_response(booking)
 
 
 @router.get("", response_model=list[BookingOwnerResponse])

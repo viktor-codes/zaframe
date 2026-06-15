@@ -8,9 +8,9 @@ API роутер для платежей (Stripe Checkout).
 from fastapi import APIRouter, Depends, Request
 
 from app.api.deps import get_current_user, get_uow
-from app.models.user import User
 from app.core.rate_limit import limiter
 from app.core.uow import UnitOfWork
+from app.models.user import User
 from app.schemas.payment import (
     CheckoutSessionCreate,
     CheckoutSessionResponse,
@@ -47,6 +47,7 @@ async def create_checkout_session_endpoint(
         success_url=str(schema.success_url),
         cancel_url=str(schema.cancel_url),
         current_user=current_user,
+        access_token=schema.access_token,
     )
     return CheckoutSessionResponse(**result)
 
@@ -77,5 +78,6 @@ async def create_order_checkout_session_endpoint(
         success_url=str(schema.success_url),
         cancel_url=str(schema.cancel_url),
         current_user=current_user,
+        access_token=schema.access_token,
     )
     return CheckoutSessionResponse(**result)

@@ -219,8 +219,8 @@ async def simulate_bookings(
     course_failed = 0
     single_success = 0
     single_failed = 0
-    single_booking_ids: list[int] = []
-    course_order_ids: list[int] = []
+    single_booking_checkouts: list[tuple[int, str | None]] = []
+    course_order_checkouts: list[tuple[int, str | None]] = []
 
     for user_idx in range(users_count):
         actions = random.randint(1, max_actions_per_user)
@@ -249,7 +249,9 @@ async def simulate_bookings(
                         ),
                     )
                     course_success += 1
-                    course_order_ids.append(course_resp.order.id)
+                    course_order_checkouts.append(
+                        (course_resp.order.id, course_resp.order.access_token)
+                    )
                 except AppError:
                     course_failed += 1
                 continue
@@ -266,7 +268,7 @@ async def simulate_bookings(
             try:
                 booking = await create_booking(uow, schema)
                 single_success += 1
-                single_booking_ids.append(booking.id)
+                single_booking_checkouts.append((booking.id, booking.access_token))
             except AppError:
                 single_failed += 1
 
@@ -279,27 +281,29 @@ async def simulate_bookings(
         print("[payments] STRIPE_SECRET_KEY not set, skipping checkout-session simulation.")
         return
 
-    max_single_sessions = min(25, len(single_booking_ids))
-    max_course_sessions = min(15, len(course_order_ids))
+    max_single_sessions = min(25, len(single_booking_checkouts))
+    max_course_sessions = min(15, len(course_order_checkouts))
 
-    for booking_id in single_booking_ids[:max_single_sessions]:
+    for booking_id, access_token in single_booking_checkouts[:max_single_sessions]:
         try:
             await create_checkout_session(
                 uow,
                 booking_id=booking_id,
                 success_url="https://example.com/payments/success",
                 cancel_url="https://example.com/payments/cancel",
+                access_token=access_token,
             )
         except AppError as e:
             print(f"[payments] booking_id={booking_id} checkout error: {e.detail}")
 
-    for order_id in course_order_ids[:max_course_sessions]:
+    for order_id, access_token in course_order_checkouts[:max_course_sessions]:
         try:
             await create_order_checkout_session(
                 uow,
                 order_id=order_id,
                 success_url="https://example.com/payments/success",
                 cancel_url="https://example.com/payments/cancel",
+                access_token=access_token,
             )
         except AppError as e:
             print(f"[payments] order_id={order_id} checkout error: {e.detail}")

@@ -43,7 +43,7 @@ _OWNER_SNAPSHOT = {
     "guest_phone": "+111111111",
 }
 
-_STRIPE_INTERNAL_FIELDS = frozenset({"payment_intent_id", "checkout_session_id"})
+_STRIPE_INTERNAL_FIELDS = frozenset({"payment_intent_id", "checkout_session_id", "access_token"})
 
 
 def _booking_orm(**overrides: object) -> SimpleNamespace:
@@ -59,6 +59,7 @@ def _booking_orm(**overrides: object) -> SimpleNamespace:
         "reserved_until": _FIXED_NOW,
         "checkout_session_id": "cs_secret_123",
         "payment_intent_id": "pi_secret_456",
+        "access_token": "secret-guest-token",
         "payment_status": "unpaid",
         "created_at": _FIXED_NOW,
         "updated_at": _FIXED_NOW,

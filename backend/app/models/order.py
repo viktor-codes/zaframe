@@ -53,6 +53,8 @@ class Order(TimestampMixin, Base):
         index=True,
     )
 
+    access_token: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+
     # Связи
     studio: Mapped[Studio] = relationship("Studio", back_populates="orders")
     service: Mapped[Service | None] = relationship("Service", back_populates="orders")

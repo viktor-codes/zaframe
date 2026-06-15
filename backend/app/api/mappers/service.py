@@ -43,10 +43,13 @@ def map_course_availability(dto: CourseAvailabilityDTO) -> CourseAvailabilityRes
 
 
 def map_course_booking_result(dto: CourseBookingResultDTO) -> CourseBookingResponse:
+    if dto.order.access_token is None:
+        raise ValueError("Order access token is missing")
     return CourseBookingResponse(
         order=OrderResponse.model_validate(dto.order),
         bookings=[BookingSelfResponse.model_validate(booking) for booking in dto.bookings],
         availability=map_course_availability(dto.availability),
+        access_token=dto.order.access_token,
     )
 
 

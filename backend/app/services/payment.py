@@ -14,20 +14,21 @@ from datetime import datetime
 import stripe
 import structlog
 
+from app.core.access_tokens import verify_resource_access_token
 from app.core.booking_holds import is_active_pending_hold
 from app.core.config import settings
 from app.core.datetime_utils import ensure_utc, utc_now
 from app.core.exceptions import AppError, NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
-from app.models.user import User
-from app.services.booking import is_own_booking
 from app.integrations.stripe.checkout import (
     build_booking_checkout_params,
     build_order_checkout_params,
 )
 from app.models.booking import Booking, BookingStatus
-from app.models.order import Order, OrderStatus
 from app.models.occurrence import Occurrence
+from app.models.order import Order, OrderStatus
+from app.models.user import User
+from app.services.booking import is_own_booking
 
 # WHY: paid but occurrence full — studio owner resolves refund/rebook manually (no auto-refund yet).
 PAYMENT_STATUS_SUCCEEDED = "succeeded"
@@ -46,6 +47,34 @@ def is_own_order(order: Order, user: User) -> bool:
     if order.guest_email is not None:
         return order.guest_email.strip().lower() == user.email.strip().lower()
     return False
+
+
+def _assert_booking_checkout_access(
+    booking: Booking,
+    *,
+    current_user: User | None,
+    access_token: str | None,
+) -> None:
+    """Allow owner auth or valid guest token; otherwise 404 (no resource enumeration)."""
+    if current_user is not None and is_own_booking(booking, current_user):
+        return
+    if verify_resource_access_token(booking.access_token, access_token):
+        return
+    raise NotFoundError("Booking not found")
+
+
+def _assert_order_checkout_access(
+    order: Order,
+    *,
+    current_user: User | None,
+    access_token: str | None,
+) -> None:
+    """Allow owner auth or valid guest token; otherwise 404 (no resource enumeration)."""
+    if current_user is not None and is_own_order(order, current_user):
+        return
+    if verify_resource_access_token(order.access_token, access_token):
+        return
+    raise NotFoundError("Order not found")
 
 
 def _get_stripe_client() -> stripe.StripeClient:
@@ -94,6 +123,7 @@ async def _handle_overbooked_payment(
     booking.status = BookingStatus.CANCELLED
     booking.payment_status = PAYMENT_STATUS_OVERBOOKED_MANUAL_REVIEW
     booking.reserved_until = None
+    booking.access_token = None
     booking.cancelled_at = now_utc
     if payment_intent_id:
         booking.payment_intent_id = payment_intent_id
@@ -113,20 +143,25 @@ async def create_checkout_session(
     success_url: str,
     cancel_url: str,
     current_user: User | None = None,
+    access_token: str | None = None,
 ) -> dict[str, str]:
     """
     Создать Stripe Checkout Session для оплаты бронирования.
 
     Authenticated callers must own the booking (user_id or guest_email).
-    Guest callers rely on PENDING + active hold + no existing session.
+    Guest callers must supply the access_token from booking create response.
+    Legacy bookings without a token require authenticated owner access.
 
     Возвращает: {"checkout_url": "...", "session_id": "..."}
     """
     booking = await uow.bookings.get_by_id_with_occurrence(booking_id)
     if booking is None:
         raise NotFoundError("Booking not found")
-    if current_user is not None and not is_own_booking(booking, current_user):
-        raise NotFoundError("Booking not found")
+    _assert_booking_checkout_access(
+        booking,
+        current_user=current_user,
+        access_token=access_token,
+    )
     if booking.status != BookingStatus.PENDING:
         raise ValidationError("Booking is already paid or cancelled")
     now_utc = utc_now()
@@ -171,12 +206,14 @@ async def create_order_checkout_session(
     success_url: str,
     cancel_url: str,
     current_user: User | None = None,
+    access_token: str | None = None,
 ) -> dict[str, str]:
     """
     Создать Stripe Checkout Session для оплаты заказа (Order).
 
     Authenticated callers must own the order (user_id or guest_email).
-    Guest callers rely on PENDING order and active booking holds.
+    Guest callers must supply the access_token from course order create response.
+    Legacy orders without a token require authenticated owner access.
 
     Сумма берётся из order.total_amount_cents.
     В metadata сессии обязательно указываем order_id.
@@ -184,8 +221,11 @@ async def create_order_checkout_session(
     order = await uow.orders.get_by_id_with_service(order_id)
     if order is None:
         raise NotFoundError("Order not found")
-    if current_user is not None and not is_own_order(order, current_user):
-        raise NotFoundError("Order not found")
+    _assert_order_checkout_access(
+        order,
+        current_user=current_user,
+        access_token=access_token,
+    )
     if order.status != OrderStatus.PENDING:
         raise ValidationError("Order is already paid or cancelled")
 
@@ -267,6 +307,7 @@ async def confirm_booking_after_payment(
     booking.status = BookingStatus.CONFIRMED
     booking.payment_status = PAYMENT_STATUS_SUCCEEDED
     booking.reserved_until = None
+    booking.access_token = None
     if payment_intent_id:
         booking.payment_intent_id = payment_intent_id
     await uow.bookings.flush()
@@ -301,6 +342,7 @@ async def confirm_order_after_payment(
         await uow.occurrences.get_by_id_for_update(occurrence_id)
 
     order.status = OrderStatus.PAID
+    order.access_token = None
     for booking in bookings:
         if booking.status == BookingStatus.CONFIRMED:
             continue
@@ -326,6 +368,7 @@ async def confirm_order_after_payment(
         booking.status = BookingStatus.CONFIRMED
         booking.payment_status = PAYMENT_STATUS_SUCCEEDED
         booking.reserved_until = None
+        booking.access_token = None
         if payment_intent_id:
             booking.payment_intent_id = payment_intent_id
 
