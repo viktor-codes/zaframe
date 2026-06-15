@@ -64,6 +64,7 @@ from app.schemas.user import (
 # корректно обработал forward references перед использованием в Union.
 BookingSelfResponse.model_rebuild()
 BookingOwnerResponse.model_rebuild()
+BookingWithUser.model_rebuild()
 BookingListItem.model_rebuild()
 CourseBookingResponse.model_rebuild()
 

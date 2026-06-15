@@ -5,16 +5,13 @@ Pydantic schemas для Booking модели.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, computed_field
 
 from app.models.booking import BookingType
 from app.schemas.slot import SlotResponse
 from app.schemas.studio import StudioResponse
-
-if TYPE_CHECKING:
-    from app.schemas.user import UserPublic
+from app.schemas.user import UserPublic
 
 
 class BookingBase(BaseModel):
