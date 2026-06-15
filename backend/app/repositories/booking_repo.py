@@ -209,6 +209,37 @@ class BookingRepository(WriteRepositoryMixin):
         )
         return result.scalar_one()
 
+    async def get_active_by_slot_and_guest_email(
+        self,
+        slot_id: int,
+        guest_email: str,
+    ) -> Booking | None:
+        """Non-cancelled booking for slot + guest email (case-insensitive)."""
+        normalized_email = guest_email.strip().lower()
+        result = await self._session.execute(
+            select(Booking).where(
+                Booking.slot_id == slot_id,
+                func.lower(Booking.guest_email) == normalized_email,
+                Booking.status != BookingStatus.CANCELLED,
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def get_active_by_slot_and_user_id(
+        self,
+        slot_id: int,
+        user_id: int,
+    ) -> Booking | None:
+        """Non-cancelled booking for slot + registered user."""
+        result = await self._session.execute(
+            select(Booking).where(
+                Booking.slot_id == slot_id,
+                Booking.user_id == user_id,
+                Booking.status != BookingStatus.CANCELLED,
+            )
+        )
+        return result.scalar_one_or_none()
+
     async def attach_guest_bookings_by_email(
         self,
         *,

@@ -36,6 +36,13 @@ class ValidationError(AppError):
         super().__init__(detail=detail, status_code=400)
 
 
+class ConflictError(AppError):
+    """Resource state conflict (409), e.g. unique constraint violation under concurrency."""
+
+    def __init__(self, detail: str) -> None:
+        super().__init__(detail=detail, status_code=409)
+
+
 class UnauthorizedError(AppError):
     """Authentication required or invalid credentials (401)."""
 

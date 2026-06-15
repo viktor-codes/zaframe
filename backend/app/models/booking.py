@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String
+from sqlalchemy import DateTime, ForeignKey, Index, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models import Base
@@ -50,6 +50,22 @@ class Booking(TimestampMixin, Base):
     """
 
     __tablename__ = "bookings"
+    __table_args__ = (
+        Index(
+            "uq_bookings_slot_guest_email_active",
+            "slot_id",
+            "guest_email",
+            unique=True,
+            postgresql_where=text("status != 'cancelled' AND guest_email IS NOT NULL"),
+        ),
+        Index(
+            "uq_bookings_slot_user_id_active",
+            "slot_id",
+            "user_id",
+            unique=True,
+            postgresql_where=text("status != 'cancelled' AND user_id IS NOT NULL"),
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
 

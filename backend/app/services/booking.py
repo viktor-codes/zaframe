@@ -7,13 +7,74 @@
 - Переиспользование при webhook оплаты
 """
 
+from sqlalchemy.exc import IntegrityError
+
 from app.core.booking_holds import get_booking_reserved_until
 from app.core.datetime_utils import ensure_utc, utc_now
-from app.core.exceptions import NotFoundError, ValidationError
+from app.core.exceptions import ConflictError, NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
 from app.models.booking import Booking, BookingStatus, BookingType
 from app.models.user import User
 from app.schemas.booking import BookingCreate, BookingUpdate
+
+DUPLICATE_BOOKING_MESSAGE = "You already have a booking for this session"
+
+_ACTIVE_BOOKING_UNIQUE_INDEX_NAMES = frozenset(
+    {
+        "uq_bookings_slot_guest_email_active",
+        "uq_bookings_slot_user_id_active",
+    }
+)
+
+
+def _is_active_booking_unique_violation(exc: IntegrityError) -> bool:
+    """True when PostgreSQL rejected a duplicate active booking insert."""
+    orig = exc.orig
+    if orig is None:
+        return False
+    constraint_name = getattr(orig, "constraint_name", None)
+    if constraint_name in _ACTIVE_BOOKING_UNIQUE_INDEX_NAMES:
+        return True
+    message = str(orig)
+    return any(name in message for name in _ACTIVE_BOOKING_UNIQUE_INDEX_NAMES)
+
+
+async def _ensure_no_active_booking_for_guest(
+    uow: UnitOfWork,
+    *,
+    slot_id: int,
+    guest_email: str,
+    user_id: int | None = None,
+) -> None:
+    """Raise ValidationError when guest already has a non-cancelled booking on the slot."""
+    if user_id is not None:
+        existing_by_user = await uow.bookings.get_active_by_slot_and_user_id(slot_id, user_id)
+        if existing_by_user is not None:
+            raise ValidationError(DUPLICATE_BOOKING_MESSAGE)
+
+    existing = await uow.bookings.get_active_by_slot_and_guest_email(slot_id, guest_email)
+    if existing is not None:
+        raise ValidationError(DUPLICATE_BOOKING_MESSAGE)
+
+
+async def _persist_booking(uow: UnitOfWork, booking: Booking) -> Booking:
+    """Insert booking; map unique-index races to ConflictError."""
+    try:
+        return await uow.bookings.add(booking)
+    except IntegrityError as exc:
+        if _is_active_booking_unique_violation(exc):
+            raise ConflictError(DUPLICATE_BOOKING_MESSAGE) from exc
+        raise
+
+
+async def _persist_bookings(uow: UnitOfWork, bookings: list[Booking]) -> list[Booking]:
+    """Insert multiple bookings; map unique-index races to ConflictError."""
+    try:
+        return await uow.bookings.add_all(bookings)
+    except IntegrityError as exc:
+        if _is_active_booking_unique_violation(exc):
+            raise ConflictError(DUPLICATE_BOOKING_MESSAGE) from exc
+        raise
 
 
 async def get_booking(uow: UnitOfWork, booking_id: int) -> Booking | None:
@@ -218,6 +279,12 @@ async def create_booking(uow: UnitOfWork, schema: BookingCreate) -> Booking:
     if confirmed_count + pending_count >= slot.max_capacity:
         raise ValidationError("No seats available")
 
+    await _ensure_no_active_booking_for_guest(
+        uow,
+        slot_id=schema.slot_id,
+        guest_email=schema.guest_email,
+    )
+
     booking = Booking(
         slot_id=schema.slot_id,
         guest_name=schema.guest_name,
@@ -228,7 +295,7 @@ async def create_booking(uow: UnitOfWork, schema: BookingCreate) -> Booking:
         booking_type=getattr(schema, "booking_type", BookingType.SINGLE),
         service_id=getattr(schema, "service_id", None),
     )
-    return await uow.bookings.add(booking)
+    return await _persist_booking(uow, booking)
 
 
 async def cancel_booking(uow: UnitOfWork, booking: Booking) -> Booking:

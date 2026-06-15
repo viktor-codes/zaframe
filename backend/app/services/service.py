@@ -40,6 +40,7 @@ from app.schemas import (
     ServiceUpdate,
     StudioPublicResponse,
 )
+from app.services.booking import _ensure_no_active_booking_for_guest, _persist_bookings
 
 
 async def create_service(uow: UnitOfWork, studio_id: int, data: dict) -> Service:
@@ -449,6 +450,11 @@ async def create_course_booking(
 
     bookings: list[Booking] = []
     for idx, slot in enumerate(slots):
+        await _ensure_no_active_booking_for_guest(
+            uow,
+            slot_id=slot.id,
+            guest_email=schema.guest_email,
+        )
         unit_price = prices[idx]
         bookings.append(
             Booking(
@@ -466,7 +472,7 @@ async def create_course_booking(
             )
         )
 
-    bookings = await uow.bookings.add_all(bookings)
+    bookings = await _persist_bookings(uow, bookings)
 
     order_schema = OrderResponse.model_validate(order)
     # Отложим полноценный маппинг BookingResponse, пока основной поток остаётся single-slot
