@@ -9,6 +9,7 @@ from app.repositories import (
     BookingRepository,
     OrderRepository,
     OTPCodeRepository,
+    ProcessedWebhookEventRepository,
     RefreshTokenRepository,
     ScheduleRepository,
     SearchRepository,
@@ -38,6 +39,7 @@ class UnitOfWork:
     schedules: ScheduleRepository
     refresh_tokens: RefreshTokenRepository
     orders: OrderRepository
+    webhook_events: ProcessedWebhookEventRepository
     search: SearchRepository
     _committed: bool = field(default=False, init=False, repr=False)
 
@@ -63,6 +65,7 @@ def create_uow(session: AsyncSession) -> UnitOfWork:
         schedules=ScheduleRepository(session),
         refresh_tokens=RefreshTokenRepository(session),
         orders=OrderRepository(session),
+        webhook_events=ProcessedWebhookEventRepository(session),
         search=SearchRepository(session),
     )
 

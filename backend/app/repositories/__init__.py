@@ -2,6 +2,7 @@
 
 from app.repositories.booking_repo import BookingRepository
 from app.repositories.order_repo import OrderRepository
+from app.repositories.processed_webhook_event_repo import ProcessedWebhookEventRepository
 from app.repositories.otp_code_repo import OTPCodeRepository
 from app.repositories.refresh_token_repo import RefreshTokenRepository
 from app.repositories.schedule_repo import ScheduleRepository
@@ -22,4 +23,5 @@ __all__ = [
     "SlotRepository",
     "StudioRepository",
     "UserRepository",
+    "ProcessedWebhookEventRepository",
 ]

@@ -35,10 +35,16 @@ async def app_with_rollback_uow():
     запроса доступны во втором). После теста транзакция откатывается — БД не засоряется.
     """
     from app.api.deps import get_uow
-    from app.core.database import async_session_maker
+    from app.core.database import async_session_maker, engine
     from app.core.uow import uow_scope
     from app.main import app
+    from app.models.processed_webhook_event import ProcessedWebhookEvent
     from sqlalchemy import text
+
+    async with engine.begin() as conn:
+        await conn.run_sync(
+            lambda sync_conn: ProcessedWebhookEvent.__table__.create(sync_conn, checkfirst=True)
+        )
 
     async with async_session_maker() as session:
         await session.execute(text("DELETE FROM otp_codes"))

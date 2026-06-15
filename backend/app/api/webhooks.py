@@ -11,6 +11,7 @@ Stripe webhook требует raw body для проверки подписи.
 import stripe
 import structlog
 from fastapi import APIRouter, Request, Response
+from sqlalchemy.exc import IntegrityError
 
 from app.core.config import settings
 from app.core.middleware.logging_middleware import REQUEST_ID_STATE_KEY
@@ -85,12 +86,22 @@ async def stripe_webhook(request: Request) -> Response:
     if event.type != "checkout.session.completed":
         return Response(status_code=200)
 
+    event_id = event.id
+    event_type = event.type
     session = event.data.object
     booking_id_str, order_id_str = _parse_checkout_session_metadata(session)
     payment_intent_id = _parse_payment_intent_id(session)
 
     async with uow_scope(auto_commit=False) as uow:
         try:
+            if await uow.webhook_events.exists_by_event_id(event_id):
+                logger.info(
+                    "webhook_duplicate_event_skipped",
+                    request_id=request_id,
+                    event_id=event_id,
+                )
+                return Response(status_code=200)
+
             if order_id_str:
                 try:
                     order_id = int(order_id_str)
@@ -102,17 +113,20 @@ async def stripe_webhook(request: Request) -> Response:
                     payment_intent_id=payment_intent_id,
                 )
                 if ok:
+                    await uow.webhook_events.record(event_id=event_id, event_type=event_type)
                     await uow.commit()
                     logger.info(
                         "webhook_order_paid",
                         request_id=request_id,
                         order_id=order_id,
+                        event_id=event_id,
                     )
                 else:
                     logger.warning(
                         "webhook_order_not_found_or_already_paid",
                         request_id=request_id,
                         order_id=order_id,
+                        event_id=event_id,
                     )
                 return Response(status_code=200)
 
@@ -127,24 +141,36 @@ async def stripe_webhook(request: Request) -> Response:
                     payment_intent_id=payment_intent_id,
                 )
                 if ok:
+                    await uow.webhook_events.record(event_id=event_id, event_type=event_type)
                     await uow.commit()
                     logger.info(
                         "webhook_booking_confirmed",
                         request_id=request_id,
                         booking_id=booking_id,
+                        event_id=event_id,
                     )
                 else:
                     logger.warning(
                         "webhook_booking_not_found_or_already_confirmed",
                         request_id=request_id,
                         booking_id=booking_id,
+                        event_id=event_id,
                     )
                 return Response(status_code=200)
 
             logger.warning(
                 "webhook_checkout_completed_missing_metadata",
                 request_id=request_id,
+                event_id=event_id,
             )
+        except IntegrityError:
+            await uow.rollback()
+            logger.info(
+                "webhook_duplicate_event_race",
+                request_id=request_id,
+                event_id=event_id,
+            )
+            return Response(status_code=200)
         except Exception:
             await uow.rollback()
             raise

@@ -5,6 +5,7 @@ from app.core.database import Base
 from app.models.booking import Booking, BookingStatus, BookingType
 from app.models.order import Order, OrderStatus
 from app.models.otp_code import OTPCode
+from app.models.processed_webhook_event import ProcessedWebhookEvent
 from app.models.refresh_token import RefreshToken
 from app.models.schedule import Schedule
 from app.models.service import Service, ServiceCategory, ServiceType
@@ -29,4 +30,5 @@ __all__ = [
     "ServiceCategory",
     "Schedule",
     "RefreshToken",
+    "ProcessedWebhookEvent",
 ]
