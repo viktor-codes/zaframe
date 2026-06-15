@@ -16,6 +16,7 @@ from app.schemas.payment import (
     CheckoutSessionResponse,
     OrderCheckoutSessionCreate,
 )
+from app.schemas.schedule import ScheduleGenerateRequest
 from app.schemas.search import SearchQueryParams, SearchResult
 from app.schemas.service import (
     CourseAvailabilityResult,
@@ -95,6 +96,8 @@ __all__ = [
     "BookingWithUser",
     "BookingListItem",
     "BookingCancel",
+    # Schedule generation
+    "ScheduleGenerateRequest",
     # Service / Schedule / Order / Public
     "ServiceBase",
     "ServiceCreate",

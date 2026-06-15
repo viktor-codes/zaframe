@@ -18,11 +18,11 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, Query
 
 from app.api.deps import get_current_user_required, get_uow
-from app.core.exceptions import ValidationError
 from app.core.uow import UnitOfWork
 from app.models.service import ServiceCategory
 from app.models.user import User
 from app.schemas import (
+    ScheduleGenerateRequest,
     SearchResult,
     ServiceResponse,
     SlotResponse,
@@ -173,57 +173,27 @@ async def get_studio_public_endpoint(
 @router.post("/{studio_id}/generate-schedule", response_model=list[SlotResponse])
 async def generate_studio_schedule_endpoint(
     studio_id: int,
-    payload: dict,
+    schema: ScheduleGenerateRequest,
     user: User = Depends(get_current_user_required),
     uow: UnitOfWork = Depends(get_uow),
 ) -> list[SlotResponse]:
     """
     Сгенерировать расписание для услуги в студии.
 
-    Payload:
-    {
-        "service_id": int,
-        "days": [1, 3],
-        "start_time": "18:00:00",
-        "weeks_count": 6
-    }
+    Создаёт слоты на указанные дни недели в течение `weeks_count` недель.
     """
-    from datetime import time as time_cls
-
     studio = await get_studio_or_raise(uow, studio_id)
     ensure_studio_owner(studio, user.id)
-
-    try:
-        service_id = int(payload["service_id"])
-        days = list(map(int, payload["days"]))
-        start_time_str: str = payload["start_time"]
-        weeks_count = int(payload["weeks_count"])
-    except (KeyError, ValueError, TypeError):
-        raise ValidationError("Invalid payload format") from None
-
-    try:
-        parts = [int(p) for p in start_time_str.split(":")]
-        if len(parts) == 2:
-            start_time = time_cls(parts[0], parts[1])
-        elif len(parts) == 3:
-            start_time = time_cls(parts[0], parts[1], parts[2])
-        else:
-            raise ValueError
-    except ValueError:
-        raise ValidationError("Invalid start_time format") from None
 
     slots = await occurrence_generator(
         uow,
         studio_id=studio_id,
-        service_id=service_id,
-        days=days,
-        start_time=start_time,
-        weeks_count=weeks_count,
+        service_id=schema.service_id,
+        days=schema.days,
+        start_time=schema.start_time,
+        weeks_count=schema.weeks_count,
     )
-    # Маппим ORM → схемы
-    from app.schemas.slot import SlotResponse as SlotResponseSchema  # локальный импорт
-
-    return [SlotResponseSchema.model_validate(s) for s in slots]
+    return [SlotResponse.model_validate(s) for s in slots]
 
 
 @router.post("", response_model=StudioResponse, status_code=201)
