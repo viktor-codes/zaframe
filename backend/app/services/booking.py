@@ -21,7 +21,6 @@ from app.schemas.booking import (
     BookingCreate,
     BookingOwnerResponse,
     BookingSelfResponse,
-    BookingUpdate,
 )
 
 DUPLICATE_BOOKING_MESSAGE = "You already have a booking for this session"
@@ -371,23 +370,4 @@ async def cancel_booking(uow: UnitOfWork, booking: Booking) -> Booking:
     booking.status = BookingStatus.CANCELLED
     booking.cancelled_at = utc_now()
     booking.reserved_until = None
-    return await uow.bookings.save(booking)
-
-
-async def update_booking(
-    uow: UnitOfWork,
-    booking: Booking,
-    schema: BookingUpdate,
-) -> Booking:
-    """Обновить бронирование (статус, payment)."""
-    update_data = schema.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(booking, field, value)
-    if booking.status in (
-        BookingStatus.CONFIRMED,
-        BookingStatus.CANCELLED,
-        BookingStatus.EXPIRED,
-        BookingStatus.COMPLETED,
-    ):
-        booking.reserved_until = None
     return await uow.bookings.save(booking)

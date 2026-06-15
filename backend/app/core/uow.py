@@ -71,6 +71,16 @@ def create_uow(session: AsyncSession) -> UnitOfWork:
 
 
 @asynccontextmanager
+async def _borrow_session(session: AsyncSession | None) -> AsyncIterator[AsyncSession]:
+    """Yield caller-owned session or open a scoped session from the pool."""
+    if session is not None:
+        yield session
+        return
+    async with async_session_maker() as owned_session:
+        yield owned_session
+
+
+@asynccontextmanager
 async def uow_scope(
     *,
     session: AsyncSession | None = None,
@@ -84,8 +94,8 @@ async def uow_scope(
         auto_commit: When True, commit after the block unless commit() was already called.
             When False, caller must commit() explicitly; uncommitted work is rolled back on exit.
     """
-    if session is not None:
-        uow = create_uow(session)
+    async with _borrow_session(session) as active_session:
+        uow = create_uow(active_session)
         try:
             yield uow
             if auto_commit and not uow._committed:
@@ -97,17 +107,3 @@ async def uow_scope(
         finally:
             if not auto_commit and not uow._committed:
                 await uow.rollback()
-    else:
-        async with async_session_maker() as owned_session:
-            uow = create_uow(owned_session)
-            try:
-                yield uow
-                if auto_commit and not uow._committed:
-                    await uow.commit()
-            except Exception:
-                if not uow._committed:
-                    await uow.rollback()
-                raise
-            finally:
-                if not auto_commit and not uow._committed:
-                    await uow.rollback()

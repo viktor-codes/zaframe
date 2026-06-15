@@ -8,7 +8,6 @@ from app.schemas.booking import (
     BookingListItem,
     BookingOwnerResponse,
     BookingSelfResponse,
-    BookingUpdate,
     BookingWithSlot,
     BookingWithUser,
 )
@@ -92,7 +91,6 @@ __all__ = [
     "BookingBase",
     "BookingCreate",
     "BookingCreateAuthenticated",
-    "BookingUpdate",
     "BookingSelfResponse",
     "BookingOwnerResponse",
     "BookingWithSlot",

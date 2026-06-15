@@ -54,14 +54,6 @@ class BookingCreateAuthenticated(BookingBase):
     pass
 
 
-class BookingUpdate(BaseModel):
-    """Схема для обновления бронирования (внутреннее использование)."""
-
-    status: str | None = Field(None, description="Статус бронирования")
-    payment_intent_id: str | None = Field(None, description="ID платежа Stripe")
-    payment_status: str | None = Field(None, description="Статус платежа")
-
-
 class BookingClientBase(BookingBase):
     """
     Общие поля клиентских ответов по бронированию.
