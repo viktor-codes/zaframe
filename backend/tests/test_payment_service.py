@@ -1,8 +1,7 @@
 """
-Unit tests for app.services.payment.
+Unit tests for app.services.payment validation and orchestration.
 
-Covers: create_checkout_session, create_order_checkout_session,
-confirm_booking_after_payment, confirm_order_after_payment.
+Checkout payload shape is covered in tests/test_stripe_checkout.py.
 """
 
 from datetime import UTC, datetime, timedelta

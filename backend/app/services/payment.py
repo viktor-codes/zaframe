@@ -9,11 +9,17 @@
 
 from __future__ import annotations
 
+import stripe
+
 from app.core.booking_holds import is_active_pending_hold
 from app.core.config import settings
 from app.core.datetime_utils import utc_now
 from app.core.exceptions import AppError, NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
+from app.integrations.stripe.checkout import (
+    build_booking_checkout_params,
+    build_order_checkout_params,
+)
 from app.models.booking import BookingStatus
 from app.models.order import OrderStatus
 from app.models.slot import Slot
@@ -59,26 +65,16 @@ async def create_checkout_session(
 
     client = _get_stripe_client()
     session = client.v1.checkout.sessions.create(
-        params={
-            "success_url": success_url,
-            "cancel_url": cancel_url,
-            "mode": "payment",
-            "line_items": [
-                {
-                    "price_data": {
-                        "currency": settings.STRIPE_CURRENCY,
-                        "unit_amount": slot.price_cents,
-                        "product_data": {
-                            "name": slot.title,
-                            "description": (slot.description or f"Бронирование слота #{slot.id}"),
-                        },
-                    },
-                    "quantity": 1,
-                }
-            ],
-            "metadata": {"booking_id": str(booking_id)},
-            "customer_email": booking.guest_email or None,
-        }
+        params=build_booking_checkout_params(
+            booking_id=booking_id,
+            currency=settings.STRIPE_CURRENCY,
+            unit_amount_cents=slot.price_cents,
+            product_name=slot.title,
+            product_description=slot.description or f"Бронирование слота #{slot.id}",
+            success_url=success_url,
+            cancel_url=cancel_url,
+            guest_email=booking.guest_email,
+        )
     )
 
     booking.checkout_session_id = session.id
@@ -121,33 +117,20 @@ async def create_order_checkout_session(
     if order.total_amount_cents <= 0:
         raise ValidationError("Order has no payable amount")
 
-    client = _get_stripe_client()
-
     product_name = order.service.name if order.service is not None else f"Заказ #{order.id}"
 
+    client = _get_stripe_client()
     session = client.v1.checkout.sessions.create(
-        params={
-            "success_url": success_url,
-            "cancel_url": cancel_url,
-            "mode": "payment",
-            "line_items": [
-                {
-                    "price_data": {
-                        "currency": settings.STRIPE_CURRENCY,
-                        "unit_amount": order.total_amount_cents,
-                        "product_data": {
-                            "name": product_name,
-                            "description": f"Оплата заказа #{order.id}",
-                        },
-                    },
-                    "quantity": 1,
-                }
-            ],
-            "metadata": {
-                "order_id": str(order_id),
-            },
-            "customer_email": order.guest_email or None,
-        }
+        params=build_order_checkout_params(
+            order_id=order_id,
+            currency=settings.STRIPE_CURRENCY,
+            unit_amount_cents=order.total_amount_cents,
+            product_name=product_name,
+            product_description=f"Оплата заказа #{order.id}",
+            success_url=success_url,
+            cancel_url=cancel_url,
+            guest_email=order.guest_email,
+        )
     )
 
     await uow.orders.flush()
