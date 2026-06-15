@@ -20,7 +20,7 @@ const variantStyles: Record<BadgeVariant, string> = {
   verified:
     "bg-linear-to-br from-sky-50 to-teal-50 text-teal-700 border border-teal-200",
   new: "bg-linear-to-br from-lime-50 to-yellow-50 text-lime-700 border border-lime-200",
-  // Legacy (slot/booking)
+  // Legacy (occurrence/booking)
   available:
     "inline-flex items-center gap-1 px-3 py-1 text-sm font-medium normal-case rounded-full bg-emerald-500 text-white",
   booked:

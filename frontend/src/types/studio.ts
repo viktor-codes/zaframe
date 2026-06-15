@@ -23,8 +23,8 @@ export interface StudioResponse extends StudioBase {
   updated_at: string;
 }
 
-export interface StudioWithSlots extends StudioResponse {
-  slots_count?: number | null;
+export interface StudioWithOccurrences extends StudioResponse {
+  occurrences_count?: number | null;
 }
 
 export interface StudioCreate extends StudioBase {

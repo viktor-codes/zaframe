@@ -53,7 +53,7 @@ from app.schemas.studio import (
     StudioCreate,
     StudioResponse,
     StudioUpdate,
-    StudioWithSlots,
+    StudioWithOccurrences,
 )
 from app.schemas.user import (
     UserBase,
@@ -82,7 +82,7 @@ __all__ = [
     "StudioCreate",
     "StudioUpdate",
     "StudioResponse",
-    "StudioWithSlots",
+    "StudioWithOccurrences",
     "StudioPublicResponse",
     # Occurrence
     "OccurrenceBase",

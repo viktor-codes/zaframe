@@ -61,7 +61,7 @@ class StudioUpdate(BaseModel):
         None,
         min_length=1,
         max_length=64,
-        description="IANA timezone (immutable after first slot is created)",
+        description="IANA timezone (immutable after first occurrence is created)",
     )
 
     @field_validator("timezone")
@@ -85,9 +85,9 @@ class StudioResponse(StudioBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-class StudioWithSlots(StudioResponse):
-    """Студия с количеством слотов (для списков)."""
+class StudioWithOccurrences(StudioResponse):
+    """Studio with occurrence count (for list views)."""
 
-    slots_count: int | None = Field(None, description="Количество слотов")
+    occurrences_count: int | None = Field(None, description="Number of occurrences")
 
     model_config = ConfigDict(from_attributes=True)

@@ -29,7 +29,7 @@ from app.models.booking import Booking, BookingStatus
 from app.models.order import Order, OrderStatus
 from app.models.occurrence import Occurrence
 
-# WHY: paid but slot full — studio owner resolves refund/rebook manually (no auto-refund yet).
+# WHY: paid but occurrence full — studio owner resolves refund/rebook manually (no auto-refund yet).
 PAYMENT_STATUS_SUCCEEDED = "succeeded"
 PAYMENT_STATUS_OVERBOOKED_MANUAL_REVIEW = "overbooked_manual_review"
 
@@ -283,7 +283,7 @@ async def confirm_order_after_payment(
     Подтвердить заказ и все связанные бронирования после успешной оплаты (webhook).
 
     Идемпотентно: если заказ уже PAID — ничего не делаем, возвращаем True.
-    Per-slot capacity recheck; overbooked bookings go to manual owner review.
+    Per-occurrence capacity recheck; overbooked bookings go to manual owner review.
     Возвращает True если обработано (или уже было), False если заказ не найден.
     """
     order = await uow.orders.get_by_id(order_id)

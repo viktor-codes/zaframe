@@ -75,10 +75,10 @@
 ### 3. **app/core/repositories/booking_repo.py**
 | Сценарий | Покрытие |
 |----------|----------|
-| get_by_id, get_by_id_with_slot | Косвенно через интеграции |
-| list_ с фильтрами (slot_id, user_id, guest_email, status, order_id) | ❌ юнит-тестов нет |
-| count, count_confirmed_by_slot, count_pending_by_slot | ❌ |
-| get_confirmed_pending_counts_by_slot_ids (в т.ч. пустой список) | ❌ |
+| get_by_id, get_by_id_with_occurrence | Косвенно через интеграции |
+| list_ с фильтрами (occurrence_id, user_id, guest_email, status, order_id) | ❌ юнит-тестов нет |
+| count, count_confirmed_by_occurrence, count_pending_by_occurrence | ❌ |
+| get_confirmed_pending_counts_by_occurrence_ids (в т.ч. пустой список) | ❌ |
 
 ### 4. **API payments** (app/api/v1/payments.py)
 - Эндпоинты POST /checkout-session и POST /order-checkout-session не покрыты интеграционными тестами (нужен мок Stripe).

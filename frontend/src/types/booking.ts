@@ -53,6 +53,3 @@ export interface BookingSelfListItem extends BookingResponse {
   occurrence: OccurrenceResponse;
   studio: StudioResponse;
 }
-
-/** @deprecated Use BookingSelfListItem */
-export type BookingListItem = BookingSelfListItem;

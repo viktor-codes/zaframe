@@ -3,7 +3,7 @@ Unit tests for booking lifecycle transitions (expire pending, complete confirmed
 
 Boundary cases mirror repository filters:
 - expire: reserved_until <= now (hold uses reserved_until > now)
-- complete: slot.end_time < now (in progress at exactly end_time)
+- complete: occurrence.end_time < now (in progress at exactly end_time)
 """
 
 from datetime import UTC, datetime, timedelta
@@ -97,7 +97,7 @@ async def test_complete_past_confirmed_before_end_time_skipped(mock_uow):
 
 @pytest.mark.asyncio
 async def test_complete_past_confirmed_at_end_time_skipped(mock_uow):
-    """slot.end_time == now is still in progress; must not complete."""
+    """occurrence.end_time == now is still in progress; must not complete."""
     mock_uow.bookings.list_past_confirmed = AsyncMock(return_value=[])
 
     count = await complete_past_confirmed(mock_uow, now=NOW)

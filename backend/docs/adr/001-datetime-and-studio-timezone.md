@@ -47,7 +47,7 @@ WHY: `DEFAULT 'UTC'` in PostgreSQL prevents nullable-column edge cases during de
 
 ### 3. Conversion rules
 
-- **Schedule → Slot:** `studio_local_to_utc(date, time, studio.timezone)` → store as UTC instant.
+- **ScheduleTemplate → Occurrence:** `studio_local_to_utc(date, time, studio.timezone)` → store as UTC instant.
 - **API input (instant):** MUST include timezone offset or `Z`. Naive datetimes → HTTP 422 (no silent UTC conversion).
 - **API output (instant):** ISO 8601 UTC with `Z` suffix.
 - **API output (studio):** include `timezone` field; frontend converts instants for display.

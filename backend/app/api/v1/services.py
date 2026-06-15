@@ -112,7 +112,7 @@ async def deactivate_service_endpoint(
     """
     Деактивировать услугу (soft delete).
 
-    Связанные слоты и бронирования остаются в системе.
+    Связанные occurrence'ы и бронирования остаются в системе.
     """
     service = await get_service_or_raise(uow, service_id)
     studio = await get_studio_or_raise(uow, service.studio_id)
@@ -122,7 +122,7 @@ async def deactivate_service_endpoint(
 
 
 @router.get(
-    "/{service_id}/schedules",
+    "/{service_id}/schedule-templates",
     response_model=list[ScheduleTemplateResponse],
 )
 async def list_service_schedule_templates_endpoint(
@@ -136,7 +136,7 @@ async def list_service_schedule_templates_endpoint(
 
 
 @router.post(
-    "/{service_id}/schedules",
+    "/{service_id}/schedule-templates",
     response_model=ScheduleTemplateResponse,
     status_code=201,
 )
@@ -161,7 +161,7 @@ async def create_service_schedule_template_endpoint(
     return ScheduleTemplateResponse.model_validate(schedule)
 
 
-@router.delete("/schedules/{schedule_template_id}", status_code=204)
+@router.delete("/schedule-templates/{schedule_template_id}", status_code=204)
 async def delete_schedule_template_endpoint(
     schedule_template_id: int,
     user: User = Depends(get_current_user_required),

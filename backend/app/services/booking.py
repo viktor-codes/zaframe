@@ -138,7 +138,7 @@ async def get_booking_for_user_or_raise(
     user: User,
 ) -> Booking:
     """
-    Load booking with slot+studio; allow own booking or studio owner.
+    Load booking with occurrence+studio; allow own booking or studio owner.
 
     Returns 404 when the booking does not exist or the user has no access,
     so foreign booking IDs are not enumerable.
@@ -163,7 +163,7 @@ async def get_owner_bookings(
     occurrence_id: int | None = None,
     status: str | None = None,
 ) -> list[Booking]:
-    """Owner dashboard: bookings for slots in studios owned by the user."""
+    """Owner dashboard: bookings for occurrences in studios owned by the user."""
     return await uow.bookings.list_for_studio_owner(
         owner_id=user.id,
         skip=skip,
@@ -242,7 +242,7 @@ async def get_my_bookings(
     include_guest_email: bool = True,
 ) -> list[Booking]:
     """
-    Bookings list for personal cabinet (slot+studio embedded).
+    Bookings list for personal cabinet (occurrence+studio embedded).
 
     include_guest_email=True merges legacy guest bookings by guest_email == user.email.
     """
@@ -345,9 +345,9 @@ async def complete_past_confirmed(
     now: datetime | None = None,
 ) -> int:
     """
-    Mark confirmed bookings as COMPLETED when their slot has ended.
+    Mark confirmed bookings as COMPLETED when their occurrence has ended.
 
-    Uses slot.end_time < now (slot still in progress at exactly end_time).
+    Uses occurrence.end_time < now (still in progress at exactly end_time).
     Returns the number of bookings transitioned.
     """
     now_utc = now or utc_now()

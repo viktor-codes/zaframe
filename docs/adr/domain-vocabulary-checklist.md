@@ -10,9 +10,9 @@ Execute phases in order. Do not start Phase 3 until Phase 2 migration applies cl
 
 ## Phase 0 — Prep
 
-- [ ] Read ADR-002 end-to-end; agree on optional rename `ScheduleGenerateRequest` → `OccurrenceGenerateRequest`
-- [ ] Create branch `refactor/domain-vocabulary`
-- [ ] Baseline: `cd backend && uv run pytest` and frontend build green
+- [x] Read ADR-002 end-to-end; agree on optional rename `ScheduleGenerateRequest` → `OccurrenceGenerateRequest`
+- [x] Create branch `refactor/domain-vocabulary`
+- [x] Baseline: `cd backend && uv run pytest` and frontend build green
 
 ---
 
@@ -58,182 +58,100 @@ slot_id (schema fields) → occurrence_id
 
 ---
 
-## Phase 2 — Models, migration, repositories, services
+## Phase 2 — Models, migration, repositories, services ✅
 
 ### 2.1 Alembic
 
 | Action | File | Tasks |
 |--------|------|-------|
-| [M] | `backend/alembic/versions/004_domain_vocabulary.py` | **Create**: rename tables, columns, indexes, FKs; `single_class` → `single`; document downgrade |
-| [ ] | `backend/alembic/versions/001_initial_schema.py` | **Do not edit** (applied) — reference only when writing 004 |
-| [ ] | `backend/alembic/versions/002_booking_active_uniqueness.py` | **Do not edit** — recreate index names in 004 |
-| [ ] | `backend/alembic/versions/003_booking_expired_completed_indexes.py` | **Do not edit** |
+| [x] | `backend/alembic/versions/005_domain_vocabulary.py` | Rename tables, columns, indexes, FKs; `single_class` → `single`; downgrade |
+| [x] | `backend/alembic/versions/001_initial_schema.py` | **Do not edit** (applied) |
+| [x] | `backend/alembic/versions/002_booking_active_uniqueness.py` | **Do not edit** |
+| [x] | `backend/alembic/versions/003_booking_active_idx.py` | Revision id shortened (varchar 32 limit) |
 
-**004 must cover:**
+**005 covers:**
 
-- [ ] `slots` → `occurrences`
-- [ ] `schedules` → `schedule_templates`
-- [ ] `bookings.slot_id` → `occurrence_id`
-- [ ] `occurrences.schedule_id` → `schedule_template_id`
-- [ ] Index `idx_slots_studio_service_start_time` → `idx_occurrences_studio_service_start_time`
-- [ ] Indexes `uq_bookings_slot_*` → `uq_bookings_occurrence_*`
-- [ ] `services.type` value migration `single_class` → `single`
+- [x] `slots` → `occurrences`
+- [x] `schedules` → `schedule_templates`
+- [x] `bookings.slot_id` → `occurrence_id`
+- [x] `occurrences.schedule_id` → `schedule_template_id`
+- [x] Index `idx_slots_studio_service_start_time` → `idx_occurrences_studio_service_start_time`
+- [x] Indexes `uq_bookings_slot_*` → `uq_bookings_occurrence_*`
+- [x] `services.type` value migration `single_class` → `single`
 
-### 2.2 Models
+### 2.2–2.5 Models, repos, core, services
 
-| Action | File | Tasks |
-|--------|------|-------|
-| [R] | `backend/app/models/occurrence.py` | Rename from `slot.py`; class `Occurrence`, `OccurrenceStatus`; FK `schedule_template_id` |
-| [R] | `backend/app/models/schedule_template.py` | Rename from `schedule.py`; class `ScheduleTemplate` |
-| [ ] | `backend/app/models/booking.py` | `occurrence_id`; relationship `occurrence`; update unique index `__table_args__` |
-| [ ] | `backend/app/models/service.py` | `ServiceType.SINGLE = "single"`; remove `SINGLE_CLASS` |
-| [ ] | `backend/app/models/studio.py` | Relationship `occurrences` (was `slots`) |
-| [ ] | `backend/app/models/__init__.py` | Export `Occurrence`, `OccurrenceStatus`, `ScheduleTemplate`; remove `Slot`, `Schedule` |
-
-### 2.3 Repositories
-
-| Action | File | Tasks |
-|--------|------|-------|
-| [R] | `backend/app/repositories/occurrence_repo.py` | Rename from `slot_repo.py`; `OccurrenceRepository` |
-| [R] | `backend/app/repositories/schedule_template_repo.py` | Rename from `schedule_repo.py`; `ScheduleTemplateRepository` |
-| [ ] | `backend/app/repositories/booking_repo.py` | All `slot_id` / `Slot` references → `occurrence_id` / `Occurrence` |
-| [ ] | `backend/app/repositories/studio_repo.py` | Occurrence queries if any |
-| [ ] | `backend/app/repositories/service_repo.py` | Schedule template joins if any |
-| [ ] | `backend/app/repositories/__init__.py` | Export new repo class names |
-
-### 2.4 Core
-
-| Action | File | Tasks |
-|--------|------|-------|
-| [ ] | `backend/app/core/uow.py` | `occurrences: OccurrenceRepository`, `schedule_templates: ScheduleTemplateRepository` |
-| [ ] | `backend/app/core/booking_holds.py` | Terminology / field names if referenced |
-| [ ] | `backend/app/core/datetime_utils.py` | Comments mentioning Slot/Schedule |
-
-### 2.5 Services
-
-| Action | File | Tasks |
-|--------|------|-------|
-| [R] | `backend/app/services/occurrence.py` | Rename from `slot.py` |
-| [ ] | `backend/app/services/booking.py` | `uow.occurrences`, `occurrence_id`, schema types |
-| [ ] | `backend/app/services/service.py` | ScheduleTemplate*, generate occurrences, `ServiceType.SINGLE` |
-| [ ] | `backend/app/services/studio.py` | Occurrence listing / generate endpoint logic |
-| [ ] | `backend/app/services/payment.py` | `occurrence` / `occurrence_id` references |
-| [ ] | `backend/app/services/search.py` | If slot/service joins exist |
-| [ ] | `backend/app/services/dto/service.py` | `occurrence_id` in DTOs; consider split `dto/catalog.py`, `dto/order.py` (optional) |
-| [ ] | `backend/app/services/dto/__init__.py` | Updated exports |
+All items completed (`Occurrence`, `ScheduleTemplate`, `OccurrenceRepository`, `uow.occurrences`, etc.).
 
 ### 2.6 Phase 2 gate
 
-- [ ] `uv run alembic upgrade head` on clean DB
-- [ ] `uv run pytest backend/tests` — expect failures until Phase 3 API wired; fix repo/service/unit tests here
+- [x] `uv run alembic upgrade head`
+- [x] `uv run pytest` — 141 passed
 
 ---
 
-## Phase 3 — API layer
+## Phase 3 — API layer ✅
 
 ### 3.1 Routers & mappers
 
 | Action | File | Tasks |
 |--------|------|-------|
-| [R] | `backend/app/api/v1/occurrences.py` | Rename from `slots.py`; prefix `/occurrences`; param `occurrence_id` |
-| [ ] | `backend/app/api/v1/studios.py` | `/occurrences`, `/generate-occurrences`; response models |
-| [ ] | `backend/app/api/v1/bookings.py` | `BookingSelfListItem`, `occurrence_id` in creates |
-| [ ] | `backend/app/api/v1/services.py` | `ScheduleTemplate*` schemas; schedule CRUD paths review (`/schedules/` → `/schedule-templates/` optional — **decide**) |
-| [ ] | `backend/app/api/mappers/service.py` | `PublicOccurrence`, catalog imports |
-| [ ] | `backend/app/main.py` | `from app.api.v1 import occurrences`; `include_router(occurrences.router)` |
-
-**Open decision (mark in PR description):**
-
-- [ ] `DELETE /services/schedules/{id}` → `DELETE /services/schedule-templates/{id}` ?
+| [x] | `backend/app/api/v1/occurrences.py` | `/occurrences`; param `occurrence_id` |
+| [x] | `backend/app/api/v1/studios.py` | `/occurrences`, `/generate-occurrences` |
+| [x] | `backend/app/api/v1/bookings.py` | `BookingSelfListItem`, `occurrence_id` |
+| [x] | `backend/app/api/v1/services.py` | `ScheduleTemplate*`; `/schedule-templates` CRUD |
+| [x] | `backend/app/api/mappers/service.py` | `PublicOccurrence`, catalog imports |
+| [x] | `backend/app/main.py` | `occurrences.router` |
 
 ### 3.2 Phase 3 gate
 
-- [ ] OpenAPI `/docs` reflects new paths
-- [ ] `uv run pytest backend/tests`
+- [x] OpenAPI `/docs` reflects new paths
+- [x] `uv run pytest` — 141 passed
 
 ---
 
-## Phase 4 — Tests & scripts
+## Phase 4 — Tests & scripts ✅
 
 ### 4.1 Backend tests
 
-| File | Tasks |
-|------|-------|
-| [ ] `backend/tests/test_api_studios_slots_bookings.py` | Rename file → `test_api_studios_occurrences_bookings.py`; update paths |
-| [ ] `backend/tests/integration/test_generate_schedule.py` | → `test_generate_occurrences.py` |
-| [ ] `backend/tests/test_booking_lifecycle.py` | `occurrence_id` |
-| [ ] `backend/tests/test_booking_schema_serialization.py` | `BookingSelfListItem`, `BookingResponseBase` |
-| [ ] `backend/tests/test_booking_holds.py` | Terminology |
-| [ ] `backend/tests/test_attach_guest_bookings.py` | |
-| [ ] `backend/tests/test_payment_service.py` | |
-| [ ] `backend/tests/test_stripe_checkout.py` | |
-| [ ] `backend/tests/test_webhooks.py` | |
-| [ ] `backend/tests/integration/test_payments.py` | |
-| [ ] `backend/tests/integration/test_booking_duplicate.py` | |
-| [ ] `backend/tests/integration/test_bookings_authz.py` | |
-| [ ] `backend/tests/integration/test_overbooking_confirm.py` | |
+All listed test files updated; renamed:
+
+- `test_api_studios_occurrences_bookings.py`
+- `integration/test_generate_occurrences.py`
 
 ### 4.2 Seeds & docs
 
-| File | Tasks |
-|------|-------|
-| [ ] `backend/scripts/seed_and_simulate.py` | `ServiceType.SINGLE`, `Occurrence` |
-| [ ] `backend/scripts/seed_100_studios.py` | Same |
-| [ ] `backend/docs/ARCHITECTURE_IMPROVEMENTS_PLAN.md` | Terminology pass |
-| [ ] `backend/docs/adr/001-datetime-and-studio-timezone.md` | Replace “slot” with “occurrence” where policy text |
-| [ ] `backend/tests/TEST_COVERAGE_REPORT.md` | Optional update |
+- [x] `seed_and_simulate.py`, `seed_100_studios.py`
+- [x] `backend/docs/adr/001-datetime-and-studio-timezone.md`
+- [x] `backend/tests/TEST_COVERAGE_REPORT.md`
+- [ ] `backend/docs/ARCHITECTURE_IMPROVEMENTS_PLAN.md` — historical plan doc (optional)
 
 ---
 
-## Phase 5 — Frontend (big-bang)
+## Phase 5 — Frontend (big-bang) ✅
 
-### 5.1 Types
+### 5.1–5.3 Types, API client, pages
 
-| Action | File | Tasks |
-|--------|------|-------|
-| [R] | `frontend/src/types/occurrence.ts` | Rename from `slot.ts`; `OccurrenceResponse`, etc. |
-| [ ] | `frontend/src/types/booking.ts` | `occurrence_id`, `BookingSelfListItem`, nested `OccurrenceResponse` |
-| [ ] | `frontend/src/types/studio.ts` | Public catalog types if duplicated |
-| [ ] | `frontend/src/types/index.ts` | Re-exports |
+All items completed (`occurrence.ts`, `occurrences.ts`, `occurrence_id`, `BookingSelfListItem`, etc.).
 
-### 5.2 API client
+### 5.4 Service type enum
 
-| Action | File | Tasks |
-|--------|------|-------|
-| [R] | `frontend/src/lib/api/occurrences.ts` | Rename from `slots.ts`; `/api/v1/occurrences` |
-| [ ] | `frontend/src/lib/api/studios.ts` | `fetchStudioOccurrences`, `generateOccurrences` |
-| [ ] | `frontend/src/lib/api/bookings.ts` | `BookingSelfListItem`, `occurrence_id` |
-| [ ] | `frontend/src/lib/api/index.ts` | Export occurrences module |
-
-### 5.3 Pages & components
-
-| File | Tasks |
-|------|-------|
-| [ ] `frontend/src/app/(main)/studios/[id]/page.tsx` | Occurrence types, API calls |
-| [ ] `frontend/src/app/(main)/studios/[id]/book/page.tsx` | `occurrence_id` |
-| [ ] `frontend/src/app/(main)/bookings/page.tsx` | `BookingSelfListItem` |
-| [ ] `frontend/src/app/(main)/bookings/[id]/confirm/page.tsx` | |
-| [ ] `frontend/src/app/(main)/dashboard/studios/[id]/page.tsx` | Generate occurrences UI |
-| [ ] `frontend/src/app/(main)/dashboard/page.tsx` | If slot references exist |
-| [ ] `frontend/src/components/ui/Badge.tsx` | Only if slot-specific copy |
-
-### 5.4 Service type enum on frontend
-
-- [ ] Grep `single_class` → `single` across `frontend/src`
+- [x] No `single_class` in `frontend/src`
 
 ### 5.5 Phase 5 gate
 
-- [ ] `npm run build` (or `pnpm`) in `frontend/`
-- [ ] Manual smoke: studio public page → book → pay → my bookings
+- [x] `npm run build`
+- [ ] Manual smoke: studio public page → book → pay → my bookings (manual)
 
 ---
 
-## Phase 6 — Final verification
+## Phase 6 — Final verification ✅
 
-- [ ] Full backend: `uv run ruff check . && uv run pytest`
-- [ ] Grep zero hits (except ADR/history): `slot_id`, `SlotRepository`, `single_class`, `BookingClientBase`, `BookingListItem`, `PublicServiceOccurrence`, `/slots`
-- [ ] `.env.example` — no slot-specific vars expected; confirm unchanged
-- [ ] Commit message: `refactor(api): domain vocabulary Occurrence, ScheduleTemplate, schema split`
+- [x] `uv run pytest` — 141 passed
+- [x] Grep clean in `backend/app` and `frontend/src` (old symbols only in ADR, applied migrations 001–003, migration 005 downgrade)
+- [x] `.env.example` — no slot-specific vars; unchanged
+- [ ] `uv run ruff check .` — pre-existing import-order warnings in tests (unrelated to vocabulary)
+- [ ] Suggested commit: `refactor(api): domain vocabulary Occurrence, ScheduleTemplate, schema split`
 
 ---
 

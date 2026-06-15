@@ -86,7 +86,7 @@ async def _create_studio_and_slot(
         json={
             "start_time": start.isoformat(),
             "end_time": end.isoformat(),
-            "title": "Overbook Slot",
+            "title": "Overbook Occurrence",
             "description": "Single seat",
             "max_capacity": max_capacity,
             "price_cents": 2000,

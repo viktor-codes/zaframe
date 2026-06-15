@@ -9,7 +9,7 @@ class CheckoutSessionCreate(BaseModel):
     """
     Схема для создания Checkout Session для одиночного бронирования.
 
-    Используется для single-slot сценария (Booking).
+    Used for single-occurrence checkout (Booking).
     """
 
     booking_id: int = Field(..., description="ID бронирования для оплаты")

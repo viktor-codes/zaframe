@@ -147,7 +147,7 @@ async def occurrence_generator(
     Генератор occurrence'ов (Occurrence) для курса.
 
     Используется сценарием:
-    POST /studios/{id}/generate-schedule
+    POST /studios/{id}/generate-occurrences
     Payload: {service_id, days: [1,3], start_time, weeks_count}
     """
     if weeks_count <= 0:
@@ -230,19 +230,19 @@ class _CapacityStats:
         return self.confirmed_count + self.pending_count
 
 
-async def _get_course_slots_with_capacity(
+async def _get_course_occurrences_with_capacity(
     uow: UnitOfWork,
     *,
     service: Service,
     now: datetime | None = None,
 ) -> list[_CapacityStats]:
-    """Получить все слоты курса и их текущую заполненность."""
+    """Load active course occurrences and their fill levels."""
     now_utc = now or utc_now()
     occurrences = await uow.occurrences.list_by_service_active(service.id)
     return await _build_course_capacity_stats(uow, occurrences=occurrences, now=now_utc)
 
 
-async def _get_course_slots_with_capacity_for_update(
+async def _get_course_occurrences_with_capacity_for_update(
     uow: UnitOfWork,
     *,
     service: Service,
@@ -365,7 +365,7 @@ async def check_course_availability(
         raise ValidationError("Service is not a course")
 
     now_utc = now or utc_now()
-    stats = await _get_course_slots_with_capacity(
+    stats = await _get_course_occurrences_with_capacity(
         uow,
         service=service,
         now=now_utc,
@@ -391,7 +391,7 @@ async def check_course_availability_for_update(
         raise ValidationError("Service is not a course")
 
     now_utc = now or utc_now()
-    stats = await _get_course_slots_with_capacity_for_update(
+    stats = await _get_course_occurrences_with_capacity_for_update(
         uow,
         service=service,
         now=now_utc,
@@ -626,7 +626,7 @@ async def get_service_availability(
         now=now_utc,
     )
 
-    stats = await _get_course_slots_with_capacity(
+    stats = await _get_course_occurrences_with_capacity(
         uow,
         service=service,
         now=now_utc,

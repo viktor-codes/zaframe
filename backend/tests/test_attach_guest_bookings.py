@@ -40,7 +40,7 @@ async def test_otp_verify_attaches_guest_bookings_by_email(client: AsyncClient):
     r_occurrence = await client.post(
         "/api/v1/occurrences",
         json={
-            "title": "Attach Slot",
+            "title": "Attach Occurrence",
             "description": "Test",
             "start_time": start.isoformat(),
             "end_time": end.isoformat(),

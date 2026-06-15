@@ -94,7 +94,7 @@ async def _authenticate_and_create_booking(client: AsyncClient) -> int:
         json={
             "start_time": start.isoformat(),
             "end_time": end.isoformat(),
-            "title": "Webhook Slot",
+            "title": "Webhook Occurrence",
             "description": "Test",
             "max_capacity": 5,
             "price_cents": 1000,

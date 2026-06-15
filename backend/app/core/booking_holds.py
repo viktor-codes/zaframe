@@ -27,7 +27,7 @@ def is_active_pending_hold(
     now: datetime,
 ) -> bool:
     """
-    True when a pending booking still reserves slot capacity.
+    True when a pending booking still reserves occurrence capacity.
 
     Legacy rows with reserved_until=NULL are treated as expired holds.
     """

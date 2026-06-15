@@ -110,14 +110,14 @@ async def update_studio(
     """Обновить студию (partial update)."""
     update_data = schema.model_dump(exclude_unset=True)
     if "timezone" in update_data and update_data["timezone"] != studio.timezone:
-        slot_count = await uow.occurrences.count(studio_id=studio.id)
-        if slot_count > 0:
-            raise ValidationError("Cannot change timezone after slots have been created")
+        occurrence_count = await uow.occurrences.count(studio_id=studio.id)
+        if occurrence_count > 0:
+            raise ValidationError("Cannot change timezone after occurrences have been created")
     for field, value in update_data.items():
         setattr(studio, field, value)
     return await uow.studios.save(studio)
 
 
 async def delete_studio(uow: UnitOfWork, studio: Studio) -> None:
-    """Удалить студию. Cascade удалит связанные слоты."""
+    """Delete studio. Cascades to related occurrences."""
     await uow.studios.delete(studio)

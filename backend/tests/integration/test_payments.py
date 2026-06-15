@@ -60,7 +60,7 @@ async def _create_pending_booking(
         json={
             "start_time": start.isoformat(),
             "end_time": end.isoformat(),
-            "title": "Payments Slot",
+            "title": "Payments Occurrence",
             "description": "Test",
             "max_capacity": 5,
             "price_cents": 1000,

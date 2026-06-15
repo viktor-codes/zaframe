@@ -312,8 +312,8 @@ async def seed_100_studios(db: AsyncSession) -> None:
         if service_type != ServiceType.SINGLE:
             continue
         tz_name = studio_tz_map[int(studio_id)]
-        slots_count = random.randint(3, 6)
-        for _ in range(slots_count):
+        occurrences_count = random.randint(3, 6)
+        for _ in range(occurrences_count):
             d = studio_local_date_now(tz_name) + timedelta(days=random.randint(1, 21))
             hour = random.choice([7, 8, 9, 12, 17, 18, 19, 20])
             start_dt = studio_local_to_utc(d, time(hour, 0), tz_name)

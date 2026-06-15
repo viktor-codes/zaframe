@@ -83,7 +83,8 @@ Unique indexes on active bookings must be recreated with new column names (see m
 | `GET /api/v1/slots/{slot_id}/bookings` | `…/occurrences/{occurrence_id}/bookings` |
 | `GET /api/v1/studios/{id}/slots` | `GET /api/v1/studios/{id}/occurrences` |
 | `POST /api/v1/studios/{id}/generate-schedule` | `POST …/generate-occurrences` |
-| `/api/v1/services/*` | **unchanged** |
+| `GET/POST /api/v1/services/{id}/schedules` | `GET/POST …/services/{id}/schedule-templates` |
+| `DELETE /api/v1/services/schedules/{id}` | `DELETE …/services/schedule-templates/{id}` |
 
 Path parameters, request bodies, and response fields use `occurrence_id` instead of `slot_id`.
 
