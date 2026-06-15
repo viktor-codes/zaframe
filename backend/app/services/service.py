@@ -257,6 +257,7 @@ async def _get_course_occurrences_with_capacity_for_update(
         service.id,
         now=now_utc,
     )
+    occurrences = sorted(occurrences, key=lambda o: o.start_time)
     return await _build_course_capacity_stats(uow, occurrences=occurrences, now=now_utc)
 
 
@@ -468,6 +469,7 @@ async def create_course_booking(
         data.service_id,
         now=now_utc,
     )
+    occurrences = sorted(occurrences, key=lambda o: o.start_time)
     if not occurrences:
         raise ValidationError("Course has no upcoming sessions")
 

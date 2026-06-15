@@ -1,5 +1,8 @@
 """Repository for Occurrence entities."""
 
+# WHY: global lock order to prevent deadlocks — all FOR UPDATE on occurrences
+# must use ORDER BY occurrences.id ASC (see get_by_id_for_update, list_*_for_update).
+
 from datetime import datetime
 
 from sqlalchemy import func, select
@@ -105,6 +108,7 @@ class OccurrenceRepository(WriteRepositoryMixin):
         *,
         now: datetime,
     ) -> list[Occurrence]:
+        # WHY: global lock order to prevent deadlocks
         query = (
             select(Occurrence)
             .where(
@@ -119,6 +123,7 @@ class OccurrenceRepository(WriteRepositoryMixin):
         return list(result.scalars().all())
 
     async def list_by_service_active_for_update(self, service_id: int) -> list[Occurrence]:
+        # WHY: global lock order to prevent deadlocks
         query = (
             select(Occurrence)
             .where(
@@ -126,7 +131,7 @@ class OccurrenceRepository(WriteRepositoryMixin):
                 Occurrence.status == OccurrenceStatus.ACTIVE,
             )
             .with_for_update()
-            .order_by(Occurrence.start_time.asc())
+            .order_by(Occurrence.id.asc())
         )
         result = await self._session.execute(query)
         return list(result.scalars().all())
