@@ -1,7 +1,7 @@
 """Add processed_webhook_events for Stripe webhook idempotency.
 
 Revision ID: 004_processed_webhook_events
-Revises: 003_booking_expired_completed_indexes
+Revises: 003_booking_active_idx
 Create Date: 2026-06-15
 """
 
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "004_processed_webhook_events"
-down_revision: Union[str, Sequence[str], None] = "003_booking_expired_completed_indexes"
+down_revision: Union[str, Sequence[str], None] = "003_booking_active_idx"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -31,18 +31,21 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("event_id", name="uq_processed_webhook_events_event_id"),
+        if_not_exists=True,
     )
     op.create_index(
         op.f("ix_processed_webhook_events_event_id"),
         "processed_webhook_events",
         ["event_id"],
         unique=True,
+        if_not_exists=True,
     )
     op.create_index(
         op.f("ix_processed_webhook_events_id"),
         "processed_webhook_events",
         ["id"],
         unique=False,
+        if_not_exists=True,
     )
 
 

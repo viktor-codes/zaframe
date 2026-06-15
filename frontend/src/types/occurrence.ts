@@ -1,8 +1,8 @@
 /**
- * Типы слота (расписание) по backend schemas.
+ * Occurrence types aligned with backend schemas.
  */
 
-export interface SlotBase {
+export interface OccurrenceBase {
   start_time: string;
   end_time: string;
   title: string;
@@ -11,7 +11,7 @@ export interface SlotBase {
   price_cents: number;
 }
 
-export interface SlotResponse extends SlotBase {
+export interface OccurrenceResponse extends OccurrenceBase {
   id: number;
   studio_id: number;
   status: "active" | "cancelled";
@@ -19,16 +19,16 @@ export interface SlotResponse extends SlotBase {
   updated_at: string;
 }
 
-export interface SlotWithBookings extends SlotResponse {
+export interface OccurrenceWithBookings extends OccurrenceResponse {
   bookings_count: number;
   available_spots: number;
 }
 
-export interface SlotCreate extends SlotBase {
+export interface OccurrenceCreate extends OccurrenceBase {
   studio_id: number;
 }
 
-export interface SlotUpdate {
+export interface OccurrenceUpdate {
   start_time?: string;
   end_time?: string;
   title?: string;

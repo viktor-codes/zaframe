@@ -7,7 +7,7 @@ import { useParams } from "next/navigation";
 import { Card, Button, Skeleton } from "@/components/ui";
 import {
   fetchBooking,
-  fetchSlot,
+  fetchOccurrence,
   fetchStudio,
   createCheckoutSession,
   cancelBooking,
@@ -49,16 +49,16 @@ export default function BookingConfirmPage() {
     queryFn: () => fetchBooking(id),
   });
 
-  const { data: slot } = useQuery({
-    queryKey: ["slot", booking?.slot_id],
-    queryFn: () => fetchSlot(booking!.slot_id),
-    enabled: !!booking?.slot_id,
+  const { data: occurrence } = useQuery({
+    queryKey: ["occurrence", booking?.occurrence_id],
+    queryFn: () => fetchOccurrence(booking!.occurrence_id),
+    enabled: !!booking?.occurrence_id,
   });
 
   const { data: studio } = useQuery({
-    queryKey: ["studio", slot?.studio_id],
-    queryFn: () => fetchStudio(slot!.studio_id),
-    enabled: !!slot?.studio_id,
+    queryKey: ["studio", occurrence?.studio_id],
+    queryFn: () => fetchStudio(occurrence!.studio_id),
+    enabled: !!occurrence?.studio_id,
   });
 
   const checkoutMutation = useMutation({
@@ -167,7 +167,7 @@ export default function BookingConfirmPage() {
     );
   }
 
-  const isPast = slot ? new Date(slot.start_time) < new Date() : false;
+  const isPast = occurrence ? new Date(occurrence.start_time) < new Date() : false;
   const canCancel = !isPast && !isCancelled;
 
   return (
@@ -193,14 +193,14 @@ export default function BookingConfirmPage() {
               <p className="text-secondary font-semibold">{studio.name}</p>
             )}
           </div>
-          {slot && (
+          {occurrence && (
             <>
-              <p className="font-medium">{slot.title}</p>
+              <p className="font-medium">{occurrence.title}</p>
               <p className="text-sm text-neutral-600">
-                {formatDateTime(slot.start_time)}
+                {formatDateTime(occurrence.start_time)}
               </p>
               <p className="font-semibold text-primary">
-                {formatPrice(slot.price_cents)}
+                {formatPrice(occurrence.price_cents)}
               </p>
             </>
           )}
@@ -219,7 +219,7 @@ export default function BookingConfirmPage() {
         </div>
       )}
 
-      {!isPaid && slot && slot.price_cents > 0 && (
+      {!isPaid && occurrence && occurrence.price_cents > 0 && (
         <div className="mb-6 flex flex-col gap-4 sm:flex-row">
           <Button onClick={handlePay} isLoading={checkoutMutation.isPending}>
             Pay with card (Stripe)
@@ -273,7 +273,7 @@ export default function BookingConfirmPage() {
         </div>
       )}
 
-      {slot && slot.price_cents === 0 && !isPaid && (
+      {occurrence && occurrence.price_cents === 0 && !isPaid && (
         <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-green-800">
           <p className="font-semibold">Free session</p>
           <p className="mt-1 text-sm">

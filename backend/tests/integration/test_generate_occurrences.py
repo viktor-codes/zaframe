@@ -1,5 +1,5 @@
 """
-Integration tests for POST /studios/{id}/generate-schedule.
+Integration tests for POST /studios/{id}/generate-occurrences.
 
 Validates Pydantic boundary (422) and happy-path slot generation.
 """
@@ -27,7 +27,7 @@ async def _create_studio_and_course_service(
         "/api/v1/studios",
         json={
             "name": "ScheduleTemplate Studio",
-            "description": "For generate-schedule tests",
+            "description": "For generate-occurrences tests",
             "email": "schedule-studio@example.com",
             "address": "ScheduleTemplate street 1",
             "timezone": "Europe/Dublin",
@@ -62,7 +62,7 @@ async def test_generate_schedule_happy_path(client: AsyncClient):
 
     payload = {**VALID_PAYLOAD_BASE, "service_id": service_id}
     response = await client.post(
-        f"/api/v1/studios/{studio_id}/generate-schedule",
+        f"/api/v1/studios/{studio_id}/generate-occurrences",
         json=payload,
         headers=headers,
     )
@@ -101,7 +101,7 @@ async def test_generate_schedule_invalid_payload_returns_422(
 
     payload = {**VALID_PAYLOAD_BASE, "service_id": service_id, **payload_override}
     response = await client.post(
-        f"/api/v1/studios/{studio_id}/generate-schedule",
+        f"/api/v1/studios/{studio_id}/generate-occurrences",
         json=payload,
         headers=headers,
     )

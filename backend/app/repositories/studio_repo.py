@@ -21,7 +21,7 @@ class StudioRepository(WriteRepositoryMixin):
         result = await self._session.execute(select(Studio).where(Studio.id == studio_id))
         return result.scalar_one_or_none()
 
-    async def get_by_slug_with_services_slots(
+    async def get_by_slug_with_services_occurrences(
         self, slug: str, *, is_active: bool = True
     ) -> Studio | None:
         result = await self._session.execute(

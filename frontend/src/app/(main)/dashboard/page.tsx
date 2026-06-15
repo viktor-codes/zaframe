@@ -14,7 +14,7 @@ export default function DashboardPage() {
         Dashboard
       </h1>
       <p className="mb-8 text-neutral-600">
-        Manage your studios, slots, and bookings.
+        Manage your studios, sessions, and bookings.
       </p>
       <MyStudios />
     </div>

@@ -8,11 +8,11 @@ import { useAuth } from "@/lib/auth";
 import { Card, Button, Input, Textarea, Skeleton } from "@/components/ui";
 import {
   fetchStudio,
-  fetchStudioSlots,
+  fetchStudioOccurrences,
   updateStudio,
-  createSlot,
-  deleteSlot,
-  fetchSlotBookings,
+  createOccurrence,
+  deleteOccurrence,
+  fetchOccurrenceBookings,
 } from "@/lib/api";
 
 function formatPrice(cents: number): string {
@@ -40,7 +40,7 @@ export default function StudioManagePage() {
   const id = Number(params.id);
 
   const [editMode, setEditMode] = useState(false);
-  const [showAddSlot, setShowAddSlot] = useState(false);
+  const [showAddOccurrence, setShowAddOccurrence] = useState(false);
 
   const { data: studio, isLoading } = useQuery({
     queryKey: ["studio", id],
@@ -48,9 +48,9 @@ export default function StudioManagePage() {
     enabled: !Number.isNaN(id),
   });
 
-  const { data: slots } = useQuery({
-    queryKey: ["studio", id, "slots"],
-    queryFn: () => fetchStudioSlots(id, { limit: 100 }),
+  const { data: occurrences } = useQuery({
+    queryKey: ["studio", id, "occurrences"],
+    queryFn: () => fetchStudioOccurrences(id, { limit: 100 }),
     enabled: !!studio,
   });
 
@@ -113,39 +113,39 @@ export default function StudioManagePage() {
       <section className="mt-10">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-secondary font-display text-xl font-semibold">
-            Slots (schedule)
+            Sessions (schedule)
           </h2>
-          <Button onClick={() => setShowAddSlot((v) => !v)}>
-            {showAddSlot ? "Cancel" : "Add slot"}
+          <Button onClick={() => setShowAddOccurrence((v) => !v)}>
+            {showAddOccurrence ? "Cancel" : "Add session"}
           </Button>
         </div>
 
-        {showAddSlot && (
-          <SlotCreateForm
+        {showAddOccurrence && (
+          <OccurrenceCreateForm
             studioId={id}
             onSuccess={() => {
               queryClient.invalidateQueries({
-                queryKey: ["studio", id, "slots"],
+                queryKey: ["studio", id, "occurrences"],
               });
-              setShowAddSlot(false);
+              setShowAddOccurrence(false);
             }}
-            onCancel={() => setShowAddSlot(false)}
+            onCancel={() => setShowAddOccurrence(false)}
           />
         )}
 
         <div className="mt-4 space-y-4">
-          {slots?.length === 0 ? (
+          {occurrences?.length === 0 ? (
             <Card className="p-8 text-center text-neutral-600">
-              No slots yet. Add a slot to accept bookings.
+              No sessions yet. Add a session to accept bookings.
             </Card>
           ) : (
-            slots?.map((slot) => (
-              <SlotCard
-                key={slot.id}
-                slot={slot}
+            occurrences?.map((occurrence) => (
+              <OccurrenceCard
+                key={occurrence.id}
+                occurrence={occurrence}
                 onDeleted={() =>
                   queryClient.invalidateQueries({
-                    queryKey: ["studio", id, "slots"],
+                    queryKey: ["studio", id, "occurrences"],
                   })
                 }
               />
@@ -294,7 +294,7 @@ function StudioEditForm({
   );
 }
 
-function SlotCreateForm({
+function OccurrenceCreateForm({
   studioId,
   onSuccess,
   onCancel,
@@ -320,7 +320,7 @@ function SlotCreateForm({
 
   const { mutate, isPending } = useMutation({
     mutationFn: () =>
-      createSlot({
+      createOccurrence({
         studio_id: studioId,
         title: form.title,
         start_time: new Date(form.start_time).toISOString(),
@@ -402,7 +402,7 @@ function SlotCreateForm({
         </div>
         <div className="flex gap-2">
           <Button type="submit" isLoading={isPending}>
-            Add slot
+            Add session
           </Button>
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancel
@@ -413,11 +413,11 @@ function SlotCreateForm({
   );
 }
 
-function SlotCard({
-  slot,
+function OccurrenceCard({
+  occurrence,
   onDeleted,
 }: {
-  slot: {
+  occurrence: {
     id: number;
     title: string;
     start_time: string;
@@ -431,13 +431,13 @@ function SlotCard({
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const { data: bookings } = useQuery({
-    queryKey: ["slot", slot.id, "bookings"],
-    queryFn: () => fetchSlotBookings(slot.id),
+    queryKey: ["occurrence", occurrence.id, "bookings"],
+    queryFn: () => fetchOccurrenceBookings(occurrence.id),
     enabled: showBookings,
   });
 
   const deleteMutation = useMutation({
-    mutationFn: () => deleteSlot(slot.id),
+    mutationFn: () => deleteOccurrence(occurrence.id),
     onSuccess: onDeleted,
   });
 
@@ -445,12 +445,12 @@ function SlotCard({
     <Card>
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="text-secondary font-semibold">{slot.title}</h3>
+          <h3 className="text-secondary font-semibold">{occurrence.title}</h3>
           <p className="text-sm text-neutral-600">
-            {formatDateTime(slot.start_time)} · {formatPrice(slot.price_cents)}
+            {formatDateTime(occurrence.start_time)} · {formatPrice(occurrence.price_cents)}
           </p>
           <p className="text-xs text-neutral-500">
-            {slot.status === "active" ? "Active" : "Cancelled"}
+            {occurrence.status === "active" ? "Active" : "Cancelled"}
           </p>
         </div>
         <div className="flex gap-2">

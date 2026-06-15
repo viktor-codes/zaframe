@@ -44,7 +44,7 @@ async def _create_studio_slot_and_booking(
     start = datetime.now(UTC) + timedelta(hours=3)
     end = start + timedelta(hours=1)
     r_occurrence = await client.post(
-        "/api/v1/slots",
+        "/api/v1/occurrences",
         json={
             "start_time": start.isoformat(),
             "end_time": end.isoformat(),
@@ -57,8 +57,8 @@ async def _create_studio_slot_and_booking(
         },
         headers=owner_headers,
     )
-    assert r_slot.status_code == 201
-    occurrence_id = r_slot.json()["id"]
+    assert r_occurrence.status_code == 201
+    occurrence_id = r_occurrence.json()["id"]
 
     r_booking = await client.post(
         "/api/v1/bookings",
@@ -85,7 +85,7 @@ async def test_anonymous_booking_endpoints_return_401(client: AsyncClient):
     assert (await client.get(f"/api/v1/bookings/{booking_id}")).status_code == 401
     assert (await client.get("/api/v1/bookings/count")).status_code == 401
     assert (await client.patch(f"/api/v1/bookings/{booking_id}/cancel")).status_code == 401
-    assert (await client.get(f"/api/v1/slots/{occurrence_id}/bookings")).status_code == 401
+    assert (await client.get(f"/api/v1/occurrences/{occurrence_id}/bookings")).status_code == 401
 
 
 @pytest.mark.integration
@@ -119,7 +119,7 @@ async def test_foreign_user_gets_403_on_foreign_slot_bookings(client: AsyncClien
     stranger_headers = {"Authorization": f"Bearer {stranger_access}"}
 
     assert (
-        await client.get(f"/api/v1/slots/{occurrence_id}/bookings", headers=stranger_headers)
+        await client.get(f"/api/v1/occurrences/{occurrence_id}/bookings", headers=stranger_headers)
     ).status_code == 403
 
 
@@ -160,7 +160,7 @@ async def test_studio_owner_sees_slot_bookings_and_single_booking(client: AsyncC
         client, owner_headers, guest_email="participant-authz@example.com"
     )
 
-    r_list = await client.get(f"/api/v1/slots/{occurrence_id}/bookings", headers=owner_headers)
+    r_list = await client.get(f"/api/v1/occurrences/{occurrence_id}/bookings", headers=owner_headers)
     assert r_list.status_code == 200
     bookings = r_list.json()
     assert len(bookings) == 1

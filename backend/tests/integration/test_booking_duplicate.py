@@ -54,7 +54,7 @@ async def _create_bookable_slot(
     start = datetime.now(UTC) + timedelta(hours=4)
     end = start + timedelta(hours=1)
     r_occurrence = await client.post(
-        "/api/v1/slots",
+        "/api/v1/occurrences",
         json={
             "start_time": start.isoformat(),
             "end_time": end.isoformat(),
@@ -67,8 +67,8 @@ async def _create_bookable_slot(
         },
         headers=headers,
     )
-    assert r_slot.status_code == 201
-    return r_slot.json()["id"]
+    assert r_occurrence.status_code == 201
+    return r_occurrence.json()["id"]
 
 
 def _booking_payload(occurrence_id: int, *, guest_email: str = "dup-guest@example.com") -> dict:

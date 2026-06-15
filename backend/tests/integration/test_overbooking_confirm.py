@@ -82,7 +82,7 @@ async def _create_studio_and_slot(
     start = datetime.now(UTC) + timedelta(hours=3)
     end = start + timedelta(hours=1)
     r_occurrence = await client.post(
-        "/api/v1/slots",
+        "/api/v1/occurrences",
         json={
             "start_time": start.isoformat(),
             "end_time": end.isoformat(),
@@ -95,8 +95,8 @@ async def _create_studio_and_slot(
         },
         headers=headers,
     )
-    assert r_slot.status_code == 201
-    return r_slot.json()["id"], studio_id
+    assert r_occurrence.status_code == 201
+    return r_occurrence.json()["id"], studio_id
 
 
 async def _create_guest_booking(client: AsyncClient, occurrence_id: int, *, email: str) -> int:

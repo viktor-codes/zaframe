@@ -56,7 +56,7 @@ async def _create_pending_booking(
     start = datetime.now(UTC) + timedelta(hours=2)
     end = start + timedelta(hours=1)
     r_occurrence = await client.post(
-        "/api/v1/slots",
+        "/api/v1/occurrences",
         json={
             "start_time": start.isoformat(),
             "end_time": end.isoformat(),
@@ -69,8 +69,8 @@ async def _create_pending_booking(
         },
         headers=headers,
     )
-    assert r_slot.status_code == 201
-    occurrence_id = r_slot.json()["id"]
+    assert r_occurrence.status_code == 201
+    occurrence_id = r_occurrence.json()["id"]
 
     r_booking = await client.post(
         "/api/v1/bookings",

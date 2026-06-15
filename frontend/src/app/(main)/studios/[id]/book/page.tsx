@@ -5,7 +5,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { Card, Button, Input, Skeleton } from "@/components/ui";
-import { fetchStudio, fetchStudioSlots, createBooking } from "@/lib/api";
+import { fetchStudio, fetchStudioOccurrences, createBooking } from "@/lib/api";
 
 function formatPrice(cents: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -29,8 +29,8 @@ function BookPageContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const studioId = Number(params.id);
-  const slotIdParam = searchParams.get("slot");
-  const slotId = slotIdParam ? Number(slotIdParam) : null;
+  const occurrenceIdParam = searchParams.get("occurrence");
+  const occurrenceId = occurrenceIdParam ? Number(occurrenceIdParam) : null;
 
   const [form, setForm] = useState({
     guest_name: "",
@@ -44,13 +44,13 @@ function BookPageContent() {
     enabled: !!studioId && !Number.isNaN(studioId),
   });
 
-  const { data: slots } = useQuery({
-    queryKey: ["studio", studioId, "slots"],
-    queryFn: () => fetchStudioSlots(studioId, { status: "active" }),
+  const { data: occurrences } = useQuery({
+    queryKey: ["studio", studioId, "occurrences"],
+    queryFn: () => fetchStudioOccurrences(studioId, { status: "active" }),
     enabled: !!studio,
   });
 
-  const slot = slots?.find((s) => s.id === slotId);
+  const occurrence = occurrences?.find((o) => o.id === occurrenceId);
 
   const createMutation = useMutation({
     mutationFn: createBooking,
@@ -61,9 +61,9 @@ function BookPageContent() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!slotId || !slot) return;
+    if (!occurrenceId || !occurrence) return;
     createMutation.mutate({
-      slot_id: slotId,
+      occurrence_id: occurrenceId,
       guest_name: form.guest_name.trim(),
       guest_email: form.guest_email.trim(),
       guest_phone: form.guest_phone.trim() || undefined,
@@ -86,13 +86,13 @@ function BookPageContent() {
     );
   }
 
-  if (!slotId) {
+  if (!occurrenceId) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-12">
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-800">
-          <p className="font-semibold">Select a slot</p>
+          <p className="font-semibold">Select a session</p>
           <p className="mt-1 text-sm">
-            Choose a time slot from the studio page to book.
+            Choose a time from the studio page to book.
           </p>
           <Link
             href={`/studios/${studioId}`}
@@ -105,7 +105,7 @@ function BookPageContent() {
     );
   }
 
-  if (!studio || !slot) {
+  if (!studio || !occurrence) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-12">
         <div className="animate-pulse space-y-4">
@@ -117,13 +117,13 @@ function BookPageContent() {
   }
 
   const now = new Date();
-  if (new Date(slot.start_time) < now) {
+  if (new Date(occurrence.start_time) < now) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-12">
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-800">
-          <p className="font-semibold">Slot has passed</p>
+          <p className="font-semibold">Session has passed</p>
           <p className="mt-1 text-sm">
-            This slot is no longer available. Please choose another.
+            This session is no longer available. Please choose another.
           </p>
           <Link
             href={`/studios/${studioId}`}
@@ -153,12 +153,12 @@ function BookPageContent() {
         <Card>
           <h2 className="text-secondary mb-2 font-semibold">Booking details</h2>
           <p className="mb-1 text-sm text-neutral-600">{studio.name}</p>
-          <p className="text-secondary font-medium">{slot.title}</p>
+          <p className="text-secondary font-medium">{occurrence.title}</p>
           <p className="mt-1 text-sm text-neutral-500">
-            {formatDateTime(slot.start_time)}
+            {formatDateTime(occurrence.start_time)}
           </p>
           <p className="mt-2 font-semibold text-primary">
-            {formatPrice(slot.price_cents)}
+            {formatPrice(occurrence.price_cents)}
           </p>
         </Card>
 

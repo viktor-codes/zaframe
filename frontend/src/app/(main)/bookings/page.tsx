@@ -6,7 +6,7 @@ import Link from "next/link";
 import { RequireAuth } from "@/features/auth/components";
 import { Card, Button, Skeleton } from "@/components/ui";
 import { fetchMyBookings } from "@/lib/api";
-import type { BookingListItem } from "@/types/booking";
+import type { BookingSelfListItem } from "@/types/booking";
 
 function formatPrice(cents: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -81,9 +81,9 @@ function BookingsList() {
   );
 }
 
-function BookingCard({ booking }: { booking: BookingListItem }) {
-  const { slot, studio } = booking;
-  const isPast = new Date(slot.start_time) < new Date();
+function BookingCard({ booking }: { booking: BookingSelfListItem }) {
+  const { occurrence, studio } = booking;
+  const isPast = new Date(occurrence.start_time) < new Date();
   const isCancelled = booking.status === "cancelled";
 
   return (
@@ -98,10 +98,10 @@ function BookingCard({ booking }: { booking: BookingListItem }) {
               {getStatusBadge(booking.status, booking.payment_status)}
             </div>
             <p className="text-sm text-neutral-600">
-              {slot.title} · {formatDateTime(slot.start_time)}
+              {occurrence.title} · {formatDateTime(occurrence.start_time)}
             </p>
             <p className="mt-1 font-medium text-primary">
-              {formatPrice(slot.price_cents)}
+              {formatPrice(occurrence.price_cents)}
             </p>
           </div>
           <div className="flex items-center gap-2">

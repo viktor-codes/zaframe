@@ -38,7 +38,7 @@ async def test_otp_verify_attaches_guest_bookings_by_email(client: AsyncClient):
     start = datetime.now(UTC) + timedelta(hours=3)
     end = start + timedelta(hours=1)
     r_occurrence = await client.post(
-        "/api/v1/slots",
+        "/api/v1/occurrences",
         json={
             "title": "Attach Slot",
             "description": "Test",
@@ -51,8 +51,8 @@ async def test_otp_verify_attaches_guest_bookings_by_email(client: AsyncClient):
         },
         headers=owner_headers,
     )
-    assert r_slot.status_code == 201
-    occurrence_id = r_slot.json()["id"]
+    assert r_occurrence.status_code == 201
+    occurrence_id = r_occurrence.json()["id"]
 
     r_booking = await client.post(
         "/api/v1/bookings",
@@ -108,7 +108,7 @@ async def test_otp_verify_attaches_only_specified_booking(client: AsyncClient):
 
     async def create_occurrence(title: str) -> int:
         r_occurrence = await client.post(
-            "/api/v1/slots",
+            "/api/v1/occurrences",
             json={
                 "title": title,
                 "start_time": start.isoformat(),
@@ -119,8 +119,8 @@ async def test_otp_verify_attaches_only_specified_booking(client: AsyncClient):
             },
             headers=owner_headers,
         )
-        assert r_slot.status_code == 201
-        return r_slot.json()["id"]
+        assert r_occurrence.status_code == 201
+        return r_occurrence.json()["id"]
 
     slot_a = await create_occurrence("Occurrence A")
     slot_b = await create_occurrence("Occurrence B")

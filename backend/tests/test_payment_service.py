@@ -36,12 +36,12 @@ def _active_hold_until() -> datetime:
     return datetime.now(UTC) + timedelta(minutes=15)
 
 
-def _mock_slot_capacity_ok(mock_uow, *, max_capacity: int = 10) -> MagicMock:
+def _mock_occurrence_capacity_ok(mock_uow, *, max_capacity: int = 10) -> MagicMock:
     mock_occurrence = MagicMock(spec=Occurrence)
-    mock_slot.id = 1
-    mock_slot.max_capacity = max_capacity
-    mock_uow.occurrences.get_by_id_for_update = AsyncMock(return_value=mock_slot)
-    mock_uow.occurrences.get_by_id = AsyncMock(return_value=mock_slot)
+    mock_occurrence.id = 1
+    mock_occurrence.max_capacity = max_capacity
+    mock_uow.occurrences.get_by_id_for_update = AsyncMock(return_value=mock_occurrence)
+    mock_uow.occurrences.get_by_id = AsyncMock(return_value=mock_occurrence)
     mock_uow.bookings.count_confirmed_by_occurrence = AsyncMock(return_value=0)
     mock_uow.bookings.count_pending_by_occurrence = AsyncMock(return_value=0)
     return mock_occurrence
@@ -81,10 +81,10 @@ async def test_create_checkout_session_foreign_user_gets_not_found(mock_uow):
 @pytest.mark.asyncio
 async def test_create_checkout_session_guest_email_owner_allowed(mock_uow):
     occurrence = MagicMock(spec=Occurrence)
-    slot.price_cents = 1000
-    slot.title = "Paid"
-    slot.description = "Desc"
-    slot.id = 1
+    occurrence.price_cents = 1000
+    occurrence.title = "Paid"
+    occurrence.description = "Desc"
+    occurrence.id = 1
     booking = MagicMock(spec=Booking)
     booking.status = BookingStatus.PENDING
     booking.reserved_until = _active_hold_until()
@@ -165,10 +165,10 @@ async def test_create_checkout_session_already_has_session_id(mock_uow):
 @pytest.mark.asyncio
 async def test_create_checkout_session_slot_price_zero(mock_uow):
     occurrence = MagicMock(spec=Occurrence)
-    slot.price_cents = 0
-    slot.title = "Free"
-    slot.description = None
-    slot.id = 1
+    occurrence.price_cents = 0
+    occurrence.title = "Free"
+    occurrence.description = None
+    occurrence.id = 1
     booking = MagicMock(spec=Booking)
     booking.status = BookingStatus.PENDING
     booking.reserved_until = _active_hold_until()
@@ -185,10 +185,10 @@ async def test_create_checkout_session_slot_price_zero(mock_uow):
 @pytest.mark.asyncio
 async def test_create_checkout_session_no_stripe_key(mock_uow):
     occurrence = MagicMock(spec=Occurrence)
-    slot.price_cents = 1000
-    slot.title = "Paid"
-    slot.description = None
-    slot.id = 1
+    occurrence.price_cents = 1000
+    occurrence.title = "Paid"
+    occurrence.description = None
+    occurrence.id = 1
     booking = MagicMock(spec=Booking)
     booking.status = BookingStatus.PENDING
     booking.reserved_until = _active_hold_until()
@@ -209,10 +209,10 @@ async def test_create_checkout_session_no_stripe_key(mock_uow):
 @pytest.mark.asyncio
 async def test_create_checkout_session_success(mock_uow):
     occurrence = MagicMock(spec=Occurrence)
-    slot.price_cents = 1000
-    slot.title = "Paid"
-    slot.description = "Desc"
-    slot.id = 1
+    occurrence.price_cents = 1000
+    occurrence.title = "Paid"
+    occurrence.description = "Desc"
+    occurrence.id = 1
     booking = MagicMock(spec=Booking)
     booking.status = BookingStatus.PENDING
     booking.reserved_until = _active_hold_until()
@@ -386,7 +386,7 @@ async def test_confirm_booking_after_payment_success(mock_uow):
     booking.occurrence_id = 1
     booking.status = BookingStatus.PENDING
     mock_uow.bookings.get_by_id = AsyncMock(return_value=booking)
-    _mock_slot_capacity_ok(mock_uow)
+    _mock_occurrence_capacity_ok(mock_uow)
     ok = await confirm_booking_after_payment(mock_uow, 1, payment_intent_id="pi_123")
     assert ok is True
     assert booking.status == BookingStatus.CONFIRMED
@@ -402,7 +402,7 @@ async def test_confirm_booking_after_payment_overbooked_manual_review(mock_uow):
     booking.occurrence_id = 1
     booking.status = BookingStatus.PENDING
     mock_uow.bookings.get_by_id = AsyncMock(return_value=booking)
-    _mock_slot_capacity_ok(mock_uow, max_capacity=1)
+    _mock_occurrence_capacity_ok(mock_uow, max_capacity=1)
     mock_uow.bookings.count_confirmed_by_occurrence = AsyncMock(return_value=1)
     ok = await confirm_booking_after_payment(mock_uow, 1, payment_intent_id="pi_late")
     assert ok is True
@@ -421,7 +421,7 @@ async def test_confirm_booking_after_payment_success_no_payment_intent(mock_uow)
     booking.status = BookingStatus.PENDING
     booking.payment_intent_id = None
     mock_uow.bookings.get_by_id = AsyncMock(return_value=booking)
-    _mock_slot_capacity_ok(mock_uow)
+    _mock_occurrence_capacity_ok(mock_uow)
     ok = await confirm_booking_after_payment(mock_uow, 1)
     assert ok is True
     assert booking.status == BookingStatus.CONFIRMED
@@ -465,7 +465,7 @@ async def test_confirm_order_after_payment_success_confirms_bookings(mock_uow):
     b2.occurrence_id = 1
     b2.status = BookingStatus.CONFIRMED
     mock_uow.bookings.list_ = AsyncMock(return_value=[b1, b2])
-    _mock_slot_capacity_ok(mock_uow)
+    _mock_occurrence_capacity_ok(mock_uow)
     ok = await confirm_order_after_payment(mock_uow, 10, payment_intent_id="pi_ord")
     assert ok is True
     assert order.status == OrderStatus.PAID

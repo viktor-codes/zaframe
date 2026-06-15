@@ -1,5 +1,5 @@
 /**
- * Реэкспорт API клиента и модулей.
+ * API client and module re-exports.
  */
 export {
   api,
@@ -15,15 +15,15 @@ export {
   createStudio,
   updateStudio,
   deleteStudio,
-  fetchStudioSlots,
+  fetchStudioOccurrences,
 } from "./studios";
 export {
-  fetchSlot,
-  createSlot,
-  updateSlot,
-  deleteSlot,
-  fetchSlotBookings,
-} from "./slots";
+  fetchOccurrence,
+  createOccurrence,
+  updateOccurrence,
+  deleteOccurrence,
+  fetchOccurrenceBookings,
+} from "./occurrences";
 export {
   fetchBookings,
   fetchMyBookings,

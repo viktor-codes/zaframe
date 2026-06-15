@@ -90,7 +90,7 @@ async def _authenticate_and_create_booking(client: AsyncClient) -> int:
     start = datetime.now(UTC) + timedelta(hours=2)
     end = start + timedelta(hours=1)
     r_occurrence = await client.post(
-        "/api/v1/slots",
+        "/api/v1/occurrences",
         json={
             "start_time": start.isoformat(),
             "end_time": end.isoformat(),
@@ -103,8 +103,8 @@ async def _authenticate_and_create_booking(client: AsyncClient) -> int:
         },
         headers=headers,
     )
-    assert r_slot.status_code == 201
-    occurrence_id = r_slot.json()["id"]
+    assert r_occurrence.status_code == 201
+    occurrence_id = r_occurrence.json()["id"]
 
     r_booking = await client.post(
         "/api/v1/bookings",
@@ -508,9 +508,9 @@ async def test_webhook_order_integration(rollback_client, app_with_rollback_uow)
     result = await integration_session.execute(select(Booking).where(Booking.id == booking_id))
     booking = result.scalar_one()
     occurrence = await integration_session.get(Occurrence, booking.occurrence_id)
-    assert slot is not None
+    assert occurrence is not None
     order = Order(
-        studio_id=slot.studio_id,
+        studio_id=occurrence.studio_id,
         service_id=None,
         user_id=booking.user_id,
         total_amount_cents=1000,

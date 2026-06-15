@@ -1,8 +1,8 @@
 /**
- * Типы бронирования по backend schemas.
+ * Booking types aligned with backend schemas.
  */
 
-import type { SlotResponse } from "./slot";
+import type { OccurrenceResponse } from "./occurrence";
 import type { StudioResponse } from "./studio";
 import type { UserPublic } from "./user";
 
@@ -16,7 +16,7 @@ export type BookingStatusType =
   (typeof BookingStatus)[keyof typeof BookingStatus];
 
 export interface BookingBase {
-  slot_id: number;
+  occurrence_id: number;
 }
 
 export interface BookingCreate extends BookingBase {
@@ -28,28 +28,31 @@ export interface BookingCreate extends BookingBase {
 export interface BookingResponse extends BookingBase {
   id: number;
   user_id: number | null;
-  guest_session_id: string | null;
   guest_name: string | null;
   guest_email: string | null;
   guest_phone: string | null;
   status: string;
-  checkout_session_id: string | null;
-  payment_intent_id: string | null;
   payment_status: string | null;
+  reserved_until: string | null;
   created_at: string;
   updated_at: string;
   cancelled_at: string | null;
+  is_guest_booking?: boolean;
 }
 
-export interface BookingWithSlot extends BookingResponse {
-  slot: SlotResponse;
+export interface BookingWithOccurrence extends BookingResponse {
+  occurrence: OccurrenceResponse;
 }
 
 export interface BookingWithUser extends BookingResponse {
   user: UserPublic | null;
 }
 
-export interface BookingListItem extends BookingResponse {
-  slot: SlotResponse;
+/** Self perspective list item from GET /bookings/my */
+export interface BookingSelfListItem extends BookingResponse {
+  occurrence: OccurrenceResponse;
   studio: StudioResponse;
 }
+
+/** @deprecated Use BookingSelfListItem */
+export type BookingListItem = BookingSelfListItem;

@@ -1,21 +1,25 @@
 /**
- * API для бронирований.
+ * Bookings API.
  */
 
 import { api } from "./client";
-import type { BookingCreate, BookingListItem, BookingResponse } from "@/types/booking";
+import type {
+  BookingCreate,
+  BookingResponse,
+  BookingSelfListItem,
+} from "@/types/booking";
 
 export interface BookingsListParams {
   skip?: number;
   limit?: number;
-  slot_id?: number;
+  occurrence_id?: number;
   user_id?: number;
   guest_email?: string;
   status?: string;
 }
 
 export interface BookingsCountParams {
-  slot_id?: number;
+  occurrence_id?: number;
   user_id?: number;
   guest_email?: string;
   status?: string;
@@ -27,7 +31,7 @@ export async function fetchBookings(
   const {
     skip = 0,
     limit = 20,
-    slot_id,
+    occurrence_id,
     user_id,
     guest_email,
     status,
@@ -36,7 +40,7 @@ export async function fetchBookings(
     skip,
     limit,
   };
-  if (slot_id !== undefined) searchParams.slot_id = slot_id;
+  if (occurrence_id !== undefined) searchParams.occurrence_id = occurrence_id;
   if (user_id !== undefined) searchParams.user_id = user_id;
   if (guest_email) searchParams.guest_email = guest_email;
   if (status) searchParams.status = status;
@@ -50,14 +54,14 @@ export async function fetchMyBookings(params?: {
   skip?: number;
   limit?: number;
   include_guest_email?: boolean;
-}): Promise<BookingListItem[]> {
+}): Promise<BookingSelfListItem[]> {
   const searchParams: Record<string, string | number | boolean | undefined> = {};
   if (params?.skip !== undefined) searchParams.skip = params.skip;
   if (params?.limit !== undefined) searchParams.limit = params.limit;
   if (params?.include_guest_email !== undefined)
     searchParams.include_guest_email = params.include_guest_email;
 
-  return api.get<BookingListItem[]>("api/v1/bookings/my", {
+  return api.get<BookingSelfListItem[]>("api/v1/bookings/my", {
     params: searchParams,
   });
 }
@@ -65,9 +69,9 @@ export async function fetchMyBookings(params?: {
 export async function fetchBookingsCount(
   params: BookingsCountParams = {},
 ): Promise<{ count: number }> {
-  const { slot_id, user_id, guest_email, status } = params;
+  const { occurrence_id, user_id, guest_email, status } = params;
   const searchParams: Record<string, string | number | undefined> = {};
-  if (slot_id !== undefined) searchParams.slot_id = slot_id;
+  if (occurrence_id !== undefined) searchParams.occurrence_id = occurrence_id;
   if (user_id !== undefined) searchParams.user_id = user_id;
   if (guest_email) searchParams.guest_email = guest_email;
   if (status) searchParams.status = status;

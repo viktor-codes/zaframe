@@ -496,7 +496,7 @@ async def get_studio_public(
     - основную информацию о студии
     - список услуг с ближайшими occurrence'ами.
     """
-    studio = await uow.studios.get_by_slug_with_services_slots(slug)
+    studio = await uow.studios.get_by_slug_with_services_occurrences(slug)
     if studio is None:
         raise NotFoundError("Studio not found")
 

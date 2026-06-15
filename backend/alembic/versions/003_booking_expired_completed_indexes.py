@@ -1,6 +1,6 @@
 """Tighten active-booking partial indexes for expired/completed statuses.
 
-Revision ID: 003_booking_expired_completed_indexes
+Revision ID: 003_booking_active_idx
 Revises: 002_booking_active_uniqueness
 Create Date: 2026-06-15
 
@@ -12,7 +12,7 @@ from typing import Sequence, Union
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "003_booking_expired_completed_indexes"
+revision: str = "003_booking_active_idx"
 down_revision: Union[str, Sequence[str], None] = "002_booking_active_uniqueness"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

@@ -1,10 +1,10 @@
 /**
- * API для студий.
+ * Studio API.
  */
 
 import { api } from "./client";
 import type { StudioCreate, StudioResponse } from "@/types/studio";
-import type { SlotResponse } from "@/types/slot";
+import type { OccurrenceResponse } from "@/types/occurrence";
 import type { SearchResult } from "@/types/search";
 
 export interface StudiosListParams {
@@ -12,15 +12,10 @@ export interface StudiosListParams {
   limit?: number;
   owner_id?: number;
   is_active?: boolean;
-  /** Explore: город */
   city?: string;
-  /** Explore: категория услуги */
   category?: string;
-  /** Explore: поиск по названию студии/услуги */
   query?: string;
-  /** Explore: удобства (все должны быть у студии) */
   amenities?: string[];
-  /** Вернуть студии с услугами (для карточек: цена, категория) */
   include_services?: boolean;
 }
 
@@ -33,7 +28,7 @@ export interface StudiosCountParams {
   amenities?: string[];
 }
 
-export interface StudioSlotsParams {
+export interface StudioOccurrencesParams {
   skip?: number;
   limit?: number;
   start_from?: string;
@@ -129,10 +124,10 @@ export async function fetchStudio(id: number): Promise<StudioResponse> {
   });
 }
 
-export async function fetchStudioSlots(
+export async function fetchStudioOccurrences(
   studioId: number,
-  params: StudioSlotsParams = {},
-): Promise<SlotResponse[]> {
+  params: StudioOccurrencesParams = {},
+): Promise<OccurrenceResponse[]> {
   const { skip = 0, limit = 50, start_from, start_to, status } = params;
   const searchParams: Record<string, string | number | boolean | undefined> = {
     skip,
@@ -142,8 +137,11 @@ export async function fetchStudioSlots(
   if (start_to) searchParams.start_to = start_to;
   if (status !== undefined) searchParams.status = status;
 
-  return api.get<SlotResponse[]>(`api/v1/studios/${studioId}/slots`, {
-    params: searchParams,
-    skipAuth: true,
-  });
+  return api.get<OccurrenceResponse[]>(
+    `api/v1/studios/${studioId}/occurrences`,
+    {
+      params: searchParams,
+      skipAuth: true,
+    },
+  );
 }

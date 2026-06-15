@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Card, Button, Skeleton, Input } from "@/components/ui";
-import { fetchStudio, fetchStudioSlots, getUserFacingApiMessage } from "@/lib/api";
+import { fetchStudio, fetchStudioOccurrences, getUserFacingApiMessage } from "@/lib/api";
 
 function toISOStartOfDay(d: Date): string {
   const c = new Date(d);
@@ -74,19 +74,19 @@ export default function StudioDetailPage() {
   });
 
   const {
-    data: slots,
-    isLoading: loadingSlots,
-    isError: errorSlots,
+    data: occurrences,
+    isLoading: loadingOccurrences,
+    isError: errorOccurrences,
   } = useQuery({
     queryKey: [
       "studio",
       id,
-      "slots",
+      "occurrences",
       dateRange?.start_from,
       dateRange?.start_to,
     ],
     queryFn: () =>
-      fetchStudioSlots(id, {
+      fetchStudioOccurrences(id, {
         status: "active",
         ...(dateRange ?? {}),
       }),
@@ -137,8 +137,8 @@ export default function StudioDetailPage() {
   }
 
   const now = new Date();
-  const upcomingSlots =
-    slots?.filter((s) => new Date(s.start_time) >= now) ?? [];
+  const upcomingOccurrences =
+    occurrences?.filter((o) => new Date(o.start_time) >= now) ?? [];
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-12">
@@ -174,7 +174,7 @@ export default function StudioDetailPage() {
       <section>
         <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-secondary font-display text-xl font-semibold">
-            Available slots
+            Available sessions
           </h2>
           <label className="flex items-center gap-2 text-sm text-neutral-600">
             <span>Date:</span>
@@ -188,47 +188,47 @@ export default function StudioDetailPage() {
           </label>
         </div>
 
-        {errorSlots ? (
+        {errorOccurrences ? (
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800">
             <p className="text-sm">Could not load schedule. Try again later.</p>
           </div>
-        ) : loadingSlots ? (
-          <SlotsSkeleton />
-        ) : upcomingSlots.length === 0 ? (
+        ) : loadingOccurrences ? (
+          <OccurrencesSkeleton />
+        ) : upcomingOccurrences.length === 0 ? (
           <div className="rounded-lg border border-neutral-200 bg-neutral-100 p-8 text-center text-neutral-600">
-            <p className="font-medium">No available slots</p>
+            <p className="font-medium">No available sessions</p>
             <p className="mt-1 text-sm">
               There are no upcoming sessions. Check back later.
             </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {upcomingSlots.map((slot) => {
-              const { date, time } = formatDateTime(slot.start_time);
-              const endTime = new Date(slot.end_time).toLocaleTimeString(
+            {upcomingOccurrences.map((occurrence) => {
+              const { date, time } = formatDateTime(occurrence.start_time);
+              const endTime = new Date(occurrence.end_time).toLocaleTimeString(
                 "en-US",
                 { hour: "2-digit", minute: "2-digit" },
               );
               return (
-                <Card key={slot.id} variant="interactive">
+                <Card key={occurrence.id} variant="interactive">
                   <div className="space-y-2">
                     <h3 className="text-secondary font-semibold">
-                      {slot.title}
+                      {occurrence.title}
                     </h3>
-                    {slot.description && (
+                    {occurrence.description && (
                       <p className="line-clamp-2 text-sm text-neutral-600">
-                        {slot.description}
+                        {occurrence.description}
                       </p>
                     )}
                     <p className="text-sm text-neutral-500">
                       {date} · {time} – {endTime}
                     </p>
                     <p className="font-semibold text-primary">
-                      {formatPrice(slot.price_cents)}
+                      {formatPrice(occurrence.price_cents)}
                     </p>
                     <Button asChild className="mt-2 px-4 py-2 text-sm">
-                      <Link href={`/studios/${id}/book?slot=${slot.id}`}>
-                        Book this slot
+                      <Link href={`/studios/${id}/book?occurrence=${occurrence.id}`}>
+                        Book this session
                       </Link>
                     </Button>
                   </div>
@@ -267,7 +267,7 @@ function StudioDetailSkeleton() {
   );
 }
 
-function SlotsSkeleton() {
+function OccurrencesSkeleton() {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
       {Array.from({ length: 6 }).map((_, i) => (
