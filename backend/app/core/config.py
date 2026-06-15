@@ -118,6 +118,15 @@ class Settings(BaseSettings):
         description="WHY: pending bookings should expire to avoid locking capacity indefinitely",
     )
 
+    # === Redis (rate limiting across instances) ===
+    REDIS_URL: str | None = Field(
+        default=None,
+        description=(
+            "Redis connection URL for distributed rate limiting (e.g. redis://localhost:6379/0). "
+            "When unset, slowapi uses in-memory storage (single-instance dev only)."
+        ),
+    )
+
     # === Pydantic Settings конфигурация ===
     model_config = SettingsConfigDict(
         env_file=".env",  # Load from .env file

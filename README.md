@@ -87,6 +87,26 @@ The web app is organised by **feature modules** (navigation, home, studios, book
 
 ---
 
+## Environment variables (backend)
+
+Copy `backend/.env.example` to `backend/.env` and fill in required values (`DATABASE_URL`, `SECRET_KEY`).
+
+| Variable | Required | Description |
+| -------- | -------- | ----------- |
+| `REDIS_URL` | No | Redis URL for **distributed rate limiting** when running multiple API instances (e.g. `redis://localhost:6379/0`). When unset, slowapi uses in-memory storage — fine for local single-instance dev, but counters are not shared across replicas. Requires `limits[redis]` and `redis` packages (see below). |
+
+### Rate limiting and Redis
+
+Sensitive endpoints (OTP, token refresh, checkout) are protected with **slowapi** limits keyed by client IP. In development with a single process, limits are stored in memory. For production with horizontal scaling, set `REDIS_URL` so all instances share the same counters.
+
+Install Redis backend dependencies (not included by default):
+
+```bash
+cd backend && uv add "limits[redis]" redis
+```
+
+---
+
 ## Repository layout
 
 ```

@@ -2,10 +2,20 @@
 Rate limiting для чувствительных эндпоинтов (OTP, refresh и т.д.).
 
 Используется SlowAPI; лимиты привязаны к IP (get_remote_address).
-In-memory backend по умолчанию; для нескольких инстансов — Redis (см. limits).
+In-memory backend по умолчанию; при заданном REDIS_URL — shared storage для нескольких инстансов.
 """
 
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-limiter = Limiter(key_func=get_remote_address)
+from app.core.config import settings
+
+
+def _build_limiter() -> Limiter:
+    kwargs: dict = {"key_func": get_remote_address}
+    if settings.REDIS_URL:
+        kwargs["storage_uri"] = settings.REDIS_URL
+    return Limiter(**kwargs)
+
+
+limiter = _build_limiter()
