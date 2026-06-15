@@ -10,6 +10,8 @@
 - pending: создано, ожидает оплаты
 - confirmed: оплачено и подтверждено
 - cancelled: отменено (клиентом или автоматически)
+- expired: pending с истёкшим hold (reserved_until)
+- completed: confirmed, слот уже завершился
 """
 
 from __future__ import annotations
@@ -29,6 +31,11 @@ class BookingStatus:
     PENDING = "pending"
     CONFIRMED = "confirmed"
     CANCELLED = "cancelled"
+    EXPIRED = "expired"
+    COMPLETED = "completed"
+
+    # WHY: only pending/confirmed block duplicate active bookings per slot+guest.
+    ACTIVE_STATUSES: frozenset[str] = frozenset({PENDING, CONFIRMED})
 
 
 class BookingType:
@@ -56,14 +63,18 @@ class Booking(TimestampMixin, Base):
             "slot_id",
             "guest_email",
             unique=True,
-            postgresql_where=text("status != 'cancelled' AND guest_email IS NOT NULL"),
+            postgresql_where=text(
+                "status IN ('pending', 'confirmed') AND guest_email IS NOT NULL"
+            ),
         ),
         Index(
             "uq_bookings_slot_user_id_active",
             "slot_id",
             "user_id",
             unique=True,
-            postgresql_where=text("status != 'cancelled' AND user_id IS NOT NULL"),
+            postgresql_where=text(
+                "status IN ('pending', 'confirmed') AND user_id IS NOT NULL"
+            ),
         ),
     )
 
@@ -137,3 +148,11 @@ class Booking(TimestampMixin, Base):
     def is_cancelled(self) -> bool:
         """Проверка, отменено ли бронирование."""
         return self.status == BookingStatus.CANCELLED
+
+    def is_expired(self) -> bool:
+        """Проверка, истекло ли ожидание оплаты."""
+        return self.status == BookingStatus.EXPIRED
+
+    def is_completed(self) -> bool:
+        """Проверка, завершено ли бронирование после окончания слота."""
+        return self.status == BookingStatus.COMPLETED

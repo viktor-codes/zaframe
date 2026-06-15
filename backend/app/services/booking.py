@@ -7,6 +7,8 @@
 - Переиспользование при webhook оплаты
 """
 
+from datetime import datetime
+
 from sqlalchemy.exc import IntegrityError
 
 from app.core.booking_holds import get_booking_reserved_until
@@ -199,7 +201,7 @@ async def get_bookings(
     slot_id — бронирования слота
     user_id — бронирования пользователя
     guest_email — бронирования гостя (до активации)
-    status — pending, confirmed, cancelled
+    status — pending, confirmed, cancelled, expired, completed
     """
     return await uow.bookings.list_(
         skip=skip,
@@ -314,6 +316,47 @@ async def create_booking(uow: UnitOfWork, schema: BookingCreate) -> Booking:
     return await _persist_booking(uow, booking)
 
 
+async def expire_stale_pending(
+    uow: UnitOfWork,
+    *,
+    now: datetime | None = None,
+) -> int:
+    """
+    Mark pending bookings with expired reserved_until as EXPIRED.
+
+    Returns the number of bookings transitioned.
+    """
+    now_utc = now or utc_now()
+    bookings = await uow.bookings.list_stale_pending(now=now_utc)
+    for booking in bookings:
+        booking.status = BookingStatus.EXPIRED
+        booking.reserved_until = None
+    if bookings:
+        await uow.bookings.flush()
+    return len(bookings)
+
+
+async def complete_past_confirmed(
+    uow: UnitOfWork,
+    *,
+    now: datetime | None = None,
+) -> int:
+    """
+    Mark confirmed bookings as COMPLETED when their slot has ended.
+
+    Uses slot.end_time < now (slot still in progress at exactly end_time).
+    Returns the number of bookings transitioned.
+    """
+    now_utc = now or utc_now()
+    bookings = await uow.bookings.list_past_confirmed(now=now_utc)
+    for booking in bookings:
+        booking.status = BookingStatus.COMPLETED
+        booking.reserved_until = None
+    if bookings:
+        await uow.bookings.flush()
+    return len(bookings)
+
+
 async def cancel_booking(uow: UnitOfWork, booking: Booking) -> Booking:
     """
     Отменить бронирование.
@@ -322,6 +365,8 @@ async def cancel_booking(uow: UnitOfWork, booking: Booking) -> Booking:
     """
     if booking.status == BookingStatus.CANCELLED:
         raise ValidationError("Booking is already cancelled")
+    if booking.status in (BookingStatus.EXPIRED, BookingStatus.COMPLETED):
+        raise ValidationError(f"Cannot cancel a {booking.status} booking")
 
     booking.status = BookingStatus.CANCELLED
     booking.cancelled_at = utc_now()
@@ -338,6 +383,11 @@ async def update_booking(
     update_data = schema.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(booking, field, value)
-    if booking.status in (BookingStatus.CONFIRMED, BookingStatus.CANCELLED):
+    if booking.status in (
+        BookingStatus.CONFIRMED,
+        BookingStatus.CANCELLED,
+        BookingStatus.EXPIRED,
+        BookingStatus.COMPLETED,
+    ):
         booking.reserved_until = None
     return await uow.bookings.save(booking)

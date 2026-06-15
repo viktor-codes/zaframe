@@ -209,6 +209,31 @@ class BookingRepository(WriteRepositoryMixin):
         )
         return result.scalar_one()
 
+    async def list_stale_pending(self, *, now: datetime | None = None) -> list[Booking]:
+        """Pending bookings whose hold window has ended (reserved_until <= now)."""
+        now_utc = ensure_utc(now or utc_now())
+        result = await self._session.execute(
+            select(Booking).where(
+                Booking.status == BookingStatus.PENDING,
+                Booking.reserved_until.is_not(None),
+                Booking.reserved_until <= now_utc,
+            )
+        )
+        return list(result.scalars().all())
+
+    async def list_past_confirmed(self, *, now: datetime | None = None) -> list[Booking]:
+        """Confirmed bookings whose slot has already ended (slot.end_time < now)."""
+        now_utc = ensure_utc(now or utc_now())
+        result = await self._session.execute(
+            select(Booking)
+            .join(Booking.slot)
+            .where(
+                Booking.status == BookingStatus.CONFIRMED,
+                Slot.end_time < now_utc,
+            )
+        )
+        return list(result.scalars().all())
+
     async def get_active_by_slot_and_guest_email(
         self,
         slot_id: int,
@@ -220,7 +245,7 @@ class BookingRepository(WriteRepositoryMixin):
             select(Booking).where(
                 Booking.slot_id == slot_id,
                 func.lower(Booking.guest_email) == normalized_email,
-                Booking.status != BookingStatus.CANCELLED,
+                Booking.status.in_(BookingStatus.ACTIVE_STATUSES),
             )
         )
         return result.scalar_one_or_none()
@@ -235,7 +260,7 @@ class BookingRepository(WriteRepositoryMixin):
             select(Booking).where(
                 Booking.slot_id == slot_id,
                 Booking.user_id == user_id,
-                Booking.status != BookingStatus.CANCELLED,
+                Booking.status.in_(BookingStatus.ACTIVE_STATUSES),
             )
         )
         return result.scalar_one_or_none()
