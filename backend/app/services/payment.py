@@ -9,20 +9,32 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+
 import stripe
+import structlog
 
 from app.core.booking_holds import is_active_pending_hold
 from app.core.config import settings
-from app.core.datetime_utils import utc_now
+from app.core.datetime_utils import ensure_utc, utc_now
 from app.core.exceptions import AppError, NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
 from app.integrations.stripe.checkout import (
     build_booking_checkout_params,
     build_order_checkout_params,
 )
-from app.models.booking import BookingStatus
+from app.models.booking import Booking, BookingStatus
 from app.models.order import OrderStatus
 from app.models.slot import Slot
+
+# WHY: paid but slot full — studio owner resolves refund/rebook manually (no auto-refund yet).
+PAYMENT_STATUS_SUCCEEDED = "succeeded"
+PAYMENT_STATUS_OVERBOOKED_MANUAL_REVIEW = "overbooked_manual_review"
+
+# Stripe Checkout Session minimum lifetime is 30 minutes.
+_STRIPE_CHECKOUT_MIN_EXPIRY_SECONDS = 30 * 60
+
+logger = structlog.get_logger(__name__)
 
 
 def _get_stripe_client() -> stripe.StripeClient:
@@ -30,6 +42,57 @@ def _get_stripe_client() -> stripe.StripeClient:
     if not settings.STRIPE_SECRET_KEY:
         raise AppError("STRIPE_SECRET_KEY is not configured", status_code=503)
     return stripe.StripeClient(api_key=settings.STRIPE_SECRET_KEY)
+
+
+def _checkout_session_expires_at(now: datetime) -> int:
+    """
+    Unix timestamp for Stripe Checkout Session expires_at.
+
+    Aligns with BOOKING_HOLD_MINUTES but respects Stripe's 30-minute minimum.
+    """
+    hold_seconds = settings.BOOKING_HOLD_MINUTES * 60
+    expiry_seconds = max(hold_seconds, _STRIPE_CHECKOUT_MIN_EXPIRY_SECONDS)
+    return int(ensure_utc(now).timestamp()) + expiry_seconds
+
+
+async def _would_exceed_slot_capacity(
+    uow: UnitOfWork,
+    *,
+    slot: Slot,
+    booking_id: int,
+    now: datetime,
+) -> bool:
+    """True when confirming booking_id would push the slot past max_capacity."""
+    confirmed_count = await uow.bookings.count_confirmed_by_slot(slot.id)
+    pending_count = await uow.bookings.count_pending_by_slot(
+        slot.id,
+        now=now,
+        exclude_booking_id=booking_id,
+    )
+    return confirmed_count + pending_count + 1 > slot.max_capacity
+
+
+async def _handle_overbooked_payment(
+    uow: UnitOfWork,
+    booking: Booking,
+    *,
+    payment_intent_id: str | None,
+) -> None:
+    """Mark paid booking for manual studio-owner resolution; do not confirm the seat."""
+    now_utc = utc_now()
+    booking.status = BookingStatus.CANCELLED
+    booking.payment_status = PAYMENT_STATUS_OVERBOOKED_MANUAL_REVIEW
+    booking.reserved_until = None
+    booking.cancelled_at = now_utc
+    if payment_intent_id:
+        booking.payment_intent_id = payment_intent_id
+    await uow.bookings.flush()
+    logger.warning(
+        "payment_confirm_overbooked_manual_review",
+        booking_id=booking.id,
+        slot_id=booking.slot_id,
+        payment_intent_id=payment_intent_id,
+    )
 
 
 async def create_checkout_session(
@@ -74,6 +137,7 @@ async def create_checkout_session(
             success_url=success_url,
             cancel_url=cancel_url,
             guest_email=booking.guest_email,
+            expires_at=_checkout_session_expires_at(now_utc),
         )
     )
 
@@ -130,6 +194,7 @@ async def create_order_checkout_session(
             success_url=success_url,
             cancel_url=cancel_url,
             guest_email=order.guest_email,
+            expires_at=_checkout_session_expires_at(now_utc),
         )
     )
 
@@ -148,15 +213,36 @@ async def confirm_booking_after_payment(
     Подтвердить бронирование после успешной оплаты (webhook).
 
     Идемпотентно: если бронирование уже CONFIRMED — ничего не делаем, возвращаем True.
-    Возвращает True если подтверждено (или уже было подтверждено), False если бронирование не найдено.
+    При overbooking: cancelled + payment_status=overbooked_manual_review (owner resolves).
+    Возвращает True если обработано (или уже было), False если бронирование не найдено.
     """
     booking = await uow.bookings.get_by_id(booking_id)
     if booking is None:
         return False
     if booking.status == BookingStatus.CONFIRMED:
         return True
+    if (
+        booking.status == BookingStatus.CANCELLED
+        and booking.payment_status == PAYMENT_STATUS_OVERBOOKED_MANUAL_REVIEW
+    ):
+        return True
+
+    now_utc = utc_now()
+    slot = await uow.slots.get_by_id_for_update(booking.slot_id)
+    if slot is None:
+        return False
+
+    if await _would_exceed_slot_capacity(
+        uow,
+        slot=slot,
+        booking_id=booking.id,
+        now=now_utc,
+    ):
+        await _handle_overbooked_payment(uow, booking, payment_intent_id=payment_intent_id)
+        return True
+
     booking.status = BookingStatus.CONFIRMED
-    booking.payment_status = "succeeded"
+    booking.payment_status = PAYMENT_STATUS_SUCCEEDED
     booking.reserved_until = None
     if payment_intent_id:
         booking.payment_intent_id = payment_intent_id
@@ -174,22 +260,50 @@ async def confirm_order_after_payment(
     Подтвердить заказ и все связанные бронирования после успешной оплаты (webhook).
 
     Идемпотентно: если заказ уже PAID — ничего не делаем, возвращаем True.
-    Возвращает True если подтверждено (или уже было), False если заказ не найден.
+    Per-slot capacity recheck; overbooked bookings go to manual owner review.
+    Возвращает True если обработано (или уже было), False если заказ не найден.
     """
     order = await uow.orders.get_by_id(order_id)
     if order is None:
         return False
     if order.status == OrderStatus.PAID:
         return True
-    order.status = OrderStatus.PAID
+
+    now_utc = utc_now()
     bookings = await uow.bookings.list_(order_id=order_id, limit=1000)
+
+    slot_ids_to_lock = sorted({b.slot_id for b in bookings if b.status == BookingStatus.PENDING})
+    for slot_id in slot_ids_to_lock:
+        await uow.slots.get_by_id_for_update(slot_id)
+
+    order.status = OrderStatus.PAID
     for booking in bookings:
         if booking.status == BookingStatus.CONFIRMED:
             continue
+        if (
+            booking.status == BookingStatus.CANCELLED
+            and booking.payment_status == PAYMENT_STATUS_OVERBOOKED_MANUAL_REVIEW
+        ):
+            continue
+
+        slot = await uow.slots.get_by_id(booking.slot_id)
+        if slot is None:
+            continue
+
+        if await _would_exceed_slot_capacity(
+            uow,
+            slot=slot,
+            booking_id=booking.id,
+            now=now_utc,
+        ):
+            await _handle_overbooked_payment(uow, booking, payment_intent_id=payment_intent_id)
+            continue
+
         booking.status = BookingStatus.CONFIRMED
-        booking.payment_status = "succeeded"
+        booking.payment_status = PAYMENT_STATUS_SUCCEEDED
         booking.reserved_until = None
         if payment_intent_id:
             booking.payment_intent_id = payment_intent_id
+
     await uow.orders.flush()
     return True

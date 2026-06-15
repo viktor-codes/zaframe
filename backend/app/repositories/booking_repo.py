@@ -190,15 +190,22 @@ class BookingRepository(WriteRepositoryMixin):
         )
         return result.scalar_one()
 
-    async def count_pending_by_slot(self, slot_id: int, *, now: datetime | None = None) -> int:
+    async def count_pending_by_slot(
+        self,
+        slot_id: int,
+        *,
+        now: datetime | None = None,
+        exclude_booking_id: int | None = None,
+    ) -> int:
         now_utc = now or utc_now()
+        conditions: list[ColumnElement[bool]] = [
+            Booking.slot_id == slot_id,
+            self._active_pending_hold_clause(now=now_utc),
+        ]
+        if exclude_booking_id is not None:
+            conditions.append(Booking.id != exclude_booking_id)
         result = await self._session.execute(
-            select(func.count())
-            .select_from(Booking)
-            .where(
-                Booking.slot_id == slot_id,
-                self._active_pending_hold_clause(now=now_utc),
-            )
+            select(func.count()).select_from(Booking).where(*conditions)
         )
         return result.scalar_one()
 

@@ -47,6 +47,7 @@ def _build_payment_checkout_params(
     product_description: str,
     metadata: dict[str, str],
     customer_email: str | None,
+    expires_at: int | None = None,
 ) -> SessionCreateParams:
     params: SessionCreateParams = {
         "success_url": success_url,
@@ -64,6 +65,8 @@ def _build_payment_checkout_params(
     }
     if customer_email:
         params["customer_email"] = customer_email
+    if expires_at is not None:
+        params["expires_at"] = expires_at
     return params
 
 
@@ -77,6 +80,7 @@ def build_booking_checkout_params(
     success_url: str,
     cancel_url: str,
     guest_email: str | None,
+    expires_at: int | None = None,
 ) -> SessionCreateParams:
     """Build Checkout Session params for a single booking payment."""
     return _build_payment_checkout_params(
@@ -88,6 +92,7 @@ def build_booking_checkout_params(
         product_description=product_description,
         metadata={"booking_id": str(booking_id)},
         customer_email=guest_email,
+        expires_at=expires_at,
     )
 
 
@@ -101,6 +106,7 @@ def build_order_checkout_params(
     success_url: str,
     cancel_url: str,
     guest_email: str | None,
+    expires_at: int | None = None,
 ) -> SessionCreateParams:
     """Build Checkout Session params for an order payment."""
     return _build_payment_checkout_params(
@@ -112,4 +118,5 @@ def build_order_checkout_params(
         product_description=product_description,
         metadata={"order_id": str(order_id)},
         customer_email=guest_email,
+        expires_at=expires_at,
     )

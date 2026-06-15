@@ -20,6 +20,7 @@ def test_build_booking_checkout_params_structure():
         success_url="https://example.com/success",
         cancel_url="https://example.com/cancel",
         guest_email="guest@example.com",
+        expires_at=1_700_000_000,
     )
 
     assert params["mode"] == "payment"
@@ -27,6 +28,7 @@ def test_build_booking_checkout_params_structure():
     assert params["cancel_url"] == "https://example.com/cancel"
     assert params["metadata"] == {"booking_id": "42"}
     assert params["customer_email"] == "guest@example.com"
+    assert params["expires_at"] == 1_700_000_000
 
     line_item = params["line_items"][0]
     assert line_item["quantity"] == 1

@@ -15,6 +15,7 @@ from app.models.order import Order, OrderStatus
 from app.models.service import Service
 from app.models.slot import Slot
 from app.services.payment import (
+    PAYMENT_STATUS_OVERBOOKED_MANUAL_REVIEW,
     confirm_booking_after_payment,
     confirm_order_after_payment,
     create_checkout_session,
@@ -32,6 +33,17 @@ def mock_uow():
 
 def _active_hold_until() -> datetime:
     return datetime.now(UTC) + timedelta(minutes=15)
+
+
+def _mock_slot_capacity_ok(mock_uow, *, max_capacity: int = 10) -> MagicMock:
+    mock_slot = MagicMock(spec=Slot)
+    mock_slot.id = 1
+    mock_slot.max_capacity = max_capacity
+    mock_uow.slots.get_by_id_for_update = AsyncMock(return_value=mock_slot)
+    mock_uow.slots.get_by_id = AsyncMock(return_value=mock_slot)
+    mock_uow.bookings.count_confirmed_by_slot = AsyncMock(return_value=0)
+    mock_uow.bookings.count_pending_by_slot = AsyncMock(return_value=0)
+    return mock_slot
 
 
 # --- create_checkout_session ---
@@ -155,6 +167,7 @@ async def test_create_checkout_session_success(mock_uow):
     with patch("app.services.payment.settings") as mock_settings:
         mock_settings.STRIPE_SECRET_KEY = "sk_test"
         mock_settings.STRIPE_CURRENCY = "usd"
+        mock_settings.BOOKING_HOLD_MINUTES = 15
         with patch(
             "app.services.payment.stripe.StripeClient",
             return_value=mock_client,
@@ -253,6 +266,7 @@ async def test_create_order_checkout_session_success(mock_uow):
     with patch("app.services.payment.settings") as mock_settings:
         mock_settings.STRIPE_SECRET_KEY = "sk_test"
         mock_settings.STRIPE_CURRENCY = "usd"
+        mock_settings.BOOKING_HOLD_MINUTES = 15
         with patch(
             "app.services.payment.stripe.StripeClient",
             return_value=mock_client,
@@ -288,8 +302,11 @@ async def test_confirm_booking_after_payment_already_confirmed(mock_uow):
 @pytest.mark.asyncio
 async def test_confirm_booking_after_payment_success(mock_uow):
     booking = MagicMock(spec=Booking)
+    booking.id = 1
+    booking.slot_id = 1
     booking.status = BookingStatus.PENDING
     mock_uow.bookings.get_by_id = AsyncMock(return_value=booking)
+    _mock_slot_capacity_ok(mock_uow)
     ok = await confirm_booking_after_payment(mock_uow, 1, payment_intent_id="pi_123")
     assert ok is True
     assert booking.status == BookingStatus.CONFIRMED
@@ -299,12 +316,32 @@ async def test_confirm_booking_after_payment_success(mock_uow):
 
 
 @pytest.mark.asyncio
+async def test_confirm_booking_after_payment_overbooked_manual_review(mock_uow):
+    booking = MagicMock(spec=Booking)
+    booking.id = 1
+    booking.slot_id = 1
+    booking.status = BookingStatus.PENDING
+    mock_uow.bookings.get_by_id = AsyncMock(return_value=booking)
+    _mock_slot_capacity_ok(mock_uow, max_capacity=1)
+    mock_uow.bookings.count_confirmed_by_slot = AsyncMock(return_value=1)
+    ok = await confirm_booking_after_payment(mock_uow, 1, payment_intent_id="pi_late")
+    assert ok is True
+    assert booking.status == BookingStatus.CANCELLED
+    assert booking.payment_status == PAYMENT_STATUS_OVERBOOKED_MANUAL_REVIEW
+    assert booking.payment_intent_id == "pi_late"
+    mock_uow.bookings.flush.assert_awaited_once()
+
+
+@pytest.mark.asyncio
 async def test_confirm_booking_after_payment_success_no_payment_intent(mock_uow):
     """Without payment_intent_id the field is not overwritten."""
     booking = MagicMock(spec=Booking)
+    booking.id = 1
+    booking.slot_id = 1
     booking.status = BookingStatus.PENDING
     booking.payment_intent_id = None
     mock_uow.bookings.get_by_id = AsyncMock(return_value=booking)
+    _mock_slot_capacity_ok(mock_uow)
     ok = await confirm_booking_after_payment(mock_uow, 1)
     assert ok is True
     assert booking.status == BookingStatus.CONFIRMED
@@ -340,10 +377,15 @@ async def test_confirm_order_after_payment_success_confirms_bookings(mock_uow):
     order.id = 10
     mock_uow.orders.get_by_id = AsyncMock(return_value=order)
     b1 = MagicMock(spec=Booking)
+    b1.id = 1
+    b1.slot_id = 1
     b1.status = BookingStatus.PENDING
     b2 = MagicMock(spec=Booking)
+    b2.id = 2
+    b2.slot_id = 1
     b2.status = BookingStatus.CONFIRMED
     mock_uow.bookings.list_ = AsyncMock(return_value=[b1, b2])
+    _mock_slot_capacity_ok(mock_uow)
     ok = await confirm_order_after_payment(mock_uow, 10, payment_intent_id="pi_ord")
     assert ok is True
     assert order.status == OrderStatus.PAID
