@@ -9,7 +9,7 @@
 
 from app.core.booking_holds import get_booking_reserved_until
 from app.core.datetime_utils import ensure_utc, utc_now
-from app.core.exceptions import ForbiddenError, NotFoundError, ValidationError
+from app.core.exceptions import NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
 from app.models.booking import Booking, BookingStatus, BookingType
 from app.models.user import User
@@ -38,69 +38,52 @@ def is_own_booking(booking: Booking, user: User) -> bool:
     return False
 
 
-def ensure_booking_access(
+def can_access_booking(
     booking: Booking,
     user: User,
     *,
     studio_owner_id: int | None,
-) -> None:
-    """
-    Allow access when the booking is the user's own or belongs to the user's studio.
-
-    Raises:
-        ForbiddenError: when the user has no access to the booking.
-    """
+) -> bool:
+    """True when booking is the user's own or belongs to a studio they own."""
     if is_own_booking(booking, user):
-        return
-    if studio_owner_id is not None and studio_owner_id == user.id:
-        return
-    raise ForbiddenError("Access denied for this booking")
+        return True
+    return studio_owner_id is not None and studio_owner_id == user.id
 
 
-async def get_booking_or_raise_with_access(
+async def get_booking_for_user_or_raise(
     uow: UnitOfWork,
     booking_id: int,
     user: User,
 ) -> Booking:
-    """Load booking with slot+studio and enforce ownership rules."""
+    """
+    Load booking with slot+studio; allow own booking or studio owner.
+
+    Returns 404 when the booking does not exist or the user has no access,
+    so foreign booking IDs are not enumerable.
+    """
     booking = await uow.bookings.get_by_id_with_slot_and_studio(booking_id)
     if booking is None:
         raise NotFoundError("Booking not found")
     studio_owner_id = None
     if booking.slot is not None and booking.slot.studio is not None:
         studio_owner_id = booking.slot.studio.owner_id
-    ensure_booking_access(booking, user, studio_owner_id=studio_owner_id)
+    if not can_access_booking(booking, user, studio_owner_id=studio_owner_id):
+        raise NotFoundError("Booking not found")
     return booking
 
 
-def _validate_booking_list_filters(
-    user: User,
-    *,
-    user_id: int | None,
-    guest_email: str | None,
-) -> None:
-    if user_id is not None and user_id != user.id:
-        raise ForbiddenError("Cannot list bookings for another user")
-    if guest_email is not None and guest_email.strip().lower() != user.email.strip().lower():
-        raise ForbiddenError("Cannot list bookings for another guest email")
-
-
-async def get_accessible_bookings(
+async def get_owner_bookings(
     uow: UnitOfWork,
     user: User,
     *,
     skip: int = 0,
     limit: int = 20,
     slot_id: int | None = None,
-    user_id: int | None = None,
-    guest_email: str | None = None,
     status: str | None = None,
 ) -> list[Booking]:
-    """List bookings visible to the current user (own bookings or studio owner)."""
-    _validate_booking_list_filters(user, user_id=user_id, guest_email=guest_email)
-    return await uow.bookings.list_accessible(
-        user_id=user.id,
-        user_email=user.email,
+    """Owner dashboard: bookings for slots in studios owned by the user."""
+    return await uow.bookings.list_for_studio_owner(
+        owner_id=user.id,
         skip=skip,
         limit=limit,
         slot_id=slot_id,
@@ -108,20 +91,16 @@ async def get_accessible_bookings(
     )
 
 
-async def get_accessible_bookings_count(
+async def get_owner_bookings_count(
     uow: UnitOfWork,
     user: User,
     *,
     slot_id: int | None = None,
-    user_id: int | None = None,
-    guest_email: str | None = None,
     status: str | None = None,
 ) -> int:
-    """Count bookings visible to the current user."""
-    _validate_booking_list_filters(user, user_id=user_id, guest_email=guest_email)
-    return await uow.bookings.count_accessible(
-        user_id=user.id,
-        user_email=user.email,
+    """Count bookings for studios owned by the user."""
+    return await uow.bookings.count_for_studio_owner(
+        owner_id=user.id,
         slot_id=slot_id,
         status=status,
     )

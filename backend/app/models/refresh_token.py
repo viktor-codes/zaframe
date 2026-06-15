@@ -6,7 +6,6 @@ from sqlalchemy import DateTime, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.datetime_utils import utc_now
-
 from app.models import Base
 
 

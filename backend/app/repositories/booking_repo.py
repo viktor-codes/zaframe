@@ -55,19 +55,13 @@ class BookingRepository(WriteRepositoryMixin):
         return result.scalar_one_or_none()
 
     @staticmethod
-    def _accessible_bookings_clause(*, user_id: int, user_email: str) -> ColumnElement[bool]:
-        normalized_email = user_email.strip().lower()
-        return (
-            (Booking.user_id == user_id)
-            | (func.lower(Booking.guest_email) == normalized_email)
-            | (Studio.owner_id == user_id)
-        )
+    def _studio_owner_clause(*, owner_id: int) -> ColumnElement[bool]:
+        return Studio.owner_id == owner_id
 
-    async def list_accessible(
+    async def list_for_studio_owner(
         self,
         *,
-        user_id: int,
-        user_email: str,
+        owner_id: int,
         skip: int = 0,
         limit: int = 20,
         slot_id: int | None = None,
@@ -77,7 +71,7 @@ class BookingRepository(WriteRepositoryMixin):
             select(Booking)
             .join(Booking.slot)
             .join(Slot.studio)
-            .where(self._accessible_bookings_clause(user_id=user_id, user_email=user_email))
+            .where(self._studio_owner_clause(owner_id=owner_id))
         )
         if slot_id is not None:
             query = query.where(Booking.slot_id == slot_id)
@@ -87,11 +81,10 @@ class BookingRepository(WriteRepositoryMixin):
         result = await self._session.execute(query)
         return list(result.scalars().all())
 
-    async def count_accessible(
+    async def count_for_studio_owner(
         self,
         *,
-        user_id: int,
-        user_email: str,
+        owner_id: int,
         slot_id: int | None = None,
         status: str | None = None,
     ) -> int:
@@ -100,7 +93,7 @@ class BookingRepository(WriteRepositoryMixin):
             .select_from(Booking)
             .join(Booking.slot)
             .join(Slot.studio)
-            .where(self._accessible_bookings_clause(user_id=user_id, user_email=user_email))
+            .where(self._studio_owner_clause(owner_id=owner_id))
         )
         if slot_id is not None:
             query = query.where(Booking.slot_id == slot_id)

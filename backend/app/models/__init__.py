@@ -2,7 +2,6 @@
 # Все модели импортируются здесь для Alembic autogenerate
 
 from app.core.database import Base
-
 from app.models.booking import Booking, BookingStatus, BookingType
 from app.models.order import Order, OrderStatus
 from app.models.otp_code import OTPCode

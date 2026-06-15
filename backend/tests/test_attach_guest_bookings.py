@@ -163,8 +163,11 @@ async def test_otp_verify_attaches_only_specified_booking(client: AsyncClient):
     )
     assert r_verify.status_code == 200
     user_id = r_verify.json()["user"]["id"]
+    guest_headers = {"Authorization": f"Bearer {r_verify.json()['access_token']}"}
 
-    r_a = await client.get(f"/api/v1/bookings/{booking_a['id']}")
-    r_b = await client.get(f"/api/v1/bookings/{booking_b['id']}")
+    r_a = await client.get(f"/api/v1/bookings/{booking_a['id']}", headers=guest_headers)
+    r_b = await client.get(f"/api/v1/bookings/{booking_b['id']}", headers=guest_headers)
+    assert r_a.status_code == 200
+    assert r_b.status_code == 200
     assert r_a.json()["user_id"] == user_id
     assert r_b.json()["user_id"] is None

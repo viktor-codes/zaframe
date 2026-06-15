@@ -5,11 +5,11 @@ from app.schemas.booking import (
     BookingCancel,
     BookingCreate,
     BookingCreateAuthenticated,
+    BookingListItem,
     BookingResponse,
     BookingUpdate,
     BookingWithSlot,
     BookingWithUser,
-    BookingListItem,
 )
 from app.schemas.payment import (
     CheckoutSessionCreate,
