@@ -1,7 +1,7 @@
 """
-Отправка email через Resend.
+Email delivery via Resend.
 
-Если RESEND_API_KEY не задан — логируем код (dev mode).
+Without RESEND_API_KEY: dev-only OTP logging when DEBUG=True; production returns False.
 """
 
 import structlog
@@ -9,22 +9,41 @@ import structlog
 from app.core.config import settings
 
 
+def _mask_email(email: str) -> str:
+    """Mask email for logs, e.g. john@domain.com -> j***@d***.com."""
+    local, sep, domain = email.partition("@")
+    if not sep:
+        return "***"
+
+    masked_local = f"{local[0]}***" if local else "***"
+    domain_name, dot, tld = domain.rpartition(".")
+    if dot:
+        masked_domain = f"{domain_name[0]}***.{tld}" if domain_name else f"***.{tld}"
+    else:
+        masked_domain = f"{domain[0]}***" if domain else "***"
+    return f"{masked_local}@{masked_domain}"
+
+
 async def send_otp_email(email: str, code: str) -> bool:
     """
     Send a numeric OTP to email.
 
-    Returns True on success, False on provider error.
-    Without RESEND_API_KEY logs the code for local development.
+    Returns True on success, False on provider error or missing provider in production.
+    Without RESEND_API_KEY and DEBUG=True logs the code for local development only.
     """
     logger = structlog.get_logger(__name__)
 
     if not settings.RESEND_API_KEY:
-        logger.info(
-            "otp_dev_mode_no_provider",
-            otp_code=code,
-            otp_email=email,
-        )
-        return True
+        if settings.DEBUG:
+            logger.info(
+                "otp_dev_mode_no_provider",
+                otp_code=code,
+                otp_email_masked=_mask_email(email),
+            )
+            return True
+
+        logger.error("otp_provider_not_configured")
+        return False
 
     try:
         import resend
