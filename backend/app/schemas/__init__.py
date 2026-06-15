@@ -1,49 +1,52 @@
-# Pydantic schemas для валидации входных/выходных данных API
+# Pydantic schemas for API request/response validation
 
 from app.schemas.booking import (
     BookingBase,
     BookingCancel,
     BookingCreate,
     BookingCreateAuthenticated,
-    BookingListItem,
     BookingOwnerResponse,
+    BookingResponseBase,
+    BookingSelfListItem,
     BookingSelfResponse,
-    BookingWithSlot,
+    BookingWithOccurrence,
     BookingWithUser,
 )
-from app.schemas.payment import (
-    CheckoutSessionCreate,
-    CheckoutSessionResponse,
-    OrderCheckoutSessionCreate,
+from app.schemas.catalog import PublicOccurrence, PublicService, StudioPublicResponse
+from app.schemas.occurrence import (
+    OccurrenceBase,
+    OccurrenceCreate,
+    OccurrenceResponse,
+    OccurrenceUpdate,
+    OccurrenceWithBookings,
 )
-from app.schemas.schedule import ScheduleGenerateRequest
-from app.schemas.search import SearchQueryParams, SearchResult
-from app.schemas.service import (
+from app.schemas.order import (
     CourseAvailabilityResult,
     CourseBookingCreate,
     CourseBookingPreviewItem,
     CourseBookingResponse,
     OrderBase,
     OrderResponse,
-    PublicService,
-    PublicServiceOccurrence,
-    ScheduleBase,
-    ScheduleCreate,
-    ScheduleResponse,
+)
+from app.schemas.payment import (
+    CheckoutSessionCreate,
+    CheckoutSessionResponse,
+    OrderCheckoutSessionCreate,
+)
+from app.schemas.schedule import (
+    ScheduleGenerateRequest,
+    ScheduleTemplateBase,
+    ScheduleTemplateCreate,
+    ScheduleTemplateResponse,
+)
+from app.schemas.search import SearchQueryParams, SearchResult
+from app.schemas.service import (
     ServiceAvailabilityResponse,
     ServiceAvailabilityScheduleItem,
     ServiceBase,
     ServiceCreate,
     ServiceResponse,
     ServiceUpdate,
-    StudioPublicResponse,
-)
-from app.schemas.slot import (
-    SlotBase,
-    SlotCreate,
-    SlotResponse,
-    SlotUpdate,
-    SlotWithBookings,
 )
 from app.schemas.studio import (
     StudioBase,
@@ -60,12 +63,11 @@ from app.schemas.user import (
     UserUpdate,
 )
 
-# Явно пересобираем модели с взаимными ссылками, чтобы Pydantic v2
-# корректно обработал forward references перед использованием в Union.
+# Rebuild models with forward references before use in unions.
 BookingSelfResponse.model_rebuild()
 BookingOwnerResponse.model_rebuild()
 BookingWithUser.model_rebuild()
-BookingListItem.model_rebuild()
+BookingSelfListItem.model_rebuild()
 CourseBookingResponse.model_rebuild()
 
 __all__ = [
@@ -82,43 +84,45 @@ __all__ = [
     "StudioResponse",
     "StudioWithSlots",
     "StudioPublicResponse",
-    # Slot
-    "SlotBase",
-    "SlotCreate",
-    "SlotUpdate",
-    "SlotResponse",
-    "SlotWithBookings",
+    # Occurrence
+    "OccurrenceBase",
+    "OccurrenceCreate",
+    "OccurrenceUpdate",
+    "OccurrenceResponse",
+    "OccurrenceWithBookings",
     # Booking
     "BookingBase",
     "BookingCreate",
     "BookingCreateAuthenticated",
+    "BookingResponseBase",
     "BookingSelfResponse",
     "BookingOwnerResponse",
-    "BookingWithSlot",
+    "BookingWithOccurrence",
     "BookingWithUser",
-    "BookingListItem",
+    "BookingSelfListItem",
     "BookingCancel",
-    # Schedule generation
+    # Schedule template / generation
+    "ScheduleTemplateBase",
+    "ScheduleTemplateCreate",
+    "ScheduleTemplateResponse",
     "ScheduleGenerateRequest",
-    # Service / Schedule / Order / Public
+    # Service
     "ServiceBase",
     "ServiceCreate",
     "ServiceUpdate",
     "ServiceResponse",
-    "ScheduleBase",
-    "ScheduleCreate",
-    "ScheduleResponse",
-    "OrderBase",
-    "OrderResponse",
     "ServiceAvailabilityScheduleItem",
     "ServiceAvailabilityResponse",
+    # Order / course purchase
+    "OrderBase",
+    "OrderResponse",
     "CourseBookingCreate",
     "CourseBookingResponse",
     "CourseAvailabilityResult",
     "CourseBookingPreviewItem",
+    # Catalog (public)
     "PublicService",
-    "PublicServiceOccurrence",
-    "StudioPublicResponse",
+    "PublicOccurrence",
     # Payments
     "CheckoutSessionCreate",
     "OrderCheckoutSessionCreate",

@@ -20,7 +20,7 @@ from app.api.deps import get_current_user_required, get_uow
 from app.core.uow import UnitOfWork
 from app.models.user import User
 from app.schemas.booking import BookingOwnerResponse
-from app.schemas.slot import SlotCreate, SlotResponse, SlotUpdate
+from app.schemas.occurrence import OccurrenceCreate, OccurrenceResponse, OccurrenceUpdate
 from app.services.booking import get_bookings
 from app.services.slot import (
     create_slot,
@@ -35,7 +35,7 @@ from app.services.studio import ensure_studio_owner, get_studio_or_raise
 router = APIRouter(prefix="/slots", tags=["slots"])
 
 
-@router.get("", response_model=list[SlotResponse])
+@router.get("", response_model=list[OccurrenceResponse])
 async def list_slots(
     uow: UnitOfWork = Depends(get_uow),
     skip: int = Query(0, ge=0, description="Пропустить N записей"),
@@ -44,7 +44,7 @@ async def list_slots(
     start_from: datetime | None = Query(None, description="Начало диапазона дат"),
     start_to: datetime | None = Query(None, description="Конец диапазона дат"),
     status: str | None = Query(None, description="Фильтр по статусу (active/cancelled)"),
-) -> list[SlotResponse]:
+) -> list[OccurrenceResponse]:
     """
     Список слотов с фильтрами.
 
@@ -98,21 +98,21 @@ async def list_slot_bookings(
     return [BookingOwnerResponse.model_validate(b) for b in bookings]
 
 
-@router.get("/{slot_id}", response_model=SlotResponse)
+@router.get("/{slot_id}", response_model=OccurrenceResponse)
 async def get_slot_by_id(
     slot_id: int,
     uow: UnitOfWork = Depends(get_uow),
-) -> SlotResponse:
+) -> OccurrenceResponse:
     """Получить слот по ID."""
     return await get_slot_or_raise(uow, slot_id)
 
 
-@router.post("", response_model=SlotResponse, status_code=201)
+@router.post("", response_model=OccurrenceResponse, status_code=201)
 async def create_slot_endpoint(
-    schema: SlotCreate,
+    schema: OccurrenceCreate,
     user: User = Depends(get_current_user_required),
     uow: UnitOfWork = Depends(get_uow),
-) -> SlotResponse:
+) -> OccurrenceResponse:
     """
     Создать слот (требуется аутентификация, владелец студии).
     """
@@ -121,13 +121,13 @@ async def create_slot_endpoint(
     return await create_slot(uow, schema)
 
 
-@router.patch("/{slot_id}", response_model=SlotResponse)
+@router.patch("/{slot_id}", response_model=OccurrenceResponse)
 async def update_slot_endpoint(
     slot_id: int,
-    schema: SlotUpdate,
+    schema: OccurrenceUpdate,
     user: User = Depends(get_current_user_required),
     uow: UnitOfWork = Depends(get_uow),
-) -> SlotResponse:
+) -> OccurrenceResponse:
     """Обновить слот (только владелец студии)."""
     slot = await get_slot_or_raise(uow, slot_id)
     studio = await get_studio_or_raise(uow, slot.studio_id)

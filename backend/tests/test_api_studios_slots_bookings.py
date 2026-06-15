@@ -127,7 +127,7 @@ async def test_slot_and_booking_flow(client: AsyncClient):
     r_booking = await client.post(
         "/api/v1/bookings",
         json={
-            "slot_id": slot_id,
+            "occurrence_id": slot_id,
             "guest_name": "Guest User",
             "guest_email": "guest@example.com",
             "guest_phone": "+111111111",
@@ -136,7 +136,7 @@ async def test_slot_and_booking_flow(client: AsyncClient):
     assert r_booking.status_code == 201
     booking = r_booking.json()
     booking_id = booking["id"]
-    assert booking["slot_id"] == slot_id
+    assert booking["occurrence_id"] == slot_id
     assert booking["status"] == "pending"
 
     # Отмена бронирования (только гость, совпадающий по email)

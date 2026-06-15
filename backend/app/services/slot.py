@@ -13,7 +13,7 @@ from app.core.datetime_utils import ensure_utc
 from app.core.exceptions import NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
 from app.models.slot import Slot, SlotStatus
-from app.schemas.slot import SlotCreate, SlotUpdate
+from app.schemas.occurrence import OccurrenceCreate, OccurrenceUpdate
 
 
 async def get_slot(uow: UnitOfWork, slot_id: int) -> Slot | None:
@@ -72,7 +72,7 @@ async def get_bookings_count(uow: UnitOfWork, slot_id: int) -> int:
     return await uow.bookings.count_confirmed_by_slot(slot_id)
 
 
-async def create_slot(uow: UnitOfWork, schema: SlotCreate) -> Slot:
+async def create_slot(uow: UnitOfWork, schema: OccurrenceCreate) -> Slot:
     """Создать слот. Проверяет: студия существует, end_time > start_time."""
     if schema.end_time <= schema.start_time:
         raise ValidationError("End time must be after start time")
@@ -95,7 +95,7 @@ async def create_slot(uow: UnitOfWork, schema: SlotCreate) -> Slot:
 async def update_slot(
     uow: UnitOfWork,
     slot: Slot,
-    schema: SlotUpdate,
+    schema: OccurrenceUpdate,
 ) -> Slot:
     """Обновить слот. Проверяет end_time > start_time при обновлении времён."""
     update_data = schema.model_dump(exclude_unset=True)

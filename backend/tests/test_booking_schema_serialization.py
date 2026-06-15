@@ -7,12 +7,12 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.schemas.booking import BookingListItem, BookingOwnerResponse, BookingSelfResponse
+from app.schemas.booking import BookingOwnerResponse, BookingSelfListItem, BookingSelfResponse
 
 _FIXED_NOW = datetime(2026, 6, 15, 12, 0, 0, tzinfo=UTC)
 
 _SELF_SNAPSHOT = {
-    "slot_id": 10,
+    "occurrence_id": 10,
     "id": 1,
     "user_id": None,
     "status": "pending",
@@ -28,7 +28,7 @@ _SELF_SNAPSHOT = {
 }
 
 _OWNER_SNAPSHOT = {
-    "slot_id": 10,
+    "occurrence_id": 10,
     "id": 1,
     "user_id": None,
     "status": "confirmed",
@@ -90,9 +90,9 @@ def test_booking_client_schema_serialization_snapshot(schema_cls, expected_snaps
     assert _STRIPE_INTERNAL_FIELDS.isdisjoint(payload.keys())
 
 
-def test_booking_list_item_omits_stripe_internal_fields():
+def test_booking_self_list_item_omits_stripe_internal_fields():
     """Cabinet list schema must not declare Stripe internal payment fields."""
-    field_names = set(BookingListItem.model_fields.keys())
+    field_names = set(BookingSelfListItem.model_fields.keys())
     assert _STRIPE_INTERNAL_FIELDS.isdisjoint(field_names)
 
     booking = _booking_orm()

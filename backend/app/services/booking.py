@@ -280,7 +280,7 @@ async def create_booking(uow: UnitOfWork, schema: BookingCreate) -> Booking:
 
     user_id проставляется после OTP verify (attach_guest_bookings).
     """
-    slot = await uow.slots.get_by_id_for_update(schema.slot_id)
+    slot = await uow.slots.get_by_id_for_update(schema.occurrence_id)
     if slot is None:
         raise NotFoundError("Slot not found")
     if not slot.is_bookable():
@@ -298,12 +298,12 @@ async def create_booking(uow: UnitOfWork, schema: BookingCreate) -> Booking:
 
     await _ensure_no_active_booking_for_guest(
         uow,
-        slot_id=schema.slot_id,
+        slot_id=schema.occurrence_id,
         guest_email=schema.guest_email,
     )
 
     booking = Booking(
-        slot_id=schema.slot_id,
+        slot_id=schema.occurrence_id,
         guest_name=schema.guest_name,
         guest_email=schema.guest_email,
         guest_phone=schema.guest_phone,

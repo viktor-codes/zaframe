@@ -1,5 +1,5 @@
 """
-Pydantic schemas для Booking модели.
+Pydantic schemas for Booking model.
 """
 
 from __future__ import annotations
@@ -9,53 +9,54 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, computed_field
 
 from app.models.booking import BookingType
-from app.schemas.slot import SlotResponse
+from app.schemas.occurrence import OccurrenceResponse
 from app.schemas.studio import StudioResponse
 from app.schemas.user import UserPublic
 
 
 class BookingBase(BaseModel):
-    """Базовые поля бронирования."""
+    """Base booking fields."""
 
-    slot_id: int = Field(..., description="ID слота для бронирования")
+    occurrence_id: int = Field(
+        ...,
+        description="Occurrence ID to book",
+        validation_alias="slot_id",
+    )
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class BookingCreate(BookingBase):
     """
-    Схема для создания бронирования (гостевой режим).
+    Guest booking create payload.
 
-    Используется для гостевых бронирований до OTP-верификации.
-    После verify user_id проставляется на booking.
+    Used before OTP verify; user_id is attached after verification.
     """
 
-    guest_name: str = Field(..., min_length=1, max_length=100, description="Имя гостя")
-    guest_email: EmailStr = Field(..., description="Email гостя")
-    guest_phone: str | None = Field(None, max_length=20, description="Телефон гостя (опционально)")
+    guest_name: str = Field(..., min_length=1, max_length=100, description="Guest name")
+    guest_email: EmailStr = Field(..., description="Guest email")
+    guest_phone: str | None = Field(None, max_length=20, description="Guest phone (optional)")
     booking_type: str = Field(
         default=BookingType.SINGLE,
-        description="Тип бронирования: single или course",
+        description="Booking type: single or course",
     )
     service_id: int | None = Field(
         None,
-        description="ID услуги (обязательно для курса)",
+        description="Service ID (required for course bookings)",
     )
 
 
 class BookingCreateAuthenticated(BookingBase):
-    """
-    Схема для создания бронирования зарегистрированным пользователем.
-
-    user_id берётся из токена аутентификации.
-    """
+    """Authenticated user booking create payload (user_id from token)."""
 
     pass
 
 
-class BookingClientBase(BookingBase):
+class BookingResponseBase(BookingBase):
     """
-    Общие поля клиентских ответов по бронированию.
+    Shared booking response fields for Self and Owner perspectives.
 
-    Stripe checkout_session_id и payment_intent_id намеренно исключены.
+    Stripe checkout_session_id and payment_intent_id are intentionally excluded.
     """
 
     id: int
@@ -63,17 +64,17 @@ class BookingClientBase(BookingBase):
     status: str
     reserved_until: datetime | None = Field(
         None,
-        description="UTC timestamp until which a pending booking reserves slot capacity",
+        description="UTC timestamp until which a pending booking reserves occurrence capacity",
     )
     payment_status: str | None = Field(
         None,
-        description="Статус платежа (без внутренних Stripe ID)",
+        description="Payment status (no internal Stripe IDs)",
     )
     created_at: datetime
     updated_at: datetime
     cancelled_at: datetime | None
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
     @computed_field
     @property
@@ -82,60 +83,60 @@ class BookingClientBase(BookingBase):
         return self.user_id is None
 
 
-class BookingSelfResponse(BookingClientBase):
-    """
-    Ответ для владельца брони (гость или авторизованный пользователь).
+class BookingSelfResponse(BookingResponseBase):
+    """Self perspective: booking owner (guest or authenticated user)."""
 
-    Содержит собственные контактные данные; без внутренних платёжных ID.
-    """
-
-    guest_name: str | None = Field(None, description="Имя на бронировании")
-    guest_email: str | None = Field(None, description="Email на бронировании")
-    guest_phone: str | None = Field(None, description="Телефон на бронировании")
+    guest_name: str | None = Field(None, description="Name on the booking")
+    guest_email: str | None = Field(None, description="Email on the booking")
+    guest_phone: str | None = Field(None, description="Phone on the booking")
 
 
-class BookingOwnerResponse(BookingClientBase):
-    """
-    Ответ для владельца студии.
+class BookingOwnerResponse(BookingResponseBase):
+    """Owner perspective: studio staff view with guest contact details."""
 
-    Контакты гостя для связи; payment_status без checkout_session_id / payment_intent_id.
-    """
-
-    guest_name: str | None = Field(None, description="Имя гостя")
-    guest_email: str | None = Field(None, description="Email гостя для связи")
-    guest_phone: str | None = Field(None, description="Телефон гостя для связи")
+    guest_name: str | None = Field(None, description="Guest name")
+    guest_email: str | None = Field(None, description="Guest email for contact")
+    guest_phone: str | None = Field(None, description="Guest phone for contact")
 
 
-class BookingWithSlot(BookingOwnerResponse):
-    """Бронирование с информацией о слоте (кабинет владельца студии)."""
+class BookingWithOccurrence(BookingOwnerResponse):
+    """Owner perspective with nested occurrence."""
 
-    slot: SlotResponse = Field(..., description="Информация о слоте")
+    occurrence: OccurrenceResponse = Field(
+        ...,
+        description="Occurrence details",
+        validation_alias="slot",
+    )
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 class BookingWithUser(BookingOwnerResponse):
-    """Бронирование с информацией о пользователе (кабинет владельца студии)."""
+    """Owner perspective with nested user profile."""
 
-    user: UserPublic | None = Field(None, description="Информация о пользователе")
+    user: UserPublic | None = Field(None, description="Linked user profile")
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
-class BookingListItem(BookingSelfResponse):
+class BookingSelfListItem(BookingSelfResponse):
     """
-    Элемент списка бронирований для личного кабинета (/bookings/my).
+    Self perspective list item for /bookings/my.
 
-    Вложенные slot+studio, чтобы фронт не делал N+1.
+    Nested occurrence + studio to avoid N+1 on the frontend.
     """
 
-    slot: SlotResponse = Field(..., description="Информация о слоте")
-    studio: StudioResponse = Field(..., description="Информация о студии")
+    occurrence: OccurrenceResponse = Field(
+        ...,
+        description="Occurrence details",
+        validation_alias="slot",
+    )
+    studio: StudioResponse = Field(..., description="Studio details")
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 class BookingCancel(BaseModel):
-    """Схема для отмены бронирования."""
+    """Cancel booking request."""
 
-    reason: str | None = Field(None, max_length=500, description="Причина отмены")
+    reason: str | None = Field(None, max_length=500, description="Cancellation reason")

@@ -131,7 +131,7 @@ async def test_create_booking_race_one_success_one_conflict(client: AsyncClient)
     """
     slot_id = await _create_bookable_slot(client, owner_email="race-owner@example.com")
     schema = BookingCreate(
-        slot_id=slot_id,
+        occurrence_id=slot_id,
         guest_name="Race Guest",
         guest_email="race-guest@example.com",
         guest_phone="+1999888777",

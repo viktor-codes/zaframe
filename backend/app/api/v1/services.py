@@ -15,9 +15,9 @@ from app.api.mappers.service import map_service_availability
 from app.core.uow import UnitOfWork
 from app.models.user import User
 from app.schemas import (
-    ScheduleBase,
-    ScheduleCreate,
-    ScheduleResponse,
+    ScheduleTemplateBase,
+    ScheduleTemplateCreate,
+    ScheduleTemplateResponse,
     ServiceAvailabilityResponse,
     ServiceCreate,
     ServiceResponse,
@@ -123,42 +123,42 @@ async def deactivate_service_endpoint(
 
 @router.get(
     "/{service_id}/schedules",
-    response_model=list[ScheduleResponse],
+    response_model=list[ScheduleTemplateResponse],
 )
 async def list_service_schedules_endpoint(
     service_id: int,
     uow: UnitOfWork = Depends(get_uow),
-) -> list[ScheduleResponse]:
+) -> list[ScheduleTemplateResponse]:
     """Список шаблонов расписания для услуги."""
     await get_service_or_raise(uow, service_id)
     schedules = await get_schedules_for_service(uow, service_id=service_id)
-    return [ScheduleResponse.model_validate(s) for s in schedules]
+    return [ScheduleTemplateResponse.model_validate(s) for s in schedules]
 
 
 @router.post(
     "/{service_id}/schedules",
-    response_model=ScheduleResponse,
+    response_model=ScheduleTemplateResponse,
     status_code=201,
 )
 async def create_service_schedule_endpoint(
     service_id: int,
-    schema: ScheduleBase,
+    schema: ScheduleTemplateBase,
     user: User = Depends(get_current_user_required),
     uow: UnitOfWork = Depends(get_uow),
-) -> ScheduleResponse:
+) -> ScheduleTemplateResponse:
     """
-    Создать шаблон расписания (Schedule) для услуги.
+    Создать шаблон расписания (ScheduleTemplate) для услуги.
     """
     service = await get_service_or_raise(uow, service_id)
     studio = await get_studio_or_raise(uow, service.studio_id)
     ensure_studio_owner(studio, user.id)
 
-    schedule_schema = ScheduleCreate(
+    schedule_schema = ScheduleTemplateCreate(
         service_id=service_id,
         **schema.model_dump(),
     )
     schedule = await create_schedule(uow, schedule_schema)
-    return ScheduleResponse.model_validate(schedule)
+    return ScheduleTemplateResponse.model_validate(schedule)
 
 
 @router.delete("/schedules/{schedule_id}", status_code=204)

@@ -26,7 +26,7 @@ from app.schemas import (
     ScheduleGenerateRequest,
     SearchResult,
     ServiceResponse,
-    SlotResponse,
+    OccurrenceResponse,
     StudioCreate,
     StudioPublicResponse,
     StudioResponse,
@@ -124,7 +124,7 @@ async def count_studios(
     return {"count": count}
 
 
-@router.get("/{studio_id}/slots", response_model=list[SlotResponse])
+@router.get("/{studio_id}/slots", response_model=list[OccurrenceResponse])
 async def list_studio_slots(
     studio_id: int,
     uow: UnitOfWork = Depends(get_uow),
@@ -133,7 +133,7 @@ async def list_studio_slots(
     start_from: datetime | None = Query(None, description="Начало диапазона дат"),
     start_to: datetime | None = Query(None, description="Конец диапазона дат"),
     status: str | None = Query(None, description="Фильтр по статусу (active/cancelled)"),
-) -> list[SlotResponse]:
+) -> list[OccurrenceResponse]:
     """
     Расписание студии: слоты с фильтрами по датам.
     """
@@ -171,13 +171,13 @@ async def get_studio_public_endpoint(
     return map_studio_public(await get_studio_public(uow, slug=slug))
 
 
-@router.post("/{studio_id}/generate-schedule", response_model=list[SlotResponse])
+@router.post("/{studio_id}/generate-schedule", response_model=list[OccurrenceResponse])
 async def generate_studio_schedule_endpoint(
     studio_id: int,
     schema: ScheduleGenerateRequest,
     user: User = Depends(get_current_user_required),
     uow: UnitOfWork = Depends(get_uow),
-) -> list[SlotResponse]:
+) -> list[OccurrenceResponse]:
     """
     Сгенерировать расписание для услуги в студии.
 
@@ -194,7 +194,7 @@ async def generate_studio_schedule_endpoint(
         start_time=schema.start_time,
         weeks_count=schema.weeks_count,
     )
-    return [SlotResponse.model_validate(s) for s in slots]
+    return [OccurrenceResponse.model_validate(s) for s in slots]
 
 
 @router.post("", response_model=StudioResponse, status_code=201)

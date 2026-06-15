@@ -16,7 +16,7 @@ from app.core.uow import UnitOfWork
 from app.models.user import User
 from app.schemas import (
     BookingCreate,
-    BookingListItem,
+    BookingSelfListItem,
     BookingOwnerResponse,
     BookingSelfResponse,
     CourseBookingCreate,
@@ -92,7 +92,7 @@ async def list_bookings(
     return [BookingOwnerResponse.model_validate(b) for b in bookings]
 
 
-@router.get("/my", response_model=list[BookingListItem])
+@router.get("/my", response_model=list[BookingSelfListItem])
 async def list_my_bookings(
     uow: UnitOfWork = Depends(get_uow),
     user: User = Depends(get_current_user_required),
@@ -102,7 +102,7 @@ async def list_my_bookings(
         True,
         description="Включать гостевые бронирования по совпадению guest_email с email пользователя",
     ),
-) -> list[BookingListItem]:
+) -> list[BookingSelfListItem]:
     """
     Кабинетный список бронирований текущего пользователя (без N+1).
 
@@ -116,9 +116,9 @@ async def list_my_bookings(
         include_guest_email=include_guest_email,
     )
     return [
-        BookingListItem(
+        BookingSelfListItem(
             **BookingSelfResponse.model_validate(b).model_dump(),
-            slot=b.slot,
+            occurrence=b.slot,
             studio=b.slot.studio,
         )
         for b in bookings

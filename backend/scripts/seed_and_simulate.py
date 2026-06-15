@@ -32,11 +32,9 @@ from app.models.slot import Slot
 from app.models.studio import Studio
 from app.models.user import User
 from app.schemas.booking import BookingCreate
-from app.schemas.service import (
-    CourseBookingCreate,
-    ServiceCreate,
-)
-from app.schemas.slot import SlotCreate
+from app.schemas.order import CourseBookingCreate
+from app.schemas.service import ServiceCreate
+from app.schemas.occurrence import OccurrenceCreate
 from app.schemas.studio import StudioCreate
 from app.services.booking import create_booking
 from app.services.payment import (
@@ -164,7 +162,7 @@ async def seed_demo_data(
             else:
                 for _ in range(single_slots_per_service):
                     start_dt, end_dt = _random_future_datetime(studio.timezone, 21, duration)
-                    slot_schema = SlotCreate(
+                    slot_schema = OccurrenceCreate(
                         studio_id=studio.id,
                         service_id=service.id,
                         start_time=start_dt,
@@ -260,7 +258,7 @@ async def simulate_bookings(
                 continue
             slot = random.choice(single_slots)
             schema = BookingCreate(
-                slot_id=slot.id,
+                occurrence_id=slot.id,
                 guest_name=guest_name,
                 guest_email=guest_email,
                 guest_phone=None,

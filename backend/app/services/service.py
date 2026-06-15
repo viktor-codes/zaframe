@@ -27,7 +27,7 @@ from app.models import (
     ServiceType,
     Slot,
 )
-from app.schemas import ScheduleCreate, ServiceUpdate
+from app.schemas import ScheduleTemplateCreate, ServiceUpdate
 from app.services.dto import (
     CourseAvailabilityDTO,
     CourseBookingInput,
@@ -79,7 +79,7 @@ async def deactivate_service(uow: UnitOfWork, service: Service) -> Service:
     return await uow.services.save(service)
 
 
-async def create_schedule(uow: UnitOfWork, schema: ScheduleCreate) -> Schedule:
+async def create_schedule(uow: UnitOfWork, schema: ScheduleTemplateCreate) -> Schedule:
     """Создать шаблон расписания для услуги."""
     if await uow.services.get_by_id(schema.service_id) is None:
         raise NotFoundError("Service not found")

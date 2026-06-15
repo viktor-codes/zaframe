@@ -22,15 +22,21 @@ Execute phases in order. Do not start Phase 3 until Phase 2 migration applies cl
 
 | Action | File | Tasks |
 |--------|------|-------|
-| [S] | `backend/app/schemas/occurrence.py` | **Create** from `slot.py`: `OccurrenceBase`, `OccurrenceCreate`, `OccurrenceUpdate`, `OccurrenceResponse`, `OccurrenceWithBookings`, `OccurrenceStatusLiteral` |
-| [D] | `backend/app/schemas/slot.py` | Remove after occurrence.py lands |
-| [S] | `backend/app/schemas/catalog.py` | **Create**: move `PublicService`, `PublicOccurrence` (was `PublicServiceOccurrence`), `StudioPublicResponse` from `service.py` |
-| [S] | `backend/app/schemas/order.py` | **Create**: move `OrderBase`, `OrderResponse`, `CourseBookingPreviewItem`, `CourseAvailabilityResult`, `CourseBookingCreate`, `CourseBookingResponse` |
-| [S] | `backend/app/schemas/service.py` | **Slim**: keep only `ServiceBase/Create/Update/Response`, `ServiceAvailabilityScheduleItem`, `ServiceAvailabilityResponse` |
-| [S] | `backend/app/schemas/schedule.py` | **Merge**: add `ScheduleTemplateBase/Create/Response` (was `Schedule*` in service.py); keep `ScheduleGenerateRequest` (or rename to `OccurrenceGenerateRequest`) |
-| [ ] | `backend/app/schemas/booking.py` | `BookingClientBase` → `BookingResponseBase`; `BookingListItem` → `BookingSelfListItem`; `slot_id` → `occurrence_id` in fields; import `OccurrenceResponse` |
-| [ ] | `backend/app/schemas/__init__.py` | Update exports, `model_rebuild()` targets |
-| [ ] | `backend/app/schemas/search.py` | Update imports if `ServiceResponse` / `StudioResponse` paths change (likely unchanged) |
+| [x] | `backend/app/schemas/occurrence.py` | **Create** from `slot.py` |
+| [x] | `backend/app/schemas/slot.py` | **Deleted** |
+| [x] | `backend/app/schemas/catalog.py` | **Create** |
+| [x] | `backend/app/schemas/order.py` | **Create** |
+| [x] | `backend/app/schemas/service.py` | **Slimmed** |
+| [x] | `backend/app/schemas/schedule.py` | **Merged** ScheduleTemplate* |
+| [x] | `backend/app/schemas/booking.py` | Renamed base/list/occurrence fields |
+| [x] | `backend/app/schemas/__init__.py` | Updated exports |
+| [x] | `backend/app/schemas/search.py` | Unchanged |
+
+### 1.3 Phase 1 gate
+
+- [x] `uv run ruff check backend/app/schemas`
+- [x] `uv run pytest` — 141 passed
+- [x] No imports from deleted `schemas/slot.py`
 
 ### 1.2 Schema rename reference (grep targets)
 
@@ -49,12 +55,6 @@ BookingClientBase     → BookingResponseBase
 BookingListItem       → BookingSelfListItem
 slot_id (schema fields) → occurrence_id
 ```
-
-### 1.3 Phase 1 gate
-
-- [ ] `uv run ruff check backend/app/schemas`
-- [ ] `uv run pyright backend/app/schemas` (if configured project-wide, run full backend)
-- [ ] No imports from deleted `schemas/slot.py`
 
 ---
 
