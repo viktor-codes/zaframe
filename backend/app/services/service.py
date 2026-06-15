@@ -475,12 +475,9 @@ async def create_course_booking(
     bookings = await _persist_bookings(uow, bookings)
 
     order_schema = OrderResponse.model_validate(order)
-    # Отложим полноценный маппинг BookingResponse, пока основной поток остаётся single-slot
-    from app.schemas.booking import (  # локальный импорт, чтобы избежать циклов
-        BookingResponse,
-    )
+    from app.schemas.booking import BookingSelfResponse
 
-    booking_schemas = [BookingResponse.model_validate(b) for b in bookings]
+    booking_schemas = [BookingSelfResponse.model_validate(b) for b in bookings]
 
     return CourseBookingResponse(
         order=order_schema,

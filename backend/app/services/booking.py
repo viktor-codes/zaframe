@@ -15,7 +15,12 @@ from app.core.exceptions import ConflictError, NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
 from app.models.booking import Booking, BookingStatus, BookingType
 from app.models.user import User
-from app.schemas.booking import BookingCreate, BookingUpdate
+from app.schemas.booking import (
+    BookingCreate,
+    BookingOwnerResponse,
+    BookingSelfResponse,
+    BookingUpdate,
+)
 
 DUPLICATE_BOOKING_MESSAGE = "You already have a booking for this session"
 
@@ -109,6 +114,17 @@ def can_access_booking(
     if is_own_booking(booking, user):
         return True
     return studio_owner_id is not None and studio_owner_id == user.id
+
+
+def map_booking_for_user(booking: Booking, user: User) -> BookingSelfResponse | BookingOwnerResponse:
+    """
+    Map ORM booking to the appropriate client response schema.
+
+    Own bookings use BookingSelfResponse; studio-owner views use BookingOwnerResponse.
+    """
+    if is_own_booking(booking, user):
+        return BookingSelfResponse.model_validate(booking)
+    return BookingOwnerResponse.model_validate(booking)
 
 
 async def get_booking_for_user_or_raise(

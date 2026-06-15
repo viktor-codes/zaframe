@@ -9,6 +9,7 @@ from datetime import date, datetime, time
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from app.models import ServiceCategory, ServiceType
+from app.schemas.booking import BookingSelfResponse
 
 
 class ServiceBase(BaseModel):
@@ -236,7 +237,7 @@ class CourseBookingResponse(BaseModel):
     """
 
     order: OrderResponse
-    bookings: list[BookingResponse]
+    bookings: list[BookingSelfResponse]
     availability: CourseAvailabilityResult | None = None
 
 

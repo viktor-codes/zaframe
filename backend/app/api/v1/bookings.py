@@ -17,7 +17,8 @@ from app.models.user import User
 from app.schemas import (
     BookingCreate,
     BookingListItem,
-    BookingResponse,
+    BookingOwnerResponse,
+    BookingSelfResponse,
     CourseBookingCreate,
     CourseBookingResponse,
 )
@@ -28,19 +29,24 @@ from app.services.booking import (
     get_my_bookings,
     get_owner_bookings,
     get_owner_bookings_count,
+    map_booking_for_user,
 )
 from app.services.service import create_course_booking
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
 
 
-@router.post("", response_model=BookingResponse | CourseBookingResponse, status_code=201)
+@router.post(
+    "",
+    response_model=BookingSelfResponse | CourseBookingResponse,
+    status_code=201,
+)
 @limiter.limit("10/minute")
 async def create_booking_endpoint(
     request: Request,
     schema: BookingCreate | CourseBookingCreate,
     uow: UnitOfWork = Depends(get_uow),
-) -> BookingResponse | CourseBookingResponse:
+) -> BookingSelfResponse | CourseBookingResponse:
     """
     Создать бронирование.
 
@@ -50,12 +56,11 @@ async def create_booking_endpoint(
     """
     if isinstance(schema, CourseBookingCreate):
         return await create_course_booking(uow, schema=schema)
-    # Обычное разовое бронирование
     booking = await create_booking(uow, schema)  # type: ignore[arg-type]
-    return booking
+    return BookingSelfResponse.model_validate(booking)
 
 
-@router.get("", response_model=list[BookingResponse])
+@router.get("", response_model=list[BookingOwnerResponse])
 async def list_bookings(
     uow: UnitOfWork = Depends(get_uow),
     user: User = Depends(get_current_user_required),
@@ -63,9 +68,9 @@ async def list_bookings(
     limit: int = Query(20, ge=1, le=100, description="Максимум записей"),
     slot_id: int | None = Query(None, description="Фильтр по слоту"),
     status: str | None = Query(None, description="Фильтр по статусу"),
-) -> list[BookingResponse]:
+) -> list[BookingOwnerResponse]:
     """Список бронирований студий, которыми владеет текущий пользователь."""
-    return await get_owner_bookings(
+    bookings = await get_owner_bookings(
         uow,
         user,
         skip=skip,
@@ -73,6 +78,7 @@ async def list_bookings(
         slot_id=slot_id,
         status=status,
     )
+    return [BookingOwnerResponse.model_validate(b) for b in bookings]
 
 
 @router.get("/my", response_model=list[BookingListItem])
@@ -98,10 +104,9 @@ async def list_my_bookings(
         limit=limit,
         include_guest_email=include_guest_email,
     )
-    # Map ORM -> response with explicit studio field.
     return [
         BookingListItem(
-            **BookingResponse.model_validate(b).model_dump(),
+            **BookingSelfResponse.model_validate(b).model_dump(),
             slot=b.slot,
             studio=b.slot.studio,
         )
@@ -127,22 +132,27 @@ async def count_bookings(
     return {"count": count}
 
 
-@router.get("/{booking_id}", response_model=BookingResponse)
+@router.get("/{booking_id}", response_model=BookingSelfResponse | BookingOwnerResponse)
 async def get_booking_by_id(
     booking_id: int,
     uow: UnitOfWork = Depends(get_uow),
     user: User = Depends(get_current_user_required),
-) -> BookingResponse:
+) -> BookingSelfResponse | BookingOwnerResponse:
     """Получить бронирование по ID (только своё или студии владельца)."""
-    return await get_booking_for_user_or_raise(uow, booking_id, user)
+    booking = await get_booking_for_user_or_raise(uow, booking_id, user)
+    return map_booking_for_user(booking, user)
 
 
-@router.patch("/{booking_id}/cancel", response_model=BookingResponse)
+@router.patch(
+    "/{booking_id}/cancel",
+    response_model=BookingSelfResponse | BookingOwnerResponse,
+)
 async def cancel_booking_endpoint(
     booking_id: int,
     uow: UnitOfWork = Depends(get_uow),
     user: User = Depends(get_current_user_required),
-) -> BookingResponse:
+) -> BookingSelfResponse | BookingOwnerResponse:
     """Отменить бронирование (только своё или студии владельца)."""
     booking = await get_booking_for_user_or_raise(uow, booking_id, user)
-    return await cancel_booking(uow, booking)
+    cancelled = await cancel_booking(uow, booking)
+    return map_booking_for_user(cancelled, user)

@@ -19,7 +19,7 @@ from fastapi import APIRouter, Depends, Query
 from app.api.deps import get_current_user_required, get_uow
 from app.core.uow import UnitOfWork
 from app.models.user import User
-from app.schemas.booking import BookingResponse
+from app.schemas.booking import BookingOwnerResponse
 from app.schemas.slot import SlotCreate, SlotResponse, SlotUpdate
 from app.services.booking import get_bookings
 from app.services.slot import (
@@ -81,7 +81,7 @@ async def count_slots(
     return {"count": count}
 
 
-@router.get("/{slot_id}/bookings", response_model=list[BookingResponse])
+@router.get("/{slot_id}/bookings", response_model=list[BookingOwnerResponse])
 async def list_slot_bookings(
     slot_id: int,
     user: User = Depends(get_current_user_required),
@@ -89,12 +89,13 @@ async def list_slot_bookings(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     status: str | None = Query(None, description="Фильтр по статусу"),
-) -> list[BookingResponse]:
+) -> list[BookingOwnerResponse]:
     """Бронирования слота (только владелец студии)."""
     slot = await get_slot_or_raise(uow, slot_id)
     studio = await get_studio_or_raise(uow, slot.studio_id)
     ensure_studio_owner(studio, user.id)
-    return await get_bookings(uow, skip=skip, limit=limit, slot_id=slot_id, status=status)
+    bookings = await get_bookings(uow, skip=skip, limit=limit, slot_id=slot_id, status=status)
+    return [BookingOwnerResponse.model_validate(b) for b in bookings]
 
 
 @router.get("/{slot_id}", response_model=SlotResponse)

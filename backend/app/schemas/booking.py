@@ -5,12 +5,16 @@ Pydantic schemas для Booking модели.
 from __future__ import annotations
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, computed_field
 
 from app.models.booking import BookingType
 from app.schemas.slot import SlotResponse
 from app.schemas.studio import StudioResponse
+
+if TYPE_CHECKING:
+    from app.schemas.user import UserPublic
 
 
 class BookingBase(BaseModel):
@@ -51,57 +55,89 @@ class BookingCreateAuthenticated(BookingBase):
 
 
 class BookingUpdate(BaseModel):
-    """Схема для обновления бронирования."""
+    """Схема для обновления бронирования (внутреннее использование)."""
 
     status: str | None = Field(None, description="Статус бронирования")
     payment_intent_id: str | None = Field(None, description="ID платежа Stripe")
     payment_status: str | None = Field(None, description="Статус платежа")
 
 
-class BookingResponse(BookingBase):
-    """Схема для ответа API."""
+class BookingClientBase(BookingBase):
+    """
+    Общие поля клиентских ответов по бронированию.
+
+    Stripe checkout_session_id и payment_intent_id намеренно исключены.
+    """
 
     id: int
     user_id: int | None
-    guest_name: str | None
-    guest_email: str | None
-    guest_phone: str | None
     status: str
     reserved_until: datetime | None = Field(
         None,
         description="UTC timestamp until which a pending booking reserves slot capacity",
     )
-    checkout_session_id: str | None
-    payment_intent_id: str | None
-    payment_status: str | None
+    payment_status: str | None = Field(
+        None,
+        description="Статус платежа (без внутренних Stripe ID)",
+    )
     created_at: datetime
     updated_at: datetime
     cancelled_at: datetime | None
 
     model_config = ConfigDict(from_attributes=True)
 
+    @computed_field
+    @property
+    def is_guest_booking(self) -> bool:
+        """True when booking was created without a linked user account."""
+        return self.user_id is None
 
-class BookingWithSlot(BookingResponse):
-    """Бронирование с информацией о слоте."""
+
+class BookingSelfResponse(BookingClientBase):
+    """
+    Ответ для владельца брони (гость или авторизованный пользователь).
+
+    Содержит собственные контактные данные; без внутренних платёжных ID.
+    """
+
+    guest_name: str | None = Field(None, description="Имя на бронировании")
+    guest_email: str | None = Field(None, description="Email на бронировании")
+    guest_phone: str | None = Field(None, description="Телефон на бронировании")
+
+
+class BookingOwnerResponse(BookingClientBase):
+    """
+    Ответ для владельца студии.
+
+    Контакты гостя для связи; payment_status без checkout_session_id / payment_intent_id.
+    """
+
+    guest_name: str | None = Field(None, description="Имя гостя")
+    guest_email: str | None = Field(None, description="Email гостя для связи")
+    guest_phone: str | None = Field(None, description="Телефон гостя для связи")
+
+
+class BookingWithSlot(BookingOwnerResponse):
+    """Бронирование с информацией о слоте (кабинет владельца студии)."""
 
     slot: SlotResponse = Field(..., description="Информация о слоте")
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class BookingWithUser(BookingResponse):
-    """Бронирование с информацией о пользователе."""
+class BookingWithUser(BookingOwnerResponse):
+    """Бронирование с информацией о пользователе (кабинет владельца студии)."""
 
     user: UserPublic | None = Field(None, description="Информация о пользователе")
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class BookingListItem(BookingResponse):
+class BookingListItem(BookingSelfResponse):
     """
-    Элемент списка бронирований для кабинета.
+    Элемент списка бронирований для личного кабинета (/bookings/my).
 
-    Возвращает все поля BookingResponse плюс вложенные slot+studio, чтобы фронт не делал N+1.
+    Вложенные slot+studio, чтобы фронт не делал N+1.
     """
 
     slot: SlotResponse = Field(..., description="Информация о слоте")

@@ -138,7 +138,10 @@ async def test_guest_can_view_and_cancel_own_booking(client: AsyncClient):
 
     r_get = await client.get(f"/api/v1/bookings/{booking_id}", headers=guest_headers)
     assert r_get.status_code == 200
-    assert r_get.json()["guest_email"] == guest_email
+    body = r_get.json()
+    assert body["guest_email"] == guest_email
+    assert "payment_intent_id" not in body
+    assert "checkout_session_id" not in body
 
     r_cancel = await client.patch(
         f"/api/v1/bookings/{booking_id}/cancel",
@@ -163,6 +166,8 @@ async def test_studio_owner_sees_slot_bookings_and_single_booking(client: AsyncC
     assert len(bookings) == 1
     assert bookings[0]["id"] == booking_id
     assert bookings[0]["guest_email"] == "participant-authz@example.com"
+    assert "payment_intent_id" not in bookings[0]
+    assert "checkout_session_id" not in bookings[0]
 
     r_owner_list = await client.get("/api/v1/bookings", headers=owner_headers)
     assert r_owner_list.status_code == 200
