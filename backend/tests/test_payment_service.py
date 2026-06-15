@@ -14,6 +14,7 @@ from app.models.booking import Booking, BookingStatus
 from app.models.order import Order, OrderStatus
 from app.models.service import Service
 from app.models.slot import Slot
+from app.models.user import User
 from app.services.payment import (
     PAYMENT_STATUS_OVERBOOKED_MANUAL_REVIEW,
     confirm_booking_after_payment,
@@ -56,6 +57,66 @@ async def test_create_checkout_session_booking_not_found(mock_uow):
         await create_checkout_session(
             mock_uow, 1, success_url="https://a/s", cancel_url="https://a/c"
         )
+
+
+@pytest.mark.asyncio
+async def test_create_checkout_session_foreign_user_gets_not_found(mock_uow):
+    booking = MagicMock(spec=Booking)
+    booking.user_id = 99
+    booking.guest_email = "other@example.com"
+    mock_uow.bookings.get_by_id_with_slot = AsyncMock(return_value=booking)
+    user = MagicMock(spec=User)
+    user.id = 1
+    user.email = "me@example.com"
+    with pytest.raises(NotFoundError, match="Booking not found"):
+        await create_checkout_session(
+            mock_uow,
+            1,
+            success_url="https://a/s",
+            cancel_url="https://a/c",
+            current_user=user,
+        )
+
+
+@pytest.mark.asyncio
+async def test_create_checkout_session_guest_email_owner_allowed(mock_uow):
+    slot = MagicMock(spec=Slot)
+    slot.price_cents = 1000
+    slot.title = "Paid"
+    slot.description = "Desc"
+    slot.id = 1
+    booking = MagicMock(spec=Booking)
+    booking.status = BookingStatus.PENDING
+    booking.reserved_until = _active_hold_until()
+    booking.checkout_session_id = None
+    booking.slot = slot
+    booking.user_id = None
+    booking.guest_email = "me@example.com"
+    mock_uow.bookings.get_by_id_with_slot = AsyncMock(return_value=booking)
+    user = MagicMock(spec=User)
+    user.id = 1
+    user.email = "me@example.com"
+    mock_session = MagicMock()
+    mock_session.id = "cs_123"
+    mock_session.url = "https://checkout.stripe.com/pay"
+    mock_client = MagicMock()
+    mock_client.v1.checkout.sessions.create.return_value = mock_session
+    with patch("app.services.payment.settings") as mock_settings:
+        mock_settings.STRIPE_SECRET_KEY = "sk_test"
+        mock_settings.STRIPE_CURRENCY = "usd"
+        mock_settings.BOOKING_HOLD_MINUTES = 15
+        with patch(
+            "app.services.payment.stripe.StripeClient",
+            return_value=mock_client,
+        ):
+            result = await create_checkout_session(
+                mock_uow,
+                1,
+                success_url="https://a/s",
+                cancel_url="https://a/c",
+                current_user=user,
+            )
+    assert result["session_id"] == "cs_123"
 
 
 @pytest.mark.asyncio
@@ -190,6 +251,25 @@ async def test_create_order_checkout_session_order_not_found(mock_uow):
     with pytest.raises(NotFoundError, match="Order not found"):
         await create_order_checkout_session(
             mock_uow, 1, success_url="https://a/s", cancel_url="https://a/c"
+        )
+
+
+@pytest.mark.asyncio
+async def test_create_order_checkout_session_foreign_user_gets_not_found(mock_uow):
+    order = MagicMock(spec=Order)
+    order.user_id = 99
+    order.guest_email = "other@example.com"
+    mock_uow.orders.get_by_id_with_service = AsyncMock(return_value=order)
+    user = MagicMock(spec=User)
+    user.id = 1
+    user.email = "me@example.com"
+    with pytest.raises(NotFoundError, match="Order not found"):
+        await create_order_checkout_session(
+            mock_uow,
+            1,
+            success_url="https://a/s",
+            cancel_url="https://a/c",
+            current_user=user,
         )
 
 

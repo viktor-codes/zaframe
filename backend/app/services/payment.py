@@ -19,12 +19,14 @@ from app.core.config import settings
 from app.core.datetime_utils import ensure_utc, utc_now
 from app.core.exceptions import AppError, NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
+from app.models.user import User
+from app.services.booking import is_own_booking
 from app.integrations.stripe.checkout import (
     build_booking_checkout_params,
     build_order_checkout_params,
 )
 from app.models.booking import Booking, BookingStatus
-from app.models.order import OrderStatus
+from app.models.order import Order, OrderStatus
 from app.models.slot import Slot
 
 # WHY: paid but slot full — studio owner resolves refund/rebook manually (no auto-refund yet).
@@ -35,6 +37,15 @@ PAYMENT_STATUS_OVERBOOKED_MANUAL_REVIEW = "overbooked_manual_review"
 _STRIPE_CHECKOUT_MIN_EXPIRY_SECONDS = 30 * 60
 
 logger = structlog.get_logger(__name__)
+
+
+def is_own_order(order: Order, user: User) -> bool:
+    """True when order belongs to the user (by user_id or guest_email)."""
+    if order.user_id is not None and order.user_id == user.id:
+        return True
+    if order.guest_email is not None:
+        return order.guest_email.strip().lower() == user.email.strip().lower()
+    return False
 
 
 def _get_stripe_client() -> stripe.StripeClient:
@@ -101,14 +112,20 @@ async def create_checkout_session(
     *,
     success_url: str,
     cancel_url: str,
+    current_user: User | None = None,
 ) -> dict[str, str]:
     """
     Создать Stripe Checkout Session для оплаты бронирования.
+
+    Authenticated callers must own the booking (user_id or guest_email).
+    Guest callers rely on PENDING + active hold + no existing session.
 
     Возвращает: {"checkout_url": "...", "session_id": "..."}
     """
     booking = await uow.bookings.get_by_id_with_slot(booking_id)
     if booking is None:
+        raise NotFoundError("Booking not found")
+    if current_user is not None and not is_own_booking(booking, current_user):
         raise NotFoundError("Booking not found")
     if booking.status != BookingStatus.PENDING:
         raise ValidationError("Booking is already paid or cancelled")
@@ -153,15 +170,21 @@ async def create_order_checkout_session(
     *,
     success_url: str,
     cancel_url: str,
+    current_user: User | None = None,
 ) -> dict[str, str]:
     """
     Создать Stripe Checkout Session для оплаты заказа (Order).
+
+    Authenticated callers must own the order (user_id or guest_email).
+    Guest callers rely on PENDING order and active booking holds.
 
     Сумма берётся из order.total_amount_cents.
     В metadata сессии обязательно указываем order_id.
     """
     order = await uow.orders.get_by_id_with_service(order_id)
     if order is None:
+        raise NotFoundError("Order not found")
+    if current_user is not None and not is_own_order(order, current_user):
         raise NotFoundError("Order not found")
     if order.status != OrderStatus.PENDING:
         raise ValidationError("Order is already paid or cancelled")
