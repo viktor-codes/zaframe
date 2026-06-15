@@ -11,6 +11,7 @@ from datetime import date
 from fastapi import APIRouter, Depends, Query
 
 from app.api.deps import get_current_user_required, get_uow
+from app.api.mappers.service import map_service_availability
 from app.core.uow import UnitOfWork
 from app.models.user import User
 from app.schemas import (
@@ -82,7 +83,9 @@ async def get_service_availability_endpoint(
     Используется фронтендом при открытии модалки покупки, чтобы
     показать календарь занятости.
     """
-    return await get_service_availability(uow, service_id=service_id, start_date=start_date)
+    return map_service_availability(
+        await get_service_availability(uow, service_id=service_id, start_date=start_date),
+    )
 
 
 @router.patch("/{service_id}", response_model=ServiceResponse)

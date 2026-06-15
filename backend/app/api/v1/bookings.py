@@ -31,6 +31,8 @@ from app.services.booking import (
     get_owner_bookings_count,
     map_booking_for_user,
 )
+from app.api.mappers.service import map_course_booking_result
+from app.services.dto import CourseBookingInput
 from app.services.service import create_course_booking
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
@@ -55,7 +57,16 @@ async def create_booking_endpoint(
     - покупка курса (CourseBookingCreate) — создаёт Order и N бронирований
     """
     if isinstance(schema, CourseBookingCreate):
-        return await create_course_booking(uow, schema=schema)
+        result = await create_course_booking(
+            uow,
+            data=CourseBookingInput(
+                service_id=schema.service_id,
+                guest_name=schema.guest_name,
+                guest_email=schema.guest_email,
+                guest_phone=schema.guest_phone,
+            ),
+        )
+        return map_course_booking_result(result)
     booking = await create_booking(uow, schema)  # type: ignore[arg-type]
     return BookingSelfResponse.model_validate(booking)
 

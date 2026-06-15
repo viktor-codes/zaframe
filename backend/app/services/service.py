@@ -27,18 +27,17 @@ from app.models import (
     ServiceType,
     Slot,
 )
-from app.schemas import (
-    CourseAvailabilityResult,
-    CourseBookingCreate,
-    CourseBookingPreviewItem,
-    CourseBookingResponse,
-    OrderResponse,
-    PublicService,
-    ScheduleCreate,
-    ServiceAvailabilityResponse,
-    ServiceAvailabilityScheduleItem,
-    ServiceUpdate,
-    StudioPublicResponse,
+from app.schemas import ScheduleCreate, ServiceUpdate
+from app.services.dto import (
+    CourseAvailabilityDTO,
+    CourseBookingInput,
+    CourseBookingPreviewItemDTO,
+    CourseBookingResultDTO,
+    PublicServiceAvailabilityDTO,
+    PublicServiceDTO,
+    ServiceAvailabilityDTO,
+    ServiceAvailabilityScheduleItemDTO,
+    StudioPublicDTO,
 )
 from app.services.booking import _ensure_no_active_booking_for_guest, _persist_bookings
 
@@ -279,9 +278,9 @@ async def _build_course_capacity_stats(
 def _evaluate_course_availability(
     service: Service,
     stats: list[_CapacityStats],
-) -> CourseAvailabilityResult:
+) -> CourseAvailabilityDTO:
     if not stats:
-        return CourseAvailabilityResult(
+        return CourseAvailabilityDTO(
             can_book=False,
             requires_warning=False,
             hard_block=True,
@@ -289,7 +288,7 @@ def _evaluate_course_availability(
             message="No sessions have been created for this course yet",
         )
 
-    overbooked_items: list[CourseBookingPreviewItem] = []
+    overbooked_items: list[CourseBookingPreviewItemDTO] = []
     hard_block = False
 
     for s in stats:
@@ -308,7 +307,7 @@ def _evaluate_course_availability(
 
         if is_over_soft or is_over_hard:
             overbooked_items.append(
-                CourseBookingPreviewItem(
+                CourseBookingPreviewItemDTO(
                     slot_id=s.slot.id,
                     start_time=s.slot.start_time,
                     max_capacity=max_capacity,
@@ -324,7 +323,7 @@ def _evaluate_course_availability(
     overbooked_ratio = len(overbooked_items) / len(stats)
 
     if hard_block or overbooked_ratio > service.max_overbooked_ratio:
-        return CourseAvailabilityResult(
+        return CourseAvailabilityDTO(
             can_book=False,
             requires_warning=False,
             hard_block=True,
@@ -337,7 +336,7 @@ def _evaluate_course_availability(
     if requires_warning:
         message = "Some course sessions will be fuller, but booking is still allowed."
 
-    return CourseAvailabilityResult(
+    return CourseAvailabilityDTO(
         can_book=True,
         requires_warning=requires_warning,
         hard_block=False,
@@ -351,7 +350,7 @@ async def check_course_availability(
     *,
     service_id: int,
     now: datetime | None = None,
-) -> CourseAvailabilityResult:
+) -> CourseAvailabilityDTO:
     """
     Проверка доступности курса с учётом overbooking‑логики.
     """
@@ -375,7 +374,7 @@ async def check_course_availability_for_update(
     *,
     service_id: int,
     now: datetime | None = None,
-) -> CourseAvailabilityResult:
+) -> CourseAvailabilityDTO:
     """
     Проверка доступности курса с блокировкой слотов (FOR UPDATE).
 
@@ -399,8 +398,8 @@ async def check_course_availability_for_update(
 async def create_course_booking(
     uow: UnitOfWork,
     *,
-    schema: CourseBookingCreate,
-) -> CourseBookingResponse:
+    data: CourseBookingInput,
+) -> CourseBookingResultDTO:
     """
     Создать заказ и набор бронирований для курса (гостевой сценарий).
 
@@ -409,7 +408,7 @@ async def create_course_booking(
     now_utc = utc_now()
     availability = await check_course_availability_for_update(
         uow,
-        service_id=schema.service_id,
+        service_id=data.service_id,
         now=now_utc,
     )
     if not availability.can_book:
@@ -417,7 +416,7 @@ async def create_course_booking(
             availability.message or "Not enough seats for the course",
         )
 
-    service = await uow.services.get_by_id_with_slots(schema.service_id)
+    service = await uow.services.get_by_id_with_slots(data.service_id)
     if service is None:
         raise NotFoundError("Service not found")
 
@@ -440,8 +439,8 @@ async def create_course_booking(
             studio_id=service.studio_id,
             service_id=service.id,
             user_id=None,
-            guest_email=schema.guest_email,
-            guest_name=schema.guest_name,
+            guest_email=data.guest_email,
+            guest_name=data.guest_name,
             total_amount_cents=total_amount_cents,
             currency="eur",
             status=OrderStatus.PENDING,
@@ -453,16 +452,16 @@ async def create_course_booking(
         await _ensure_no_active_booking_for_guest(
             uow,
             slot_id=slot.id,
-            guest_email=schema.guest_email,
+            guest_email=data.guest_email,
         )
         unit_price = prices[idx]
         bookings.append(
             Booking(
                 slot_id=slot.id,
                 user_id=None,
-                guest_name=schema.guest_name,
-                guest_email=schema.guest_email,
-                guest_phone=schema.guest_phone,
+                guest_name=data.guest_name,
+                guest_email=data.guest_email,
+                guest_phone=data.guest_phone,
                 status=BookingStatus.PENDING,
                 reserved_until=get_booking_reserved_until(now=now_utc),
                 booking_type=BookingType.COURSE,
@@ -474,14 +473,9 @@ async def create_course_booking(
 
     bookings = await _persist_bookings(uow, bookings)
 
-    order_schema = OrderResponse.model_validate(order)
-    from app.schemas.booking import BookingSelfResponse
-
-    booking_schemas = [BookingSelfResponse.model_validate(b) for b in bookings]
-
-    return CourseBookingResponse(
-        order=order_schema,
-        bookings=booking_schemas,
+    return CourseBookingResultDTO(
+        order=order,
+        bookings=bookings,
         availability=availability,
     )
 
@@ -490,7 +484,7 @@ async def get_studio_public(
     uow: UnitOfWork,
     *,
     slug: str,
-) -> StudioPublicResponse:
+) -> StudioPublicDTO:
     """
     Публичное представление студии по slug.
 
@@ -502,7 +496,7 @@ async def get_studio_public(
     if studio is None:
         raise NotFoundError("Studio not found")
 
-    services_public: list[PublicService] = []
+    services_public: list[PublicServiceDTO] = []
 
     # Собираем все будущие слоты студии, чтобы одним запросом посчитать заполненность.
     now_utc = utc_now()
@@ -538,7 +532,7 @@ async def get_studio_public(
             term_end = None
             occurrences_count = 0
 
-        availability_schema: PublicService.Availability | None = None
+        availability_dto: PublicServiceAvailabilityDTO | None = None
         if service.type == ServiceType.COURSE and upcoming_slots:
             total_remaining_capacity = 0
             overbooked_dates_set: set[date] = set()
@@ -571,7 +565,7 @@ async def get_studio_public(
 
             can_book = occurrences_count > 0 and total_remaining_capacity > 0 and not hard_block
 
-            availability_schema = PublicService.Availability(
+            availability_dto = PublicServiceAvailabilityDTO(
                 can_book=can_book,
                 total_remaining_capacity=total_remaining_capacity,
                 requires_warning=requires_warning and not hard_block,
@@ -579,7 +573,7 @@ async def get_studio_public(
             )
 
         services_public.append(
-            PublicService(
+            PublicServiceDTO(
                 id=service.id,
                 name=service.name,
                 description=service.description,
@@ -592,11 +586,11 @@ async def get_studio_public(
                 next_term_start=next_term_start,
                 term_end=term_end,
                 occurrences_count=occurrences_count,
-                availability=availability_schema,
+                availability=availability_dto,
             )
         )
 
-    return StudioPublicResponse(
+    return StudioPublicDTO(
         id=studio.id,
         name=studio.name,
         slug=studio.slug,
@@ -610,7 +604,7 @@ async def get_service_availability(
     *,
     service_id: int,
     start_date: date | None = None,
-) -> ServiceAvailabilityResponse:
+) -> ServiceAvailabilityDTO:
     """
     Детальная информация о доступности курса по всем его занятиям.
 
@@ -637,7 +631,7 @@ async def get_service_availability(
     if start_date is not None:
         stats = [s for s in stats if s.slot.start_time.date() >= start_date]
 
-    details: list[ServiceAvailabilityScheduleItem] = []
+    details: list[ServiceAvailabilityScheduleItemDTO] = []
     for s in stats:
         max_capacity = s.slot.max_capacity
         status = service.get_capacity_status(
@@ -651,7 +645,7 @@ async def get_service_availability(
         remaining = max(0, max_capacity - s.total)
 
         details.append(
-            ServiceAvailabilityScheduleItem(
+            ServiceAvailabilityScheduleItemDTO(
                 date=s.slot.start_time.date(),
                 is_overbooked=is_over_soft or is_over_hard,
                 remaining=remaining,
@@ -665,7 +659,7 @@ async def get_service_availability(
             )
         )
 
-    return ServiceAvailabilityResponse(
+    return ServiceAvailabilityDTO(
         service_id=service_id,
         can_book=availability.can_book,
         requires_warning=availability.requires_warning,

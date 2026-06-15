@@ -35,7 +35,6 @@ from app.schemas.booking import BookingCreate
 from app.schemas.service import (
     CourseBookingCreate,
     ServiceCreate,
-    StudioPublicResponse,
 )
 from app.schemas.slot import SlotCreate
 from app.schemas.studio import StudioCreate
@@ -44,6 +43,7 @@ from app.services.payment import (
     create_checkout_session,
     create_order_checkout_session,
 )
+from app.services.dto import CourseBookingInput, StudioPublicDTO
 from app.services.service import (
     create_course_booking,
     create_service,
@@ -241,7 +241,15 @@ async def simulate_bookings(
                     guest_phone=None,
                 )
                 try:
-                    course_resp = await create_course_booking(uow, schema=schema)
+                    course_resp = await create_course_booking(
+                        uow,
+                        data=CourseBookingInput(
+                            service_id=schema.service_id,
+                            guest_name=schema.guest_name,
+                            guest_email=schema.guest_email,
+                            guest_phone=schema.guest_phone,
+                        ),
+                    )
                     course_success += 1
                     course_order_ids.append(course_resp.order.id)
                 except AppError:
@@ -319,7 +327,7 @@ async def simulate_public_flows(uow: UnitOfWork) -> None:
 
     for studio in studios:
         try:
-            public: StudioPublicResponse = await get_studio_public(uow, slug=studio.slug or "")
+            public: StudioPublicDTO = await get_studio_public(uow, slug=studio.slug or "")
         except AppError as e:
             print(f"[public] get_studio_public slug={studio.slug} error: {e.detail}")
             continue

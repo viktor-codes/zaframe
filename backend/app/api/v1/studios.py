@@ -18,6 +18,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, Query
 
 from app.api.deps import get_current_user_required, get_uow
+from app.api.mappers.service import map_studio_public
 from app.core.uow import UnitOfWork
 from app.models.service import ServiceCategory
 from app.models.user import User
@@ -167,7 +168,7 @@ async def get_studio_public_endpoint(
 
     Возвращает список услуг и ближайшие занятия.
     """
-    return await get_studio_public(uow, slug=slug)
+    return map_studio_public(await get_studio_public(uow, slug=slug))
 
 
 @router.post("/{studio_id}/generate-schedule", response_model=list[SlotResponse])
