@@ -13,17 +13,17 @@ from unittest.mock import patch
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import func, select
+from tests.conftest import authenticate_via_otp
 
-from app.core.uow import create_uow, uow_scope
+from app.core.uow_factory import create_uow, uow_scope
 from app.models.booking import Booking, BookingStatus
-from app.models.order import Order, OrderStatus
 from app.models.occurrence import Occurrence
-from app.services.payment import (
+from app.models.order import Order, OrderStatus
+from app.modules.payment.service import (
     PAYMENT_STATUS_OVERBOOKED_MANUAL_REVIEW,
     confirm_booking_after_payment,
     confirm_order_after_payment,
 )
-from tests.conftest import authenticate_via_otp
 
 FROZEN_NOW = datetime(2026, 6, 15, 12, 0, tzinfo=UTC)
 _SQL_LOGGER = "sqlalchemy.engine.Engine"
@@ -108,7 +108,7 @@ async def _create_course_with_occurrence_count(
         )
         assert r_occ.status_code == 201
 
-    with patch("app.services.service.utc_now", return_value=FROZEN_NOW):
+    with patch("app.modules.catalog.service.availability.utc_now", return_value=FROZEN_NOW):
         r_order = await client.post(
             "/api/v1/bookings",
             json={
@@ -211,7 +211,7 @@ async def test_confirm_order_overbooking_when_slot_full(
     order_id = order.id
 
     uow = create_uow(session)
-    with patch("app.services.payment.utc_now", return_value=FROZEN_NOW):
+    with patch("app.modules.payment.confirmation.utc_now", return_value=FROZEN_NOW):
         await confirm_order_after_payment(uow, order_id, payment_intent_id="pi_course_late")
     await uow.orders.flush()
 

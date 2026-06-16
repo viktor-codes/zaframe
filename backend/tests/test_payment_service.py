@@ -1,5 +1,5 @@
 """
-Unit tests for app.services.payment validation and orchestration.
+Unit tests for app.modules.payment.service validation and orchestration.
 
 Checkout payload shape is covered in tests/test_stripe_checkout.py.
 """
@@ -11,11 +11,11 @@ import pytest
 
 from app.core.exceptions import AppError, NotFoundError, ValidationError
 from app.models.booking import Booking, BookingStatus
+from app.models.occurrence import Occurrence
 from app.models.order import Order, OrderStatus
 from app.models.service import Service
-from app.models.occurrence import Occurrence
 from app.models.user import User
-from app.services.payment import (
+from app.modules.payment.service import (
     PAYMENT_STATUS_OVERBOOKED_MANUAL_REVIEW,
     confirm_booking_after_payment,
     confirm_order_after_payment,
@@ -137,12 +137,12 @@ async def test_create_checkout_session_guest_email_owner_allowed(mock_uow):
     mock_session.url = "https://checkout.stripe.com/pay"
     mock_client = MagicMock()
     mock_client.v1.checkout.sessions.create.return_value = mock_session
-    with patch("app.services.payment.settings") as mock_settings:
+    with patch("app.modules.payment.stripe_client.settings") as mock_settings:
         mock_settings.STRIPE_SECRET_KEY = "sk_test"
         mock_settings.STRIPE_CURRENCY = "usd"
         mock_settings.BOOKING_HOLD_MINUTES = 15
         with patch(
-            "app.services.payment.stripe.StripeClient",
+            "app.modules.payment.stripe_client.stripe.StripeClient",
             return_value=mock_client,
         ):
             result = await create_checkout_session(
@@ -229,7 +229,7 @@ async def test_create_checkout_session_no_stripe_key(mock_uow):
     booking.guest_email = "g@x.com"
     booking.access_token = _GUEST_CHECKOUT_TOKEN
     mock_uow.bookings.get_by_id_with_occurrence = AsyncMock(return_value=booking)
-    with patch("app.services.payment.settings") as mock_settings:
+    with patch("app.modules.payment.stripe_client.settings") as mock_settings:
         mock_settings.STRIPE_SECRET_KEY = None
         with pytest.raises(AppError) as exc_info:
             await create_checkout_session(mock_uow, 1, **_checkout_kwargs())
@@ -257,12 +257,12 @@ async def test_create_checkout_session_success(mock_uow):
     mock_session.url = "https://checkout.stripe.com/pay"
     mock_client = MagicMock()
     mock_client.v1.checkout.sessions.create.return_value = mock_session
-    with patch("app.services.payment.settings") as mock_settings:
+    with patch("app.modules.payment.stripe_client.settings") as mock_settings:
         mock_settings.STRIPE_SECRET_KEY = "sk_test"
         mock_settings.STRIPE_CURRENCY = "usd"
         mock_settings.BOOKING_HOLD_MINUTES = 15
         with patch(
-            "app.services.payment.stripe.StripeClient",
+            "app.modules.payment.stripe_client.stripe.StripeClient",
             return_value=mock_client,
         ):
             result = await create_checkout_session(
@@ -373,12 +373,12 @@ async def test_create_order_checkout_session_success(mock_uow):
     mock_session.url = "https://checkout.stripe.com/order"
     mock_client = MagicMock()
     mock_client.v1.checkout.sessions.create.return_value = mock_session
-    with patch("app.services.payment.settings") as mock_settings:
+    with patch("app.modules.payment.stripe_client.settings") as mock_settings:
         mock_settings.STRIPE_SECRET_KEY = "sk_test"
         mock_settings.STRIPE_CURRENCY = "usd"
         mock_settings.BOOKING_HOLD_MINUTES = 15
         with patch(
-            "app.services.payment.stripe.StripeClient",
+            "app.modules.payment.stripe_client.stripe.StripeClient",
             return_value=mock_client,
         ):
             result = await create_order_checkout_session(

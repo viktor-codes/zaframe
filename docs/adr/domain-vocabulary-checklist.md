@@ -124,7 +124,7 @@ All listed test files updated; renamed:
 - [x] `seed_and_simulate.py`, `seed_100_studios.py`
 - [x] `backend/docs/adr/001-datetime-and-studio-timezone.md`
 - [x] `backend/tests/TEST_COVERAGE_REPORT.md`
-- [ ] `backend/docs/ARCHITECTURE_IMPROVEMENTS_PLAN.md` — historical plan doc (optional)
+- [x] `backend/docs/ARCHITECTURE_IMPROVEMENTS_PLAN.md` — retired (see docs/ARCHITECTURE.md historical note)
 
 ---
 

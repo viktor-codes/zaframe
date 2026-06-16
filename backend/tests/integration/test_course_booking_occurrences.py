@@ -13,21 +13,20 @@ from unittest.mock import patch
 
 import pytest
 from httpx import AsyncClient
-
 from tests.conftest import authenticate_via_otp
 
-from app.services.service import (
+from app.models import Service, ServiceType
+from app.modules.booking.order.service import (
     _calculate_course_order_total_cents,
     _distribute_course_unit_prices,
 )
-from app.models import Service, ServiceType
 
 FROZEN_NOW = datetime(2026, 6, 15, 12, 0, tzinfo=UTC)
 
 
 @contextmanager
 def frozen_utc_now():
-    with patch("app.services.service.utc_now", return_value=FROZEN_NOW):
+    with patch("app.core.datetime_utils.utc_now", return_value=FROZEN_NOW):
         yield FROZEN_NOW
 
 

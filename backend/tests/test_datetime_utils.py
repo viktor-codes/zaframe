@@ -4,7 +4,7 @@ Unit tests for ADR-001 datetime utilities, including DST edge cases.
 Run immediately after changing studio_local_to_utc — before seeds or integration tests.
 """
 
-from datetime import UTC, date, datetime, time, timedelta
+from datetime import UTC, date, datetime, time
 from zoneinfo import ZoneInfo
 
 import pytest

@@ -18,11 +18,11 @@ from tests.conftest import authenticate_via_otp
 
 from app.core.database import async_session_maker
 from app.core.exceptions import AppError, ConflictError, ValidationError
-from app.core.uow import uow_scope
+from app.core.uow_factory import uow_scope
 from app.models.booking import Booking
-from app.schemas.booking import BookingCreate
-from app.services.booking import (
+from app.modules.booking import (
     DUPLICATE_BOOKING_MESSAGE,
+    BookingCreate,
     create_booking,
 )
 
@@ -146,7 +146,7 @@ async def test_create_booking_race_one_success_one_conflict(client: AsyncClient)
             return exc
 
     with patch(
-        "app.services.booking._ensure_no_active_booking_for_guest",
+        "app.modules.booking.service.ensure_no_active_booking_for_guest",
         new_callable=AsyncMock,
     ):
         results = await asyncio.gather(attempt(), attempt())

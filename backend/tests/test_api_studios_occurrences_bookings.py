@@ -9,7 +9,6 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from httpx import AsyncClient
-
 from tests.conftest import authenticate_via_otp
 
 

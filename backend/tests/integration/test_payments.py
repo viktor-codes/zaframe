@@ -109,7 +109,7 @@ async def test_checkout_session_returns_201_for_pending_booking(client: AsyncCli
     mock_client = _mock_stripe_checkout_session()
 
     with patch(
-        "app.services.payment.stripe.StripeClient",
+        "app.modules.payment.stripe_client.stripe.StripeClient",
         return_value=mock_client,
     ):
         response = await client.post(
@@ -154,7 +154,7 @@ async def test_checkout_session_authenticated_owner_succeeds(client: AsyncClient
     mock_client = _mock_stripe_checkout_session(session_id="cs_owner")
 
     with patch(
-        "app.services.payment.stripe.StripeClient",
+        "app.modules.payment.stripe_client.stripe.StripeClient",
         return_value=mock_client,
     ):
         response = await client.post(
@@ -199,7 +199,7 @@ async def test_checkout_session_returns_400_when_session_already_created(client:
     mock_client = _mock_stripe_checkout_session()
 
     with patch(
-        "app.services.payment.stripe.StripeClient",
+        "app.modules.payment.stripe_client.stripe.StripeClient",
         return_value=mock_client,
     ):
         first = await client.post(
@@ -245,7 +245,7 @@ async def test_checkout_accepts_frontend_host(client: AsyncClient):
     mock_client = _mock_stripe_checkout_session(session_id="cs_allowed_host")
 
     with patch(
-        "app.services.payment.stripe.StripeClient",
+        "app.modules.payment.stripe_client.stripe.StripeClient",
         return_value=mock_client,
     ):
         response = await client.post(

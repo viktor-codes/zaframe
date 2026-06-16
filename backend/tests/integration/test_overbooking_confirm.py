@@ -21,7 +21,7 @@ from sqlalchemy import func, select
 from tests.conftest import authenticate_via_otp
 
 from app.models.booking import Booking, BookingStatus
-from app.services.payment import PAYMENT_STATUS_OVERBOOKED_MANUAL_REVIEW
+from app.modules.payment.service import PAYMENT_STATUS_OVERBOOKED_MANUAL_REVIEW
 
 
 def _build_signed_stripe_webhook(
@@ -123,7 +123,7 @@ async def _post_booking_webhook(
 ) -> int:
     from contextlib import asynccontextmanager
 
-    from app.core.uow import create_uow
+    from app.core.uow_factory import create_uow
 
     integration_session = app.state._integration_session
     effective_event_id = event_id or f"evt_{uuid.uuid4().hex}"
@@ -140,8 +140,8 @@ async def _post_booking_webhook(
         uow.commit = AsyncMock()
         yield uow
 
-    with patch("app.api.webhooks.uow_scope", integration_uow_scope):
-        with patch("app.api.webhooks.settings") as mock_settings:
+    with patch("app.modules.payment.webhooks.uow_scope", integration_uow_scope):
+        with patch("app.modules.payment.webhooks.settings") as mock_settings:
             mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
             r = await client.post(
                 "/webhooks/stripe",

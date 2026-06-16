@@ -16,7 +16,7 @@ import structlog
 
 from app.core.config import settings
 from app.core.datetime_utils import utc_now
-from app.core.uow import uow_scope
+from app.core.uow_factory import uow_scope
 
 logger = structlog.get_logger(__name__)
 

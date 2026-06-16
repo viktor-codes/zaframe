@@ -26,31 +26,27 @@ from sqlalchemy import select, text
 from app.core.config import settings
 from app.core.datetime_utils import studio_local_date_now, studio_local_to_utc, utc_now
 from app.core.exceptions import AppError
-from app.core.uow import UnitOfWork, uow_scope
-from app.models.service import Service, ServiceType
+from app.core.uow import UnitOfWork
+from app.core.uow_factory import uow_scope
 from app.models.occurrence import Occurrence
+from app.models.service import Service, ServiceType
 from app.models.studio import Studio
 from app.models.user import User
-from app.schemas.booking import BookingCreate
-from app.schemas.order import CourseBookingCreate
-from app.schemas.service import ServiceCreate
-from app.schemas.occurrence import OccurrenceCreate
-from app.schemas.studio import StudioCreate
-from app.services.booking import create_booking
-from app.services.payment import (
+from app.modules.booking import BookingCreate, create_booking
+from app.modules.booking.order import CourseBookingCreate, CourseBookingInput, create_course_booking
+from app.modules.catalog.occurrence import OccurrenceCreate, create_occurrence
+from app.modules.catalog.public import StudioPublicDTO, get_studio_public
+from app.modules.catalog.schedule import occurrence_generator
+from app.modules.catalog.service import (
+    ServiceCreate,
+    create_service,
+    get_service_availability,
+)
+from app.modules.catalog.studio import StudioCreate, create_studio, get_studios, get_studios_count
+from app.modules.payment.service import (
     create_checkout_session,
     create_order_checkout_session,
 )
-from app.services.dto import CourseBookingInput, StudioPublicDTO
-from app.services.service import (
-    create_course_booking,
-    create_service,
-    get_service_availability,
-    get_studio_public,
-    occurrence_generator,
-)
-from app.services.occurrence import create_occurrence
-from app.services.studio import create_studio, get_studios, get_studios_count
 
 
 async def _get_or_create_owner(uow: UnitOfWork, idx: int) -> User:
@@ -260,7 +256,7 @@ async def simulate_bookings(
                 continue
             occurrence = random.choice(single_occurrences)
             schema = BookingCreate(
-                occurrence_id=slot.id,
+                occurrence_id=occurrence.id,
                 guest_name=guest_name,
                 guest_email=guest_email,
                 guest_phone=None,

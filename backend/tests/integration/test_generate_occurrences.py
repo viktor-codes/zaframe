@@ -6,7 +6,6 @@ Validates Pydantic boundary (422) and happy-path slot generation.
 
 import pytest
 from httpx import AsyncClient
-
 from tests.conftest import authenticate_via_otp
 
 VALID_PAYLOAD_BASE = {

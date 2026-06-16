@@ -12,8 +12,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from app.models.booking import Booking, BookingStatus
-from app.repositories.booking_repo import BookingRepository
-from app.services.booking import complete_past_confirmed, expire_stale_pending
+from app.modules.booking import BookingRepository, complete_past_confirmed, expire_stale_pending
 
 NOW = datetime(2026, 6, 15, 12, 0, 0, tzinfo=UTC)
 

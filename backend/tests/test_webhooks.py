@@ -1,5 +1,5 @@
 """
-Тесты для Stripe webhook (app.api.webhooks).
+Тесты для Stripe webhook (app.modules.payment.webhooks).
 
 Проверяют все ветки: нет секрета, невалидный payload/подпись, тип события,
 order_id/booking_id в metadata, невалидные id, отсутствие metadata.
@@ -18,9 +18,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+from tests.conftest import authenticate_via_otp
 
 from app.main import app
-from tests.conftest import authenticate_via_otp
 
 
 def _build_signed_stripe_webhook(
@@ -164,7 +164,7 @@ async def _mock_uow_scope(uow: MagicMock, **kwargs):
 @pytest.mark.asyncio
 async def test_stripe_webhook_no_secret_returns_500(client):
     """STRIPE_WEBHOOK_SECRET не задан → 500."""
-    with patch("app.api.webhooks.settings") as mock_settings:
+    with patch("app.modules.payment.webhooks.settings") as mock_settings:
         mock_settings.STRIPE_WEBHOOK_SECRET = None
         r = await client.post(
             "/webhooks/stripe",
@@ -178,7 +178,7 @@ async def test_stripe_webhook_no_secret_returns_500(client):
 @pytest.mark.asyncio
 async def test_stripe_webhook_invalid_payload_returns_400(client):
     """Невалидный payload (ValueError при construct_event) → 400."""
-    with patch("app.api.webhooks.settings") as mock_settings:
+    with patch("app.modules.payment.webhooks.settings") as mock_settings:
         mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
         with patch("stripe.Webhook.construct_event", side_effect=ValueError("bad payload")):
             r = await client.post(
@@ -195,7 +195,7 @@ async def test_stripe_webhook_invalid_signature_returns_400(client):
     """Невалидная подпись → 400."""
     import stripe
 
-    with patch("app.api.webhooks.settings") as mock_settings:
+    with patch("app.modules.payment.webhooks.settings") as mock_settings:
         mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
         with patch(
             "stripe.Webhook.construct_event",
@@ -213,7 +213,7 @@ async def test_stripe_webhook_invalid_signature_returns_400(client):
 @pytest.mark.asyncio
 async def test_stripe_webhook_other_event_type_returns_200(client):
     """Тип события != checkout.session.completed → 200 без вызова сервисов."""
-    with patch("app.api.webhooks.settings") as mock_settings:
+    with patch("app.modules.payment.webhooks.settings") as mock_settings:
         mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
         with patch(
             "stripe.Webhook.construct_event",
@@ -233,12 +233,12 @@ async def test_stripe_webhook_order_id_confirms_order(client):
     event = _stripe_event("checkout.session.completed", {"order_id": "42"}, "pi_123")
     mock_uow = _mock_webhook_uow()
 
-    with patch("app.api.webhooks.settings") as mock_settings:
+    with patch("app.modules.payment.webhooks.settings") as mock_settings:
         mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
         with patch("stripe.Webhook.construct_event", return_value=event):
-            with patch("app.api.webhooks.uow_scope", side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw)):
+            with patch("app.modules.payment.webhooks.uow_scope", side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw)):
                 with patch(
-                    "app.api.webhooks.confirm_order_after_payment",
+                    "app.modules.payment.webhooks.confirm_order_after_payment",
                     new_callable=AsyncMock,
                     return_value=True,
                 ) as mock_confirm:
@@ -262,12 +262,12 @@ async def test_stripe_webhook_order_id_invalid_int_returns_200(client):
     event = _stripe_event("checkout.session.completed", {"order_id": "not-a-number"})
     mock_uow = _mock_webhook_uow()
 
-    with patch("app.api.webhooks.settings") as mock_settings:
+    with patch("app.modules.payment.webhooks.settings") as mock_settings:
         mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
         with patch("stripe.Webhook.construct_event", return_value=event):
-            with patch("app.api.webhooks.uow_scope", side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw)):
+            with patch("app.modules.payment.webhooks.uow_scope", side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw)):
                 with patch(
-                    "app.api.webhooks.confirm_order_after_payment",
+                    "app.modules.payment.webhooks.confirm_order_after_payment",
                     new_callable=AsyncMock,
                 ) as mock_confirm:
                     r = await client.post(
@@ -286,12 +286,12 @@ async def test_stripe_webhook_booking_id_confirms_booking(client):
     event = _stripe_event("checkout.session.completed", {"booking_id": "7"}, "pi_456")
     mock_uow = _mock_webhook_uow()
 
-    with patch("app.api.webhooks.settings") as mock_settings:
+    with patch("app.modules.payment.webhooks.settings") as mock_settings:
         mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
         with patch("stripe.Webhook.construct_event", return_value=event):
-            with patch("app.api.webhooks.uow_scope", side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw)):
+            with patch("app.modules.payment.webhooks.uow_scope", side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw)):
                 with patch(
-                    "app.api.webhooks.confirm_booking_after_payment",
+                    "app.modules.payment.webhooks.confirm_booking_after_payment",
                     new_callable=AsyncMock,
                     return_value=True,
                 ) as mock_confirm:
@@ -312,12 +312,12 @@ async def test_stripe_webhook_booking_id_invalid_int_returns_200(client):
     event = _stripe_event("checkout.session.completed", {"booking_id": "nope"})
     mock_uow = _mock_webhook_uow()
 
-    with patch("app.api.webhooks.settings") as mock_settings:
+    with patch("app.modules.payment.webhooks.settings") as mock_settings:
         mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
         with patch("stripe.Webhook.construct_event", return_value=event):
-            with patch("app.api.webhooks.uow_scope", side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw)):
+            with patch("app.modules.payment.webhooks.uow_scope", side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw)):
                 with patch(
-                    "app.api.webhooks.confirm_booking_after_payment",
+                    "app.modules.payment.webhooks.confirm_booking_after_payment",
                     new_callable=AsyncMock,
                 ) as mock_confirm:
                     r = await client.post(
@@ -335,10 +335,10 @@ async def test_stripe_webhook_no_metadata_returns_200(client):
     event = _stripe_event("checkout.session.completed", {})
     mock_uow = _mock_webhook_uow()
 
-    with patch("app.api.webhooks.settings") as mock_settings:
+    with patch("app.modules.payment.webhooks.settings") as mock_settings:
         mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
         with patch("stripe.Webhook.construct_event", return_value=event):
-            with patch("app.api.webhooks.uow_scope", side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw)):
+            with patch("app.modules.payment.webhooks.uow_scope", side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw)):
                 r = await client.post(
                     "/webhooks/stripe",
                     content=b"{}",
@@ -353,12 +353,12 @@ async def test_stripe_webhook_order_not_found_returns_200(client):
     event = _stripe_event("checkout.session.completed", {"order_id": "999"})
     mock_uow = _mock_webhook_uow()
 
-    with patch("app.api.webhooks.settings") as mock_settings:
+    with patch("app.modules.payment.webhooks.settings") as mock_settings:
         mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
         with patch("stripe.Webhook.construct_event", return_value=event):
-            with patch("app.api.webhooks.uow_scope", side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw)):
+            with patch("app.modules.payment.webhooks.uow_scope", side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw)):
                 with patch(
-                    "app.api.webhooks.confirm_order_after_payment",
+                    "app.modules.payment.webhooks.confirm_order_after_payment",
                     new_callable=AsyncMock,
                     return_value=False,
                 ):
@@ -378,12 +378,12 @@ async def test_stripe_webhook_booking_not_found_returns_200(client):
     event = _stripe_event("checkout.session.completed", {"booking_id": "999"})
     mock_uow = _mock_webhook_uow()
 
-    with patch("app.api.webhooks.settings") as mock_settings:
+    with patch("app.modules.payment.webhooks.settings") as mock_settings:
         mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
         with patch("stripe.Webhook.construct_event", return_value=event):
-            with patch("app.api.webhooks.uow_scope", side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw)):
+            with patch("app.modules.payment.webhooks.uow_scope", side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw)):
                 with patch(
-                    "app.api.webhooks.confirm_booking_after_payment",
+                    "app.modules.payment.webhooks.confirm_booking_after_payment",
                     new_callable=AsyncMock,
                     return_value=False,
                 ):
@@ -403,12 +403,12 @@ async def test_stripe_webhook_duplicate_event_skips_confirm(client):
     event = _stripe_event("checkout.session.completed", {"booking_id": "7"}, event_id="evt_dup_1")
     mock_uow = _mock_webhook_uow(duplicate_event=True)
 
-    with patch("app.api.webhooks.settings") as mock_settings:
+    with patch("app.modules.payment.webhooks.settings") as mock_settings:
         mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
         with patch("stripe.Webhook.construct_event", return_value=event):
-            with patch("app.api.webhooks.uow_scope", side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw)):
+            with patch("app.modules.payment.webhooks.uow_scope", side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw)):
                 with patch(
-                    "app.api.webhooks.confirm_booking_after_payment",
+                    "app.modules.payment.webhooks.confirm_booking_after_payment",
                     new_callable=AsyncMock,
                 ) as mock_confirm:
                     r = await client.post(
@@ -442,8 +442,8 @@ async def test_webhook_booking_integration(rollback_client, app_with_rollback_uo
     Интеграционный тест: создаём бронирование, вызываем webhook с валидной подписью,
     проверяем смену статуса на confirmed в той же сессии (commit — no-op, rollback в конце).
     """
-    from app.api import webhooks
-    from app.core.uow import create_uow
+    from app.core.uow_factory import create_uow
+    from app.modules.payment import webhooks
 
     booking_id = await _authenticate_and_create_booking(rollback_client)
     integration_session = app_with_rollback_uow.state._integration_session
@@ -458,7 +458,7 @@ async def test_webhook_booking_integration(rollback_client, app_with_rollback_uo
     payload, headers = _build_signed_stripe_webhook(booking_id=booking_id)
 
     with patch.object(webhooks, "uow_scope", side_effect=integration_uow_scope):
-        with patch("app.api.webhooks.settings") as mock_settings:
+        with patch("app.modules.payment.webhooks.settings") as mock_settings:
             mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
             r = await rollback_client.post(
                 "/webhooks/stripe",
@@ -493,10 +493,10 @@ async def test_webhook_order_integration(rollback_client, app_with_rollback_uow)
     """
     from sqlalchemy import select
 
-    from app.api import webhooks
-    from app.core.uow import create_uow
+    from app.core.uow_factory import create_uow
     from app.models.booking import Booking, BookingStatus
     from app.models.order import Order, OrderStatus
+    from app.modules.payment import webhooks
 
     # Создаём пользователя и студию, услугу, слоты, заказ через сервис (минимально)
     booking_id = await _authenticate_and_create_booking(rollback_client)
@@ -532,7 +532,7 @@ async def test_webhook_order_integration(rollback_client, app_with_rollback_uow)
     payload, headers = _build_signed_stripe_webhook(order_id=order_id)
 
     with patch.object(webhooks, "uow_scope", side_effect=integration_uow_scope):
-        with patch("app.api.webhooks.settings") as mock_settings:
+        with patch("app.modules.payment.webhooks.settings") as mock_settings:
             mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
             r = await rollback_client.post(
                 "/webhooks/stripe",
@@ -555,11 +555,11 @@ async def test_webhook_duplicate_event_integration(rollback_client, app_with_rol
     """
     from sqlalchemy import func, select
 
-    from app.api import webhooks
-    from app.core.uow import create_uow
+    from app.core.uow_factory import create_uow
     from app.models.booking import Booking, BookingStatus
     from app.models.processed_webhook_event import ProcessedWebhookEvent
-    from app.services import payment as payment_service
+    from app.modules.payment import service as payment_service
+    from app.modules.payment import webhooks
 
     booking_id = await _authenticate_and_create_booking(rollback_client)
     integration_session = app_with_rollback_uow.state._integration_session
@@ -575,10 +575,10 @@ async def test_webhook_duplicate_event_integration(rollback_client, app_with_rol
     payload, headers = _build_signed_stripe_webhook(booking_id=booking_id, event_id=event_id)
 
     with patch.object(webhooks, "uow_scope", side_effect=integration_uow_scope):
-        with patch("app.api.webhooks.settings") as mock_settings:
+        with patch("app.modules.payment.webhooks.settings") as mock_settings:
             mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
             with patch(
-                "app.api.webhooks.confirm_booking_after_payment",
+                "app.modules.payment.webhooks.confirm_booking_after_payment",
                 wraps=payment_service.confirm_booking_after_payment,
             ) as mock_confirm:
                 r1 = await rollback_client.post(
@@ -613,7 +613,7 @@ async def test_webhook_duplicate_event_integration(rollback_client, app_with_rol
 
 def test_parse_checkout_session_metadata_dict():
     """_parse_checkout_session_metadata с dict metadata."""
-    from app.api.webhooks import _parse_checkout_session_metadata
+    from app.modules.payment.webhooks import _parse_checkout_session_metadata
 
     session = MagicMock()
     session.metadata = {"booking_id": "1", "order_id": "2"}
@@ -624,7 +624,7 @@ def test_parse_checkout_session_metadata_dict():
 
 def test_parse_checkout_session_metadata_object():
     """_parse_checkout_session_metadata с object-like metadata."""
-    from app.api.webhooks import _parse_checkout_session_metadata
+    from app.modules.payment.webhooks import _parse_checkout_session_metadata
 
     session = MagicMock()
     meta = MagicMock()
@@ -636,7 +636,7 @@ def test_parse_checkout_session_metadata_object():
 
 def test_parse_payment_intent_id():
     """_parse_payment_intent_id извлекает id из payment_intent."""
-    from app.api.webhooks import _parse_payment_intent_id
+    from app.modules.payment.webhooks import _parse_payment_intent_id
 
     session = MagicMock()
     session.payment_intent = MagicMock(id="pi_xyz")
@@ -647,7 +647,7 @@ def test_parse_payment_intent_id():
 
 def test_parse_payment_intent_id_dict():
     """_parse_payment_intent_id при session как dict (payment_intent строка)."""
-    from app.api.webhooks import _parse_payment_intent_id
+    from app.modules.payment.webhooks import _parse_payment_intent_id
 
     assert _parse_payment_intent_id({"payment_intent": "pi_str"}) == "pi_str"
     assert _parse_payment_intent_id({"payment_intent": None}) is None
