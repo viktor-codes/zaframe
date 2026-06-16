@@ -5,6 +5,7 @@
 import { api } from "./client";
 import type {
   BookingCreate,
+  BookingCreatedResponse,
   BookingResponse,
   BookingSelfListItem,
 } from "@/types/booking";
@@ -89,8 +90,8 @@ export async function fetchBooking(id: number): Promise<BookingResponse> {
 
 export async function createBooking(
   data: BookingCreate,
-): Promise<BookingResponse> {
-  return api.post<BookingResponse>("api/v1/bookings", data, {
+): Promise<BookingCreatedResponse> {
+  return api.post<BookingCreatedResponse>("api/v1/bookings", data, {
     skipAuth: true,
   });
 }

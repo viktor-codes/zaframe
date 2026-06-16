@@ -13,6 +13,11 @@ import {
   cancelBooking,
   getUserFacingApiMessage,
 } from "@/lib/api";
+import {
+  getGuestBookingAccessToken,
+  getGuestBookingSnapshot,
+} from "@/lib/booking-guest-token";
+import type { BookingResponse } from "@/types/booking";
 
 function formatPrice(cents: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -47,12 +52,18 @@ export default function BookingConfirmPage() {
   } = useQuery({
     queryKey: ["booking", id],
     queryFn: () => fetchBooking(id),
+    retry: false,
   });
 
+  const guestSnapshot =
+    typeof window !== "undefined" ? getGuestBookingSnapshot(id) : null;
+  const resolvedBooking: BookingResponse | null | undefined =
+    booking ?? guestSnapshot;
+
   const { data: occurrence } = useQuery({
-    queryKey: ["occurrence", booking?.occurrence_id],
-    queryFn: () => fetchOccurrence(booking!.occurrence_id),
-    enabled: !!booking?.occurrence_id,
+    queryKey: ["occurrence", resolvedBooking?.occurrence_id],
+    queryFn: () => fetchOccurrence(resolvedBooking!.occurrence_id),
+    enabled: !!resolvedBooking?.occurrence_id,
   });
 
   const { data: studio } = useQuery({
@@ -86,13 +97,15 @@ export default function BookingConfirmPage() {
   });
 
   const handlePay = () => {
-    if (!booking?.id) return;
+    if (!resolvedBooking?.id) return;
     setError(null);
     const base = typeof window !== "undefined" ? window.location.origin : "";
+    const accessToken = getGuestBookingAccessToken(resolvedBooking.id);
     checkoutMutation.mutate({
-      booking_id: booking.id,
-      success_url: `${base}/bookings/success?booking=${booking.id}`,
-      cancel_url: `${base}/bookings/cancel?booking=${booking.id}`,
+      booking_id: resolvedBooking.id,
+      success_url: `${base}/bookings/success?booking=${resolvedBooking.id}`,
+      cancel_url: `${base}/bookings/cancel?booking=${resolvedBooking.id}`,
+      ...(accessToken ? { access_token: accessToken } : {}),
     });
   };
 
@@ -112,7 +125,7 @@ export default function BookingConfirmPage() {
     );
   }
 
-  if (errorBooking) {
+  if (errorBooking && !guestSnapshot) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-12">
         <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-red-800">
@@ -128,7 +141,7 @@ export default function BookingConfirmPage() {
     );
   }
 
-  if (loadingBooking || !booking) {
+  if ((loadingBooking && !guestSnapshot) || !resolvedBooking) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-12">
         <Skeleton className="mb-6 h-8 w-48" />
@@ -137,8 +150,8 @@ export default function BookingConfirmPage() {
     );
   }
 
-  const isPaid = booking.payment_status === "paid";
-  const isCancelled = booking.status === "cancelled";
+  const isPaid = resolvedBooking.payment_status === "paid";
+  const isCancelled = resolvedBooking.status === "cancelled";
 
   if (isCancelled) {
     return (
@@ -188,7 +201,7 @@ export default function BookingConfirmPage() {
       <Card className="mb-6">
         <div className="space-y-4">
           <div>
-            <p className="text-sm text-neutral-500">Booking #{booking.id}</p>
+            <p className="text-sm text-neutral-500">Booking #{resolvedBooking.id}</p>
             {studio && (
               <p className="text-secondary font-semibold">{studio.name}</p>
             )}
@@ -204,10 +217,10 @@ export default function BookingConfirmPage() {
               </p>
             </>
           )}
-          {booking.guest_name && (
+          {resolvedBooking.guest_name && (
             <p className="text-sm text-neutral-600">
-              Guest: {booking.guest_name}
-              {booking.guest_email && ` (${booking.guest_email})`}
+              Guest: {resolvedBooking.guest_name}
+              {resolvedBooking.guest_email && ` (${resolvedBooking.guest_email})`}
             </p>
           )}
         </div>
@@ -221,7 +234,11 @@ export default function BookingConfirmPage() {
 
       {!isPaid && occurrence && occurrence.price_cents > 0 && (
         <div className="mb-6 flex flex-col gap-4 sm:flex-row">
-          <Button onClick={handlePay} isLoading={checkoutMutation.isPending}>
+          <Button
+            onClick={handlePay}
+            isLoading={checkoutMutation.isPending}
+            data-testid="pay-booking-button"
+          >
             Pay with card (Stripe)
           </Button>
           <Button variant="outline" asChild>

@@ -40,6 +40,11 @@ export interface BookingResponse extends BookingBase {
   is_guest_booking?: boolean;
 }
 
+/** POST /bookings — includes one-time guest checkout token. */
+export interface BookingCreatedResponse extends BookingResponse {
+  access_token: string;
+}
+
 export interface BookingWithOccurrence extends BookingResponse {
   occurrence: OccurrenceResponse;
 }

@@ -1,10 +1,21 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3000";
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
+const apiURL = (process.env.API_URL ?? "http://127.0.0.1:8000").replace(
+  /\/$/,
+  "",
+);
 
 /**
- * Run against local dev: `npm run dev` (or let webServer start — see reuseExistingServer).
- * Override URL: `PLAYWRIGHT_BASE_URL=http://localhost:3000 npm run test:e2e`
+ * Run locally:
+ *   make e2e-critical
+ *
+ * Or manually (two terminals):
+ *   cd backend && uv run uvicorn app.main:app --port 8000
+ *   cd frontend && npm run dev
+ *   cd frontend && npm run test:e2e:critical
+ *
+ * Override URL: PLAYWRIGHT_BASE_URL=http://localhost:3000 npm run test:e2e
  */
 export default defineConfig({
   testDir: "./e2e",
@@ -18,10 +29,22 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
-  webServer: {
-    command: "npm run dev",
-    url: baseURL,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  webServer: [
+    {
+      command: "cd ../backend && uv run uvicorn app.main:app --port 8000",
+      url: `${apiURL}/health`,
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+      env: {
+        ...process.env,
+        FRONTEND_URL: baseURL,
+      },
+    },
+    {
+      command: "npm run dev",
+      url: baseURL,
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+    },
+  ],
 });

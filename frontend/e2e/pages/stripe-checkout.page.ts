@@ -1,0 +1,66 @@
+import type { Page } from "@playwright/test";
+import { expect } from "@playwright/test";
+
+export interface CheckoutSessionPayload {
+  checkout_url: string;
+  session_id: string;
+}
+
+/**
+ * Stripe hosted checkout helpers.
+ *
+ * E2E mode A (default): assert checkout session API response only — do not
+ * complete payment or simulate webhooks (see test_webhooks.py for that).
+ */
+export class StripeCheckoutPage {
+  constructor(private readonly page: Page) {}
+
+  /**
+   * Block navigation to Stripe so the test stays on-app (Option A).
+   */
+  async blockStripeRedirect(): Promise<void> {
+    await this.page.route("**/*", async (route) => {
+      const url = route.request().url();
+      if (url.includes("checkout.stripe.com")) {
+        await route.abort();
+        return;
+      }
+      await route.continue();
+    });
+  }
+
+  /**
+   * Click Pay and capture checkout session JSON before Stripe redirect runs.
+   */
+  async clickPayAndCaptureCheckoutSession(): Promise<CheckoutSessionPayload> {
+    let captured: CheckoutSessionPayload | null = null;
+
+    await this.page.route("**/api/v1/payments/checkout-session", async (route) => {
+      if (route.request().method() !== "POST") {
+        await route.continue();
+        return;
+      }
+      const response = await route.fetch();
+      const body = (await response.json()) as CheckoutSessionPayload;
+      captured = body;
+      await route.fulfill({
+        status: response.status(),
+        headers: response.headers(),
+        contentType: "application/json",
+        body: JSON.stringify(body),
+      });
+    });
+
+    await this.page.getByTestId("pay-booking-button").click();
+
+    await expect
+      .poll(() => captured, { timeout: 15_000 })
+      .not.toBeNull();
+
+    return captured as CheckoutSessionPayload;
+  }
+
+  static isStripeCheckoutUrl(url: string): boolean {
+    return url.includes("checkout.stripe.com");
+  }
+}

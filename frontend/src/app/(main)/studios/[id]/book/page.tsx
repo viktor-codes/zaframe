@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { Card, Button, Input, Skeleton } from "@/components/ui";
 import { fetchStudio, fetchStudioOccurrences, createBooking } from "@/lib/api";
+import { storeGuestBookingAccess } from "@/lib/booking-guest-token";
 
 function formatPrice(cents: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -55,6 +56,14 @@ function BookPageContent() {
   const createMutation = useMutation({
     mutationFn: createBooking,
     onSuccess: (booking) => {
+      storeGuestBookingAccess(booking.id, booking.access_token, {
+        id: booking.id,
+        occurrence_id: booking.occurrence_id,
+        guest_name: booking.guest_name,
+        guest_email: booking.guest_email,
+        status: booking.status,
+        payment_status: booking.payment_status,
+      });
       window.location.href = `/bookings/${booking.id}/confirm`;
     },
   });
@@ -188,6 +197,7 @@ function BookPageContent() {
                 setForm((f) => ({ ...f, guest_email: e.target.value }))
               }
               autoComplete="email"
+              data-testid="guest-email-input"
             />
             <Input
               label="Phone (optional)"
@@ -204,6 +214,7 @@ function BookPageContent() {
               isLoading={createMutation.isPending}
               fullWidth
               className="mt-4"
+              data-testid="submit-booking-button"
             >
               Confirm booking
             </Button>

@@ -227,7 +227,10 @@ export default function StudioDetailPage() {
                       {formatPrice(occurrence.price_cents)}
                     </p>
                     <Button asChild className="mt-2 px-4 py-2 text-sm">
-                      <Link href={`/studios/${id}/book?occurrence=${occurrence.id}`}>
+                      <Link
+                        href={`/studios/${id}/book?occurrence=${occurrence.id}`}
+                        data-testid="book-occurrence-button"
+                      >
                         Book this session
                       </Link>
                     </Button>
