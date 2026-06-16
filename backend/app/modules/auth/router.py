@@ -15,20 +15,20 @@ from app.core.exceptions import ForbiddenError, UnauthorizedError
 from app.core.rate_limit import limiter
 from app.core.uow import UnitOfWork
 from app.models.user import User
-from app.modules.identity import UserResponse
-from app.schemas.auth import (
+from app.modules.auth.schemas import (
     OTPRequest,
     OTPSentResponse,
     OTPVerify,
     OTPVerifyResponse,
     TokenResponse,
 )
-from app.services.auth import (
+from app.modules.auth.service import (
     logout_current_session,
     refresh_access_token,
     request_otp,
     verify_otp,
 )
+from app.modules.identity import UserResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 

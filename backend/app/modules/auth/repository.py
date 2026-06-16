@@ -1,5 +1,5 @@
 """
-Repository for OTPCode entities (email OTP authentication).
+Repositories for auth domain: OTP codes and refresh-token sessions.
 """
 
 from datetime import datetime
@@ -8,6 +8,7 @@ from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.otp_code import OTPCode
+from app.models.refresh_token import RefreshToken
 from app.repositories.base import WriteRepositoryMixin
 
 
@@ -63,3 +64,17 @@ class OTPCodeRepository(WriteRepositoryMixin):
         )
         await self._session.flush()
         return result.rowcount or 0
+
+
+class RefreshTokenRepository(WriteRepositoryMixin):
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def get_by_user_and_jti(self, user_id: int, jti: str) -> RefreshToken | None:
+        result = await self._session.execute(
+            select(RefreshToken).where(
+                RefreshToken.user_id == user_id,
+                RefreshToken.jti == jti,
+            )
+        )
+        return result.scalar_one_or_none()

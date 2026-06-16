@@ -9,7 +9,7 @@ import pytest
 import structlog
 from structlog.testing import LogCapture
 
-from app.services.email import send_otp_email
+from app.integrations.email.service import send_otp_email
 
 
 @pytest.fixture
@@ -33,8 +33,8 @@ async def test_no_otp_or_plain_email_in_logs_when_debug_false(log_capture):
     code = "123456"
 
     with (
-        patch("app.services.email.settings.RESEND_API_KEY", None),
-        patch("app.services.email.settings.DEBUG", False),
+        patch("app.integrations.email.service.settings.RESEND_API_KEY", None),
+        patch("app.integrations.email.service.settings.DEBUG", False),
     ):
         result = await send_otp_email(email, code)
 
@@ -55,8 +55,8 @@ async def test_dev_mode_logs_otp_code_when_debug_true(log_capture):
     code = "654321"
 
     with (
-        patch("app.services.email.settings.RESEND_API_KEY", None),
-        patch("app.services.email.settings.DEBUG", True),
+        patch("app.integrations.email.service.settings.RESEND_API_KEY", None),
+        patch("app.integrations.email.service.settings.DEBUG", True),
     ):
         result = await send_otp_email(email, code)
 

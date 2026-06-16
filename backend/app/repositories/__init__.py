@@ -4,8 +4,6 @@ from app.modules.search import SearchRepository
 from app.repositories.booking_repo import BookingRepository
 from app.repositories.occurrence_repo import OccurrenceRepository
 from app.repositories.order_repo import OrderRepository
-from app.repositories.otp_code_repo import OTPCodeRepository
-from app.repositories.refresh_token_repo import RefreshTokenRepository
 from app.repositories.schedule_template_repo import ScheduleTemplateRepository
 from app.repositories.service_repo import ServiceRepository
 from app.repositories.studio_repo import StudioRepository
@@ -28,6 +26,13 @@ __all__ = [
 def __getattr__(name: str):
     # WHY: module repositories import repositories.base during package init;
     # eager import here would circular-import app.modules.*.
+    if name in ("OTPCodeRepository", "RefreshTokenRepository"):
+        from app.modules.auth.repository import OTPCodeRepository, RefreshTokenRepository
+
+        return {
+            "OTPCodeRepository": OTPCodeRepository,
+            "RefreshTokenRepository": RefreshTokenRepository,
+        }[name]
     if name == "ProcessedWebhookEventRepository":
         from app.modules.payment import ProcessedWebhookEventRepository
 

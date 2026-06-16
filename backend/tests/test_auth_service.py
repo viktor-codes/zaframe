@@ -1,5 +1,5 @@
 """
-Юнит-тесты для app.services.auth с моками БД/UoW.
+Юнит-тесты для app.modules.auth.service с моками БД/UoW.
 """
 
 from datetime import UTC
@@ -10,8 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.uow import UnitOfWork
 from app.models.user import User
-from app.services import auth as auth_module
-from app.services.auth import (
+from app.modules.auth import service as auth_module
+from app.modules.auth.service import (
     get_current_user_from_token,
     logout_current_session,
 )

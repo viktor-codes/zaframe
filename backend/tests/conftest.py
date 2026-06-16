@@ -34,12 +34,13 @@ async def app_with_rollback_uow():
     Все запросы в рамках одного теста видят одну транзакцию (данные из первого
     запроса доступны во втором). После теста транзакция откатывается — БД не засоряется.
     """
+    from sqlalchemy import text
+
     from app.api.deps import get_uow
     from app.core.database import async_session_maker, engine
     from app.core.uow import uow_scope
     from app.main import app
     from app.models.processed_webhook_event import ProcessedWebhookEvent
-    from sqlalchemy import text
 
     async with engine.begin() as conn:
         await conn.run_sync(
@@ -106,7 +107,7 @@ async def authenticate_via_otp(
         captured_codes.append(code)
         return True
 
-    with patch("app.services.auth.send_otp_email", side_effect=capture_otp):
+    with patch("app.modules.auth.service.send_otp_email", side_effect=capture_otp):
         r_request = await client.post(
             "/api/v1/auth/otp/request",
             json={"email": email, "name": name},

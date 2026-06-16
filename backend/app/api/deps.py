@@ -18,7 +18,7 @@ from app.core.exceptions import UnauthorizedError
 from app.core.middleware.logging_middleware import USER_ID_STATE_KEY
 from app.core.uow import UnitOfWork, uow_scope
 from app.models.user import User
-from app.services.auth import get_current_user_from_token
+from app.modules.auth import get_current_user_from_token
 
 security = HTTPBearer(auto_error=False)
 

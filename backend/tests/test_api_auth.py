@@ -8,9 +8,9 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+from tests.conftest import authenticate_via_otp
 
 from app.main import app
-from tests.conftest import authenticate_via_otp
 
 
 @pytest.mark.integration
@@ -48,7 +48,7 @@ async def test_health_ready():
 @pytest.mark.asyncio
 async def test_otp_request_returns_200(client):
     """POST /auth/otp/request returns 200."""
-    with patch("app.services.auth.send_otp_email", new_callable=AsyncMock):
+    with patch("app.modules.auth.service.send_otp_email", new_callable=AsyncMock):
         r = await client.post(
             "/api/v1/auth/otp/request",
             json={"email": "test-auth@example.com", "name": "Test User"},
@@ -62,7 +62,7 @@ async def test_otp_request_returns_200(client):
 @pytest.mark.asyncio
 async def test_otp_verify_invalid_code_returns_400(client):
     """POST /auth/otp/verify with invalid code returns 400."""
-    with patch("app.services.auth.send_otp_email", new_callable=AsyncMock):
+    with patch("app.modules.auth.service.send_otp_email", new_callable=AsyncMock):
         await client.post(
             "/api/v1/auth/otp/request",
             json={"email": "invalid-otp@example.com", "name": "Test User"},
