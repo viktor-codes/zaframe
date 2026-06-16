@@ -114,7 +114,7 @@ async def test_concurrent_course_and_payment_locks_do_not_deadlock(
     client: AsyncClient,
 ) -> None:
     service_id, occurrence_ids = await _create_course_with_misordered_occurrences(client)
-    order_id = await _create_pending_course_order(client, service_id=service_id)
+    await _create_pending_course_order(client, service_id=service_id)
 
     start_barrier = asyncio.Barrier(2)
     errors: list[BaseException] = []
