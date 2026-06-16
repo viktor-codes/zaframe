@@ -2,7 +2,7 @@
 
 from pydantic import BaseModel, EmailStr, Field
 
-from app.schemas.user import UserResponse
+from app.modules.identity import UserResponse
 
 
 class OTPRequest(BaseModel):

@@ -9,7 +9,6 @@ from app.repositories.refresh_token_repo import RefreshTokenRepository
 from app.repositories.schedule_template_repo import ScheduleTemplateRepository
 from app.repositories.service_repo import ServiceRepository
 from app.repositories.studio_repo import StudioRepository
-from app.repositories.user_repo import UserRepository
 
 __all__ = [
     "BookingRepository",
@@ -27,10 +26,14 @@ __all__ = [
 
 
 def __getattr__(name: str):
-    # WHY: payment.repository imports repositories.base during package init;
-    # eager import here would circular-import app.modules.payment.
+    # WHY: module repositories import repositories.base during package init;
+    # eager import here would circular-import app.modules.*.
     if name == "ProcessedWebhookEventRepository":
         from app.modules.payment import ProcessedWebhookEventRepository
 
         return ProcessedWebhookEventRepository
+    if name == "UserRepository":
+        from app.modules.identity import UserRepository
+
+        return UserRepository
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

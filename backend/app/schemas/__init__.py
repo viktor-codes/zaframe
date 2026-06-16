@@ -1,5 +1,12 @@
 # Pydantic schemas for API request/response validation
 
+from app.modules.identity.schemas import (
+    UserBase,
+    UserCreate,
+    UserPublic,
+    UserResponse,
+    UserUpdate,
+)
 from app.modules.payment.schemas import (
     CheckoutSessionCreate,
     CheckoutSessionResponse,
@@ -55,13 +62,6 @@ from app.schemas.studio import (
     StudioResponse,
     StudioUpdate,
     StudioWithOccurrences,
-)
-from app.schemas.user import (
-    UserBase,
-    UserCreate,
-    UserPublic,
-    UserResponse,
-    UserUpdate,
 )
 
 # Rebuild models with forward references before use in unions.

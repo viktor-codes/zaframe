@@ -15,6 +15,7 @@ from app.core.exceptions import ForbiddenError, UnauthorizedError
 from app.core.rate_limit import limiter
 from app.core.uow import UnitOfWork
 from app.models.user import User
+from app.modules.identity import UserResponse
 from app.schemas.auth import (
     OTPRequest,
     OTPSentResponse,
@@ -22,7 +23,6 @@ from app.schemas.auth import (
     OTPVerifyResponse,
     TokenResponse,
 )
-from app.schemas.user import UserResponse
 from app.services.auth import (
     logout_current_session,
     refresh_access_token,
