@@ -16,7 +16,7 @@ from sqlalchemy.exc import DBAPIError
 from tests.conftest import authenticate_via_otp
 
 from app.core.database import async_session_maker
-from app.core.uow import uow_scope
+from app.core.uow_factory import uow_scope
 from app.modules.payment.service import confirm_order_after_payment
 
 FROZEN_NOW = datetime(2026, 6, 15, 12, 0, tzinfo=UTC)

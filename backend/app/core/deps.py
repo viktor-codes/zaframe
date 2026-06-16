@@ -1,13 +1,10 @@
 """
-Shared dependencies for API routers.
+Shared FastAPI dependencies (DI).
 
-Centralized DI, reuse across routers, easier testing (mock get_uow).
-
-`get_db` is exported for possible read-only endpoints without UoW;
-routers default to `get_uow`.
+Routers depend on this module — not on app.api — so import-linter can keep the API
+layer at the top. User resolution uses core.security + identity (not auth).
 """
 
-from collections.abc import AsyncGenerator
 
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -16,22 +13,13 @@ from starlette.requests import Request
 from app.core.database import get_db
 from app.core.exceptions import UnauthorizedError
 from app.core.middleware.logging_middleware import USER_ID_STATE_KEY
-from app.core.uow import UnitOfWork, uow_scope
+from app.core.security import get_user_id_from_access_token
+from app.core.uow import UnitOfWork
+from app.core.uow_factory import get_uow
 from app.models.user import User
-from app.modules.auth import get_current_user_from_token
+from app.modules.identity import get_user_by_id
 
 security = HTTPBearer(auto_error=False)
-
-
-async def get_uow() -> AsyncGenerator[UnitOfWork]:
-    """
-    Unit of Work with transaction management for write paths.
-
-    Creates AsyncSession, wraps UnitOfWork with repositories, commits on success
-    and rolls back on error.
-    """
-    async with uow_scope() as uow:
-        yield uow
 
 
 async def get_current_user(
@@ -47,7 +35,10 @@ async def get_current_user(
     """
     if credentials is None:
         return None
-    user = await get_current_user_from_token(uow, credentials.credentials)
+    user_id = get_user_id_from_access_token(credentials.credentials)
+    if user_id is None:
+        return None
+    user = await get_user_by_id(uow, user_id)
     if user is not None:
         setattr(request.state, USER_ID_STATE_KEY, str(user.id))
     return user
@@ -66,4 +57,4 @@ async def get_current_user_required(
     return user
 
 
-__all__ = ["get_db", "get_current_user", "get_current_user_required", "get_uow"]
+__all__ = ["get_current_user", "get_current_user_required", "get_db", "get_uow"]

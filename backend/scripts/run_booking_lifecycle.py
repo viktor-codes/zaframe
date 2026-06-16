@@ -16,7 +16,7 @@ import asyncio
 
 import structlog
 
-from app.core.uow import uow_scope
+from app.core.uow_factory import uow_scope
 from app.modules.booking import complete_past_confirmed, expire_stale_pending
 
 logger = structlog.get_logger(__name__)

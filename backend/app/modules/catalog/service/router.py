@@ -10,7 +10,7 @@ from datetime import date
 
 from fastapi import APIRouter, Depends, Query
 
-from app.api.deps import get_current_user_required, get_uow
+from app.core.deps import get_current_user_required, get_uow
 from app.core.uow import UnitOfWork
 from app.models.user import User
 from app.modules.catalog.schedule import (

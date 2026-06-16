@@ -18,7 +18,7 @@ from tests.conftest import authenticate_via_otp
 
 from app.core.database import async_session_maker
 from app.core.exceptions import AppError, ConflictError, ValidationError
-from app.core.uow import uow_scope
+from app.core.uow_factory import uow_scope
 from app.models.booking import Booking
 from app.modules.booking import (
     DUPLICATE_BOOKING_MESSAGE,

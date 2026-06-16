@@ -36,9 +36,9 @@ async def app_with_rollback_uow():
     """
     from sqlalchemy import text
 
-    from app.api.deps import get_uow
+    from app.core.deps import get_uow
     from app.core.database import async_session_maker, engine
-    from app.core.uow import uow_scope
+    from app.core.uow_factory import uow_scope
     from app.main import app
     from app.models.processed_webhook_event import ProcessedWebhookEvent
 

@@ -63,19 +63,86 @@ known-first-party = ["app", "scripts"]
 "tests/**/*.py" = ["SIM117"]
 
 # === import-linter: architecture boundary guards ===
-# Contracts are tightened phase-by-phase as the modular-monolith refactor lands.
+# Final contracts — see docs/ARCHITECTURE.md and ADR-003.
 # Run locally with: uv run lint-imports
 [tool.importlinter]
 root_package = "app"
 
 [[tool.importlinter.contracts]]
-name = "Models hold no logic dependencies"
+name = "Core infra does not import modules"
 type = "forbidden"
-source_modules = ["app.models"]
-forbidden_modules = ["app.api"]
+source_modules = [
+    "app.core.config",
+    "app.core.security",
+    "app.core.exceptions",
+    "app.core.datetime_utils",
+    "app.core.database",
+    "app.core.repository",
+]
+forbidden_modules = ["app.modules"]
 
 [[tool.importlinter.contracts]]
-name = "Core stays free of higher layers"
+name = "Models import nothing but core"
 type = "forbidden"
-source_modules = ["app.core.config", "app.core.security", "app.core.exceptions", "app.core.datetime_utils"]
-forbidden_modules = ["app.api", "app.models"]
+source_modules = ["app.models"]
+forbidden_modules = ["app.modules", "app.api"]
+
+[[tool.importlinter.contracts]]
+name = "catalog does not depend on booking/payment/auth"
+type = "forbidden"
+source_modules = ["app.modules.catalog"]
+forbidden_modules = ["app.modules.booking", "app.modules.payment", "app.modules.auth"]
+ignore_imports = [
+    "app.modules.catalog.** -> app.core.deps",
+    "app.core.deps -> app.core.uow_factory",
+    "app.core.uow_factory -> app.modules.**",
+]
+
+[[tool.importlinter.contracts]]
+name = "identity is a leaf"
+type = "forbidden"
+source_modules = ["app.modules.identity"]
+forbidden_modules = [
+    "app.modules.auth",
+    "app.modules.booking",
+    "app.modules.catalog",
+    "app.modules.payment",
+    "app.modules.search",
+]
+
+[[tool.importlinter.contracts]]
+name = "search is read-only leaf"
+type = "forbidden"
+source_modules = ["app.modules.search"]
+forbidden_modules = [
+    "app.modules.booking",
+    "app.modules.catalog",
+    "app.modules.payment",
+    "app.modules.auth",
+]
+ignore_imports = [
+    "app.modules.search.** -> app.core.deps",
+    "app.core.deps -> app.core.uow_factory",
+    "app.core.uow_factory -> app.modules.**",
+]
+
+[[tool.importlinter.contracts]]
+name = "payment only reaches booking (not catalog/auth)"
+type = "forbidden"
+source_modules = ["app.modules.payment"]
+forbidden_modules = ["app.modules.catalog", "app.modules.auth"]
+ignore_imports = [
+    "app.modules.payment.** -> app.core.deps",
+    "app.core.deps -> app.core.uow_factory",
+    "app.modules.payment.** -> app.core.uow_factory",
+    "app.core.uow_factory -> app.modules.auth.**",
+    "app.core.uow_factory -> app.modules.catalog.**",
+    "app.core.uow_factory -> app.modules.identity.**",
+    "app.core.uow_factory -> app.modules.search.**",
+]
+
+[[tool.importlinter.contracts]]
+name = "Nothing imports the API layer"
+type = "forbidden"
+source_modules = ["app.modules", "app.core", "app.models"]
+forbidden_modules = ["app.api"]

@@ -7,7 +7,7 @@ API роутер для платежей (Stripe Checkout).
 
 from fastapi import APIRouter, Depends, Request
 
-from app.api.deps import get_current_user, get_uow
+from app.core.deps import get_current_user, get_uow
 from app.core.rate_limit import limiter
 from app.core.uow import UnitOfWork
 from app.models.user import User

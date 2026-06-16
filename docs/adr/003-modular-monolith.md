@@ -90,12 +90,12 @@ domain independence. Tightened phase-by-phase; wired into CI.
 
 ## Migration phases
 
-0. Prep — branch, baseline, `import-linter`, this ADR.
-1. Scaffold `modules/`; move leaf domains (`search`, `payment`, `auth`, `identity`).
-2. `catalog` + split the `service.py` god-module.
-3. `booking` + `order` (move `create_course_booking`; `policies.py` for payment↔booking).
-4. `api/router.py` aggregator; slim `main.py`; relocate `model_rebuild()`.
-5. Guards — tighten `import-linter` contracts, add `tests/architecture/test_boundaries.py`,
+- [x] 0. Prep — branch, baseline, `import-linter`, this ADR.
+- [x] 1. Scaffold `modules/`; move leaf domains (`search`, `payment`, `auth`, `identity`).
+- [x] 2. `catalog` + split the `service.py` god-module.
+- [x] 3. `booking` + `order` (move `create_course_booking`; `policies.py` for payment↔booking).
+- [x] 4. `api/router.py` aggregator; slim `main.py`; relocate `model_rebuild()`.
+- [x] 5. Guards — tighten `import-linter` contracts, add `tests/architecture/test_boundaries.py`,
    update `ARCHITECTURE.md`.
 
 Each phase ends green (`uv run pytest`, `uv run lint-imports`, `uv run ruff check`).

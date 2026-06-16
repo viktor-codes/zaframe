@@ -2,9 +2,8 @@
 
 from app.core.uow import UnitOfWork
 from app.models.service import ServiceCategory
-from app.modules.catalog.service import ServiceResponse
-from app.modules.catalog.studio import StudioResponse
 from app.modules.search import SearchResult
+from app.modules.search.schemas import SearchServiceResponse, SearchStudioResponse
 
 
 async def search_studios_and_services(
@@ -29,9 +28,9 @@ async def search_studios_and_services(
     )
     return [
         SearchResult(
-            studio=StudioResponse.model_validate(match.studio),
+            studio=SearchStudioResponse.model_validate(match.studio),
             matched_services=[
-                ServiceResponse.model_validate(service) for service in match.matched_services
+                SearchServiceResponse.model_validate(service) for service in match.matched_services
             ],
         )
         for match in matches

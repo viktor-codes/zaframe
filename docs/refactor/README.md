@@ -1,5 +1,7 @@
 # Modular Monolith Refactor — Agent Task Pack
 
+**Status: completed** (tz-01 … tz-11, 2026-06-16). See [ARCHITECTURE.md](../ARCHITECTURE.md) for the final layout.
+
 Master spec for the `app/services|repositories|schemas` → `app/modules/<domain>` migration.
 Decision and rationale: [ADR-003](../adr/003-modular-monolith.md).
 

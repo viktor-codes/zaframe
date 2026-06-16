@@ -15,7 +15,7 @@ from httpx import AsyncClient
 from sqlalchemy import func, select
 from tests.conftest import authenticate_via_otp
 
-from app.core.uow import create_uow, uow_scope
+from app.core.uow_factory import create_uow, uow_scope
 from app.models.booking import Booking, BookingStatus
 from app.models.occurrence import Occurrence
 from app.models.order import Order, OrderStatus

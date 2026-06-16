@@ -16,10 +16,9 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, Query
 
-from app.api.deps import get_current_user_required, get_uow
+from app.core.deps import get_current_user_required, get_uow
 from app.core.uow import UnitOfWork
 from app.models.user import User
-from app.modules.booking import BookingOwnerResponse, get_bookings
 from app.modules.catalog.occurrence import (
     OccurrenceCreate,
     OccurrenceResponse,
@@ -75,25 +74,6 @@ async def count_occurrences(
         status=status,
     )
     return {"count": count}
-
-
-@router.get("/{occurrence_id}/bookings", response_model=list[BookingOwnerResponse])
-async def list_occurrence_bookings(
-    occurrence_id: int,
-    user: User = Depends(get_current_user_required),
-    uow: UnitOfWork = Depends(get_uow),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
-    status: str | None = Query(None, description="Filter by status"),
-) -> list[BookingOwnerResponse]:
-    """Bookings for an occurrence (studio owner only)."""
-    occurrence = await get_occurrence_or_raise(uow, occurrence_id)
-    studio = await get_studio_or_raise(uow, occurrence.studio_id)
-    ensure_studio_owner(studio, user.id)
-    bookings = await get_bookings(
-        uow, skip=skip, limit=limit, occurrence_id=occurrence_id, status=status
-    )
-    return [BookingOwnerResponse.model_validate(b) for b in bookings]
 
 
 @router.get("/{occurrence_id}", response_model=OccurrenceResponse)

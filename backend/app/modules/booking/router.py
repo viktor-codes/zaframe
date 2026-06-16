@@ -10,7 +10,7 @@ API роутер для бронирований.
 
 from fastapi import APIRouter, Depends, Query, Request
 
-from app.api.deps import get_current_user_required, get_uow
+from app.core.deps import get_current_user_required, get_uow
 from app.core.rate_limit import limiter
 from app.core.uow import UnitOfWork
 from app.models.user import User
@@ -23,6 +23,7 @@ from app.modules.booking import (
     cancel_booking,
     create_booking,
     get_booking_for_user_or_raise,
+    get_bookings,
     get_my_bookings,
     get_owner_bookings,
     get_owner_bookings_count,
@@ -36,8 +37,11 @@ from app.modules.booking.order import (
     create_course_booking,
 )
 from app.modules.booking.order.mappers import map_course_booking_result
+from app.modules.catalog.occurrence import get_occurrence_or_raise
+from app.modules.catalog.studio import ensure_studio_owner, get_studio_or_raise
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
+occurrence_bookings_router = APIRouter(tags=["occurrences"])
 
 
 @router.post(
@@ -169,3 +173,25 @@ async def cancel_booking_endpoint(
     booking = await get_booking_for_user_or_raise(uow, booking_id, user)
     cancelled = await cancel_booking(uow, booking)
     return map_booking_for_user(cancelled, user)
+
+
+@occurrence_bookings_router.get(
+    "/occurrences/{occurrence_id}/bookings",
+    response_model=list[BookingOwnerResponse],
+)
+async def list_occurrence_bookings(
+    occurrence_id: int,
+    user: User = Depends(get_current_user_required),
+    uow: UnitOfWork = Depends(get_uow),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    status: str | None = Query(None, description="Filter by status"),
+) -> list[BookingOwnerResponse]:
+    """Bookings for an occurrence (studio owner only)."""
+    occurrence = await get_occurrence_or_raise(uow, occurrence_id)
+    studio = await get_studio_or_raise(uow, occurrence.studio_id)
+    ensure_studio_owner(studio, user.id)
+    bookings = await get_bookings(
+        uow, skip=skip, limit=limit, occurrence_id=occurrence_id, status=status
+    )
+    return [BookingOwnerResponse.model_validate(b) for b in bookings]

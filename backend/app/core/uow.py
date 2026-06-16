@@ -1,22 +1,11 @@
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+"""Unit of Work type — repository wiring lives in uow_factory (import-linter boundary)."""
+
+from __future__ import annotations
+
 from dataclasses import dataclass, field
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.core.database import async_session_maker
-from app.modules.auth.repository import OTPCodeRepository, RefreshTokenRepository
-from app.modules.booking import BookingRepository
-from app.modules.booking.order import OrderRepository
-from app.modules.catalog import (
-    OccurrenceRepository,
-    ScheduleTemplateRepository,
-    ServiceRepository,
-    StudioRepository,
-)
-from app.modules.identity import UserRepository
-from app.modules.payment import ProcessedWebhookEventRepository
-from app.modules.search import SearchRepository
 
 
 @dataclass
@@ -29,17 +18,17 @@ class UnitOfWork:
     """
 
     session: AsyncSession
-    bookings: BookingRepository
-    otp_codes: OTPCodeRepository
-    users: UserRepository
-    studios: StudioRepository
-    occurrences: OccurrenceRepository
-    services: ServiceRepository
-    schedule_templates: ScheduleTemplateRepository
-    refresh_tokens: RefreshTokenRepository
-    orders: OrderRepository
-    webhook_events: ProcessedWebhookEventRepository
-    search: SearchRepository
+    bookings: Any
+    otp_codes: Any
+    users: Any
+    studios: Any
+    occurrences: Any
+    services: Any
+    schedule_templates: Any
+    refresh_tokens: Any
+    orders: Any
+    webhook_events: Any
+    search: Any
     _committed: bool = field(default=False, init=False, repr=False)
 
     async def commit(self) -> None:
@@ -49,60 +38,3 @@ class UnitOfWork:
     async def rollback(self) -> None:
         await self.session.rollback()
         self._committed = False
-
-
-def create_uow(session: AsyncSession) -> UnitOfWork:
-    """Factory: build repositories sharing one AsyncSession."""
-    return UnitOfWork(
-        session=session,
-        bookings=BookingRepository(session),
-        otp_codes=OTPCodeRepository(session),
-        users=UserRepository(session),
-        studios=StudioRepository(session),
-        occurrences=OccurrenceRepository(session),
-        services=ServiceRepository(session),
-        schedule_templates=ScheduleTemplateRepository(session),
-        refresh_tokens=RefreshTokenRepository(session),
-        orders=OrderRepository(session),
-        webhook_events=ProcessedWebhookEventRepository(session),
-        search=SearchRepository(session),
-    )
-
-
-@asynccontextmanager
-async def _borrow_session(session: AsyncSession | None) -> AsyncIterator[AsyncSession]:
-    """Yield caller-owned session or open a scoped session from the pool."""
-    if session is not None:
-        yield session
-        return
-    async with async_session_maker() as owned_session:
-        yield owned_session
-
-
-@asynccontextmanager
-async def uow_scope(
-    *,
-    session: AsyncSession | None = None,
-    auto_commit: bool = True,
-) -> AsyncIterator[UnitOfWork]:
-    """
-    Manage UnitOfWork lifecycle: commit on success, rollback on error.
-
-    Args:
-        session: Reuse an existing session (tests, integration fixtures).
-        auto_commit: When True, commit after the block unless commit() was already called.
-            When False, caller must commit() explicitly; uncommitted work is rolled back on exit.
-    """
-    async with _borrow_session(session) as active_session:
-        uow = create_uow(active_session)
-        try:
-            yield uow
-            if auto_commit and not uow._committed:
-                await uow.commit()
-        except Exception:
-            if not uow._committed:
-                await uow.rollback()
-            raise
-        finally:
-            if not auto_commit and not uow._committed:
-                await uow.rollback()

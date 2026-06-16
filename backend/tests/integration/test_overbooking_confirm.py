@@ -123,7 +123,7 @@ async def _post_booking_webhook(
 ) -> int:
     from contextlib import asynccontextmanager
 
-    from app.core.uow import create_uow
+    from app.core.uow_factory import create_uow
 
     integration_session = app.state._integration_session
     effective_event_id = event_id or f"evt_{uuid.uuid4().hex}"

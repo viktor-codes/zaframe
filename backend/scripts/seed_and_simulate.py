@@ -26,7 +26,8 @@ from sqlalchemy import select, text
 from app.core.config import settings
 from app.core.datetime_utils import studio_local_date_now, studio_local_to_utc, utc_now
 from app.core.exceptions import AppError
-from app.core.uow import UnitOfWork, uow_scope
+from app.core.uow import UnitOfWork
+from app.core.uow_factory import uow_scope
 from app.models.occurrence import Occurrence
 from app.models.service import Service, ServiceType
 from app.models.studio import Studio

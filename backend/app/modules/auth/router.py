@@ -9,8 +9,8 @@ Email OTP flow (strict cookie mode):
 
 from fastapi import APIRouter, Depends, Request, Response
 
-from app.api.deps import get_current_user_required, get_uow
 from app.core.config import settings
+from app.core.deps import get_current_user_required, get_uow
 from app.core.exceptions import ForbiddenError, UnauthorizedError
 from app.core.rate_limit import limiter
 from app.core.uow import UnitOfWork

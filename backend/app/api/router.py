@@ -5,6 +5,7 @@ from fastapi import APIRouter, FastAPI
 from app.api.health import router as health_router
 from app.modules.auth.router import router as auth_router
 from app.modules.booking.order import CourseBookingResponse
+from app.modules.booking.router import occurrence_bookings_router
 from app.modules.booking.router import router as booking_router
 from app.modules.booking.schemas import (
     BookingCreatedResponse,
@@ -14,9 +15,7 @@ from app.modules.booking.schemas import (
     BookingWithUser,
 )
 from app.modules.catalog.occurrence.router import router as occurrence_router
-from app.modules.catalog.service import ServiceResponse
 from app.modules.catalog.service.router import router as service_router
-from app.modules.catalog.studio import StudioResponse
 from app.modules.catalog.studio.router import router as studio_router
 from app.modules.payment.router import router as payment_router
 from app.modules.payment.webhooks import router as webhooks_router
@@ -30,12 +29,7 @@ BookingOwnerResponse.model_rebuild()
 BookingWithUser.model_rebuild()
 BookingSelfListItem.model_rebuild()
 CourseBookingResponse.model_rebuild()
-SearchResult.model_rebuild(
-    _types_namespace={
-        "StudioResponse": StudioResponse,
-        "ServiceResponse": ServiceResponse,
-    },
-)
+SearchResult.model_rebuild()
 
 api_v1 = APIRouter(prefix="/api/v1")
 for r in (
@@ -43,6 +37,7 @@ for r in (
     service_router,
     occurrence_router,
     booking_router,
+    occurrence_bookings_router,
     payment_router,
     auth_router,
     search_router,

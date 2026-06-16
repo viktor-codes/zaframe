@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Query
 
-from app.api.deps import get_uow
+from app.core.deps import get_uow
 from app.core.uow import UnitOfWork
 from app.models.service import ServiceCategory
 from app.modules.search import SearchResult

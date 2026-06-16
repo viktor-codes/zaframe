@@ -1,62 +1,103 @@
 from __future__ import annotations
 
 """
-Pydantic-схемы для параметров поиска студий и услуг.
+Pydantic schemas for studio and service search.
+
+WHY: search is a read-only leaf — it must not import catalog modules.
+Response shapes mirror catalog public schemas for API compatibility.
 """
 
-from typing import TYPE_CHECKING
+from pydantic import AwareDatetime, BaseModel, ConfigDict, EmailStr, Field
 
-from pydantic import BaseModel, Field
+from app.models import ServiceCategory, ServiceType
 
-from app.models import ServiceCategory
 
-if TYPE_CHECKING:
-    # WHY: runtime import would cycle through search → studio/service packages.
-    # SearchResult is finalised via model_rebuild() in app/api/router.py.
-    from app.modules.catalog.service.schemas import ServiceResponse
-    from app.modules.catalog.studio.schemas import StudioResponse
+class SearchStudioResponse(BaseModel):
+    """Studio fields returned in search results."""
+
+    id: int
+    owner_id: int
+    name: str = Field(..., min_length=1, max_length=200)
+    description: str | None = None
+    email: EmailStr | None = None
+    phone: str | None = Field(None, max_length=20)
+    address: str | None = Field(None, max_length=500)
+    city: str | None = Field(None, max_length=100)
+    latitude: float | None = None
+    longitude: float | None = None
+    amenities: list[str] = Field(default_factory=list)
+    timezone: str
+    is_active: bool
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SearchServiceResponse(BaseModel):
+    """Service fields returned in search results."""
+
+    id: int
+    studio_id: int
+    name: str = Field(..., min_length=1, max_length=200)
+    description: str | None = Field(None, max_length=1000)
+    type: str = Field(default=ServiceType.SINGLE)
+    category: ServiceCategory = Field(default=ServiceCategory.YOGA)
+    duration_minutes: int = Field(..., ge=1)
+    max_capacity: int = Field(..., ge=1)
+    price_single_cents: int = Field(..., ge=0)
+    price_course_cents: int | None = Field(None, ge=0)
+    soft_limit_ratio: float = Field(1.0, ge=1.0, le=2.0)
+    hard_limit_ratio: float = Field(1.5, ge=1.0, le=3.0)
+    max_overbooked_ratio: float = Field(0.3, ge=0.0, le=1.0)
+    tags: list[str] = Field(default_factory=list)
+    is_active: bool
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SearchQueryParams(BaseModel):
     """
-    Параметры поиска для публичного API.
+    Search parameters for the public API.
 
-    Все поля являются опциональными и могут использоваться в различных комбинациях.
+    All fields are optional and can be combined.
     """
 
     query: str | None = Field(
         None,
-        description="Поисковый запрос по названию/описанию",
+        description="Search query for name/description",
     )
     category: ServiceCategory | None = Field(
         None,
-        description="Категория услуги для фильтрации",
+        description="Service category filter",
     )
     city: str | None = Field(
         None,
-        description="Город для фильтрации студий",
+        description="City filter for studios",
     )
     lat: float | None = Field(
         None,
-        description="Широта для гео-поиска",
+        description="Latitude for geo search",
     )
     lng: float | None = Field(
         None,
-        description="Долгота для гео-поиска",
+        description="Longitude for geo search",
     )
     radius_km: int | None = Field(
         10,
         ge=0,
-        description="Радиус поиска в километрах (по умолчанию 10 км)",
+        description="Search radius in kilometres (default 10 km)",
     )
     amenities: list[str] | None = Field(
         None,
-        description="Список требуемых удобств/опций студии",
+        description="Required studio amenities",
     )
 
 
 class SearchResult(BaseModel):
-    """Результат поиска: студия + подходящие услуги."""
+    """Search hit: studio plus matching services."""
 
-    studio: StudioResponse
-    matched_services: list[ServiceResponse]
+    studio: SearchStudioResponse
+    matched_services: list[SearchServiceResponse]

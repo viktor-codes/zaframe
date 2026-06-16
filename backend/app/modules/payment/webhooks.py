@@ -15,7 +15,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.core.config import settings
 from app.core.middleware.logging_middleware import REQUEST_ID_STATE_KEY
-from app.core.uow import uow_scope
+from app.core.uow_factory import uow_scope
 from app.modules.payment.service import confirm_booking_after_payment, confirm_order_after_payment
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
