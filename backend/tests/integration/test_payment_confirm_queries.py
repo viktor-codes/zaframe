@@ -215,9 +215,7 @@ async def test_confirm_order_overbooking_when_slot_full(
         await confirm_order_after_payment(uow, order_id, payment_intent_id="pi_course_late")
     await uow.orders.flush()
 
-    result = await session.execute(
-        select(Booking).where(Booking.id == order_booking.id)
-    )
+    result = await session.execute(select(Booking).where(Booking.id == order_booking.id))
     order_booking = result.scalar_one()
     assert order_booking.status == BookingStatus.CANCELLED
     assert order_booking.payment_status == PAYMENT_STATUS_OVERBOOKED_MANUAL_REVIEW

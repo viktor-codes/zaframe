@@ -1,4 +1,5 @@
 import importlib
+from typing import TYPE_CHECKING
 
 from app.modules.catalog.service.dto import (
     CourseAvailabilityDTO,
@@ -52,6 +53,20 @@ _SERVICE_FUNCTION_MODULES: dict[str, str] = {
     "check_course_availability_for_update": "app.modules.catalog.service.availability",
     "get_service_availability": "app.modules.catalog.service.availability",
 }
+
+if TYPE_CHECKING:
+    from app.modules.catalog.service.availability import (
+        check_course_availability,
+        check_course_availability_for_update,
+        get_service_availability,
+    )
+    from app.modules.catalog.service.service import (
+        create_service,
+        deactivate_service,
+        get_service,
+        get_service_or_raise,
+        update_service,
+    )
 
 
 def __getattr__(name: str):

@@ -236,7 +236,10 @@ async def test_stripe_webhook_order_id_confirms_order(client):
     with patch("app.modules.payment.webhooks.settings") as mock_settings:
         mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
         with patch("stripe.Webhook.construct_event", return_value=event):
-            with patch("app.modules.payment.webhooks.uow_scope", side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw)):
+            with patch(
+                "app.modules.payment.webhooks.uow_scope",
+                side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw),
+            ):
                 with patch(
                     "app.modules.payment.webhooks.confirm_order_after_payment",
                     new_callable=AsyncMock,
@@ -265,7 +268,10 @@ async def test_stripe_webhook_order_id_invalid_int_returns_200(client):
     with patch("app.modules.payment.webhooks.settings") as mock_settings:
         mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
         with patch("stripe.Webhook.construct_event", return_value=event):
-            with patch("app.modules.payment.webhooks.uow_scope", side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw)):
+            with patch(
+                "app.modules.payment.webhooks.uow_scope",
+                side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw),
+            ):
                 with patch(
                     "app.modules.payment.webhooks.confirm_order_after_payment",
                     new_callable=AsyncMock,
@@ -289,7 +295,10 @@ async def test_stripe_webhook_booking_id_confirms_booking(client):
     with patch("app.modules.payment.webhooks.settings") as mock_settings:
         mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
         with patch("stripe.Webhook.construct_event", return_value=event):
-            with patch("app.modules.payment.webhooks.uow_scope", side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw)):
+            with patch(
+                "app.modules.payment.webhooks.uow_scope",
+                side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw),
+            ):
                 with patch(
                     "app.modules.payment.webhooks.confirm_booking_after_payment",
                     new_callable=AsyncMock,
@@ -315,7 +324,10 @@ async def test_stripe_webhook_booking_id_invalid_int_returns_200(client):
     with patch("app.modules.payment.webhooks.settings") as mock_settings:
         mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
         with patch("stripe.Webhook.construct_event", return_value=event):
-            with patch("app.modules.payment.webhooks.uow_scope", side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw)):
+            with patch(
+                "app.modules.payment.webhooks.uow_scope",
+                side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw),
+            ):
                 with patch(
                     "app.modules.payment.webhooks.confirm_booking_after_payment",
                     new_callable=AsyncMock,
@@ -338,7 +350,10 @@ async def test_stripe_webhook_no_metadata_returns_200(client):
     with patch("app.modules.payment.webhooks.settings") as mock_settings:
         mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
         with patch("stripe.Webhook.construct_event", return_value=event):
-            with patch("app.modules.payment.webhooks.uow_scope", side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw)):
+            with patch(
+                "app.modules.payment.webhooks.uow_scope",
+                side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw),
+            ):
                 r = await client.post(
                     "/webhooks/stripe",
                     content=b"{}",
@@ -356,7 +371,10 @@ async def test_stripe_webhook_order_not_found_returns_200(client):
     with patch("app.modules.payment.webhooks.settings") as mock_settings:
         mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
         with patch("stripe.Webhook.construct_event", return_value=event):
-            with patch("app.modules.payment.webhooks.uow_scope", side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw)):
+            with patch(
+                "app.modules.payment.webhooks.uow_scope",
+                side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw),
+            ):
                 with patch(
                     "app.modules.payment.webhooks.confirm_order_after_payment",
                     new_callable=AsyncMock,
@@ -381,7 +399,10 @@ async def test_stripe_webhook_booking_not_found_returns_200(client):
     with patch("app.modules.payment.webhooks.settings") as mock_settings:
         mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
         with patch("stripe.Webhook.construct_event", return_value=event):
-            with patch("app.modules.payment.webhooks.uow_scope", side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw)):
+            with patch(
+                "app.modules.payment.webhooks.uow_scope",
+                side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw),
+            ):
                 with patch(
                     "app.modules.payment.webhooks.confirm_booking_after_payment",
                     new_callable=AsyncMock,
@@ -406,7 +427,10 @@ async def test_stripe_webhook_duplicate_event_skips_confirm(client):
     with patch("app.modules.payment.webhooks.settings") as mock_settings:
         mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
         with patch("stripe.Webhook.construct_event", return_value=event):
-            with patch("app.modules.payment.webhooks.uow_scope", side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw)):
+            with patch(
+                "app.modules.payment.webhooks.uow_scope",
+                side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw),
+            ):
                 with patch(
                     "app.modules.payment.webhooks.confirm_booking_after_payment",
                     new_callable=AsyncMock,

@@ -9,12 +9,20 @@ Occurrence, которые ссылаются на Service.
 from __future__ import annotations
 
 import enum
+from typing import TYPE_CHECKING
 
 from sqlalchemy import JSON, Enum, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models import Base
 from app.models.mixins import TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.booking import Booking
+    from app.models.occurrence import Occurrence
+    from app.models.order import Order
+    from app.models.schedule_template import ScheduleTemplate
+    from app.models.studio import Studio
 
 
 class ServiceCategory(enum.StrEnum):

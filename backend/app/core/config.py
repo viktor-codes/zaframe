@@ -33,7 +33,7 @@ class Settings(BaseSettings):
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
-    def normalize_database_url(cls, v: str) -> str:
+    def normalize_database_url(cls, v: object) -> str:
         """
         Нормализуем DATABASE_URL для корректной работы SQLAlchemy с asyncpg.
 
@@ -41,7 +41,7 @@ class Settings(BaseSettings):
         и приводим их к унифицированному виду postgresql+asyncpg://...
         """
         if not isinstance(v, str):
-            return v
+            raise TypeError("DATABASE_URL must be a string")
 
         url = v
 
@@ -64,9 +64,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = Field(
         default=7, description="Lifetime of refresh token in days"
     )
-    OTP_EXPIRE_MINUTES: int = Field(
-        default=10, description="Lifetime of email OTP code in minutes"
-    )
+    OTP_EXPIRE_MINUTES: int = Field(default=10, description="Lifetime of email OTP code in minutes")
     OTP_LENGTH: int = Field(default=6, ge=4, le=8, description="Number of digits in email OTP")
     OTP_MAX_ATTEMPTS: int = Field(
         default=5, ge=1, le=10, description="Max verify attempts before OTP is invalidated"
@@ -151,4 +149,4 @@ class Settings(BaseSettings):
 
 # Create a single instance of settings (singleton pattern).
 # Import settings in other modules: from app.core.config import settings
-settings = Settings()
+settings = Settings()  # pyright: ignore[reportCallIssue]  # WHY: SECRET_KEY loaded from env at runtime

@@ -8,7 +8,7 @@ from app.models import Service
 from app.modules.catalog.service.schemas import ServiceUpdate
 
 
-async def create_service(uow: UnitOfWork, studio_id: int, data: dict) -> Service:
+async def create_service(uow: UnitOfWork, studio_id: int, data: dict[str, object]) -> Service:
     """Create a service."""
     service = Service(studio_id=studio_id, **data)
     return await uow.services.add(service)

@@ -162,9 +162,7 @@ async def rollback_client(app_with_rollback_uow):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_expired_hold_payment_does_not_overbook_slot(
-    rollback_client, app_with_rollback_uow
-):
+async def test_expired_hold_payment_does_not_overbook_slot(rollback_client, app_with_rollback_uow):
     """
     max_capacity=1: booking A (expired hold) + booking B (confirmed).
     Webhook for A must not create a second confirmed seat; A → manual review.

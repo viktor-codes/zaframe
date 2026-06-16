@@ -20,7 +20,9 @@ class ServiceRepository(WriteRepositoryMixin):
 
     async def get_by_id_with_occurrences(self, service_id: int) -> Service | None:
         result = await self._session.execute(
-            select(Service).options(selectinload(Service.occurrences)).where(Service.id == service_id)
+            select(Service)
+            .options(selectinload(Service.occurrences))
+            .where(Service.id == service_id)
         )
         return result.scalar_one_or_none()
 

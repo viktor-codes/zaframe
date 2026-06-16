@@ -8,6 +8,8 @@ Stripe webhook требует raw body для проверки подписи.
 Бизнес-логика подтверждения оплаты — в сервисе payment.
 """
 
+from typing import Any, cast
+
 import stripe
 import structlog
 from fastapi import APIRouter, Request, Response
@@ -21,28 +23,41 @@ from app.modules.payment.service import confirm_booking_after_payment, confirm_o
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 
 
+def _metadata_value(metadata: object, key: str) -> str | None:
+    raw: object
+    if isinstance(metadata, dict):
+        mapping = cast(dict[str, object], metadata)
+        raw = mapping.get(key)
+    else:
+        raw = getattr(metadata, key, None)
+    if raw is None:
+        return None
+    return str(raw)
+
+
 def _parse_checkout_session_metadata(session: object) -> tuple[str | None, str | None]:
     """Извлекает booking_id и order_id из metadata Stripe session."""
-    metadata = getattr(session, "metadata", None) or {}
-    if isinstance(metadata, dict):
-        return (
-            metadata.get("booking_id"),
-            metadata.get("order_id"),
-        )
+    metadata: object = getattr(session, "metadata", None) or {}
     return (
-        getattr(metadata, "booking_id", None),
-        getattr(metadata, "order_id", None),
+        _metadata_value(metadata, "booking_id"),
+        _metadata_value(metadata, "order_id"),
     )
 
 
 def _parse_payment_intent_id(session: object) -> str | None:
     """Извлекает payment_intent id из Stripe session."""
-    pi = getattr(session, "payment_intent", None)
-    if pi is None and isinstance(session, dict):
-        pi = session.get("payment_intent")
+    pi: object
+    if isinstance(session, dict):
+        mapping = cast(dict[str, object], session)
+        pi = mapping.get("payment_intent")
+    else:
+        pi = getattr(session, "payment_intent", None)
     if pi is None:
         return None
-    return getattr(pi, "id", None) or (str(pi) if isinstance(pi, str) else None)
+    if isinstance(pi, str):
+        return pi
+    pi_id: object = getattr(pi, "id", pi)
+    return str(pi_id)
 
 
 @router.post("/stripe", status_code=200)
@@ -63,7 +78,7 @@ async def stripe_webhook(request: Request) -> Response:
     sig_header = request.headers.get("Stripe-Signature", "")
 
     try:
-        event = stripe.Webhook.construct_event(
+        event: Any = stripe.Webhook.construct_event(  # pyright: ignore[reportUnknownMemberType]  # WHY: stripe SDK has no type stubs
             payload,
             sig_header,
             settings.STRIPE_WEBHOOK_SECRET,

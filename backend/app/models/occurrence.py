@@ -7,12 +7,19 @@ Generated from ScheduleTemplate rules or created manually; referenced by Booking
 from __future__ import annotations
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models import Base
 from app.models.mixins import TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.booking import Booking
+    from app.models.schedule_template import ScheduleTemplate
+    from app.models.service import Service
+    from app.models.studio import Studio
 
 
 class OccurrenceStatus:

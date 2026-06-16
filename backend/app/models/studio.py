@@ -9,12 +9,20 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from sqlalchemy import Float, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models import Base
 from app.models.mixins import TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.occurrence import Occurrence
+    from app.models.order import Order
+    from app.models.service import Service
+    from app.models.user import User
 
 
 class Studio(TimestampMixin, Base):

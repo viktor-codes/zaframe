@@ -5,12 +5,17 @@ ScheduleTemplate — recurring rule for generating occurrences for a Service.
 from __future__ import annotations
 
 from datetime import date, time
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Date, ForeignKey, Integer, Time
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models import Base
 from app.models.mixins import TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.occurrence import Occurrence
+    from app.models.service import Service
 
 
 class ScheduleTemplate(TimestampMixin, Base):

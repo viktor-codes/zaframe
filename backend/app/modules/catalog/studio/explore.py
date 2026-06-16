@@ -2,9 +2,8 @@
 
 from app.core.uow import UnitOfWork
 from app.models.studio import Studio
-from app.modules.catalog.service import ServiceResponse
-from app.modules.catalog.studio import StudioResponse
 from app.modules.search import SearchResult
+from app.modules.search.schemas import SearchServiceResponse, SearchStudioResponse
 
 
 async def attach_services_to_studios(
@@ -19,13 +18,13 @@ async def attach_services_to_studios(
         studio_ids,
         category=category,
     )
-    by_studio: dict[int, list[ServiceResponse]] = {}
+    by_studio: dict[int, list[SearchServiceResponse]] = {}
     for svc in services:
-        by_studio.setdefault(svc.studio_id, []).append(ServiceResponse.model_validate(svc))
+        by_studio.setdefault(svc.studio_id, []).append(SearchServiceResponse.model_validate(svc))
 
     return [
         SearchResult(
-            studio=StudioResponse.model_validate(s),
+            studio=SearchStudioResponse.model_validate(s),
             matched_services=by_studio.get(s.id, []),
         )
         for s in studios

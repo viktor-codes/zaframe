@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 from app.modules.identity.repository import UserRepository
 from app.modules.identity.schemas import UserCreate, UserPublic, UserResponse, UserUpdate
 
@@ -11,6 +13,9 @@ __all__ = [
     "get_user_by_email",
     "get_user_by_id",
 ]
+
+if TYPE_CHECKING:
+    from app.modules.identity.service import get_or_create_user, get_user_by_email, get_user_by_id
 
 
 def __getattr__(name: str):

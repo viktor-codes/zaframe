@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any, cast
 
 from sqlalchemy import case, func, select, update
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import ColumnElement
 
@@ -96,9 +98,7 @@ class BookingCapacityQueriesMixin(BookingGetMixin):
             .group_by(Booking.occurrence_id)
         )
         result = await self._session.execute(counts_q)
-        return {
-            row.occurrence_id: (row.confirmed or 0, row.pending or 0) for row in result
-        }
+        return {row.occurrence_id: (row.confirmed or 0, row.pending or 0) for row in result}
 
     async def attach_guest_bookings_by_email(
         self,
@@ -119,4 +119,5 @@ class BookingCapacityQueriesMixin(BookingGetMixin):
             update(Booking).where(*conditions).values(user_id=user_id)
         )
         await self._session.flush()
-        return result.rowcount or 0
+        cursor = cast(CursorResult[Any], result)
+        return cursor.rowcount or 0

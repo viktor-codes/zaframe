@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 from app.modules.catalog.occurrence.repository import OccurrenceRepository
 from app.modules.catalog.occurrence.schemas import (
     OccurrenceCreate,
@@ -20,6 +22,17 @@ __all__ = [
     "get_occurrences_count",
     "update_occurrence",
 ]
+
+if TYPE_CHECKING:
+    from app.modules.catalog.occurrence.service import (
+        create_occurrence,
+        delete_occurrence,
+        get_occurrence,
+        get_occurrence_or_raise,
+        get_occurrences,
+        get_occurrences_count,
+        update_occurrence,
+    )
 
 
 def __getattr__(name: str):
@@ -54,3 +67,15 @@ def __getattr__(name: str):
             "update_occurrence": update_occurrence,
         }[name]
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+if TYPE_CHECKING:
+    from app.modules.catalog.occurrence.service import (
+        create_occurrence,
+        delete_occurrence,
+        get_occurrence,
+        get_occurrence_or_raise,
+        get_occurrences,
+        get_occurrences_count,
+        update_occurrence,
+    )

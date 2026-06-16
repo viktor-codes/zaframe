@@ -1,3 +1,5 @@
+from typing import Annotated
+
 """
 API router for occurrences (bookable time instances).
 
@@ -38,7 +40,7 @@ studio_occurrence_router = APIRouter(prefix="/studios", tags=["studios"])
 
 @router.get("", response_model=list[OccurrenceResponse])
 async def list_occurrences(
-    uow: UnitOfWork = Depends(get_uow),
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
     skip: int = Query(0, ge=0, description="Skip N records"),
     limit: int = Query(20, ge=1, le=100, description="Max records"),
     studio_id: int | None = Query(None, description="Filter by studio"),
@@ -47,7 +49,7 @@ async def list_occurrences(
     status: str | None = Query(None, description="Filter by status (active/cancelled)"),
 ) -> list[OccurrenceResponse]:
     """List occurrences with optional studio and date filters."""
-    return await get_occurrences(
+    occurrences = await get_occurrences(
         uow,
         skip=skip,
         limit=limit,
@@ -56,11 +58,12 @@ async def list_occurrences(
         start_to=start_to,
         status=status,
     )
+    return [OccurrenceResponse.model_validate(o) for o in occurrences]
 
 
 @router.get("/count")
 async def count_occurrences(
-    uow: UnitOfWork = Depends(get_uow),
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
     studio_id: int | None = Query(None, description="Filter by studio"),
     start_from: datetime | None = Query(None, description="Range start (UTC)"),
     start_to: datetime | None = Query(None, description="Range end (UTC)"),
@@ -80,43 +83,46 @@ async def count_occurrences(
 @router.get("/{occurrence_id}", response_model=OccurrenceResponse)
 async def get_occurrence_by_id(
     occurrence_id: int,
-    uow: UnitOfWork = Depends(get_uow),
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> OccurrenceResponse:
     """Get occurrence by ID."""
-    return await get_occurrence_or_raise(uow, occurrence_id)
+    occurrence = await get_occurrence_or_raise(uow, occurrence_id)
+    return OccurrenceResponse.model_validate(occurrence)
 
 
 @router.post("", response_model=OccurrenceResponse, status_code=201)
 async def create_occurrence_endpoint(
     schema: OccurrenceCreate,
-    user: User = Depends(get_current_user_required),
-    uow: UnitOfWork = Depends(get_uow),
+    user: Annotated[User, Depends(get_current_user_required)],
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> OccurrenceResponse:
     """Create occurrence (studio owner)."""
     studio = await get_studio_or_raise(uow, schema.studio_id)
     ensure_studio_owner(studio, user.id)
-    return await create_occurrence(uow, schema)
+    occurrence = await create_occurrence(uow, schema)
+    return OccurrenceResponse.model_validate(occurrence)
 
 
 @router.patch("/{occurrence_id}", response_model=OccurrenceResponse)
 async def update_occurrence_endpoint(
     occurrence_id: int,
     schema: OccurrenceUpdate,
-    user: User = Depends(get_current_user_required),
-    uow: UnitOfWork = Depends(get_uow),
+    user: Annotated[User, Depends(get_current_user_required)],
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> OccurrenceResponse:
     """Update occurrence (studio owner)."""
     occurrence = await get_occurrence_or_raise(uow, occurrence_id)
     studio = await get_studio_or_raise(uow, occurrence.studio_id)
     ensure_studio_owner(studio, user.id)
-    return await update_occurrence(uow, occurrence, schema)
+    occurrence = await update_occurrence(uow, occurrence, schema)
+    return OccurrenceResponse.model_validate(occurrence)
 
 
 @router.delete("/{occurrence_id}", status_code=204)
 async def delete_occurrence_endpoint(
     occurrence_id: int,
-    user: User = Depends(get_current_user_required),
-    uow: UnitOfWork = Depends(get_uow),
+    user: Annotated[User, Depends(get_current_user_required)],
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> None:
     """Delete occurrence (studio owner). Cascades to related bookings."""
     occurrence = await get_occurrence_or_raise(uow, occurrence_id)
@@ -128,7 +134,7 @@ async def delete_occurrence_endpoint(
 @studio_occurrence_router.get("/{studio_id}/occurrences", response_model=list[OccurrenceResponse])
 async def list_studio_occurrences(
     studio_id: int,
-    uow: UnitOfWork = Depends(get_uow),
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
     skip: int = Query(0, ge=0, description="Пропустить N записей"),
     limit: int = Query(20, ge=1, le=100, description="Максимум записей"),
     start_from: datetime | None = Query(None, description="Начало диапазона дат"),
@@ -136,7 +142,7 @@ async def list_studio_occurrences(
     status: str | None = Query(None, description="Фильтр по статусу (active/cancelled)"),
 ) -> list[OccurrenceResponse]:
     """Расписание студии: слоты с фильтрами по датам."""
-    return await get_occurrences(
+    occurrences = await get_occurrences(
         uow,
         skip=skip,
         limit=limit,
@@ -145,3 +151,4 @@ async def list_studio_occurrences(
         start_to=start_to,
         status=status,
     )
+    return [OccurrenceResponse.model_validate(o) for o in occurrences]

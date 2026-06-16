@@ -44,7 +44,9 @@ async def get_schedule_templates_for_service(
     return await uow.schedule_templates.list_by_service_id(service_id)
 
 
-async def get_schedule_template(uow: UnitOfWork, schedule_template_id: int) -> ScheduleTemplate | None:
+async def get_schedule_template(
+    uow: UnitOfWork, schedule_template_id: int
+) -> ScheduleTemplate | None:
     """Получить один шаблон расписания."""
     return await uow.schedule_templates.get_by_id(schedule_template_id)
 
@@ -133,7 +135,9 @@ async def occurrence_generator(
     min_start = min(s for s, _ in planned_intervals)
     max_end = max(e for _, e in planned_intervals)
 
-    existing_occurrences = await uow.occurrences.list_overlapping(studio_id, service_id, min_start, max_end)
+    existing_occurrences = await uow.occurrences.list_overlapping(
+        studio_id, service_id, min_start, max_end
+    )
 
     if existing_occurrences:
         raise ValidationError(

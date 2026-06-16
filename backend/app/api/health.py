@@ -96,7 +96,7 @@ async def readiness(response: Response) -> dict[str, Any]:
         checks["stripe"] = "skip"
 
     if settings.RESEND_API_KEY:
-        checks["resend"] = "configured"
+        checks["resend"] = "configured" if _check_resend_configured() else "fail"
     else:
         checks["resend"] = "skip"
 

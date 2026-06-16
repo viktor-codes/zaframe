@@ -176,7 +176,9 @@ async def test_concurrent_confirm_order_and_course_booking_do_not_deadlock(
                 async with uow_scope(session=session, auto_commit=False) as uow:
                     await start_barrier.wait()
                     with patch("app.modules.payment.confirmation.utc_now", return_value=FROZEN_NOW):
-                        await confirm_order_after_payment(uow, order_id, payment_intent_id="pi_test")
+                        await confirm_order_after_payment(
+                            uow, order_id, payment_intent_id="pi_test"
+                        )
                     await uow.commit()
         except BaseException as exc:
             errors.append(exc)

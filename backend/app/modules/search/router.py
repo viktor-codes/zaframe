@@ -6,6 +6,8 @@ MVP‑поиск с фильтрами по категории, городу, з
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, Query
 
 from app.core.deps import get_uow
@@ -19,7 +21,7 @@ router = APIRouter(prefix="/search", tags=["search"])
 
 @router.get("", response_model=list[SearchResult])
 async def search_endpoint(
-    uow: UnitOfWork = Depends(get_uow),
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
     query: str | None = Query(None, description="Поисковый запрос по названию/описанию"),
     category: ServiceCategory | None = Query(None, description="Категория услуги"),
     city: str | None = Query(None, description="Город"),

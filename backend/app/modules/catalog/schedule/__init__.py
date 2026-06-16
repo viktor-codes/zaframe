@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 from app.modules.catalog.schedule.repository import ScheduleTemplateRepository
 from app.modules.catalog.schedule.schemas import (
     ScheduleGenerateRequest,
@@ -30,6 +32,16 @@ _SCHEDULE_FUNCTIONS = (
     "delete_schedule_template",
     "occurrence_generator",
 )
+
+if TYPE_CHECKING:
+    from app.modules.catalog.schedule.service import (
+        create_schedule_template,
+        delete_schedule_template,
+        get_schedule_template,
+        get_schedule_template_or_raise,
+        get_schedule_templates_for_service,
+        occurrence_generator,
+    )
 
 
 def __getattr__(name: str):

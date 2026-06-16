@@ -43,10 +43,7 @@ def test_get_booking_reserved_until_uses_config_window():
     ],
 )
 def test_is_active_pending_hold(status, reserved_until, now, expected):
-    assert (
-        is_active_pending_hold(status=status, reserved_until=reserved_until, now=now)
-        is expected
-    )
+    assert is_active_pending_hold(status=status, reserved_until=reserved_until, now=now) is expected
 
 
 def test_active_pending_hold_clause_sql_includes_expiry_filter():
@@ -60,9 +57,7 @@ def test_active_pending_hold_clause_sql_includes_expiry_filter():
 @pytest.mark.asyncio
 async def test_count_pending_by_occurrence_uses_active_hold_filter():
     session = MagicMock()
-    session.execute = AsyncMock(
-        return_value=MagicMock(scalar_one=MagicMock(return_value=2))
-    )
+    session.execute = AsyncMock(return_value=MagicMock(scalar_one=MagicMock(return_value=2)))
     repo = BookingRepository(session)
     now = datetime(2026, 6, 13, 12, 0, tzinfo=UTC)
 

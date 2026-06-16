@@ -1,3 +1,5 @@
+from typing import Annotated
+
 """
 API роутер для платежей (Stripe Checkout).
 
@@ -25,12 +27,12 @@ router = APIRouter(prefix="/payments", tags=["payments"])
 
 
 @router.post("/checkout-session", response_model=CheckoutSessionResponse, status_code=201)
-@limiter.limit("10/minute")
+@limiter.limit("10/minute")  # pyright: ignore[reportUnknownMemberType]  # WHY: slowapi ships untyped decorators
 async def create_checkout_session_endpoint(
     request: Request,
     schema: CheckoutSessionCreate,
-    uow: UnitOfWork = Depends(get_uow),
-    current_user: User | None = Depends(get_current_user),
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
+    current_user: Annotated[User | None, Depends(get_current_user)],
 ) -> CheckoutSessionResponse:
     """
     Создать Stripe Checkout Session для оплаты бронирования.
@@ -57,12 +59,12 @@ async def create_checkout_session_endpoint(
     response_model=CheckoutSessionResponse,
     status_code=201,
 )
-@limiter.limit("10/minute")
+@limiter.limit("10/minute")  # pyright: ignore[reportUnknownMemberType]  # WHY: slowapi ships untyped decorators
 async def create_order_checkout_session_endpoint(
     request: Request,
     schema: OrderCheckoutSessionCreate,
-    uow: UnitOfWork = Depends(get_uow),
-    current_user: User | None = Depends(get_current_user),
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
+    current_user: Annotated[User | None, Depends(get_current_user)],
 ) -> CheckoutSessionResponse:
     """
     Создать Stripe Checkout Session для оплаты заказа (Order).

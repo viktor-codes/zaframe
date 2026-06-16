@@ -15,12 +15,19 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models import Base
 from app.models.mixins import TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.booking import Booking
+    from app.models.order import Order
+    from app.models.refresh_token import RefreshToken
+    from app.models.studio import Studio
 
 
 class User(TimestampMixin, Base):

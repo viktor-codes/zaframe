@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+from typing import cast
 
 from app.core.datetime_utils import utc_now
 from app.core.exceptions import NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
 from app.models import ServiceType
 from app.modules.catalog.capacity import (
+    CapacityServiceLike,
     classify_occurrence_capacity,
     is_occurrence_overbooked,
     overbooking_status_label,
@@ -108,7 +110,7 @@ async def get_service_availability(
     details: list[ServiceAvailabilityScheduleItemDTO] = []
     for s in stats:
         flags = classify_occurrence_capacity(
-            service,
+            cast(CapacityServiceLike, service),
             max_capacity=s.occurrence.max_capacity,
             current_bookings=s.total,
         )

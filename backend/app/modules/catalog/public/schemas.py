@@ -52,7 +52,7 @@ class PublicService(BaseModel):
         total_remaining_capacity: int
         requires_warning: bool
         overbooked_dates: list[date] = Field(
-            default_factory=list,
+            default_factory=lambda: list[date](),
             description="Dates where booking would cause overbooking",
         )
 
@@ -69,4 +69,4 @@ class StudioPublicResponse(BaseModel):
     name: str
     slug: str | None
     description: str | None
-    services: list[PublicService] = Field(default_factory=list)
+    services: list[PublicService] = Field(default_factory=lambda: list[PublicService]())

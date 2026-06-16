@@ -3,12 +3,17 @@
 from __future__ import annotations
 
 from datetime import date
+from typing import cast
 
 from app.core.datetime_utils import utc_now
 from app.core.exceptions import NotFoundError
 from app.core.uow import UnitOfWork
 from app.models import Occurrence, ServiceType
-from app.modules.catalog.capacity import OccurrenceFill, build_public_course_availability
+from app.modules.catalog.capacity import (
+    CapacityServiceLike,
+    OccurrenceFill,
+    build_public_course_availability,
+)
 from app.modules.catalog.public.dto import (
     PublicServiceAvailabilityDTO,
     PublicServiceDTO,
@@ -52,9 +57,7 @@ async def get_studio_public(
 
     for service in studio.services:
         upcoming_occurrences = [
-            o
-            for o in service.occurrences
-            if o.start_time >= now_utc and o.is_bookable()
+            o for o in service.occurrences if o.start_time >= now_utc and o.is_bookable()
         ]
         upcoming_occurrences.sort(key=lambda o: o.start_time)
 
@@ -84,7 +87,7 @@ async def get_studio_public(
                 occurrence_dates.append(occurrence.start_time.date())
 
             availability_dto = build_public_course_availability(
-                service,
+                cast(CapacityServiceLike, service),
                 fills,
                 occurrence_dates=occurrence_dates,
             )

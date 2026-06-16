@@ -43,5 +43,8 @@ jobs:
       - name: Import boundaries
         run: uv run lint-imports
 
+      - name: Pyright
+        run: uv run pyright app scripts
+
       - name: Tests
         run: uv run pytest -q

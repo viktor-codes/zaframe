@@ -1,3 +1,5 @@
+from typing import Annotated
+
 """HTTP routes for public studio pages (no auth)."""
 
 from fastapi import APIRouter, Depends
@@ -13,7 +15,7 @@ public_router = APIRouter(prefix="/studios", tags=["studios"])
 @public_router.get("/slug/{slug}/public", response_model=StudioPublicResponse)
 async def get_studio_public_endpoint(
     slug: str,
-    uow: UnitOfWork = Depends(get_uow),
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> StudioPublicResponse:
     """
     Публичное представление студии по slug.

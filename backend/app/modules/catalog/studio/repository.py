@@ -7,6 +7,7 @@
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from sqlalchemy.sql.elements import ColumnElement
 
 from app.core.repository import WriteRepositoryMixin
 from app.models.service import Service
@@ -45,8 +46,8 @@ class StudioRepository(WriteRepositoryMixin):
         category: str | None = None,
         query: str | None = None,
         amenities: list[str] | None = None,
-    ) -> list:
-        conditions = []
+    ) -> list[ColumnElement[bool]]:
+        conditions: list[ColumnElement[bool]] = []
         if owner_id is not None:
             conditions.append(Studio.owner_id == owner_id)
         if is_active is not None:
@@ -63,11 +64,11 @@ class StudioRepository(WriteRepositoryMixin):
 
     def _join_conditions(
         self,
-        conditions: list,
+        conditions: list[ColumnElement[bool]],
         *,
         category: str | None = None,
         query: str | None = None,
-    ) -> list:
+    ) -> list[ColumnElement[bool]]:
         join_conditions = list(conditions)
         join_conditions.append(Service.studio_id == Studio.id)
         join_conditions.append(Service.is_active.is_(True))

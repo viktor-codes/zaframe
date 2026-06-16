@@ -160,7 +160,9 @@ async def test_studio_owner_sees_slot_bookings_and_single_booking(client: AsyncC
         client, owner_headers, guest_email="participant-authz@example.com"
     )
 
-    r_list = await client.get(f"/api/v1/occurrences/{occurrence_id}/bookings", headers=owner_headers)
+    r_list = await client.get(
+        f"/api/v1/occurrences/{occurrence_id}/bookings", headers=owner_headers
+    )
     assert r_list.status_code == 200
     bookings = r_list.json()
     assert len(bookings) == 1

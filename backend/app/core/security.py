@@ -12,6 +12,7 @@ import hmac
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from secrets import randbelow, token_urlsafe
+from typing import Any
 
 from jose import JWTError, jwt
 
@@ -69,7 +70,7 @@ def create_refresh_token(user_id: int) -> str:
     )
 
 
-def decode_token(token: str) -> dict | None:
+def decode_token(token: str) -> dict[str, Any] | None:
     """
     Декодировать и проверить JWT.
     Возвращает payload или None при ошибке.

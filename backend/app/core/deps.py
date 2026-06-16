@@ -5,12 +5,12 @@ Routers depend on this module — not on app.api — so import-linter can keep t
 layer at the top. User resolution uses core.security + identity (not auth).
 """
 
+from typing import Annotated
 
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from starlette.requests import Request
 
-from app.core.database import get_db
 from app.core.exceptions import UnauthorizedError
 from app.core.middleware.logging_middleware import USER_ID_STATE_KEY
 from app.core.security import get_user_id_from_access_token
@@ -24,8 +24,8 @@ security = HTTPBearer(auto_error=False)
 
 async def get_current_user(
     request: Request,
-    credentials: HTTPAuthorizationCredentials | None = Depends(security),
-    uow: UnitOfWork = Depends(get_uow),
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(security)],
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> User | None:
     """
     Resolve current user from Bearer token.
@@ -45,7 +45,7 @@ async def get_current_user(
 
 
 async def get_current_user_required(
-    user: User | None = Depends(get_current_user),
+    user: Annotated[User | None, Depends(get_current_user)],
 ) -> User:
     """
     Require authenticated user.
@@ -57,4 +57,4 @@ async def get_current_user_required(
     return user
 
 
-__all__ = ["get_current_user", "get_current_user_required", "get_db", "get_uow"]
+__all__ = ["get_current_user", "get_current_user_required", "get_uow"]

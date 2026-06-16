@@ -5,8 +5,9 @@ ZaFrame API entrypoint.
 the lifespan hook. All business logic lives in `core/`, `api/`, and `modules/`.
 """
 
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
+from typing import Any
 
 import structlog
 from fastapi import FastAPI
@@ -31,7 +32,11 @@ from app.core.rate_limit import limiter
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Add baseline security headers to every response."""
 
-    async def dispatch(self, request: Request, call_next) -> Response:
+    async def dispatch(
+        self,
+        request: Request,
+        call_next: Callable[[Request], Awaitable[Response]],
+    ) -> Response:
         response = await call_next(request)
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("X-Frame-Options", "DENY")
@@ -90,7 +95,7 @@ async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) 
     return response
 
 
-app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)  # pyright: ignore[reportArgumentType]  # WHY: Starlette handler union is wider than HTTP-only handlers
 
 
 # === Exception handlers (domain exceptions → HTTP + logging) ===
@@ -112,7 +117,7 @@ def _error_body(
     status_code: int,
     request_id: str | None = None,
     problem_type: str = "about:blank",
-) -> dict:
+) -> dict[str, Any]:
     """RFC 7807 Problem JSON."""
     return {
         "type": problem_type,
@@ -169,7 +174,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
     )
 
 
-app.add_exception_handler(AppError, app_error_handler)
+app.add_exception_handler(AppError, app_error_handler)  # pyright: ignore[reportArgumentType]  # WHY: Starlette handler union is wider than HTTP-only handlers
 app.add_exception_handler(Exception, unhandled_exception_handler)
 
 # === Logging middleware (request_id + request/response logging) ===

@@ -14,7 +14,9 @@ class ProcessedWebhookEventRepository(WriteRepositoryMixin):
     async def exists_by_event_id(self, event_id: str) -> bool:
         """True when this Stripe event.id was already processed successfully."""
         result = await self._session.execute(
-            select(ProcessedWebhookEvent.id).where(ProcessedWebhookEvent.event_id == event_id).limit(1)
+            select(ProcessedWebhookEvent.id)
+            .where(ProcessedWebhookEvent.event_id == event_id)
+            .limit(1)
         )
         return result.scalar_one_or_none() is not None
 

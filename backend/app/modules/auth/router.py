@@ -1,3 +1,5 @@
+from typing import Annotated
+
 """Authentication API router.
 
 Email OTP flow (strict cookie mode):
@@ -88,11 +90,11 @@ def _require_csrf_header(request: Request) -> None:
 
 
 @router.post("/otp/request", response_model=OTPSentResponse)
-@limiter.limit("10/minute")
+@limiter.limit("10/minute")  # pyright: ignore[reportUnknownMemberType]  # WHY: slowapi ships untyped decorators
 async def otp_request(
     request: Request,
     schema: OTPRequest,
-    uow: UnitOfWork = Depends(get_uow),
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> OTPSentResponse:
     """Send a one-time sign-in code to email."""
     await request_otp(
@@ -105,12 +107,12 @@ async def otp_request(
 
 
 @router.post("/otp/verify", response_model=OTPVerifyResponse)
-@limiter.limit("20/minute")
+@limiter.limit("20/minute")  # pyright: ignore[reportUnknownMemberType]  # WHY: slowapi ships untyped decorators
 async def otp_verify(
     request: Request,
     response: Response,
     schema: OTPVerify,
-    uow: UnitOfWork = Depends(get_uow),
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> OTPVerifyResponse:
     """Verify OTP code and issue JWT session."""
     user, access_token, refresh_token, csrf_token = await verify_otp(
@@ -128,11 +130,11 @@ async def otp_verify(
 
 
 @router.post("/refresh", response_model=TokenResponse)
-@limiter.limit("30/minute")
+@limiter.limit("30/minute")  # pyright: ignore[reportUnknownMemberType]  # WHY: slowapi ships untyped decorators
 async def refresh_tokens(
     request: Request,
     response: Response,
-    uow: UnitOfWork = Depends(get_uow),
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> TokenResponse:
     """Refresh access token using refresh token cookie."""
     _require_csrf_header(request)
@@ -140,9 +142,7 @@ async def refresh_tokens(
     if not refresh_token:
         raise UnauthorizedError("Missing refresh token cookie")
 
-    access_token, new_refresh_token, new_csrf_token = await refresh_access_token(
-        uow, refresh_token
-    )
+    access_token, new_refresh_token, new_csrf_token = await refresh_access_token(uow, refresh_token)
     _set_refresh_cookie(response, new_refresh_token)
     _set_csrf_cookie(response, new_csrf_token)
     return TokenResponse(
@@ -154,8 +154,8 @@ async def refresh_tokens(
 async def logout(
     request: Request,
     response: Response,
-    uow: UnitOfWork = Depends(get_uow),
-    user: User = Depends(get_current_user_required),
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
+    user: Annotated[User, Depends(get_current_user_required)],
 ) -> None:
     """Sign out of the current session."""
     refresh_token = request.cookies.get(REFRESH_TOKEN_COOKIE_NAME)
@@ -166,7 +166,7 @@ async def logout(
 
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_me(
-    user: User = Depends(get_current_user_required),
+    user: Annotated[User, Depends(get_current_user_required)],
 ) -> UserResponse:
     """Return the current user from the Bearer access token."""
-    return user
+    return UserResponse.model_validate(user)

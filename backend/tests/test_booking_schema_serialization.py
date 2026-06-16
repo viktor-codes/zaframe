@@ -85,9 +85,7 @@ def test_booking_client_schema_serialization_snapshot(schema_cls, expected_snaps
     booking = _booking_orm(
         status=expected_snapshot["status"],
         payment_status=expected_snapshot["payment_status"],
-        reserved_until=(
-            _FIXED_NOW if expected_snapshot["reserved_until"] is not None else None
-        ),
+        reserved_until=(_FIXED_NOW if expected_snapshot["reserved_until"] is not None else None),
     )
     payload = schema_cls.model_validate(booking).model_dump(mode="json")
 

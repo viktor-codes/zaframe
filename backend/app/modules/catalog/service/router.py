@@ -1,3 +1,5 @@
+from typing import Annotated
+
 """
 API роутер для услуг (Service) и шаблонов расписания (ScheduleTemplate).
 
@@ -42,8 +44,8 @@ router = APIRouter(prefix="/services", tags=["services"])
 @router.post("", response_model=ServiceResponse, status_code=201)
 async def create_service_endpoint(
     schema: ServiceCreate,
-    user: User = Depends(get_current_user_required),
-    uow: UnitOfWork = Depends(get_uow),
+    user: Annotated[User, Depends(get_current_user_required)],
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> ServiceResponse:
     """
     Создать услугу (Service) в студии.
@@ -61,7 +63,7 @@ async def create_service_endpoint(
 @router.get("/{service_id}", response_model=ServiceResponse)
 async def get_service_endpoint(
     service_id: int,
-    uow: UnitOfWork = Depends(get_uow),
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> ServiceResponse:
     """Получить услугу по ID (публично)."""
     service = await get_service_or_raise(uow, service_id)
@@ -71,11 +73,11 @@ async def get_service_endpoint(
 @router.get("/{service_id}/availability", response_model=ServiceAvailabilityResponse)
 async def get_service_availability_endpoint(
     service_id: int,
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
     start_date: date | None = Query(
         None,
         description="Опциональная дата, с которой считать доступность (по умолчанию сегодня)",
     ),
-    uow: UnitOfWork = Depends(get_uow),
 ) -> ServiceAvailabilityResponse:
     """
     Получить подробную информацию о доступности курса.
@@ -92,8 +94,8 @@ async def get_service_availability_endpoint(
 async def update_service_endpoint(
     service_id: int,
     schema: ServiceUpdate,
-    user: User = Depends(get_current_user_required),
-    uow: UnitOfWork = Depends(get_uow),
+    user: Annotated[User, Depends(get_current_user_required)],
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> ServiceResponse:
     """Обновить услугу (только владелец студии)."""
     service = await get_service_or_raise(uow, service_id)
@@ -106,8 +108,8 @@ async def update_service_endpoint(
 @router.delete("/{service_id}", response_model=ServiceResponse)
 async def deactivate_service_endpoint(
     service_id: int,
-    user: User = Depends(get_current_user_required),
-    uow: UnitOfWork = Depends(get_uow),
+    user: Annotated[User, Depends(get_current_user_required)],
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> ServiceResponse:
     """
     Деактивировать услугу (soft delete).
@@ -127,7 +129,7 @@ async def deactivate_service_endpoint(
 )
 async def list_service_schedule_templates_endpoint(
     service_id: int,
-    uow: UnitOfWork = Depends(get_uow),
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> list[ScheduleTemplateResponse]:
     """Список шаблонов расписания для услуги."""
     await get_service_or_raise(uow, service_id)
@@ -143,8 +145,8 @@ async def list_service_schedule_templates_endpoint(
 async def create_service_schedule_template_endpoint(
     service_id: int,
     schema: ScheduleTemplateBase,
-    user: User = Depends(get_current_user_required),
-    uow: UnitOfWork = Depends(get_uow),
+    user: Annotated[User, Depends(get_current_user_required)],
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> ScheduleTemplateResponse:
     """
     Создать шаблон расписания (ScheduleTemplate) для услуги.
@@ -164,8 +166,8 @@ async def create_service_schedule_template_endpoint(
 @router.delete("/schedule-templates/{schedule_template_id}", status_code=204)
 async def delete_schedule_template_endpoint(
     schedule_template_id: int,
-    user: User = Depends(get_current_user_required),
-    uow: UnitOfWork = Depends(get_uow),
+    user: Annotated[User, Depends(get_current_user_required)],
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> None:
     """Удалить шаблон расписания (только владелец студии услуги)."""
     schedule = await get_schedule_template_or_raise(uow, schedule_template_id)

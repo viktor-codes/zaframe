@@ -6,6 +6,7 @@ completion events via `structlog`.
 
 import time
 import uuid
+from collections.abc import Awaitable, Callable
 
 import structlog
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -32,7 +33,11 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
     Expects `request.state.user_id` to be optionally set by auth dependencies.
     """
 
-    async def dispatch(self, request: Request, call_next) -> Response:
+    async def dispatch(
+        self,
+        request: Request,
+        call_next: Callable[[Request], Awaitable[Response]],
+    ) -> Response:
         logger = structlog.get_logger(__name__)
         request_id = _get_request_id(request)
         setattr(request.state, REQUEST_ID_STATE_KEY, request_id)

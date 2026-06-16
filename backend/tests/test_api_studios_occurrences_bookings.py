@@ -151,7 +151,9 @@ async def test_slot_and_booking_flow(client: AsyncClient):
     assert cancelled["status"] == "cancelled"
 
     # Удаляем слот
-    r_delete_occurrence = await client.delete(f"/api/v1/occurrences/{occurrence_id}", headers=headers)
+    r_delete_occurrence = await client.delete(
+        f"/api/v1/occurrences/{occurrence_id}", headers=headers
+    )
     assert r_delete_occurrence.status_code == 204
 
     # Слот больше не существует

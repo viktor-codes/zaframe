@@ -8,11 +8,19 @@ Order — это "родитель" для одного или нескольк�
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from sqlalchemy import ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models import Base
 from app.models.mixins import TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.booking import Booking
+    from app.models.service import Service
+    from app.models.studio import Studio
+    from app.models.user import User
 
 
 class OrderStatus:

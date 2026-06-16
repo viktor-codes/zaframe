@@ -104,6 +104,7 @@ flowchart TB
 | import-linter | `uv run lint-imports` | Forbidden import directions (see `pyproject.toml`) |
 | AST tests | `pytest tests/architecture/` | Repositories don't import upper layers; no `_` cross-domain imports |
 | Ruff | `uv run ruff check .` | Style and import order |
+| Pyright | `uv run pyright app scripts` | Strict static typing for application code |
 
 `import-linter` ignores transitive imports through `core.deps` → `core.uow_factory` for leaf
 modules — the monolithic UoW intentionally wires every repository in one factory (ADR-003 §3).
@@ -115,6 +116,7 @@ From `backend/`:
 ```bash
 uv run ruff check .
 uv run lint-imports
+uv run pyright app scripts
 uv run pytest -q
 ```
 

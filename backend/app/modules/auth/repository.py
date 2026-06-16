@@ -3,8 +3,10 @@ Repositories for auth domain: OTP codes and refresh-token sessions.
 """
 
 from datetime import datetime
+from typing import Any, cast
 
-from sqlalchemy import func, select, update
+from sqlalchemy import delete, func, select, update
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.repository import WriteRepositoryMixin
@@ -57,13 +59,10 @@ class OTPCodeRepository(WriteRepositoryMixin):
 
     async def delete_expired_before(self, before: datetime) -> int:
         """Delete OTP rows with expires_at older than `before`. Returns rows removed."""
-        from sqlalchemy import delete
-
-        result = await self._session.execute(
-            delete(OTPCode).where(OTPCode.expires_at < before)
-        )
+        result = await self._session.execute(delete(OTPCode).where(OTPCode.expires_at < before))
         await self._session.flush()
-        return result.rowcount or 0
+        cursor = cast(CursorResult[Any], result)
+        return cursor.rowcount or 0
 
 
 class RefreshTokenRepository(WriteRepositoryMixin):

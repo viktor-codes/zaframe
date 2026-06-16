@@ -110,6 +110,9 @@ async def seed_demo_data(
             email=f"studio{i + 1}@example.com",
             phone=None,
             address="Demo Address",
+            city=None,
+            latitude=None,
+            longitude=None,
             owner_id=owner.id,
             timezone=tz_name,
         )
@@ -167,6 +170,7 @@ async def seed_demo_data(
                         description=None,
                         max_capacity=max_capacity,
                         price_cents=price_single,
+                        course_price_cents=None,
                     )
                     await create_occurrence(uow, slot_schema)
 
@@ -260,6 +264,7 @@ async def simulate_bookings(
                 guest_name=guest_name,
                 guest_email=guest_email,
                 guest_phone=None,
+                service_id=None,
             )
             try:
                 booking = await create_booking(uow, schema)

@@ -23,7 +23,9 @@ class CourseAvailabilityDTO:
     can_book: bool
     requires_warning: bool
     hard_block: bool
-    overbooked_occurrences: list[CourseBookingPreviewItemDTO] = field(default_factory=list)
+    overbooked_occurrences: list[CourseBookingPreviewItemDTO] = field(
+        default_factory=lambda: list[CourseBookingPreviewItemDTO]()
+    )
     message: str | None = None
 
 
@@ -41,4 +43,6 @@ class ServiceAvailabilityDTO:
     can_book: bool
     requires_warning: bool
     warning_message: str | None
-    schedule_details: list[ServiceAvailabilityScheduleItemDTO] = field(default_factory=list)
+    schedule_details: list[ServiceAvailabilityScheduleItemDTO] = field(
+        default_factory=lambda: list[ServiceAvailabilityScheduleItemDTO]()
+    )

@@ -88,7 +88,9 @@ async def confirm_order_after_payment(
     now_utc = utc_now()
     bookings = await uow.bookings.list_(order_id=order_id, limit=1000)
 
-    occurrence_ids_to_lock = sorted({b.occurrence_id for b in bookings if b.status == BookingStatus.PENDING})
+    occurrence_ids_to_lock = sorted(
+        {b.occurrence_id for b in bookings if b.status == BookingStatus.PENDING}
+    )
     occurrences_by_id: dict[int, Occurrence] = {}
     # WHY: global lock order to prevent deadlocks (matches occurrence_repo FOR UPDATE order)
     for occurrence_id in occurrence_ids_to_lock:

@@ -1,4 +1,5 @@
 import importlib
+from typing import TYPE_CHECKING
 
 from app.modules.booking.policies import can_access_booking, is_own_booking
 from app.modules.booking.repository import BookingRepository
@@ -49,6 +50,20 @@ _SERVICE_FUNCTION_MODULES: dict[str, str] = {
     "map_booking_created_response": "app.modules.booking.mapping",
     "map_booking_for_user": "app.modules.booking.mapping",
 }
+
+if TYPE_CHECKING:
+    from app.modules.booking.lifecycle import complete_past_confirmed, expire_stale_pending
+    from app.modules.booking.mapping import map_booking_created_response, map_booking_for_user
+    from app.modules.booking.persistence import DUPLICATE_BOOKING_MESSAGE
+    from app.modules.booking.queries import (
+        attach_guest_bookings,
+        get_booking_for_user_or_raise,
+        get_bookings,
+        get_my_bookings,
+        get_owner_bookings,
+        get_owner_bookings_count,
+    )
+    from app.modules.booking.service import cancel_booking, create_booking
 
 
 def __getattr__(name: str):

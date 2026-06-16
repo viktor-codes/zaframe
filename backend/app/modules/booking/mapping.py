@@ -13,7 +13,9 @@ from app.modules.booking.schemas import (
 )
 
 
-def map_booking_for_user(booking: Booking, user: User) -> BookingSelfResponse | BookingOwnerResponse:
+def map_booking_for_user(
+    booking: Booking, user: User
+) -> BookingSelfResponse | BookingOwnerResponse:
     """
     Map ORM booking to the appropriate client response schema.
 

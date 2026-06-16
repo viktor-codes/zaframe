@@ -65,8 +65,8 @@ def test_repository_files_have_no_service_or_router_imports() -> None:
                 if _is_forbidden_repo_layer_import(imported):
                     violations.append(f"{module_name}: imports {imported!r}")
 
-    assert not violations, "repository layer must not import service/router/policies:\n" + "\n".join(
-        violations
+    assert not violations, (
+        "repository layer must not import service/router/policies:\n" + "\n".join(violations)
     )
 
 

@@ -1,3 +1,5 @@
+from typing import Annotated
+
 """
 API роутер для студий.
 
@@ -38,7 +40,7 @@ router = APIRouter(prefix="/studios", tags=["studios"])
 
 @router.get("")
 async def list_studios(
-    uow: UnitOfWork = Depends(get_uow),
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
     skip: int = Query(0, ge=0, description="Пропустить N записей"),
     limit: int = Query(20, ge=1, le=100, description="Максимум записей"),
     owner_id: int | None = Query(None, description="Фильтр по владельцу (для панели owner)"),
@@ -78,7 +80,7 @@ async def list_studios(
 
 @router.get("/count")
 async def count_studios(
-    uow: UnitOfWork = Depends(get_uow),
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
     owner_id: int | None = Query(None, description="Фильтр по владельцу"),
     is_active: bool | None = Query(None, description="Фильтр по статусу"),
     city: str | None = Query(None, description="Город (Explore)"),
@@ -102,17 +104,18 @@ async def count_studios(
 @router.get("/{studio_id}", response_model=StudioResponse)
 async def get_studio_by_id(
     studio_id: int,
-    uow: UnitOfWork = Depends(get_uow),
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> StudioResponse:
     """Получить студию по ID."""
-    return await get_studio_or_raise(uow, studio_id)
+    studio = await get_studio_or_raise(uow, studio_id)
+    return StudioResponse.model_validate(studio)
 
 
 @router.post("", response_model=StudioResponse, status_code=201)
 async def create_studio_endpoint(
     schema: StudioCreate,
-    user: User = Depends(get_current_user_required),
-    uow: UnitOfWork = Depends(get_uow),
+    user: Annotated[User, Depends(get_current_user_required)],
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> StudioResponse:
     """
     Создать студию (требуется аутентификация).
@@ -120,27 +123,28 @@ async def create_studio_endpoint(
     """
     schema_with_owner = schema.model_copy(update={"owner_id": user.id})
     studio = await create_studio(uow, schema_with_owner)
-    return studio
+    return StudioResponse.model_validate(studio)
 
 
 @router.patch("/{studio_id}", response_model=StudioResponse)
 async def update_studio_endpoint(
     studio_id: int,
     schema: StudioUpdate,
-    user: User = Depends(get_current_user_required),
-    uow: UnitOfWork = Depends(get_uow),
+    user: Annotated[User, Depends(get_current_user_required)],
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> StudioResponse:
     """Обновить студию (только владелец)."""
     studio = await get_studio_or_raise(uow, studio_id)
     ensure_studio_owner(studio, user.id)
-    return await update_studio(uow, studio, schema)
+    studio = await update_studio(uow, studio, schema)
+    return StudioResponse.model_validate(studio)
 
 
 @router.delete("/{studio_id}", status_code=204)
 async def delete_studio_endpoint(
     studio_id: int,
-    user: User = Depends(get_current_user_required),
-    uow: UnitOfWork = Depends(get_uow),
+    user: Annotated[User, Depends(get_current_user_required)],
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> None:
     """Удалить студию (только владелец). Удалятся и связанные слоты."""
     studio = await get_studio_or_raise(uow, studio_id)

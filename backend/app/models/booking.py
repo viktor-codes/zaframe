@@ -5,12 +5,19 @@ Booking model — reservation of a seat on an Occurrence.
 from __future__ import annotations
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, ForeignKey, Index, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models import Base
 from app.models.mixins import TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.occurrence import Occurrence
+    from app.models.order import Order
+    from app.models.service import Service
+    from app.models.user import User
 
 
 class BookingStatus:
@@ -43,18 +50,14 @@ class Booking(TimestampMixin, Base):
             "occurrence_id",
             "guest_email",
             unique=True,
-            postgresql_where=text(
-                "status IN ('pending', 'confirmed') AND guest_email IS NOT NULL"
-            ),
+            postgresql_where=text("status IN ('pending', 'confirmed') AND guest_email IS NOT NULL"),
         ),
         Index(
             "uq_bookings_occurrence_user_id_active",
             "occurrence_id",
             "user_id",
             unique=True,
-            postgresql_where=text(
-                "status IN ('pending', 'confirmed') AND user_id IS NOT NULL"
-            ),
+            postgresql_where=text("status IN ('pending', 'confirmed') AND user_id IS NOT NULL"),
         ),
     )
 
@@ -92,12 +95,8 @@ class Booking(TimestampMixin, Base):
 
     access_token: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
 
-    checkout_session_id: Mapped[str | None] = mapped_column(
-        String(255), nullable=True, index=True
-    )
-    payment_intent_id: Mapped[str | None] = mapped_column(
-        String(255), nullable=True, index=True
-    )
+    checkout_session_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    payment_intent_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     payment_status: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     unit_price_cents: Mapped[int | None] = mapped_column(nullable=True)

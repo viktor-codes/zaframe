@@ -167,9 +167,7 @@ def build_public_course_availability(
 
     summary = evaluate_course_capacity_summary(service, fills)
 
-    can_book = (
-        len(fills) > 0 and total_remaining_capacity > 0 and not summary.hard_block
-    )
+    can_book = len(fills) > 0 and total_remaining_capacity > 0 and not summary.hard_block
 
     return PublicServiceAvailabilityDTO(
         can_book=can_book,

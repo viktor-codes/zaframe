@@ -33,6 +33,6 @@ class WriteRepositoryMixin:
     async def flush(self) -> None:
         await self._session.flush()
 
-    async def delete(self, entity: T) -> None:
+    async def delete(self, entity: object) -> None:
         await self._session.delete(entity)
         await self._session.flush()

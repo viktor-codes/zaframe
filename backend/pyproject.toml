@@ -25,6 +25,7 @@ dependencies = [
 dev = [
     "httpx>=0.28.1",
     "import-linter>=2.11",
+    "pyright>=1.1.410",
     "pytest>=8.0.0",
     "pytest-asyncio>=0.24.0",
     "pytest-cov>=7.1.0",
@@ -52,6 +53,14 @@ ignore = [
     "E402",  # Late imports in scripts / schema cycles
 ]
 
+[tool.pyright]
+pythonVersion = "3.13"
+typeCheckingMode = "strict"
+include = ["app", "scripts", "tests"]
+exclude = [".venv", "alembic/versions"]
+reportMissingTypeStubs = false
+reportUntypedFunctionDecorator = false  # WHY: slowapi @limiter.limit ships without decorator typing
+
 [tool.ruff.format]
 quote-style = "double"
 
@@ -78,8 +87,12 @@ source_modules = [
     "app.core.datetime_utils",
     "app.core.database",
     "app.core.repository",
+    "app.core.uow",
 ]
 forbidden_modules = ["app.modules"]
+ignore_imports = [
+    "app.core.uow -> app.modules.**",
+]
 
 [[tool.importlinter.contracts]]
 name = "Models import nothing but core"
@@ -96,6 +109,8 @@ ignore_imports = [
     "app.modules.catalog.** -> app.core.deps",
     "app.core.deps -> app.core.uow_factory",
     "app.core.uow_factory -> app.modules.**",
+    "app.modules.catalog.** -> app.core.uow",
+    "app.core.uow -> app.modules.**",
 ]
 
 [[tool.importlinter.contracts]]
@@ -108,6 +123,10 @@ forbidden_modules = [
     "app.modules.catalog",
     "app.modules.payment",
     "app.modules.search",
+]
+ignore_imports = [
+    "app.modules.identity.** -> app.core.uow",
+    "app.core.uow -> app.modules.**",
 ]
 
 [[tool.importlinter.contracts]]
@@ -124,6 +143,8 @@ ignore_imports = [
     "app.modules.search.** -> app.core.deps",
     "app.core.deps -> app.core.uow_factory",
     "app.core.uow_factory -> app.modules.**",
+    "app.modules.search.** -> app.core.uow",
+    "app.core.uow -> app.modules.**",
 ]
 
 [[tool.importlinter.contracts]]
@@ -139,6 +160,8 @@ ignore_imports = [
     "app.core.uow_factory -> app.modules.catalog.**",
     "app.core.uow_factory -> app.modules.identity.**",
     "app.core.uow_factory -> app.modules.search.**",
+    "app.modules.payment.** -> app.core.uow",
+    "app.core.uow -> app.modules.**",
 ]
 
 [[tool.importlinter.contracts]]

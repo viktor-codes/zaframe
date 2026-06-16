@@ -59,7 +59,7 @@ class CourseAvailabilityResult(BaseModel):
         description="Whether purchase is blocked by hard capacity limit",
     )
     overbooked_occurrences: list[CourseBookingPreviewItem] = Field(
-        default_factory=list,
+        default_factory=lambda: list[CourseBookingPreviewItem](),
         description="Occurrences that would be overbooked after purchase",
     )
     message: str | None = Field(

@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 from app.modules.booking.order.dto import CourseBookingInput, CourseBookingResultDTO
 from app.modules.booking.order.repository import OrderRepository
 from app.modules.booking.order.schemas import (
@@ -21,6 +23,9 @@ __all__ = [
     "OrderResponse",
     "create_course_booking",
 ]
+
+if TYPE_CHECKING:
+    from app.modules.booking.order.service import create_course_booking
 
 
 def __getattr__(name: str):

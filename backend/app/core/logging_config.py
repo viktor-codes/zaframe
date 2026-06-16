@@ -17,24 +17,25 @@ from __future__ import annotations
 import logging
 
 import structlog
+from structlog.types import EventDict, WrappedLogger
 
 from app.core.config import settings
 
 
 def _add_service(
-    _: object,
+    _: WrappedLogger,
     __: str,
-    event_dict: dict,
-) -> dict:
+    event_dict: EventDict,
+) -> EventDict:
     event_dict.setdefault("service", settings.APP_NAME)
     return event_dict
 
 
 def _ensure_request_id(
-    _: object,
+    _: WrappedLogger,
     __: str,
-    event_dict: dict,
-) -> dict:
+    event_dict: EventDict,
+) -> EventDict:
     if not event_dict.get("request_id"):
         event_dict["request_id"] = "unknown"
     return event_dict

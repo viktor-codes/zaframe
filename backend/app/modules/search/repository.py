@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from sqlalchemy import and_, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.elements import ColumnElement
 
 from app.models.service import Service, ServiceCategory
 from app.models.studio import Studio
@@ -32,7 +33,7 @@ class SearchRepository:
         radius_km: int | None = 10,
         amenities: list[str] | None = None,
     ) -> list[SearchMatch]:
-        conditions = [
+        conditions: list[ColumnElement[bool]] = [
             Studio.is_active.is_(True),
             Service.is_active.is_(True),
         ]
@@ -94,9 +95,9 @@ class SearchRepository:
         ]
         services_stmt = select(Service).where(*service_conditions)
         if category is not None:
-            services_stmt = services_stmt.where(text("services.category = :category_filter")).params(
-                category_filter=category.value
-            )
+            services_stmt = services_stmt.where(
+                text("services.category = :category_filter")
+            ).params(category_filter=category.value)
 
         services_result = await self._session.execute(services_stmt)
         services: list[Service] = list(services_result.scalars().all())

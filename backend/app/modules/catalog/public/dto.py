@@ -11,7 +11,7 @@ class PublicServiceAvailabilityDTO:
     can_book: bool
     total_remaining_capacity: int
     requires_warning: bool
-    overbooked_dates: list[date] = field(default_factory=list)
+    overbooked_dates: list[date] = field(default_factory=lambda: list[date]())
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,4 +37,4 @@ class StudioPublicDTO:
     name: str
     slug: str | None
     description: str | None
-    services: list[PublicServiceDTO] = field(default_factory=list)
+    services: list[PublicServiceDTO] = field(default_factory=lambda: list[PublicServiceDTO]())

@@ -129,7 +129,9 @@ async def test_checkout_session_returns_201_for_pending_booking(client: AsyncCli
 @pytest.mark.asyncio
 async def test_checkout_session_foreign_user_gets_404(client: AsyncClient):
     """Authenticated user cannot create checkout for another guest's booking."""
-    booking_id, _access_token = await _create_pending_booking(client, guest_email="real-guest-pay@example.com")
+    booking_id, _access_token = await _create_pending_booking(
+        client, guest_email="real-guest-pay@example.com"
+    )
     stranger_token = await _authenticate_user(client, "stranger-pay-404@example.com")
     stranger_headers = {"Authorization": f"Bearer {stranger_token}"}
 

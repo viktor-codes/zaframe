@@ -1,6 +1,11 @@
+from typing import TYPE_CHECKING
+
 from app.modules.auth.repository import OTPCodeRepository, RefreshTokenRepository
 
 __all__ = ["OTPCodeRepository", "RefreshTokenRepository", "get_current_user_from_token"]
+
+if TYPE_CHECKING:
+    from app.modules.auth.service import get_current_user_from_token
 
 
 def __getattr__(name: str):

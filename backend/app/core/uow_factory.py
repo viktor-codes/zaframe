@@ -1,6 +1,6 @@
 """UnitOfWork factory and transaction scope — wires module repositories."""
 
-from collections.abc import AsyncGenerator, AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -38,7 +38,7 @@ def create_uow(session: AsyncSession) -> UnitOfWork:
 
 
 @asynccontextmanager
-async def _borrow_session(session: AsyncSession | None) -> AsyncIterator[AsyncSession]:
+async def _borrow_session(session: AsyncSession | None) -> AsyncGenerator[AsyncSession]:
     """Yield caller-owned session or open a scoped session from the pool."""
     if session is not None:
         yield session
@@ -52,7 +52,7 @@ async def uow_scope(
     *,
     session: AsyncSession | None = None,
     auto_commit: bool = True,
-) -> AsyncIterator[UnitOfWork]:
+) -> AsyncGenerator[UnitOfWork]:
     """
     Manage UnitOfWork lifecycle: commit on success, rollback on error.
 
@@ -65,14 +65,14 @@ async def uow_scope(
         uow = create_uow(active_session)
         try:
             yield uow
-            if auto_commit and not uow._committed:
+            if auto_commit and not uow.is_committed:
                 await uow.commit()
         except Exception:
-            if not uow._committed:
+            if not uow.is_committed:
                 await uow.rollback()
             raise
         finally:
-            if not auto_commit and not uow._committed:
+            if not auto_commit and not uow.is_committed:
                 await uow.rollback()
 
 

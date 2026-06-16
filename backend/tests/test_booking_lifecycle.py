@@ -106,7 +106,9 @@ async def test_complete_past_confirmed_at_end_time_skipped(mock_uow):
 
 @pytest.mark.asyncio
 async def test_complete_past_confirmed_after_end_time_transitions(mock_uow):
-    booking = Booking(occurrence_id=1, guest_email="guest@example.com", status=BookingStatus.CONFIRMED)
+    booking = Booking(
+        occurrence_id=1, guest_email="guest@example.com", status=BookingStatus.CONFIRMED
+    )
     booking.id = 2
     mock_uow.bookings.list_past_confirmed = AsyncMock(return_value=[booking])
 

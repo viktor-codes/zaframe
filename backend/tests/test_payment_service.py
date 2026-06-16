@@ -266,7 +266,9 @@ async def test_create_checkout_session_success(mock_uow):
             return_value=mock_client,
         ):
             result = await create_checkout_session(
-                mock_uow, 1, **_checkout_kwargs(),
+                mock_uow,
+                1,
+                **_checkout_kwargs(),
             )
     assert result["checkout_url"] == "https://checkout.stripe.com/pay"
     assert result["session_id"] == "cs_123"
@@ -382,7 +384,9 @@ async def test_create_order_checkout_session_success(mock_uow):
             return_value=mock_client,
         ):
             result = await create_order_checkout_session(
-                mock_uow, 1, **_order_checkout_kwargs(),
+                mock_uow,
+                1,
+                **_order_checkout_kwargs(),
             )
     assert result["session_id"] == "cs_order_1"
     assert result["checkout_url"] == "https://checkout.stripe.com/order"

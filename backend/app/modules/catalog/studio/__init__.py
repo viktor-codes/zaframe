@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 from app.modules.catalog.studio.repository import StudioRepository
 from app.modules.catalog.studio.schemas import (
     StudioCreate,
@@ -21,6 +23,18 @@ __all__ = [
     "get_studios_count",
     "update_studio",
 ]
+
+if TYPE_CHECKING:
+    from app.modules.catalog.studio.service import (
+        create_studio,
+        delete_studio,
+        ensure_studio_owner,
+        get_studio,
+        get_studio_or_raise,
+        get_studios,
+        get_studios_count,
+        update_studio,
+    )
 
 
 def __getattr__(name: str):

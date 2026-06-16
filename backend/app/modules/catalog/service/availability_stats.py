@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from typing import cast
 
 from app.core.datetime_utils import utc_now
 from app.core.uow import UnitOfWork
 from app.models import Occurrence, Service
 from app.modules.catalog.capacity import (
+    CapacityServiceLike,
     OccurrenceFill,
     classify_occurrence_capacity,
     evaluate_course_capacity_summary,
@@ -109,12 +111,12 @@ def evaluate_course_availability(
         )
         for s in stats
     ]
-    summary = evaluate_course_capacity_summary(service, fills)
+    summary = evaluate_course_capacity_summary(cast(CapacityServiceLike, service), fills)
 
     overbooked_items: list[CourseBookingPreviewItemDTO] = []
     for s, fill in zip(stats, fills, strict=True):
         flags = classify_occurrence_capacity(
-            service,
+            cast(CapacityServiceLike, service),
             max_capacity=fill.max_capacity,
             current_bookings=fill.current_total,
         )

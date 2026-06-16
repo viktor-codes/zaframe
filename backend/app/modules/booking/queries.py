@@ -36,9 +36,7 @@ async def get_booking_for_user_or_raise(
     booking = await uow.bookings.get_by_id_with_occurrence_and_studio(booking_id)
     if booking is None:
         raise NotFoundError("Booking not found")
-    studio_owner_id = None
-    if booking.occurrence is not None and booking.occurrence.studio is not None:
-        studio_owner_id = booking.occurrence.studio.owner_id
+    studio_owner_id = booking.occurrence.studio.owner_id
     if not can_access_booking(booking, user, studio_owner_id=studio_owner_id):
         raise NotFoundError("Booking not found")
     return booking
