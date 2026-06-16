@@ -4,11 +4,18 @@ from __future__ import annotations
 Pydantic-схемы для параметров поиска студий и услуг.
 """
 
+from typing import TYPE_CHECKING
+
 from pydantic import BaseModel, Field
 
 from app.models import ServiceCategory
-from app.schemas.service import ServiceResponse
-from app.schemas.studio import StudioResponse
+
+if TYPE_CHECKING:
+    # WHY: importing these at runtime triggers app.schemas package init, which
+    # re-exports this module — a circular import. They are only needed for typing;
+    # SearchResult is finalised via model_rebuild() in app/schemas/__init__.py.
+    from app.schemas.service import ServiceResponse
+    from app.schemas.studio import StudioResponse
 
 
 class SearchQueryParams(BaseModel):

@@ -1,5 +1,6 @@
 # Pydantic schemas for API request/response validation
 
+from app.modules.search.schemas import SearchQueryParams, SearchResult
 from app.schemas.booking import (
     BookingBase,
     BookingCancel,
@@ -40,7 +41,6 @@ from app.schemas.schedule import (
     ScheduleTemplateCreate,
     ScheduleTemplateResponse,
 )
-from app.schemas.search import SearchQueryParams, SearchResult
 from app.schemas.service import (
     ServiceAvailabilityResponse,
     ServiceAvailabilityScheduleItem,
@@ -71,6 +71,7 @@ BookingOwnerResponse.model_rebuild()
 BookingWithUser.model_rebuild()
 BookingSelfListItem.model_rebuild()
 CourseBookingResponse.model_rebuild()
+SearchResult.model_rebuild()
 
 __all__ = [
     # User

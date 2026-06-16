@@ -16,7 +16,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
-from app.api.v1 import auth, bookings, health, payments, search, services, occurrences, studios
+from app.api.v1 import auth, bookings, health, occurrences, payments, services, studios
 from app.api.webhooks import router as webhooks_router
 from app.core.config import settings
 from app.core.database import engine
@@ -27,6 +27,7 @@ from app.core.middleware.logging_middleware import (
     RequestLoggingMiddleware,
 )
 from app.core.rate_limit import limiter
+from app.modules.search.router import router as search_router
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -201,4 +202,4 @@ app.include_router(bookings.router, prefix="/api/v1")
 app.include_router(payments.router, prefix="/api/v1")
 app.include_router(webhooks_router)
 app.include_router(auth.router, prefix="/api/v1")
-app.include_router(search.router, prefix="/api/v1")
+app.include_router(search_router, prefix="/api/v1")
