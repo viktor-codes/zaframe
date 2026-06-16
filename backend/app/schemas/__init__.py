@@ -1,5 +1,12 @@
 # Pydantic schemas for API request/response validation
 
+from app.modules.catalog.studio.schemas import (
+    StudioBase,
+    StudioCreate,
+    StudioResponse,
+    StudioUpdate,
+    StudioWithOccurrences,
+)
 from app.modules.identity.schemas import (
     UserBase,
     UserCreate,
@@ -55,13 +62,6 @@ from app.schemas.service import (
     ServiceCreate,
     ServiceResponse,
     ServiceUpdate,
-)
-from app.schemas.studio import (
-    StudioBase,
-    StudioCreate,
-    StudioResponse,
-    StudioUpdate,
-    StudioWithOccurrences,
 )
 
 # Rebuild models with forward references before use in unions.

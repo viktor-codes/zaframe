@@ -27,7 +27,7 @@
    - `deactivate_service_endpoint` (service.studio_id)
    - `create_service_schedule_endpoint` (service.studio_id)
    - `delete_schedule_endpoint` (service.studio_id)
-2. Обновить импорт: `from app.services.studio import ensure_studio_owner, get_studio_or_raise` (убрать `get_studio`).
+2. Обновить импорт: `from app.modules.catalog.studio import ensure_studio_owner, get_studio_or_raise` (убрать `get_studio`).
 3. **Попутно:** добавить отсутствующий импорт `delete_schedule` в блок импортов из `app.services.service` (сейчас используется в `delete_schedule_endpoint`, но не импортирован).
 
 **Критерий готовности:** В роутере services нигде не используется `get_studio`; при несуществующей студии возвращается 404 с сообщением «Студия не найдена».

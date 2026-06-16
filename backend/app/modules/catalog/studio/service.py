@@ -10,7 +10,7 @@
 from app.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
 from app.models.studio import Studio
-from app.schemas.studio import StudioCreate, StudioUpdate
+from app.modules.catalog.studio.schemas import StudioCreate, StudioUpdate
 
 
 async def get_studio(uow: UnitOfWork, studio_id: int) -> Studio | None:

@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import async_session_maker
 from app.modules.auth.repository import OTPCodeRepository, RefreshTokenRepository
+from app.modules.catalog import StudioRepository
 from app.modules.identity import UserRepository
 from app.modules.payment import ProcessedWebhookEventRepository
 from app.modules.search import SearchRepository
@@ -15,7 +16,6 @@ from app.repositories import (
     OrderRepository,
     ScheduleTemplateRepository,
     ServiceRepository,
-    StudioRepository,
 )
 
 

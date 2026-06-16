@@ -31,6 +31,7 @@ from app.models.occurrence import Occurrence
 from app.models.service import Service, ServiceType
 from app.models.studio import Studio
 from app.models.user import User
+from app.modules.catalog.studio import StudioCreate, create_studio, get_studios, get_studios_count
 from app.modules.payment.service import (
     create_checkout_session,
     create_order_checkout_session,
@@ -39,7 +40,6 @@ from app.schemas.booking import BookingCreate
 from app.schemas.occurrence import OccurrenceCreate
 from app.schemas.order import CourseBookingCreate
 from app.schemas.service import ServiceCreate
-from app.schemas.studio import StudioCreate
 from app.services.booking import create_booking
 from app.services.dto import CourseBookingInput, StudioPublicDTO
 from app.services.occurrence import create_occurrence
@@ -50,7 +50,6 @@ from app.services.service import (
     get_studio_public,
     occurrence_generator,
 )
-from app.services.studio import create_studio, get_studios, get_studios_count
 
 
 async def _get_or_create_owner(uow: UnitOfWork, idx: int) -> User:
@@ -260,7 +259,7 @@ async def simulate_bookings(
                 continue
             occurrence = random.choice(single_occurrences)
             schema = BookingCreate(
-                occurrence_id=slot.id,
+                occurrence_id=occurrence.id,
                 guest_name=guest_name,
                 guest_email=guest_email,
                 guest_phone=None,

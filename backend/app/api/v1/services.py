@@ -14,6 +14,7 @@ from app.api.deps import get_current_user_required, get_uow
 from app.api.mappers.service import map_service_availability
 from app.core.uow import UnitOfWork
 from app.models.user import User
+from app.modules.catalog.studio import ensure_studio_owner, get_studio_or_raise
 from app.schemas import (
     ScheduleTemplateBase,
     ScheduleTemplateCreate,
@@ -34,7 +35,6 @@ from app.services.service import (
     get_service_or_raise,
     update_service,
 )
-from app.services.studio import ensure_studio_owner, get_studio_or_raise
 
 router = APIRouter(prefix="/services", tags=["services"])
 

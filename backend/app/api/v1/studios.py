@@ -22,22 +22,7 @@ from app.api.mappers.service import map_studio_public
 from app.core.uow import UnitOfWork
 from app.models.service import ServiceCategory
 from app.models.user import User
-from app.schemas import (
-    ScheduleGenerateRequest,
-    SearchResult,
-    ServiceResponse,
-    OccurrenceResponse,
-    StudioCreate,
-    StudioPublicResponse,
-    StudioResponse,
-    StudioUpdate,
-)
-from app.services.service import (
-    get_studio_public,
-    occurrence_generator,
-)
-from app.services.occurrence import get_occurrences
-from app.services.studio import (
+from app.modules.catalog.studio import (
     create_studio,
     delete_studio,
     ensure_studio_owner,
@@ -45,6 +30,21 @@ from app.services.studio import (
     get_studios,
     get_studios_count,
     update_studio,
+)
+from app.schemas import (
+    OccurrenceResponse,
+    ScheduleGenerateRequest,
+    SearchResult,
+    ServiceResponse,
+    StudioCreate,
+    StudioPublicResponse,
+    StudioResponse,
+    StudioUpdate,
+)
+from app.services.occurrence import get_occurrences
+from app.services.service import (
+    get_studio_public,
+    occurrence_generator,
 )
 
 router = APIRouter(prefix="/studios", tags=["studios"])
