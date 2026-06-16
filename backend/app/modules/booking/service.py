@@ -1,13 +1,10 @@
 """
-Бизнес-логика для бронирований.
+Booking write operations: create, cancel, and persistence helpers.
 
-Почему сервисный слой:
-- Проверка вместимости слота
-- Валидация (слот в будущем, не отменён)
-- Переиспользование при webhook оплаты
+Persist helpers stay here until td-05 extracts booking/persistence.py.
 """
 
-from datetime import datetime
+from __future__ import annotations
 
 from sqlalchemy.exc import IntegrityError
 
@@ -17,14 +14,7 @@ from app.core.datetime_utils import ensure_utc, utc_now
 from app.core.exceptions import ConflictError, NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
 from app.models.booking import Booking, BookingStatus, BookingType
-from app.models.user import User
-from app.modules.booking.policies import can_access_booking, is_own_booking
-from app.modules.booking.schemas import (
-    BookingCreate,
-    BookingCreatedResponse,
-    BookingOwnerResponse,
-    BookingSelfResponse,
-)
+from app.modules.booking.schemas import BookingCreate
 
 DUPLICATE_BOOKING_MESSAGE = "You already have a booking for this session"
 
@@ -90,191 +80,16 @@ async def _persist_bookings(uow: UnitOfWork, bookings: list[Booking]) -> list[Bo
         raise
 
 
-async def get_booking(uow: UnitOfWork, booking_id: int) -> Booking | None:
-    """Получить бронирование по ID."""
-    return await uow.bookings.get_by_id(booking_id)
-
-
-async def get_booking_or_raise(uow: UnitOfWork, booking_id: int) -> Booking:
-    """Получить бронирование по ID или выбросить NotFoundError."""
-    booking = await uow.bookings.get_by_id(booking_id)
-    if booking is None:
-        raise NotFoundError("Booking not found")
-    return booking
-
-
-def map_booking_for_user(booking: Booking, user: User) -> BookingSelfResponse | BookingOwnerResponse:
-    """
-    Map ORM booking to the appropriate client response schema.
-
-    Own bookings use BookingSelfResponse; studio-owner views use BookingOwnerResponse.
-    """
-    if is_own_booking(booking, user):
-        return BookingSelfResponse.model_validate(booking)
-    return BookingOwnerResponse.model_validate(booking)
-
-
-def map_booking_created_response(booking: Booking) -> BookingCreatedResponse:
-    """Map a newly created booking including the one-time guest checkout token."""
-    if booking.access_token is None:
-        raise ValidationError("Booking access token is missing")
-    return BookingCreatedResponse(
-        **BookingSelfResponse.model_validate(booking).model_dump(),
-        access_token=booking.access_token,
-    )
-
-
-async def get_booking_for_user_or_raise(
-    uow: UnitOfWork,
-    booking_id: int,
-    user: User,
-) -> Booking:
-    """
-    Load booking with occurrence+studio; allow own booking or studio owner.
-
-    Returns 404 when the booking does not exist or the user has no access,
-    so foreign booking IDs are not enumerable.
-    """
-    booking = await uow.bookings.get_by_id_with_occurrence_and_studio(booking_id)
-    if booking is None:
-        raise NotFoundError("Booking not found")
-    studio_owner_id = None
-    if booking.occurrence is not None and booking.occurrence.studio is not None:
-        studio_owner_id = booking.occurrence.studio.owner_id
-    if not can_access_booking(booking, user, studio_owner_id=studio_owner_id):
-        raise NotFoundError("Booking not found")
-    return booking
-
-
-async def get_owner_bookings(
-    uow: UnitOfWork,
-    user: User,
-    *,
-    skip: int = 0,
-    limit: int = 20,
-    occurrence_id: int | None = None,
-    status: str | None = None,
-) -> list[Booking]:
-    """Owner dashboard: bookings for occurrences in studios owned by the user."""
-    return await uow.bookings.list_for_studio_owner(
-        owner_id=user.id,
-        skip=skip,
-        limit=limit,
-        occurrence_id=occurrence_id,
-        status=status,
-    )
-
-
-async def get_owner_bookings_count(
-    uow: UnitOfWork,
-    user: User,
-    *,
-    occurrence_id: int | None = None,
-    status: str | None = None,
-) -> int:
-    """Count bookings for studios owned by the user."""
-    return await uow.bookings.count_for_studio_owner(
-        owner_id=user.id,
-        occurrence_id=occurrence_id,
-        status=status,
-    )
-
-
-async def get_bookings(
-    uow: UnitOfWork,
-    *,
-    skip: int = 0,
-    limit: int = 20,
-    occurrence_id: int | None = None,
-    user_id: int | None = None,
-    guest_email: str | None = None,
-    status: str | None = None,
-) -> list[Booking]:
-    """
-    Список бронирований с фильтрами.
-
-    occurrence_id — bookings for one occurrence
-    user_id — бронирования пользователя
-    guest_email — бронирования гостя (до активации)
-    status — pending, confirmed, cancelled, expired, completed
-    """
-    return await uow.bookings.list_(
-        skip=skip,
-        limit=limit,
-        occurrence_id=occurrence_id,
-        user_id=user_id,
-        guest_email=guest_email,
-        status=status,
-    )
-
-
-async def get_bookings_count(
-    uow: UnitOfWork,
-    *,
-    occurrence_id: int | None = None,
-    user_id: int | None = None,
-    guest_email: str | None = None,
-    status: str | None = None,
-) -> int:
-    """Подсчёт бронирований для пагинации."""
-    return await uow.bookings.count(
-        occurrence_id=occurrence_id,
-        user_id=user_id,
-        guest_email=guest_email,
-        status=status,
-    )
-
-
-async def get_my_bookings(
-    uow: UnitOfWork,
-    *,
-    user: User,
-    skip: int = 0,
-    limit: int = 50,
-    include_guest_email: bool = True,
-) -> list[Booking]:
-    """
-    Bookings list for personal cabinet (occurrence+studio embedded).
-
-    include_guest_email=True merges legacy guest bookings by guest_email == user.email.
-    """
-    return await uow.bookings.list_my_with_occurrence_and_studio(
-        skip=skip,
-        limit=limit,
-        user_id=user.id,
-        user_email=user.email,
-        include_guest_email=include_guest_email,
-    )
-
-
-async def attach_guest_bookings(
-    uow: UnitOfWork,
-    user: User,
-    *,
-    booking_id: int | None = None,
-) -> int:
-    """
-    Link guest bookings to the authenticated user after OTP verify.
-
-    Matches bookings by guest_email == user.email where user_id is still NULL.
-    """
-    return await uow.bookings.attach_guest_bookings_by_email(
-        user_id=user.id,
-        guest_email=user.email,
-        booking_id=booking_id,
-    )
-
-
 async def create_booking(uow: UnitOfWork, schema: BookingCreate) -> Booking:
     """
-    Создать гостевое бронирование.
+    Create a guest booking.
 
-    Проверяет:
-    - слот существует и активен
-    - слот в будущем
-    - есть свободные места
+    Validates:
+    - occurrence exists and is active
+    - occurrence is in the future
+    - seats are available
 
-    user_id проставляется после OTP verify (attach_guest_bookings).
+    user_id is set after OTP verify (attach_guest_bookings).
     """
     occurrence = await uow.occurrences.get_by_id_for_update(schema.occurrence_id)
     if occurrence is None:
@@ -312,52 +127,11 @@ async def create_booking(uow: UnitOfWork, schema: BookingCreate) -> Booking:
     return await _persist_booking(uow, booking)
 
 
-async def expire_stale_pending(
-    uow: UnitOfWork,
-    *,
-    now: datetime | None = None,
-) -> int:
-    """
-    Mark pending bookings with expired reserved_until as EXPIRED.
-
-    Returns the number of bookings transitioned.
-    """
-    now_utc = now or utc_now()
-    bookings = await uow.bookings.list_stale_pending(now=now_utc)
-    for booking in bookings:
-        booking.status = BookingStatus.EXPIRED
-        booking.reserved_until = None
-    if bookings:
-        await uow.bookings.flush()
-    return len(bookings)
-
-
-async def complete_past_confirmed(
-    uow: UnitOfWork,
-    *,
-    now: datetime | None = None,
-) -> int:
-    """
-    Mark confirmed bookings as COMPLETED when their occurrence has ended.
-
-    Uses occurrence.end_time < now (still in progress at exactly end_time).
-    Returns the number of bookings transitioned.
-    """
-    now_utc = now or utc_now()
-    bookings = await uow.bookings.list_past_confirmed(now=now_utc)
-    for booking in bookings:
-        booking.status = BookingStatus.COMPLETED
-        booking.reserved_until = None
-    if bookings:
-        await uow.bookings.flush()
-    return len(bookings)
-
-
 async def cancel_booking(uow: UnitOfWork, booking: Booking) -> Booking:
     """
-    Отменить бронирование.
+    Cancel a booking.
 
-    Только pending или confirmed можно отменить.
+    Only pending or confirmed bookings can be cancelled.
     """
     if booking.status == BookingStatus.CANCELLED:
         raise ValidationError("Booking is already cancelled")

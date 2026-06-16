@@ -131,12 +131,12 @@ async def test_guest_checkout_with_valid_token_succeeds(mock_uow):
     mock_uow.bookings.get_by_id_with_occurrence = AsyncMock(return_value=booking)
     mock_client = _mock_stripe_checkout_session()
 
-    with patch("app.modules.payment.service.settings") as mock_settings:
+    with patch("app.modules.payment.stripe_client.settings") as mock_settings:
         mock_settings.STRIPE_SECRET_KEY = "sk_test"
         mock_settings.STRIPE_CURRENCY = "usd"
         mock_settings.BOOKING_HOLD_MINUTES = 15
         with patch(
-            "app.modules.payment.service.stripe.StripeClient",
+            "app.modules.payment.stripe_client.stripe.StripeClient",
             return_value=mock_client,
         ):
             result = await create_checkout_session(
@@ -221,12 +221,12 @@ async def test_order_guest_checkout_with_valid_token_succeeds(mock_uow):
     mock_uow.bookings.list_ = AsyncMock(return_value=[active_booking])
     mock_client = _mock_stripe_checkout_session(session_id="cs_order_token")
 
-    with patch("app.modules.payment.service.settings") as mock_settings:
+    with patch("app.modules.payment.stripe_client.settings") as mock_settings:
         mock_settings.STRIPE_SECRET_KEY = "sk_test"
         mock_settings.STRIPE_CURRENCY = "usd"
         mock_settings.BOOKING_HOLD_MINUTES = 15
         with patch(
-            "app.modules.payment.service.stripe.StripeClient",
+            "app.modules.payment.stripe_client.stripe.StripeClient",
             return_value=mock_client,
         ):
             result = await create_order_checkout_session(
@@ -250,7 +250,7 @@ async def test_guest_checkout_with_valid_token_succeeds_integration(client: Asyn
     mock_client = _mock_stripe_checkout_session()
 
     with patch(
-        "app.modules.payment.service.stripe.StripeClient",
+        "app.modules.payment.stripe_client.stripe.StripeClient",
         return_value=mock_client,
     ):
         response = await client.post(

@@ -108,7 +108,7 @@ async def _create_course_with_occurrence_count(
         )
         assert r_occ.status_code == 201
 
-    with patch("app.modules.catalog.service.service.utc_now", return_value=FROZEN_NOW):
+    with patch("app.modules.catalog.service.availability.utc_now", return_value=FROZEN_NOW):
         r_order = await client.post(
             "/api/v1/bookings",
             json={
@@ -211,7 +211,7 @@ async def test_confirm_order_overbooking_when_slot_full(
     order_id = order.id
 
     uow = create_uow(session)
-    with patch("app.modules.payment.service.utc_now", return_value=FROZEN_NOW):
+    with patch("app.modules.payment.confirmation.utc_now", return_value=FROZEN_NOW):
         await confirm_order_after_payment(uow, order_id, payment_intent_id="pi_course_late")
     await uow.orders.flush()
 
