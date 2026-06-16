@@ -1,4 +1,4 @@
-.PHONY: lint test e2e e2e-critical
+.PHONY: lint test e2e e2e-critical booking-lifecycle
 
 lint:
 	cd backend && uv run ruff check .
@@ -13,3 +13,6 @@ e2e:
 
 e2e-critical:
 	cd frontend && npm run test:e2e:critical
+
+booking-lifecycle:
+	cd backend && uv run python -m scripts.run_booking_lifecycle

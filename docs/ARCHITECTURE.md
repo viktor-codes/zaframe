@@ -121,3 +121,40 @@ uv run pytest -q
 ```
 
 Or from the repo root: `make lint` / `make test`.
+
+## Background jobs
+
+Scheduled maintenance runs outside the FastAPI process. Scripts live in `backend/scripts/`
+and use `uow_scope()` — same transaction boundary as the app.
+
+| Job | Script | Schedule (prod) | Purpose |
+|-----|--------|-----------------|---------|
+| Booking lifecycle | `scripts/run_booking_lifecycle.py` | Every 5 min (UTC) | Expire stale `pending` holds; mark past `confirmed` as `completed` |
+| OTP cleanup | `scripts/pg_cron_otp_cleanup.sql` | Daily (pg_cron on DB) | Delete OTP rows older than retention window |
+
+### Booking lifecycle (Render cron — Option A)
+
+Production uses a **Render Cron Job** defined in root `render.yaml`:
+
+- Service: `zaframe-booking-lifecycle`
+- Schedule: `*/5 * * * *` (UTC)
+- Command: `python -m scripts.run_booking_lifecycle` (from `backend/` rootDir)
+
+The script is **idempotent**: safe to re-run; each invocation logs
+`booking_lifecycle_complete` with `expired_count` and `completed_count`.
+
+**Manual / local ops:**
+
+```bash
+make booking-lifecycle
+# or: cd backend && uv run python -m scripts.run_booking_lifecycle
+```
+
+**Monitoring (log-based, no external tooling required):**
+
+- Spike in `expired_count` per run → investigate checkout/payment funnel abandonment.
+- Missing `booking_lifecycle_complete` for 3+ consecutive intervals (~15 min) → cron failure;
+  check Render dashboard (Trigger Run for debug) and `DATABASE_URL` on the cron service.
+
+Alternatives not used: always-on worker loop (Option B), HTTP internal endpoint (Option D).
+See [TD-11](./tech-debt/td-11-booking-lifecycle-cron.md).

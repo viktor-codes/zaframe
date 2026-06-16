@@ -1,9 +1,10 @@
 """
 Expire stale pending bookings and complete past confirmed ones.
 
-Production: schedule via system cron or an external scheduler, e.g. every 5 minutes:
+Production: Render cron job `zaframe-booking-lifecycle` in root render.yaml (every 5 min UTC).
+Manual / other hosts:
 
-    */5 * * * * cd /app/backend && uv run python -m scripts.run_booking_lifecycle
+    */5 * * * * cd /app/backend && python -m scripts.run_booking_lifecycle
 
 Local/staging:
 
