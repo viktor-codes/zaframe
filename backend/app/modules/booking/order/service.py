@@ -16,9 +16,9 @@ from app.models import (
     Service,
 )
 from app.modules.booking.order.dto import CourseBookingInput, CourseBookingResultDTO
-from app.modules.booking.service import (
-    _ensure_no_active_booking_for_guest,
-    _persist_bookings,
+from app.modules.booking.persistence import (
+    ensure_no_active_booking_for_guest,
+    persist_bookings,
 )
 from app.modules.catalog.service import check_course_availability_for_update
 
@@ -115,7 +115,7 @@ async def create_course_booking(
 
     bookings: list[Booking] = []
     for idx, occurrence in enumerate(occurrences):
-        await _ensure_no_active_booking_for_guest(
+        await ensure_no_active_booking_for_guest(
             uow,
             occurrence_id=occurrence.id,
             guest_email=data.guest_email,
@@ -137,7 +137,7 @@ async def create_course_booking(
             )
         )
 
-    bookings = await _persist_bookings(uow, bookings)
+    bookings = await persist_bookings(uow, bookings)
 
     return CourseBookingResultDTO(
         order=order,

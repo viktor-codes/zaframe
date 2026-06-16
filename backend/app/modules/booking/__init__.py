@@ -35,7 +35,7 @@ __all__ = [
 ]
 
 _SERVICE_FUNCTION_MODULES: dict[str, str] = {
-    "DUPLICATE_BOOKING_MESSAGE": "app.modules.booking.service",
+    "DUPLICATE_BOOKING_MESSAGE": "app.modules.booking.persistence",
     "attach_guest_bookings": "app.modules.booking.queries",
     "cancel_booking": "app.modules.booking.service",
     "complete_past_confirmed": "app.modules.booking.lifecycle",

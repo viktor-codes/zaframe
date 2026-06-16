@@ -99,3 +99,31 @@ def test_no_private_cross_domain_imports() -> None:
     assert not violations, "private names must not cross domain boundaries:\n" + "\n".join(
         violations
     )
+
+
+def test_booking_order_does_not_import_booking_service_private_names() -> None:
+    """order submodule uses persistence, not service._private."""
+    order_root = MODULES_ROOT / "booking" / "order"
+    if not order_root.is_dir():
+        return
+
+    violations: list[str] = []
+    for path in _iter_python_files(order_root):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        rel_path = path.relative_to(APP_ROOT.parent)
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.ImportFrom) or not node.module:
+                continue
+            if node.module != "app.modules.booking.service":
+                continue
+            for symbol in _imported_symbol_names(node):
+                if symbol.startswith("_"):
+                    violations.append(
+                        f"{rel_path}: from {node.module} import {symbol} "
+                        f"(order must use booking.persistence instead)"
+                    )
+
+    assert not violations, (
+        "booking/order must not import private names from booking.service:\n"
+        + "\n".join(violations)
+    )
