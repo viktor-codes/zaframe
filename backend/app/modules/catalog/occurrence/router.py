@@ -8,7 +8,7 @@ CRUD:
 - PATCH /occurrences/{id} — update
 - DELETE /occurrences/{id} — delete
 
-Nested:
+Nested (studio_occurrence_router):
 - GET /studios/{studio_id}/occurrences — studio schedule
 """
 
@@ -33,6 +33,7 @@ from app.modules.catalog.occurrence import (
 from app.modules.catalog.studio import ensure_studio_owner, get_studio_or_raise
 
 router = APIRouter(prefix="/occurrences", tags=["occurrences"])
+studio_occurrence_router = APIRouter(prefix="/studios", tags=["studios"])
 
 
 @router.get("", response_model=list[OccurrenceResponse])
@@ -122,3 +123,25 @@ async def delete_occurrence_endpoint(
     studio = await get_studio_or_raise(uow, occurrence.studio_id)
     ensure_studio_owner(studio, user.id)
     await delete_occurrence(uow, occurrence)
+
+
+@studio_occurrence_router.get("/{studio_id}/occurrences", response_model=list[OccurrenceResponse])
+async def list_studio_occurrences(
+    studio_id: int,
+    uow: UnitOfWork = Depends(get_uow),
+    skip: int = Query(0, ge=0, description="Пропустить N записей"),
+    limit: int = Query(20, ge=1, le=100, description="Максимум записей"),
+    start_from: datetime | None = Query(None, description="Начало диапазона дат"),
+    start_to: datetime | None = Query(None, description="Конец диапазона дат"),
+    status: str | None = Query(None, description="Фильтр по статусу (active/cancelled)"),
+) -> list[OccurrenceResponse]:
+    """Расписание студии: слоты с фильтрами по датам."""
+    return await get_occurrences(
+        uow,
+        skip=skip,
+        limit=limit,
+        studio_id=studio_id,
+        start_from=start_from,
+        start_to=start_to,
+        status=status,
+    )
