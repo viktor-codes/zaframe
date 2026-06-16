@@ -7,6 +7,11 @@ from app.modules.catalog.occurrence.schemas import (
     OccurrenceUpdate,
     OccurrenceWithBookings,
 )
+from app.modules.catalog.public.schemas import (
+    PublicOccurrence,
+    PublicService,
+    StudioPublicResponse,
+)
 from app.modules.catalog.schedule.schemas import (
     ScheduleGenerateRequest,
     ScheduleTemplateBase,
@@ -54,7 +59,6 @@ from app.schemas.booking import (
     BookingWithOccurrence,
     BookingWithUser,
 )
-from app.schemas.catalog import PublicOccurrence, PublicService, StudioPublicResponse
 from app.schemas.order import (
     CourseAvailabilityResult,
     CourseBookingCreate,

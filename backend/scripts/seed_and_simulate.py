@@ -32,13 +32,13 @@ from app.models.service import Service, ServiceType
 from app.models.studio import Studio
 from app.models.user import User
 from app.modules.catalog.occurrence import OccurrenceCreate, create_occurrence
+from app.modules.catalog.public import get_studio_public
 from app.modules.catalog.schedule import occurrence_generator
 from app.modules.catalog.service import (
     ServiceCreate,
     create_course_booking,
     create_service,
     get_service_availability,
-    get_studio_public,
 )
 from app.modules.catalog.studio import StudioCreate, create_studio, get_studios, get_studios_count
 from app.modules.payment.service import (
