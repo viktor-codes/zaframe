@@ -15,6 +15,13 @@ from app.core.datetime_utils import utc_now
 from app.core.exceptions import NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
 from app.models import Occurrence, Service, ServiceType
+from app.modules.catalog.capacity import (
+    OccurrenceFill,
+    classify_occurrence_capacity,
+    evaluate_course_capacity_summary,
+    is_occurrence_overbooked,
+    overbooking_status_label,
+)
 from app.modules.catalog.service.dto import (
     CourseAvailabilityDTO,
     CourseBookingPreviewItemDTO,
@@ -141,41 +148,40 @@ def _evaluate_course_availability(
             message="Course has no upcoming sessions",
         )
 
-    overbooked_items: list[CourseBookingPreviewItemDTO] = []
-    hard_block = False
-
-    for s in stats:
-        max_capacity = s.occurrence.max_capacity
-        status = service.get_capacity_status(
-            max_capacity=max_capacity,
-            current_bookings=s.total,
-            requested=1,
+    fills = [
+        OccurrenceFill(
+            occurrence_id=s.occurrence.id,
+            max_capacity=s.occurrence.max_capacity,
+            confirmed_count=s.confirmed_count,
+            pending_count=s.pending_count,
         )
-        is_over_hard = status == "HARD_LIMIT_REACHED"
-        is_over_soft = status == "SOFT_LIMIT_REACHED"
-        total_after = s.total + 1  # учитываем текущего потенциального покупателя
+        for s in stats
+    ]
+    summary = evaluate_course_capacity_summary(service, fills)
 
-        if is_over_hard:
-            hard_block = True
-
-        if is_over_soft or is_over_hard:
-            overbooked_items.append(
-                CourseBookingPreviewItemDTO(
-                    occurrence_id=s.occurrence.id,
-                    start_time=s.occurrence.start_time,
-                    max_capacity=max_capacity,
-                    confirmed_count=s.confirmed_count,
-                    pending_count=s.pending_count,
-                    total_after_booking=total_after,
-                    is_over_soft_limit=is_over_soft,
-                    is_over_hard_limit=is_over_hard,
-                )
+    overbooked_items: list[CourseBookingPreviewItemDTO] = []
+    for s, fill in zip(stats, fills, strict=True):
+        flags = classify_occurrence_capacity(
+            service,
+            max_capacity=fill.max_capacity,
+            current_bookings=fill.current_total,
+        )
+        if not is_occurrence_overbooked(flags):
+            continue
+        overbooked_items.append(
+            CourseBookingPreviewItemDTO(
+                occurrence_id=s.occurrence.id,
+                start_time=s.occurrence.start_time,
+                max_capacity=fill.max_capacity,
+                confirmed_count=fill.confirmed_count,
+                pending_count=fill.pending_count,
+                total_after_booking=flags.total_after_one_booking,
+                is_over_soft_limit=flags.is_over_soft,
+                is_over_hard_limit=flags.is_over_hard,
             )
+        )
 
-    # Доля слотов, где произойдёт overbooking
-    overbooked_ratio = len(overbooked_items) / len(stats)
-
-    if hard_block or overbooked_ratio > service.max_overbooked_ratio:
+    if summary.hard_block:
         return CourseAvailabilityDTO(
             can_book=False,
             requires_warning=False,
@@ -184,14 +190,13 @@ def _evaluate_course_availability(
             message="Not enough seats in several course sessions. Contact the studio owner.",
         )
 
-    requires_warning = len(overbooked_items) > 0
     message = None
-    if requires_warning:
+    if summary.requires_warning:
         message = "Some course sessions will be fuller, but booking is still allowed."
 
     return CourseAvailabilityDTO(
-        can_book=True,
-        requires_warning=requires_warning,
+        can_book=summary.can_book,
+        requires_warning=summary.requires_warning,
         hard_block=False,
         overbooked_occurrences=overbooked_items,
         message=message,
@@ -282,29 +287,17 @@ async def get_service_availability(
 
     details: list[ServiceAvailabilityScheduleItemDTO] = []
     for s in stats:
-        max_capacity = s.occurrence.max_capacity
-        status = service.get_capacity_status(
-            max_capacity=max_capacity,
+        flags = classify_occurrence_capacity(
+            service,
+            max_capacity=s.occurrence.max_capacity,
             current_bookings=s.total,
-            requested=1,
         )
-        is_over_hard = status == "HARD_LIMIT_REACHED"
-        is_over_soft = status == "SOFT_LIMIT_REACHED"
-
-        remaining = max(0, max_capacity - s.total)
-
         details.append(
             ServiceAvailabilityScheduleItemDTO(
                 date=s.occurrence.start_time.date(),
-                is_overbooked=is_over_soft or is_over_hard,
-                remaining=remaining,
-                overbooking_status=(
-                    "HARD_LIMIT_REACHED"
-                    if is_over_hard
-                    else "SOFT_LIMIT_REACHED"
-                    if is_over_soft
-                    else None
-                ),
+                is_overbooked=is_occurrence_overbooked(flags),
+                remaining=flags.remaining,
+                overbooking_status=overbooking_status_label(flags),
             )
         )
 

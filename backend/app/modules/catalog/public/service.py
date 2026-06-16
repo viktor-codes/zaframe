@@ -8,6 +8,7 @@ from app.core.datetime_utils import utc_now
 from app.core.exceptions import NotFoundError
 from app.core.uow import UnitOfWork
 from app.models import Occurrence, ServiceType
+from app.modules.catalog.capacity import OccurrenceFill, build_public_course_availability
 from app.modules.catalog.public.dto import (
     PublicServiceAvailabilityDTO,
     PublicServiceDTO,
@@ -68,42 +69,24 @@ async def get_studio_public(
 
         availability_dto: PublicServiceAvailabilityDTO | None = None
         if service.type == ServiceType.COURSE and upcoming_occurrences:
-            total_remaining_capacity = 0
-            overbooked_dates_set: set[date] = set()
-            overbooked_occurrences_count = 0
-
+            fills: list[OccurrenceFill] = []
+            occurrence_dates: list[date] = []
             for occurrence in upcoming_occurrences:
                 confirmed, pending = occurrence_capacity_map.get(occurrence.id, (0, 0))
-                current_total = confirmed + pending
-                remaining = max(0, occurrence.max_capacity - current_total)
-                total_remaining_capacity += remaining
-
-                status = service.get_capacity_status(
-                    max_capacity=occurrence.max_capacity,
-                    current_bookings=current_total,
-                    requested=1,
+                fills.append(
+                    OccurrenceFill(
+                        occurrence_id=occurrence.id,
+                        max_capacity=occurrence.max_capacity,
+                        confirmed_count=confirmed,
+                        pending_count=pending,
+                    )
                 )
-                is_over_soft = status == "SOFT_LIMIT_REACHED"
-                is_over_hard = status == "HARD_LIMIT_REACHED"
+                occurrence_dates.append(occurrence.start_time.date())
 
-                if is_over_soft or is_over_hard:
-                    overbooked_occurrences_count += 1
-                    overbooked_dates_set.add(occurrence.start_time.date())
-
-            requires_warning = overbooked_occurrences_count > 0
-            hard_block = False
-            if occurrences_count > 0:
-                overbooked_ratio = overbooked_occurrences_count / occurrences_count
-                if overbooked_ratio > service.max_overbooked_ratio:
-                    hard_block = True
-
-            can_book = occurrences_count > 0 and total_remaining_capacity > 0 and not hard_block
-
-            availability_dto = PublicServiceAvailabilityDTO(
-                can_book=can_book,
-                total_remaining_capacity=total_remaining_capacity,
-                requires_warning=requires_warning and not hard_block,
-                overbooked_dates=sorted(overbooked_dates_set),
+            availability_dto = build_public_course_availability(
+                service,
+                fills,
+                occurrence_dates=occurrence_dates,
             )
 
         services_public.append(
