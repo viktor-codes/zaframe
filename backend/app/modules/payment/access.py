@@ -8,15 +8,16 @@ from app.models.booking import Booking
 from app.models.order import Order
 from app.models.user import User
 from app.modules.booking.policies import is_own_booking
+from app.modules.identity.policies import is_owned_by_user
 
 
 def is_own_order(order: Order, user: User) -> bool:
     """True when order belongs to the user (by user_id or guest_email)."""
-    if order.user_id is not None and order.user_id == user.id:
-        return True
-    if order.guest_email is not None:
-        return order.guest_email.strip().lower() == user.email.strip().lower()
-    return False
+    return is_owned_by_user(
+        user=user,
+        user_id=order.user_id,
+        guest_email=order.guest_email,
+    )
 
 
 def assert_booking_checkout_access(

@@ -46,7 +46,7 @@ Shared request dependencies (`get_uow`, `get_current_user`) live in `app.core.de
 | Caller | May import (public API only) |
 |--------|------------------------------|
 | `booking` | `catalog`, `identity`, `core`, `models`, `integrations` |
-| `payment` | `booking` (e.g. `policies.is_own_booking`), `core`, `models`, `integrations` |
+| `payment` | `booking`, `identity`, `core`, `models`, `integrations` |
 | `auth` | `booking`, `identity`, `core`, `models`, `integrations` |
 | `catalog` | `identity`, `core`, `models` (not `booking`, `payment`, `auth`) |
 | `identity` | `core`, `models` only (leaf) |

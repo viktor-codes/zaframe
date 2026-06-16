@@ -2,15 +2,16 @@
 
 from app.models.booking import Booking
 from app.models.user import User
+from app.modules.identity.policies import is_owned_by_user
 
 
 def is_own_booking(booking: Booking, user: User) -> bool:
     """True when booking belongs to the user (by user_id or guest_email)."""
-    if booking.user_id is not None and booking.user_id == user.id:
-        return True
-    if booking.guest_email is not None:
-        return booking.guest_email.strip().lower() == user.email.strip().lower()
-    return False
+    return is_owned_by_user(
+        user=user,
+        user_id=booking.user_id,
+        guest_email=booking.guest_email,
+    )
 
 
 def can_access_booking(

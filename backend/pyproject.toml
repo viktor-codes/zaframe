@@ -127,7 +127,7 @@ ignore_imports = [
 ]
 
 [[tool.importlinter.contracts]]
-name = "payment only reaches booking (not catalog/auth)"
+name = "payment only reaches booking and identity (not catalog/auth)"
 type = "forbidden"
 source_modules = ["app.modules.payment"]
 forbidden_modules = ["app.modules.catalog", "app.modules.auth"]
