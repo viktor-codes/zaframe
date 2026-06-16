@@ -1,5 +1,10 @@
 # Pydantic schemas for API request/response validation
 
+from app.modules.payment.schemas import (
+    CheckoutSessionCreate,
+    CheckoutSessionResponse,
+    OrderCheckoutSessionCreate,
+)
 from app.modules.search.schemas import SearchQueryParams, SearchResult
 from app.schemas.booking import (
     BookingBase,
@@ -29,11 +34,6 @@ from app.schemas.order import (
     CourseBookingResponse,
     OrderBase,
     OrderResponse,
-)
-from app.schemas.payment import (
-    CheckoutSessionCreate,
-    CheckoutSessionResponse,
-    OrderCheckoutSessionCreate,
 )
 from app.schemas.schedule import (
     ScheduleGenerateRequest,

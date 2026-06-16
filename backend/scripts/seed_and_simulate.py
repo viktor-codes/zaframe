@@ -27,21 +27,22 @@ from app.core.config import settings
 from app.core.datetime_utils import studio_local_date_now, studio_local_to_utc, utc_now
 from app.core.exceptions import AppError
 from app.core.uow import UnitOfWork, uow_scope
-from app.models.service import Service, ServiceType
 from app.models.occurrence import Occurrence
+from app.models.service import Service, ServiceType
 from app.models.studio import Studio
 from app.models.user import User
-from app.schemas.booking import BookingCreate
-from app.schemas.order import CourseBookingCreate
-from app.schemas.service import ServiceCreate
-from app.schemas.occurrence import OccurrenceCreate
-from app.schemas.studio import StudioCreate
-from app.services.booking import create_booking
-from app.services.payment import (
+from app.modules.payment.service import (
     create_checkout_session,
     create_order_checkout_session,
 )
+from app.schemas.booking import BookingCreate
+from app.schemas.occurrence import OccurrenceCreate
+from app.schemas.order import CourseBookingCreate
+from app.schemas.service import ServiceCreate
+from app.schemas.studio import StudioCreate
+from app.services.booking import create_booking
 from app.services.dto import CourseBookingInput, StudioPublicDTO
+from app.services.occurrence import create_occurrence
 from app.services.service import (
     create_course_booking,
     create_service,
@@ -49,7 +50,6 @@ from app.services.service import (
     get_studio_public,
     occurrence_generator,
 )
-from app.services.occurrence import create_occurrence
 from app.services.studio import create_studio, get_studios, get_studios_count
 
 

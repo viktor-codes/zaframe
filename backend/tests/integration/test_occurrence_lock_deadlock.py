@@ -13,12 +13,11 @@ from unittest.mock import patch
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.exc import DBAPIError
-
 from tests.conftest import authenticate_via_otp
 
 from app.core.database import async_session_maker
 from app.core.uow import uow_scope
-from app.services.payment import confirm_order_after_payment
+from app.modules.payment.service import confirm_order_after_payment
 
 FROZEN_NOW = datetime(2026, 6, 15, 12, 0, tzinfo=UTC)
 CONCURRENT_ROUNDS = 8
@@ -176,7 +175,7 @@ async def test_concurrent_confirm_order_and_course_booking_do_not_deadlock(
             async with async_session_maker() as session:
                 async with uow_scope(session=session, auto_commit=False) as uow:
                     await start_barrier.wait()
-                    with patch("app.services.payment.utc_now", return_value=FROZEN_NOW):
+                    with patch("app.modules.payment.service.utc_now", return_value=FROZEN_NOW):
                         await confirm_order_after_payment(uow, order_id, payment_intent_id="pi_test")
                     await uow.commit()
         except BaseException as exc:

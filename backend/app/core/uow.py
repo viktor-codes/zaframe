@@ -5,13 +5,13 @@ from dataclasses import dataclass, field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import async_session_maker
+from app.modules.payment import ProcessedWebhookEventRepository
 from app.modules.search import SearchRepository
 from app.repositories import (
     BookingRepository,
     OccurrenceRepository,
     OrderRepository,
     OTPCodeRepository,
-    ProcessedWebhookEventRepository,
     RefreshTokenRepository,
     ScheduleTemplateRepository,
     ServiceRepository,

@@ -11,12 +11,12 @@ from app.api.deps import get_current_user, get_uow
 from app.core.rate_limit import limiter
 from app.core.uow import UnitOfWork
 from app.models.user import User
-from app.schemas.payment import (
+from app.modules.payment.schemas import (
     CheckoutSessionCreate,
     CheckoutSessionResponse,
     OrderCheckoutSessionCreate,
 )
-from app.services.payment import (
+from app.modules.payment.service import (
     create_checkout_session,
     create_order_checkout_session,
 )

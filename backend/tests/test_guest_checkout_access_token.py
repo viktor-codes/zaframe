@@ -9,14 +9,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from httpx import AsyncClient
+from tests.conftest import authenticate_via_otp
 
 from app.core.exceptions import NotFoundError
 from app.models.booking import Booking, BookingStatus
-from app.models.order import Order, OrderStatus
 from app.models.occurrence import Occurrence
-from app.models.user import User
-from app.services.payment import create_checkout_session, create_order_checkout_session
-from tests.conftest import authenticate_via_otp
+from app.models.order import Order, OrderStatus
+from app.modules.payment.service import create_checkout_session, create_order_checkout_session
 
 _CHECKOUT_PAYLOAD = {
     "success_url": "http://localhost:3000/payments/success",
@@ -132,12 +131,12 @@ async def test_guest_checkout_with_valid_token_succeeds(mock_uow):
     mock_uow.bookings.get_by_id_with_occurrence = AsyncMock(return_value=booking)
     mock_client = _mock_stripe_checkout_session()
 
-    with patch("app.services.payment.settings") as mock_settings:
+    with patch("app.modules.payment.service.settings") as mock_settings:
         mock_settings.STRIPE_SECRET_KEY = "sk_test"
         mock_settings.STRIPE_CURRENCY = "usd"
         mock_settings.BOOKING_HOLD_MINUTES = 15
         with patch(
-            "app.services.payment.stripe.StripeClient",
+            "app.modules.payment.service.stripe.StripeClient",
             return_value=mock_client,
         ):
             result = await create_checkout_session(
@@ -222,12 +221,12 @@ async def test_order_guest_checkout_with_valid_token_succeeds(mock_uow):
     mock_uow.bookings.list_ = AsyncMock(return_value=[active_booking])
     mock_client = _mock_stripe_checkout_session(session_id="cs_order_token")
 
-    with patch("app.services.payment.settings") as mock_settings:
+    with patch("app.modules.payment.service.settings") as mock_settings:
         mock_settings.STRIPE_SECRET_KEY = "sk_test"
         mock_settings.STRIPE_CURRENCY = "usd"
         mock_settings.BOOKING_HOLD_MINUTES = 15
         with patch(
-            "app.services.payment.stripe.StripeClient",
+            "app.modules.payment.service.stripe.StripeClient",
             return_value=mock_client,
         ):
             result = await create_order_checkout_session(
@@ -251,7 +250,7 @@ async def test_guest_checkout_with_valid_token_succeeds_integration(client: Asyn
     mock_client = _mock_stripe_checkout_session()
 
     with patch(
-        "app.services.payment.stripe.StripeClient",
+        "app.modules.payment.service.stripe.StripeClient",
         return_value=mock_client,
     ):
         response = await client.post(
