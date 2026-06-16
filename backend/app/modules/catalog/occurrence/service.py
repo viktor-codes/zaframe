@@ -56,10 +56,6 @@ async def get_occurrences_count(
     )
 
 
-async def get_bookings_count(uow: UnitOfWork, occurrence_id: int) -> int:
-    return await uow.bookings.count_confirmed_by_occurrence(occurrence_id)
-
-
 async def create_occurrence(uow: UnitOfWork, schema: OccurrenceCreate) -> Occurrence:
     if schema.end_time <= schema.start_time:
         raise ValidationError("End time must be after start time")
