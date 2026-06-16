@@ -8,9 +8,9 @@ from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.repository import WriteRepositoryMixin
 from app.models.service import Service
 from app.models.studio import Studio
-from app.repositories.base import WriteRepositoryMixin
 
 
 class StudioRepository(WriteRepositoryMixin):

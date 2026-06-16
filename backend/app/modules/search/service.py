@@ -2,7 +2,9 @@
 
 from app.core.uow import UnitOfWork
 from app.models.service import ServiceCategory
-from app.schemas import SearchResult, ServiceResponse, StudioResponse
+from app.modules.catalog.service import ServiceResponse
+from app.modules.catalog.studio import StudioResponse
+from app.modules.search import SearchResult
 
 
 async def search_studios_and_services(

@@ -3,8 +3,8 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.repository import WriteRepositoryMixin
 from app.models.schedule_template import ScheduleTemplate
-from app.repositories.base import WriteRepositoryMixin
 
 
 class ScheduleTemplateRepository(WriteRepositoryMixin):

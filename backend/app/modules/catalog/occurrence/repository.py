@@ -9,8 +9,8 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.datetime_utils import ensure_utc
+from app.core.repository import WriteRepositoryMixin
 from app.models.occurrence import Occurrence, OccurrenceStatus
-from app.repositories.base import WriteRepositoryMixin
 
 
 class OccurrenceRepository(WriteRepositoryMixin):

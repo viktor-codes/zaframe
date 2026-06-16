@@ -60,7 +60,6 @@ known-first-party = ["app", "scripts"]
 
 [tool.ruff.lint.extend-per-file-ignores]
 "app/models/**/*.py" = ["F821"]
-"app/schemas/**/*.py" = ["F821"]
 "tests/**/*.py" = ["SIM117"]
 
 # === import-linter: architecture boundary guards ===
@@ -70,25 +69,13 @@ known-first-party = ["app", "scripts"]
 root_package = "app"
 
 [[tool.importlinter.contracts]]
-name = "Repositories stay query-only (no service/api imports)"
-type = "forbidden"
-source_modules = ["app.repositories"]
-forbidden_modules = ["app.services", "app.api"]
-
-[[tool.importlinter.contracts]]
 name = "Models hold no logic dependencies"
 type = "forbidden"
 source_modules = ["app.models"]
-forbidden_modules = ["app.services", "app.repositories", "app.api"]
-
-[[tool.importlinter.contracts]]
-name = "Services never reach up into the API layer"
-type = "forbidden"
-source_modules = ["app.services"]
 forbidden_modules = ["app.api"]
 
 [[tool.importlinter.contracts]]
 name = "Core stays free of higher layers"
 type = "forbidden"
 source_modules = ["app.core.config", "app.core.security", "app.core.exceptions", "app.core.datetime_utils"]
-forbidden_modules = ["app.services", "app.api", "app.models", "app.schemas"]
+forbidden_modules = ["app.api", "app.models"]

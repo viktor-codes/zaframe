@@ -2,7 +2,7 @@
 ZaFrame API entrypoint.
 
 `main.py` stays minimal: create the `FastAPI` app, include routers, and define
-the lifespan hook. All business logic lives in `core/`, `api/`, and `services/`.
+the lifespan hook. All business logic lives in `core/`, `api/`, and `modules/`.
 """
 
 from collections.abc import AsyncGenerator
@@ -16,7 +16,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
-from app.api.v1 import bookings, health, occurrences, services, studios
+from app.api.router import register_routers
 from app.core.config import settings
 from app.core.database import engine
 from app.core.exceptions import AppError
@@ -26,10 +26,6 @@ from app.core.middleware.logging_middleware import (
     RequestLoggingMiddleware,
 )
 from app.core.rate_limit import limiter
-from app.modules.auth.router import router as auth_router
-from app.modules.payment.router import router as payments_router
-from app.modules.payment.webhooks import router as webhooks_router
-from app.modules.search.router import router as search_router
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -192,16 +188,4 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# One router — two prefixes: no duplicated routes.
-# 1) Root: `/` and `/health` for load balancers, k8s probes, and monitoring.
-# 2) Versioned API: `/api/v1/` and `/api/v1/health` for clients.
-app.include_router(health.router)
-app.include_router(health.router, prefix="/api/v1")
-app.include_router(studios.router, prefix="/api/v1")
-app.include_router(services.router, prefix="/api/v1")
-app.include_router(occurrences.router, prefix="/api/v1")
-app.include_router(bookings.router, prefix="/api/v1")
-app.include_router(payments_router, prefix="/api/v1")
-app.include_router(webhooks_router)
-app.include_router(auth_router, prefix="/api/v1")
-app.include_router(search_router, prefix="/api/v1")
+register_routers(app)

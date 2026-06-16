@@ -7,9 +7,9 @@ from datetime import datetime
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.repository import WriteRepositoryMixin
 from app.models.otp_code import OTPCode
 from app.models.refresh_token import RefreshToken
-from app.repositories.base import WriteRepositoryMixin
 
 
 class OTPCodeRepository(WriteRepositoryMixin):

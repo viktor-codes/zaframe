@@ -11,11 +11,15 @@ API роутер для бронирований.
 from fastapi import APIRouter, Depends, Query, Request
 
 from app.api.deps import get_current_user_required, get_uow
-from app.api.mappers.service import map_course_booking_result
 from app.core.rate_limit import limiter
 from app.core.uow import UnitOfWork
 from app.models.user import User
 from app.modules.booking import (
+    BookingCreate,
+    BookingCreatedResponse,
+    BookingOwnerResponse,
+    BookingSelfListItem,
+    BookingSelfResponse,
     cancel_booking,
     create_booking,
     get_booking_for_user_or_raise,
@@ -25,16 +29,13 @@ from app.modules.booking import (
     map_booking_created_response,
     map_booking_for_user,
 )
-from app.modules.booking.order import CourseBookingInput, create_course_booking
-from app.schemas import (
-    BookingCreate,
-    BookingCreatedResponse,
-    BookingOwnerResponse,
-    BookingSelfListItem,
-    BookingSelfResponse,
+from app.modules.booking.order import (
     CourseBookingCreate,
+    CourseBookingInput,
     CourseBookingResponse,
+    create_course_booking,
 )
+from app.modules.booking.order.mappers import map_course_booking_result
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
 

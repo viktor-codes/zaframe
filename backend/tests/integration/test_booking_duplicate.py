@@ -22,9 +22,9 @@ from app.core.uow import uow_scope
 from app.models.booking import Booking
 from app.modules.booking import (
     DUPLICATE_BOOKING_MESSAGE,
+    BookingCreate,
     create_booking,
 )
-from app.schemas import BookingCreate
 
 
 async def _create_bookable_slot(

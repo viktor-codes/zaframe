@@ -11,9 +11,8 @@ from pydantic import BaseModel, Field
 from app.models import ServiceCategory
 
 if TYPE_CHECKING:
-    # WHY: importing these at runtime triggers app.schemas package init, which
-    # re-exports this module — a circular import. They are only needed for typing;
-    # SearchResult is finalised via model_rebuild() in app/schemas/__init__.py.
+    # WHY: runtime import would cycle through search → studio/service packages.
+    # SearchResult is finalised via model_rebuild() in app/api/router.py.
     from app.modules.catalog.service.schemas import ServiceResponse
     from app.modules.catalog.studio.schemas import StudioResponse
 

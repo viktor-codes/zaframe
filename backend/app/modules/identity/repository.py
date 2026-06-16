@@ -5,8 +5,8 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.repository import WriteRepositoryMixin
 from app.models.user import User
-from app.repositories.base import WriteRepositoryMixin
 
 
 class UserRepository(WriteRepositoryMixin):

@@ -6,8 +6,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.repository import WriteRepositoryMixin
 from app.models.service import Service
-from app.repositories.base import WriteRepositoryMixin
 
 
 class ServiceRepository(WriteRepositoryMixin):

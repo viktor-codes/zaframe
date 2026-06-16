@@ -8,10 +8,10 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.elements import ColumnElement
 
 from app.core.datetime_utils import ensure_utc, utc_now
+from app.core.repository import WriteRepositoryMixin
 from app.models.booking import Booking, BookingStatus
 from app.models.occurrence import Occurrence
 from app.models.studio import Studio
-from app.repositories.base import WriteRepositoryMixin
 
 
 class BookingRepository(WriteRepositoryMixin):

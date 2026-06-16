@@ -18,14 +18,18 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, Query
 
 from app.api.deps import get_current_user_required, get_uow
-from app.api.mappers.service import map_studio_public
 from app.core.uow import UnitOfWork
 from app.models.service import ServiceCategory
 from app.models.user import User
-from app.modules.catalog.occurrence import get_occurrences
-from app.modules.catalog.public import get_studio_public
-from app.modules.catalog.schedule import occurrence_generator
+from app.modules.catalog.occurrence import OccurrenceResponse, get_occurrences
+from app.modules.catalog.public import StudioPublicResponse, get_studio_public
+from app.modules.catalog.public.mappers import map_studio_public
+from app.modules.catalog.schedule import ScheduleGenerateRequest, occurrence_generator
+from app.modules.catalog.service import ServiceResponse
 from app.modules.catalog.studio import (
+    StudioCreate,
+    StudioResponse,
+    StudioUpdate,
     create_studio,
     delete_studio,
     ensure_studio_owner,
@@ -34,16 +38,7 @@ from app.modules.catalog.studio import (
     get_studios_count,
     update_studio,
 )
-from app.schemas import (
-    OccurrenceResponse,
-    ScheduleGenerateRequest,
-    SearchResult,
-    ServiceResponse,
-    StudioCreate,
-    StudioPublicResponse,
-    StudioResponse,
-    StudioUpdate,
-)
+from app.modules.search import SearchResult
 
 router = APIRouter(prefix="/studios", tags=["studios"])
 
