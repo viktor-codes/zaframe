@@ -1,3 +1,4 @@
+from app.modules.booking.order import CourseBookingInput, CourseBookingResultDTO
 from app.modules.catalog.public.dto import (
     PublicServiceAvailabilityDTO,
     PublicServiceDTO,
@@ -5,9 +6,7 @@ from app.modules.catalog.public.dto import (
 )
 from app.modules.catalog.service.dto import (
     CourseAvailabilityDTO,
-    CourseBookingInput,
     CourseBookingPreviewItemDTO,
-    CourseBookingResultDTO,
     ServiceAvailabilityDTO,
     ServiceAvailabilityScheduleItemDTO,
 )

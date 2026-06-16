@@ -18,14 +18,22 @@ import json
 import random
 import re
 from dataclasses import dataclass
-from datetime import datetime, time, timedelta
+from datetime import time, timedelta
 
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import async_session_maker
 from app.core.datetime_utils import studio_local_date_now, studio_local_to_utc, utc_now
-from app.models import Service, ServiceCategory, ServiceType, Occurrence, OccurrenceStatus, Studio, User
+from app.models import (
+    Occurrence,
+    OccurrenceStatus,
+    Service,
+    ServiceCategory,
+    ServiceType,
+    Studio,
+    User,
+)
 
 
 @dataclass(frozen=True)

@@ -1,6 +1,8 @@
 """ORM / service DTO → Pydantic response schemas (API layer only)."""
 
+from app.modules.booking.order import CourseBookingResultDTO
 from app.modules.catalog.public.dto import PublicServiceDTO, StudioPublicDTO
+from app.modules.catalog.service.dto import CourseAvailabilityDTO, ServiceAvailabilityDTO
 from app.schemas import (
     BookingSelfResponse,
     CourseAvailabilityResult,
@@ -11,11 +13,6 @@ from app.schemas import (
     ServiceAvailabilityResponse,
     ServiceAvailabilityScheduleItem,
     StudioPublicResponse,
-)
-from app.services.dto import (
-    CourseAvailabilityDTO,
-    CourseBookingResultDTO,
-    ServiceAvailabilityDTO,
 )
 
 

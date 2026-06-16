@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, EmailStr, Field
 
-from app.schemas.booking import BookingSelfResponse
+from app.modules.booking.schemas import BookingSelfResponse
 
 
 class OrderBase(BaseModel):

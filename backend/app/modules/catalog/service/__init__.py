@@ -1,8 +1,6 @@
 from app.modules.catalog.service.dto import (
     CourseAvailabilityDTO,
-    CourseBookingInput,
     CourseBookingPreviewItemDTO,
-    CourseBookingResultDTO,
     ServiceAvailabilityDTO,
     ServiceAvailabilityScheduleItemDTO,
 )
@@ -27,9 +25,7 @@ __all__ = [
     "ServiceAvailabilityResponse",
     # DTOs
     "CourseAvailabilityDTO",
-    "CourseBookingInput",
     "CourseBookingPreviewItemDTO",
-    "CourseBookingResultDTO",
     "ServiceAvailabilityDTO",
     "ServiceAvailabilityScheduleItemDTO",
     # Service CRUD
@@ -42,8 +38,6 @@ __all__ = [
     "check_course_availability",
     "check_course_availability_for_update",
     "get_service_availability",
-    # Temporary tenant (relocate in tz-09)
-    "create_course_booking",
 ]
 
 _SERVICE_FUNCTIONS = (
@@ -55,7 +49,6 @@ _SERVICE_FUNCTIONS = (
     "check_course_availability",
     "check_course_availability_for_update",
     "get_service_availability",
-    "create_course_booking",
 )
 
 

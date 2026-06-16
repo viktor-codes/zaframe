@@ -1,5 +1,7 @@
 # Repositories: entity queries, injected via UnitOfWork.
 
+from app.modules.booking import BookingRepository
+from app.modules.booking.order import OrderRepository
 from app.modules.catalog import (
     OccurrenceRepository,
     ScheduleTemplateRepository,
@@ -7,8 +9,6 @@ from app.modules.catalog import (
     StudioRepository,
 )
 from app.modules.search import SearchRepository
-from app.repositories.booking_repo import BookingRepository
-from app.repositories.order_repo import OrderRepository
 
 __all__ = [
     "BookingRepository",

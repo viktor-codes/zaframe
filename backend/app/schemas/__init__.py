@@ -1,5 +1,26 @@
 # Pydantic schemas for API request/response validation
 
+from app.modules.booking.order.schemas import (
+    CourseAvailabilityResult,
+    CourseBookingCreate,
+    CourseBookingPreviewItem,
+    CourseBookingResponse,
+    OrderBase,
+    OrderResponse,
+)
+from app.modules.booking.schemas import (
+    BookingBase,
+    BookingCancel,
+    BookingCreate,
+    BookingCreateAuthenticated,
+    BookingCreatedResponse,
+    BookingOwnerResponse,
+    BookingResponseBase,
+    BookingSelfListItem,
+    BookingSelfResponse,
+    BookingWithOccurrence,
+    BookingWithUser,
+)
 from app.modules.catalog.occurrence.schemas import (
     OccurrenceBase,
     OccurrenceCreate,
@@ -46,27 +67,6 @@ from app.modules.payment.schemas import (
     OrderCheckoutSessionCreate,
 )
 from app.modules.search.schemas import SearchQueryParams, SearchResult
-from app.schemas.booking import (
-    BookingBase,
-    BookingCancel,
-    BookingCreate,
-    BookingCreateAuthenticated,
-    BookingCreatedResponse,
-    BookingOwnerResponse,
-    BookingResponseBase,
-    BookingSelfListItem,
-    BookingSelfResponse,
-    BookingWithOccurrence,
-    BookingWithUser,
-)
-from app.schemas.order import (
-    CourseAvailabilityResult,
-    CourseBookingCreate,
-    CourseBookingPreviewItem,
-    CourseBookingResponse,
-    OrderBase,
-    OrderResponse,
-)
 
 # Rebuild models with forward references before use in unions.
 BookingSelfResponse.model_rebuild()

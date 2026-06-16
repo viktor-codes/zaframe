@@ -7,7 +7,11 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.schemas.booking import BookingOwnerResponse, BookingSelfListItem, BookingSelfResponse
+from app.modules.booking.schemas import (
+    BookingOwnerResponse,
+    BookingSelfListItem,
+    BookingSelfResponse,
+)
 
 _FIXED_NOW = datetime(2026, 6, 15, 12, 0, 0, tzinfo=UTC)
 

@@ -4,9 +4,6 @@
 Здесь живут:
 - CRUD услуг (Service)
 - проверка доступности курса с учётом soft/hard лимитов (overbooking)
-
-Временный «жилец» (переезжает в следующем шаге рефакторинга):
-- create_course_booking → booking/order (tz-09)
 """
 
 from __future__ import annotations
@@ -14,34 +11,17 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, datetime
 
-from app.core.access_tokens import generate_resource_access_token
-from app.core.booking_holds import get_booking_reserved_until
 from app.core.datetime_utils import utc_now
 from app.core.exceptions import NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
-from app.models import (
-    Booking,
-    BookingStatus,
-    BookingType,
-    Occurrence,
-    Order,
-    OrderStatus,
-    Service,
-    ServiceType,
-)
+from app.models import Occurrence, Service, ServiceType
 from app.modules.catalog.service.dto import (
     CourseAvailabilityDTO,
-    CourseBookingInput,
     CourseBookingPreviewItemDTO,
-    CourseBookingResultDTO,
     ServiceAvailabilityDTO,
     ServiceAvailabilityScheduleItemDTO,
 )
 from app.modules.catalog.service.schemas import ServiceUpdate
-
-# WHY: temporary tenant create_course_booking still calls in-domain booking helpers
-# via the legacy facade; resolved when it relocates to booking/order in tz-09.
-from app.services.booking import _ensure_no_active_booking_for_guest, _persist_bookings
 
 
 async def create_service(uow: UnitOfWork, studio_id: int, data: dict) -> Service:
@@ -266,129 +246,6 @@ async def check_course_availability_for_update(
         now=now_utc,
     )
     return _evaluate_course_availability(service, stats)
-
-
-def _calculate_course_order_total_cents(
-    service: Service,
-    *,
-    bookable_occurrence_count: int,
-    total_active_occurrence_count: int,
-) -> int:
-    """
-    Course order total for the bookable (active, future) occurrence set.
-
-    When price_course_cents is set, charge proportionally to remaining sessions
-    vs all active sessions on the course (mid-term joiners pay a fair share).
-    """
-    if bookable_occurrence_count <= 0:
-        raise ValidationError("Course has no upcoming sessions")
-
-    if service.price_course_cents is not None:
-        denominator = total_active_occurrence_count or bookable_occurrence_count
-        return round(
-            service.price_course_cents * bookable_occurrence_count / denominator,
-        )
-
-    return service.price_single_cents * bookable_occurrence_count
-
-
-def _distribute_course_unit_prices(
-    total_amount_cents: int,
-    occurrence_count: int,
-) -> list[int]:
-    """Split order total across occurrences; sum(unit_price_cents) == total_amount_cents."""
-    base_unit = total_amount_cents // occurrence_count
-    remainder = total_amount_cents % occurrence_count
-    return [base_unit + 1] * remainder + [base_unit] * (occurrence_count - remainder)
-
-
-async def create_course_booking(
-    uow: UnitOfWork,
-    *,
-    data: CourseBookingInput,
-) -> CourseBookingResultDTO:
-    """
-    Создать заказ и набор бронирований для курса (гостевой сценарий).
-
-    Важно: операция атомарна в рамках AsyncSession/транзакции.
-    """
-    now_utc = utc_now()
-    availability = await check_course_availability_for_update(
-        uow,
-        service_id=data.service_id,
-        now=now_utc,
-    )
-    if not availability.can_book:
-        raise ValidationError(
-            availability.message or "Not enough seats for the course",
-        )
-
-    service = await uow.services.get_by_id(data.service_id)
-    if service is None:
-        raise NotFoundError("Service not found")
-
-    occurrences = await uow.occurrences.list_active_future_by_service_for_update(
-        data.service_id,
-        now=now_utc,
-    )
-    occurrences = sorted(occurrences, key=lambda o: o.start_time)
-    if not occurrences:
-        raise ValidationError("Course has no upcoming sessions")
-
-    all_active_occurrences = await uow.occurrences.list_by_service_active(service.id)
-    total_amount_cents = _calculate_course_order_total_cents(
-        service,
-        bookable_occurrence_count=len(occurrences),
-        total_active_occurrence_count=len(all_active_occurrences),
-    )
-    prices = _distribute_course_unit_prices(total_amount_cents, len(occurrences))
-
-    order = await uow.orders.add(
-        Order(
-            studio_id=service.studio_id,
-            service_id=service.id,
-            user_id=None,
-            guest_email=data.guest_email,
-            guest_name=data.guest_name,
-            guest_phone=data.guest_phone,
-            total_amount_cents=total_amount_cents,
-            currency="eur",
-            status=OrderStatus.PENDING,
-            access_token=generate_resource_access_token(),
-        )
-    )
-
-    bookings: list[Booking] = []
-    for idx, occurrence in enumerate(occurrences):
-        await _ensure_no_active_booking_for_guest(
-            uow,
-            occurrence_id=occurrence.id,
-            guest_email=data.guest_email,
-        )
-        unit_price = prices[idx]
-        bookings.append(
-            Booking(
-                occurrence_id=occurrence.id,
-                user_id=None,
-                guest_name=data.guest_name,
-                guest_email=data.guest_email,
-                guest_phone=data.guest_phone,
-                status=BookingStatus.PENDING,
-                reserved_until=get_booking_reserved_until(now=now_utc),
-                booking_type=BookingType.COURSE,
-                service_id=service.id,
-                order_id=order.id,
-                unit_price_cents=unit_price,
-            )
-        )
-
-    bookings = await _persist_bookings(uow, bookings)
-
-    return CourseBookingResultDTO(
-        order=order,
-        bookings=bookings,
-        availability=availability,
-    )
 
 
 async def get_service_availability(

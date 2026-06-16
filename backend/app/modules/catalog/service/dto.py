@@ -1,11 +1,9 @@
-"""Domain DTOs for service/booking public flows (no Pydantic)."""
+"""Domain DTOs for service availability flows (no Pydantic)."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import date, datetime
-
-from app.models import Booking, Order
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,21 +25,6 @@ class CourseAvailabilityDTO:
     hard_block: bool
     overbooked_occurrences: list[CourseBookingPreviewItemDTO] = field(default_factory=list)
     message: str | None = None
-
-
-@dataclass(frozen=True, slots=True)
-class CourseBookingInput:
-    service_id: int
-    guest_name: str
-    guest_email: str
-    guest_phone: str | None
-
-
-@dataclass(frozen=True, slots=True)
-class CourseBookingResultDTO:
-    order: Order
-    bookings: list[Booking]
-    availability: CourseAvailabilityDTO
 
 
 @dataclass(frozen=True, slots=True)

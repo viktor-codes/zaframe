@@ -442,8 +442,8 @@ async def test_webhook_booking_integration(rollback_client, app_with_rollback_uo
     Интеграционный тест: создаём бронирование, вызываем webhook с валидной подписью,
     проверяем смену статуса на confirmed в той же сессии (commit — no-op, rollback в конце).
     """
-    from app.modules.payment import webhooks
     from app.core.uow import create_uow
+    from app.modules.payment import webhooks
 
     booking_id = await _authenticate_and_create_booking(rollback_client)
     integration_session = app_with_rollback_uow.state._integration_session
@@ -493,10 +493,10 @@ async def test_webhook_order_integration(rollback_client, app_with_rollback_uow)
     """
     from sqlalchemy import select
 
-    from app.modules.payment import webhooks
     from app.core.uow import create_uow
     from app.models.booking import Booking, BookingStatus
     from app.models.order import Order, OrderStatus
+    from app.modules.payment import webhooks
 
     # Создаём пользователя и студию, услугу, слоты, заказ через сервис (минимально)
     booking_id = await _authenticate_and_create_booking(rollback_client)
@@ -555,11 +555,11 @@ async def test_webhook_duplicate_event_integration(rollback_client, app_with_rol
     """
     from sqlalchemy import func, select
 
-    from app.modules.payment import webhooks
     from app.core.uow import create_uow
     from app.models.booking import Booking, BookingStatus
     from app.models.processed_webhook_event import ProcessedWebhookEvent
     from app.modules.payment import service as payment_service
+    from app.modules.payment import webhooks
 
     booking_id = await _authenticate_and_create_booking(rollback_client)
     integration_session = app_with_rollback_uow.state._integration_session

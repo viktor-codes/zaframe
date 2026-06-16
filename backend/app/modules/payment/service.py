@@ -28,8 +28,8 @@ from app.models.booking import Booking, BookingStatus
 from app.models.occurrence import Occurrence
 from app.models.order import Order, OrderStatus
 from app.models.user import User
+from app.modules.booking import is_own_booking
 from app.modules.payment.schemas import validate_checkout_redirect_urls
-from app.services.booking import is_own_booking
 
 # WHY: paid but occurrence full — studio owner resolves refund/rebook manually (no auto-refund yet).
 PAYMENT_STATUS_SUCCEEDED = "succeeded"

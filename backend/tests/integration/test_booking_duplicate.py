@@ -20,11 +20,11 @@ from app.core.database import async_session_maker
 from app.core.exceptions import AppError, ConflictError, ValidationError
 from app.core.uow import uow_scope
 from app.models.booking import Booking
-from app.schemas.booking import BookingCreate
-from app.services.booking import (
+from app.modules.booking import (
     DUPLICATE_BOOKING_MESSAGE,
     create_booking,
 )
+from app.schemas import BookingCreate
 
 
 async def _create_bookable_slot(
@@ -146,7 +146,7 @@ async def test_create_booking_race_one_success_one_conflict(client: AsyncClient)
             return exc
 
     with patch(
-        "app.services.booking._ensure_no_active_booking_for_guest",
+        "app.modules.booking.service._ensure_no_active_booking_for_guest",
         new_callable=AsyncMock,
     ):
         results = await asyncio.gather(attempt(), attempt())

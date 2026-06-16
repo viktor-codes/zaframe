@@ -31,12 +31,13 @@ from app.models.occurrence import Occurrence
 from app.models.service import Service, ServiceType
 from app.models.studio import Studio
 from app.models.user import User
+from app.modules.booking import create_booking
+from app.modules.booking.order import CourseBookingInput, create_course_booking
 from app.modules.catalog.occurrence import OccurrenceCreate, create_occurrence
 from app.modules.catalog.public import get_studio_public
 from app.modules.catalog.schedule import occurrence_generator
 from app.modules.catalog.service import (
     ServiceCreate,
-    create_course_booking,
     create_service,
     get_service_availability,
 )
@@ -45,10 +46,8 @@ from app.modules.payment.service import (
     create_checkout_session,
     create_order_checkout_session,
 )
-from app.schemas.booking import BookingCreate
-from app.schemas.order import CourseBookingCreate
-from app.services.booking import create_booking
-from app.services.dto import CourseBookingInput, StudioPublicDTO
+from app.schemas import BookingCreate, CourseBookingCreate
+from app.services.dto import StudioPublicDTO
 
 
 async def _get_or_create_owner(uow: UnitOfWork, idx: int) -> User:

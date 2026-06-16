@@ -15,17 +15,7 @@ from app.api.mappers.service import map_course_booking_result
 from app.core.rate_limit import limiter
 from app.core.uow import UnitOfWork
 from app.models.user import User
-from app.modules.catalog.service import create_course_booking
-from app.schemas import (
-    BookingCreate,
-    BookingCreatedResponse,
-    BookingOwnerResponse,
-    BookingSelfListItem,
-    BookingSelfResponse,
-    CourseBookingCreate,
-    CourseBookingResponse,
-)
-from app.services.booking import (
+from app.modules.booking import (
     cancel_booking,
     create_booking,
     get_booking_for_user_or_raise,
@@ -35,7 +25,16 @@ from app.services.booking import (
     map_booking_created_response,
     map_booking_for_user,
 )
-from app.services.dto import CourseBookingInput
+from app.modules.booking.order import CourseBookingInput, create_course_booking
+from app.schemas import (
+    BookingCreate,
+    BookingCreatedResponse,
+    BookingOwnerResponse,
+    BookingSelfListItem,
+    BookingSelfResponse,
+    CourseBookingCreate,
+    CourseBookingResponse,
+)
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
 

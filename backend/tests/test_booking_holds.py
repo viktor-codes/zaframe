@@ -9,7 +9,7 @@ import pytest
 
 from app.core.booking_holds import get_booking_reserved_until, is_active_pending_hold
 from app.models.booking import BookingStatus
-from app.repositories.booking_repo import BookingRepository
+from app.modules.booking import BookingRepository
 
 
 def test_get_booking_reserved_until_uses_config_window():
