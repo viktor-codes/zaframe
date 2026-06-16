@@ -14,7 +14,7 @@ The backend previously mixed three time representations:
 
 Schedule templates use `date` + `time` without timezone, which was implicitly interpreted as UTC. That is incorrect for a multi-region product where "Monday 18:00" means local studio time.
 
-We are rebuilding the database from scratch. This ADR replaces the interim "naive UTC" policy documented in `ARCHITECTURE_IMPROVEMENTS_PLAN.md` §3.2.
+We are rebuilding the database from scratch. This ADR replaces the interim "naive UTC" policy from the pre-modular-monolith architecture notes (see [ARCHITECTURE.md](../../../docs/ARCHITECTURE.md) historical note).
 
 ## Decision
 
@@ -109,7 +109,6 @@ WHY: `_pending_holds_capacity` already implements the correct model. Removing th
 7. Wire `reserved_until` TTL on booking create
 8. Update seeds (multi-TZ studios, slots via `studio_local_to_utc`)
 9. Integration / API tests
-10. Update `ARCHITECTURE_IMPROVEMENTS_PLAN.md` §3.2
 
 WHY: DST bugs are only found by tests. Discover them before seeds populate the database with wrong instants.
 

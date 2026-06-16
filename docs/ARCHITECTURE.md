@@ -2,6 +2,11 @@
 
 Decision record: [ADR-003](./adr/003-modular-monolith.md).
 
+## Historical note
+
+Pre-modular-monolith improvement notes lived in `backend/docs/ARCHITECTURE_IMPROVEMENTS_PLAN.md`
+(superseded by ADR-003, 2026-06).
+
 ## Package layout
 
 ```
@@ -81,7 +86,7 @@ flowchart TB
 
     API --> AUTH & PAY & BOOK & CAT & SRCH
     AUTH --> BOOK & ID
-    PAY --> BOOK
+    PAY --> BOOK & ID
     BOOK --> CAT & ID
     CAT --> ID
     SRCH --> CORE

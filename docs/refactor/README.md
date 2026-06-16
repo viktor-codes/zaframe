@@ -1,6 +1,8 @@
 # Modular Monolith Refactor — Agent Task Pack
 
-**Status: completed** (tz-01 … tz-11, 2026-06-16). See [ARCHITECTURE.md](../ARCHITECTURE.md) for the final layout.
+**Status:** ✅ Completed (branch merged or ready to merge). See [docs/tech-debt/](../tech-debt/) for follow-up work.
+
+Final layout: [ARCHITECTURE.md](../ARCHITECTURE.md).
 
 Master spec for the `app/services|repositories|schemas` → `app/modules/<domain>` migration.
 Decision and rationale: [ADR-003](../adr/003-modular-monolith.md).

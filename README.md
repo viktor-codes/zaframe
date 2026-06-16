@@ -1,6 +1,6 @@
 # ZeeFrame
 
-**A full-stack booking and payments platform for movement studios** — classes, courses, time slots, capacity rules, and Stripe-powered checkout, exposed through a versioned HTTP API and a modern web client.
+**A full-stack booking and payments platform for movement studios** — classes, courses, scheduled occurrences, capacity rules, and Stripe-powered checkout, exposed through a versioned HTTP API and a modern web client.
 
 ZeeFrame is built as a production-minded monorepo: clear layering on the server, strict typing end to end, and operational basics (structured logging, request tracing, rate limiting, and consistent error responses) treated as first-class concerns.
 
@@ -8,16 +8,16 @@ ZeeFrame is built as a production-minded monorepo: clear layering on the server,
 
 ## Why this project exists
 
-Small and mid-size studios often juggle calendars, payments, and waitlists in separate tools. ZeeFrame models the domain **studios → services → scheduled slots → bookings → orders** in one place, so owners can sell drop-ins and multi-session courses while clients discover offerings, reserve seats, and pay without leaving the product flow.
+Small and mid-size studios often juggle calendars, payments, and waitlists in separate tools. ZeeFrame models the domain **studios → services → occurrences → bookings → orders** in one place, so owners can sell drop-ins and multi-session courses while clients discover offerings, reserve seats, and pay without leaving the product flow.
 
 ---
 
 ## What it does
 
 - **Studio directory & discovery** — public-facing studio profiles, categorised services (e.g. yoga, HIIT, dance), and search-oriented API endpoints.
-- **Scheduling** — services define duration, capacity, and pricing; concrete occurrences live as **slots** tied to a studio schedule.
-- **Bookings** — reserve slots with domain rules (including capacity and overbooking-oriented behaviour at the service level).
-- **Authentication** — **magic-link** email sign-in, **JWT access tokens**, and **refresh-token** sessions stored for rotation-aware auth.
+- **Scheduling** — services define duration, capacity, and pricing; concrete **occurrences** are generated from **ScheduleTemplate** rules or created manually.
+- **Bookings** — reserve occurrences with domain rules (including capacity and overbooking-oriented behaviour at the service level).
+- **Authentication** — **email OTP** sign-in, **JWT access tokens**, and **refresh-token** sessions stored for rotation-aware auth.
 - **Payments** — **Stripe Checkout** sessions for bookings and orders, with **webhooks** to reconcile payment state on the server.
 - **Operational API** — versioned surface under `/api/v1`, health checks, and webhook routes kept explicit in the app composition.
 
@@ -40,7 +40,9 @@ Small and mid-size studios often juggle calendars, payments, and waitlists in se
 
 ## Architecture
 
-The backend follows a **router → service → repository** split: HTTP adapters stay thin, business rules live in services, and all database access is concentrated in repositories. A **unit-of-work** style boundary keeps transactions cohesive and testable.
+See [Architecture](docs/ARCHITECTURE.md) and [ADR-003 modular monolith](docs/adr/003-modular-monolith.md) for the current backend layout.
+
+The backend is a **modular monolith**: domain code lives in `app/modules/*`, each following a **router → service → repository** split. HTTP adapters stay thin, business rules live in services, and all database access is concentrated in repositories. A **unit-of-work** style boundary keeps transactions cohesive and testable.
 
 The API returns **RFC 7807–style problem JSON** for errors, maps domain exceptions to HTTP statuses in one place, and adds **request IDs**, **security headers**, and **config-driven CORS** at the middleware layer.
 
@@ -51,7 +53,7 @@ flowchart LR
   end
   subgraph api [ZeeFrame API]
     R[Routers]
-    S[Services]
+    MOD["Domain modules (app/modules/*)"]
     Rep[Repositories]
   end
   subgraph data [Data and integrations]
@@ -60,14 +62,14 @@ flowchart LR
     Mail[Transactional email]
   end
   Next --> R
-  R --> S
-  S --> Rep
+  R --> MOD
+  MOD --> Rep
   Rep --> DB
-  S --> Stripe
-  S --> Mail
+  MOD --> Stripe
+  MOD --> Mail
 ```
 
-_Routers orchestrate HTTP; services encode rules; repositories talk to the database; external providers are invoked from documented boundaries (payments, transactional email, webhooks)._
+_Routers orchestrate HTTP; domain modules encode rules; repositories talk to the database; external providers are invoked from documented boundaries (payments, transactional email, webhooks)._
 
 ---
 
@@ -79,6 +81,7 @@ The web app is organised by **feature modules** (navigation, home, studios, book
 
 ## Engineering practices demonstrated
 
+- **Modular monolith** — domain code in `app/modules/*`; import boundaries enforced with `uv run lint-imports`.
 - **Strict typing** — Pydantic at API boundaries; TypeScript without loosening to `any`.
 - **Migrations as code** — schema changes tracked with Alembic.
 - **Automated tests** — async API tests, auth, webhooks, and payment service scenarios on the backend; Vitest and Playwright wired on the frontend.
