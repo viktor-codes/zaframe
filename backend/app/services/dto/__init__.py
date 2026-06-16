@@ -1,4 +1,4 @@
-from app.services.dto.service import (
+from app.modules.catalog.service.dto import (
     CourseAvailabilityDTO,
     CourseBookingInput,
     CourseBookingPreviewItemDTO,

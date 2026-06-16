@@ -7,9 +7,9 @@ from __future__ import annotations
 from pydantic import AwareDatetime, BaseModel, ConfigDict, EmailStr, Field, computed_field
 
 from app.models.booking import BookingType
+from app.modules.catalog.occurrence import OccurrenceResponse
 from app.modules.catalog.studio.schemas import StudioResponse
 from app.modules.identity import UserPublic
-from app.schemas.occurrence import OccurrenceResponse
 
 
 class BookingBase(BaseModel):

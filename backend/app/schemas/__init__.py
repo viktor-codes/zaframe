@@ -1,5 +1,26 @@
 # Pydantic schemas for API request/response validation
 
+from app.modules.catalog.occurrence.schemas import (
+    OccurrenceBase,
+    OccurrenceCreate,
+    OccurrenceResponse,
+    OccurrenceUpdate,
+    OccurrenceWithBookings,
+)
+from app.modules.catalog.schedule.schemas import (
+    ScheduleGenerateRequest,
+    ScheduleTemplateBase,
+    ScheduleTemplateCreate,
+    ScheduleTemplateResponse,
+)
+from app.modules.catalog.service.schemas import (
+    ServiceAvailabilityResponse,
+    ServiceAvailabilityScheduleItem,
+    ServiceBase,
+    ServiceCreate,
+    ServiceResponse,
+    ServiceUpdate,
+)
 from app.modules.catalog.studio.schemas import (
     StudioBase,
     StudioCreate,
@@ -34,13 +55,6 @@ from app.schemas.booking import (
     BookingWithUser,
 )
 from app.schemas.catalog import PublicOccurrence, PublicService, StudioPublicResponse
-from app.schemas.occurrence import (
-    OccurrenceBase,
-    OccurrenceCreate,
-    OccurrenceResponse,
-    OccurrenceUpdate,
-    OccurrenceWithBookings,
-)
 from app.schemas.order import (
     CourseAvailabilityResult,
     CourseBookingCreate,
@@ -48,20 +62,6 @@ from app.schemas.order import (
     CourseBookingResponse,
     OrderBase,
     OrderResponse,
-)
-from app.schemas.schedule import (
-    ScheduleGenerateRequest,
-    ScheduleTemplateBase,
-    ScheduleTemplateCreate,
-    ScheduleTemplateResponse,
-)
-from app.schemas.service import (
-    ServiceAvailabilityResponse,
-    ServiceAvailabilityScheduleItem,
-    ServiceBase,
-    ServiceCreate,
-    ServiceResponse,
-    ServiceUpdate,
 )
 
 # Rebuild models with forward references before use in unions.

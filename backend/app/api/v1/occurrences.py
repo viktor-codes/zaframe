@@ -19,11 +19,10 @@ from fastapi import APIRouter, Depends, Query
 from app.api.deps import get_current_user_required, get_uow
 from app.core.uow import UnitOfWork
 from app.models.user import User
-from app.modules.catalog.studio import ensure_studio_owner, get_studio_or_raise
-from app.schemas.booking import BookingOwnerResponse
-from app.schemas.occurrence import OccurrenceCreate, OccurrenceResponse, OccurrenceUpdate
-from app.services.booking import get_bookings
-from app.services.occurrence import (
+from app.modules.catalog.occurrence import (
+    OccurrenceCreate,
+    OccurrenceResponse,
+    OccurrenceUpdate,
     create_occurrence,
     delete_occurrence,
     get_occurrence_or_raise,
@@ -31,6 +30,9 @@ from app.services.occurrence import (
     get_occurrences_count,
     update_occurrence,
 )
+from app.modules.catalog.studio import ensure_studio_owner, get_studio_or_raise
+from app.schemas.booking import BookingOwnerResponse
+from app.services.booking import get_bookings
 
 router = APIRouter(prefix="/occurrences", tags=["occurrences"])
 

@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from app.repositories.occurrence_repo import OccurrenceRepository
+from app.modules.catalog.occurrence import OccurrenceRepository
 
 
 def _empty_execute_result() -> MagicMock:

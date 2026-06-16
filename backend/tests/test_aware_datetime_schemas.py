@@ -11,8 +11,8 @@ import pytest
 from httpx import AsyncClient
 from tests.conftest import authenticate_via_otp
 
+from app.modules.catalog.occurrence import OccurrenceCreate, OccurrenceResponse
 from app.schemas.booking import BookingSelfResponse
-from app.schemas.occurrence import OccurrenceCreate, OccurrenceResponse
 
 _ISO_OFFSET_SUFFIX = re.compile(r"(Z|[+-]\d{2}:\d{2})$")
 

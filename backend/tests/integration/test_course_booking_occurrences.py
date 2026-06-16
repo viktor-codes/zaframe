@@ -16,7 +16,7 @@ from httpx import AsyncClient
 
 from tests.conftest import authenticate_via_otp
 
-from app.services.service import (
+from app.modules.catalog.service.service import (
     _calculate_course_order_total_cents,
     _distribute_course_unit_prices,
 )
@@ -27,7 +27,7 @@ FROZEN_NOW = datetime(2026, 6, 15, 12, 0, tzinfo=UTC)
 
 @contextmanager
 def frozen_utc_now():
-    with patch("app.services.service.utc_now", return_value=FROZEN_NOW):
+    with patch("app.modules.catalog.service.service.utc_now", return_value=FROZEN_NOW):
         yield FROZEN_NOW
 
 

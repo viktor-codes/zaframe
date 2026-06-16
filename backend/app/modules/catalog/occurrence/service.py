@@ -6,7 +6,7 @@ from app.core.datetime_utils import ensure_utc
 from app.core.exceptions import NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
 from app.models.occurrence import Occurrence, OccurrenceStatus
-from app.schemas.occurrence import OccurrenceCreate, OccurrenceUpdate
+from app.modules.catalog.occurrence.schemas import OccurrenceCreate, OccurrenceUpdate
 
 
 async def get_occurrence(uow: UnitOfWork, occurrence_id: int) -> Occurrence | None:
