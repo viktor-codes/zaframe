@@ -16,6 +16,7 @@ from app.models.mixins import TimestampMixin
 if TYPE_CHECKING:
     from app.models.occurrence import Occurrence
     from app.models.order import Order
+    from app.models.payment import Payment
     from app.models.service import Service
     from app.models.user import User
 
@@ -119,6 +120,7 @@ class Booking(TimestampMixin, Base):
     user: Mapped[User | None] = relationship("User", back_populates="bookings")
     service: Mapped[Service | None] = relationship("Service", back_populates="bookings")
     order: Mapped[Order | None] = relationship("Order", back_populates="bookings")
+    payments: Mapped[list[Payment]] = relationship("Payment", back_populates="booking")
 
     def is_confirmed(self) -> bool:
         return self.status == BookingStatus.CONFIRMED

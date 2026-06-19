@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import stripe
+
 from app.core.booking_holds import is_active_pending_hold
 from app.core.datetime_utils import utc_now
 from app.core.exceptions import NotFoundError, ValidationError
@@ -22,6 +24,7 @@ from app.modules.payment.schemas import validate_checkout_redirect_urls
 from app.modules.payment.stripe_client import (
     checkout_session_expires_at,
     get_stripe_client,
+    raise_stripe_app_error,
     settings,
 )
 
@@ -34,6 +37,7 @@ async def create_checkout_session(
     cancel_url: str,
     current_user: User | None = None,
     access_token: str | None = None,
+    idempotency_key: str | None = None,
 ) -> dict[str, str]:
     """
     Create Stripe Checkout Session for a booking payment.
@@ -45,7 +49,7 @@ async def create_checkout_session(
     Returns: {"checkout_url": "...", "session_id": "..."}
     """
     validate_checkout_redirect_urls(success_url, cancel_url)
-    booking = await uow.bookings.get_by_id_with_occurrence(booking_id)
+    booking = await uow.bookings.get_by_id_with_occurrence_and_studio(booking_id)
     if booking is None:
         raise NotFoundError("Booking not found")
     assert_booking_checkout_access(
@@ -69,20 +73,31 @@ async def create_checkout_session(
     if occurrence.price_cents <= 0:
         raise ValidationError("Occurrence has no price for checkout")
 
-    client = get_stripe_client()
-    session = client.v1.checkout.sessions.create(
-        params=build_booking_checkout_params(
-            booking_id=booking_id,
-            currency=settings.STRIPE_CURRENCY,
-            unit_amount_cents=occurrence.price_cents,
-            product_name=occurrence.title,
-            product_description=occurrence.description or f"Booking occurrence #{occurrence.id}",
-            success_url=success_url,
-            cancel_url=cancel_url,
-            guest_email=booking.guest_email,
-            expires_at=checkout_session_expires_at(now_utc),
-        )
+    studio = occurrence.studio
+    stripe_account_id = (
+        studio.stripe_account_id
+        if studio.stripe_account_id and studio.stripe_charges_enabled
+        else None
     )
+    client = get_stripe_client()
+    try:
+        session = client.v1.checkout.sessions.create(
+            params=build_booking_checkout_params(
+                booking_id=booking_id,
+                currency=settings.STRIPE_CURRENCY,
+                unit_amount_cents=occurrence.price_cents,
+                product_name=occurrence.title,
+                product_description=occurrence.description or f"Booking occurrence #{occurrence.id}",
+                success_url=success_url,
+                cancel_url=cancel_url,
+                guest_email=booking.guest_email,
+                expires_at=checkout_session_expires_at(now_utc),
+                stripe_account_id=stripe_account_id,
+            ),
+            options={"idempotency_key": idempotency_key} if idempotency_key else None,
+        )
+    except stripe.StripeError as e:
+        raise_stripe_app_error(e, action="checkout session creation")
 
     booking.checkout_session_id = session.id
     await uow.bookings.flush()
@@ -98,6 +113,7 @@ async def create_order_checkout_session(
     cancel_url: str,
     current_user: User | None = None,
     access_token: str | None = None,
+    idempotency_key: str | None = None,
 ) -> dict[str, str]:
     """
     Create Stripe Checkout Session for an order payment.
@@ -109,7 +125,7 @@ async def create_order_checkout_session(
     Amount comes from order.total_amount_cents; order_id is stored in session metadata.
     """
     validate_checkout_redirect_urls(success_url, cancel_url)
-    order = await uow.orders.get_by_id_with_service(order_id)
+    order = await uow.orders.get_by_id_with_service_and_studio(order_id)
     if order is None:
         raise NotFoundError("Order not found")
     assert_order_checkout_access(
@@ -136,21 +152,32 @@ async def create_order_checkout_session(
         raise ValidationError("Order has no payable amount")
 
     product_name = order.service.name if order.service is not None else f"Заказ #{order.id}"
+    stripe_account_id = (
+        order.studio.stripe_account_id
+        if order.studio.stripe_account_id and order.studio.stripe_charges_enabled
+        else None
+    )
 
     client = get_stripe_client()
-    session = client.v1.checkout.sessions.create(
-        params=build_order_checkout_params(
-            order_id=order_id,
-            currency=settings.STRIPE_CURRENCY,
-            unit_amount_cents=order.total_amount_cents,
-            product_name=product_name,
-            product_description=f"Оплата заказа #{order.id}",
-            success_url=success_url,
-            cancel_url=cancel_url,
-            guest_email=order.guest_email,
-            expires_at=checkout_session_expires_at(now_utc),
+    try:
+        session = client.v1.checkout.sessions.create(
+            params=build_order_checkout_params(
+                order_id=order_id,
+                currency=settings.STRIPE_CURRENCY,
+                unit_amount_cents=order.total_amount_cents,
+                product_name=product_name,
+                product_description=f"Оплата заказа #{order.id}",
+                success_url=success_url,
+                cancel_url=cancel_url,
+                guest_email=order.guest_email,
+                expires_at=checkout_session_expires_at(now_utc),
+                stripe_account_id=stripe_account_id,
+                application_fee_cents=order.application_fee_cents,
+            ),
+            options={"idempotency_key": idempotency_key} if idempotency_key else None,
         )
-    )
+    except stripe.StripeError as e:
+        raise_stripe_app_error(e, action="checkout session creation")
 
     await uow.orders.flush()
 

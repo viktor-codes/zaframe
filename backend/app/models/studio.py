@@ -9,9 +9,10 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Float, ForeignKey, String, Text
+from sqlalchemy import DateTime, Float, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -78,6 +79,19 @@ class Studio(TimestampMixin, Base):
 
     # Настройки
     is_active: Mapped[bool] = mapped_column(default=True)  # Активна ли студия
+
+    # Stripe Connect payout state
+    stripe_account_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    stripe_charges_enabled: Mapped[bool] = mapped_column(default=False, nullable=False)
+    stripe_payouts_enabled: Mapped[bool] = mapped_column(default=False, nullable=False)
+    stripe_onboarding_completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    stripe_onboarding_url_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
 
     # Связи
     owner: Mapped[User] = relationship("User", back_populates="studios")

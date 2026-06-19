@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from app.modules.catalog.service.repository import ServiceRepository
     from app.modules.catalog.studio.repository import StudioMemberRepository, StudioRepository
     from app.modules.identity.repository import UserRepository
-    from app.modules.payment.repository import ProcessedWebhookEventRepository
+    from app.modules.payment.repository import PaymentRepository, ProcessedWebhookEventRepository
     from app.modules.search.repository import SearchRepository
 
 
@@ -40,6 +40,7 @@ class UnitOfWork:
     schedule_templates: ScheduleTemplateRepository
     refresh_tokens: RefreshTokenRepository
     orders: OrderRepository
+    payments: PaymentRepository
     webhook_events: ProcessedWebhookEventRepository
     search: SearchRepository
     _committed: bool = field(default=False, init=False, repr=False)

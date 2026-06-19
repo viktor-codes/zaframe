@@ -18,6 +18,7 @@ from app.models.mixins import TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.booking import Booking
+    from app.models.payment import Payment
     from app.models.service import Service
     from app.models.studio import Studio
     from app.models.user import User
@@ -54,6 +55,8 @@ class Order(TimestampMixin, Base):
     # Финансы
     total_amount_cents: Mapped[int] = mapped_column(Integer, nullable=False)
     currency: Mapped[str] = mapped_column(String(10), default="eur", nullable=False)
+    application_fee_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    payment_intent_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
 
     status: Mapped[str] = mapped_column(
         String(20),
@@ -73,3 +76,4 @@ class Order(TimestampMixin, Base):
         back_populates="order",
         cascade="all, delete-orphan",
     )
+    payments: Mapped[list[Payment]] = relationship("Payment", back_populates="order")

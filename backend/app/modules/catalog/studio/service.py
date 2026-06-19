@@ -24,6 +24,7 @@ StudioPermission = Literal[
     "view_bookings",
     "manage_bookings",
     "check_in_booking",
+    "manage_payouts",
     "manage_members",
 ]
 
@@ -37,6 +38,7 @@ STUDIO_PERMISSIONS_BY_ROLE: dict[str, frozenset[StudioPermission]] = {
             "view_bookings",
             "manage_bookings",
             "check_in_booking",
+            "manage_payouts",
             "manage_members",
         }
     ),
@@ -48,6 +50,7 @@ STUDIO_PERMISSIONS_BY_ROLE: dict[str, frozenset[StudioPermission]] = {
             "view_bookings",
             "manage_bookings",
             "check_in_booking",
+            "manage_payouts",
         }
     ),
     StudioMemberRole.INSTRUCTOR.value: frozenset(

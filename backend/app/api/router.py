@@ -22,6 +22,7 @@ from app.modules.catalog.schedule.router import schedule_router
 from app.modules.catalog.service.router import router as service_router
 from app.modules.catalog.studio.router import router as studio_router
 from app.modules.payment.router import router as payment_router
+from app.modules.payment.router import studio_payment_router
 from app.modules.payment.webhooks import router as webhooks_router
 from app.modules.search import SearchResult
 from app.modules.search.router import router as search_router
@@ -48,6 +49,7 @@ for r in (
     occurrence_bookings_router,
     order_router,
     payment_router,
+    studio_payment_router,
     auth_router,
     search_router,
 ):

@@ -27,6 +27,12 @@ class StudioRepository(WriteRepositoryMixin):
         result = await self._session.execute(select(Studio).where(Studio.slug == slug))
         return result.scalar_one_or_none()
 
+    async def get_by_stripe_account_id(self, stripe_account_id: str) -> Studio | None:
+        result = await self._session.execute(
+            select(Studio).where(Studio.stripe_account_id == stripe_account_id)
+        )
+        return result.scalar_one_or_none()
+
     async def get_by_slug_with_services_occurrences(
         self, slug: str, *, is_active: bool = True
     ) -> Studio | None:

@@ -27,6 +27,14 @@ class OrderRepository(WriteRepositoryMixin):
         )
         return result.scalar_one_or_none()
 
+    async def get_by_id_with_service_and_studio(self, order_id: int) -> Order | None:
+        result = await self._session.execute(
+            select(Order)
+            .options(selectinload(Order.service), selectinload(Order.studio))
+            .where(Order.id == order_id)
+        )
+        return result.scalar_one_or_none()
+
     async def list_for_user(
         self,
         *,

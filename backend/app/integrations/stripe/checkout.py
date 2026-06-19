@@ -48,6 +48,8 @@ def _build_payment_checkout_params(
     metadata: dict[str, str],
     customer_email: str | None,
     expires_at: int | None = None,
+    stripe_account_id: str | None = None,
+    application_fee_cents: int | None = None,
 ) -> SessionCreateParams:
     params: SessionCreateParams = {
         "success_url": success_url,
@@ -67,6 +69,13 @@ def _build_payment_checkout_params(
         params["customer_email"] = customer_email
     if expires_at is not None:
         params["expires_at"] = expires_at
+    if stripe_account_id:
+        payment_intent_data: dict[str, object] = {
+            "transfer_data": {"destination": stripe_account_id}
+        }
+        if application_fee_cents is not None and application_fee_cents > 0:
+            payment_intent_data["application_fee_amount"] = application_fee_cents
+        params["payment_intent_data"] = payment_intent_data  # pyright: ignore[reportGeneralTypeIssues]  # WHY: Stripe SDK TypedDict omits nested Connect fields in this version
     return params
 
 
@@ -81,6 +90,8 @@ def build_booking_checkout_params(
     cancel_url: str,
     guest_email: str | None,
     expires_at: int | None = None,
+    stripe_account_id: str | None = None,
+    application_fee_cents: int | None = None,
 ) -> SessionCreateParams:
     """Build Checkout Session params for a single booking payment."""
     return _build_payment_checkout_params(
@@ -93,6 +104,8 @@ def build_booking_checkout_params(
         metadata={"booking_id": str(booking_id)},
         customer_email=guest_email,
         expires_at=expires_at,
+        stripe_account_id=stripe_account_id,
+        application_fee_cents=application_fee_cents,
     )
 
 
@@ -107,6 +120,8 @@ def build_order_checkout_params(
     cancel_url: str,
     guest_email: str | None,
     expires_at: int | None = None,
+    stripe_account_id: str | None = None,
+    application_fee_cents: int | None = None,
 ) -> SessionCreateParams:
     """Build Checkout Session params for an order payment."""
     return _build_payment_checkout_params(
@@ -119,4 +134,6 @@ def build_order_checkout_params(
         metadata={"order_id": str(order_id)},
         customer_email=guest_email,
         expires_at=expires_at,
+        stripe_account_id=stripe_account_id,
+        application_fee_cents=application_fee_cents,
     )
