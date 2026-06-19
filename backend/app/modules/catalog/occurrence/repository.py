@@ -7,10 +7,12 @@ from datetime import datetime
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.datetime_utils import ensure_utc
 from app.core.repository import WriteRepositoryMixin
 from app.models.occurrence import Occurrence, OccurrenceStatus
+from app.models.studio_member import StudioMember, StudioMemberRole
 
 
 class OccurrenceRepository(WriteRepositoryMixin):
@@ -19,7 +21,9 @@ class OccurrenceRepository(WriteRepositoryMixin):
 
     async def get_by_id(self, occurrence_id: int) -> Occurrence | None:
         result = await self._session.execute(
-            select(Occurrence).where(Occurrence.id == occurrence_id)
+            select(Occurrence)
+            .options(selectinload(Occurrence.instructor).selectinload(StudioMember.user))
+            .where(Occurrence.id == occurrence_id)
         )
         return result.scalar_one_or_none()
 
@@ -35,11 +39,48 @@ class OccurrenceRepository(WriteRepositoryMixin):
         skip: int = 0,
         limit: int = 20,
         studio_id: int | None = None,
+        instructor_id: int | None = None,
         start_from: datetime | None = None,
         start_to: datetime | None = None,
         status: str | None = None,
     ) -> list[Occurrence]:
-        query = select(Occurrence)
+        query = select(Occurrence).options(
+            selectinload(Occurrence.instructor).selectinload(StudioMember.user)
+        )
+        if studio_id is not None:
+            query = query.where(Occurrence.studio_id == studio_id)
+        if instructor_id is not None:
+            query = query.where(Occurrence.instructor_id == instructor_id)
+        if start_from is not None:
+            query = query.where(Occurrence.start_time >= ensure_utc(start_from))
+        if start_to is not None:
+            query = query.where(Occurrence.start_time <= ensure_utc(start_to))
+        if status is not None:
+            query = query.where(Occurrence.status == status)
+        query = query.offset(skip).limit(limit).order_by(Occurrence.start_time.asc())
+        result = await self._session.execute(query)
+        return list(result.scalars().all())
+
+    async def list_for_instructor_user(
+        self,
+        *,
+        user_id: int,
+        skip: int = 0,
+        limit: int = 20,
+        studio_id: int | None = None,
+        start_from: datetime | None = None,
+        start_to: datetime | None = None,
+        status: str | None = None,
+    ) -> list[Occurrence]:
+        query = (
+            select(Occurrence)
+            .join(Occurrence.instructor)
+            .options(selectinload(Occurrence.instructor).selectinload(StudioMember.user))
+            .where(
+                StudioMember.user_id == user_id,
+                StudioMember.role == StudioMemberRole.INSTRUCTOR.value,
+            )
+        )
         if studio_id is not None:
             query = query.where(Occurrence.studio_id == studio_id)
         if start_from is not None:
@@ -56,6 +97,7 @@ class OccurrenceRepository(WriteRepositoryMixin):
         self,
         *,
         studio_id: int | None = None,
+        instructor_id: int | None = None,
         start_from: datetime | None = None,
         start_to: datetime | None = None,
         status: str | None = None,
@@ -63,6 +105,8 @@ class OccurrenceRepository(WriteRepositoryMixin):
         query = select(func.count()).select_from(Occurrence)
         if studio_id is not None:
             query = query.where(Occurrence.studio_id == studio_id)
+        if instructor_id is not None:
+            query = query.where(Occurrence.instructor_id == instructor_id)
         if start_from is not None:
             query = query.where(Occurrence.start_time >= ensure_utc(start_from))
         if start_to is not None:

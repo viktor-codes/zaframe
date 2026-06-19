@@ -22,6 +22,7 @@ __all__ = [
     "attach_guest_bookings",
     "can_access_booking",
     "cancel_booking",
+    "check_in_booking",
     "complete_past_confirmed",
     "create_booking",
     "expire_stale_pending",
@@ -33,12 +34,14 @@ __all__ = [
     "is_own_booking",
     "map_booking_created_response",
     "map_booking_for_user",
+    "mark_booking_no_show",
 ]
 
 _SERVICE_FUNCTION_MODULES: dict[str, str] = {
     "DUPLICATE_BOOKING_MESSAGE": "app.modules.booking.persistence",
     "attach_guest_bookings": "app.modules.booking.queries",
     "cancel_booking": "app.modules.booking.service",
+    "check_in_booking": "app.modules.booking.service",
     "complete_past_confirmed": "app.modules.booking.lifecycle",
     "create_booking": "app.modules.booking.service",
     "expire_stale_pending": "app.modules.booking.lifecycle",
@@ -49,6 +52,7 @@ _SERVICE_FUNCTION_MODULES: dict[str, str] = {
     "get_owner_bookings_count": "app.modules.booking.queries",
     "map_booking_created_response": "app.modules.booking.mapping",
     "map_booking_for_user": "app.modules.booking.mapping",
+    "mark_booking_no_show": "app.modules.booking.service",
 }
 
 if TYPE_CHECKING:
@@ -63,7 +67,12 @@ if TYPE_CHECKING:
         get_owner_bookings,
         get_owner_bookings_count,
     )
-    from app.modules.booking.service import cancel_booking, create_booking
+    from app.modules.booking.service import (
+        cancel_booking,
+        check_in_booking,
+        create_booking,
+        mark_booking_no_show,
+    )
 
 
 def __getattr__(name: str):

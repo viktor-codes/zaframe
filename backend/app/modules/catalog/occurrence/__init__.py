@@ -20,6 +20,7 @@ __all__ = [
     "get_occurrence_or_raise",
     "get_occurrences",
     "get_occurrences_count",
+    "get_my_instructor_occurrences",
     "update_occurrence",
 ]
 
@@ -27,6 +28,7 @@ if TYPE_CHECKING:
     from app.modules.catalog.occurrence.service import (
         create_occurrence,
         delete_occurrence,
+        get_my_instructor_occurrences,
         get_occurrence,
         get_occurrence_or_raise,
         get_occurrences,
@@ -45,11 +47,13 @@ def __getattr__(name: str):
         "get_occurrence_or_raise",
         "get_occurrences",
         "get_occurrences_count",
+        "get_my_instructor_occurrences",
         "update_occurrence",
     ):
         from app.modules.catalog.occurrence.service import (
             create_occurrence,
             delete_occurrence,
+            get_my_instructor_occurrences,
             get_occurrence,
             get_occurrence_or_raise,
             get_occurrences,
@@ -64,18 +68,7 @@ def __getattr__(name: str):
             "get_occurrence_or_raise": get_occurrence_or_raise,
             "get_occurrences": get_occurrences,
             "get_occurrences_count": get_occurrences_count,
+            "get_my_instructor_occurrences": get_my_instructor_occurrences,
             "update_occurrence": update_occurrence,
         }[name]
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
-
-if TYPE_CHECKING:
-    from app.modules.catalog.occurrence.service import (
-        create_occurrence,
-        delete_occurrence,
-        get_occurrence,
-        get_occurrence_or_raise,
-        get_occurrences,
-        get_occurrences_count,
-        update_occurrence,
-    )

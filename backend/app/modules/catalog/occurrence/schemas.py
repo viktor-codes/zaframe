@@ -7,7 +7,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Literal
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator
+from pydantic import AliasPath, AwareDatetime, BaseModel, ConfigDict, Field, field_validator
 
 OccurrenceStatusLiteral = Literal["active", "cancelled"]
 
@@ -52,6 +52,10 @@ class OccurrenceCreate(OccurrenceBase):
         None,
         description="Service ID when occurrence belongs to a service/course",
     )
+    instructor_id: int | None = Field(
+        None,
+        description="Studio member ID assigned to teach this occurrence",
+    )
 
 
 class OccurrenceUpdate(BaseModel):
@@ -63,6 +67,10 @@ class OccurrenceUpdate(BaseModel):
     description: str | None = Field(None, max_length=1000)
     max_capacity: int | None = Field(None, ge=1)
     price_cents: int | None = Field(None, ge=0)
+    instructor_id: int | None = Field(
+        None,
+        description="Studio member ID assigned to teach this occurrence",
+    )
     status: OccurrenceStatusLiteral | None = Field(None, description="Occurrence status")
 
     @field_validator("start_time", "end_time")
@@ -73,11 +81,35 @@ class OccurrenceUpdate(BaseModel):
         return _normalize_to_utc(value)
 
 
+class OccurrenceInstructorResponse(BaseModel):
+    """Instructor display data embedded in occurrence responses."""
+
+    studio_member_id: int = Field(
+        ...,
+        validation_alias="id",
+        description="Studio member ID assigned as instructor",
+    )
+    user_id: int = Field(..., description="Instructor user ID")
+    name: str = Field(
+        ...,
+        validation_alias=AliasPath("user", "name"),
+        description="Instructor display name",
+    )
+    role: str = Field(..., description="Studio member role")
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+
 class OccurrenceResponse(OccurrenceBase):
     """Occurrence API response."""
 
     id: int
     studio_id: int
+    instructor_id: int | None = Field(None, description="Assigned studio member ID")
+    instructor: OccurrenceInstructorResponse | None = Field(
+        None,
+        description="Assigned instructor display data",
+    )
     status: OccurrenceStatusLiteral
     created_at: AwareDatetime
     updated_at: AwareDatetime

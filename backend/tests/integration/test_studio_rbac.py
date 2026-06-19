@@ -6,10 +6,11 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import select
 from tests.conftest import authenticate_via_otp
 
 from app.core.uow_factory import uow_scope
-from app.models import StudioMember, StudioMemberRole
+from app.models import Booking, BookingStatus, StudioMember, StudioMemberRole
 
 
 async def _authenticate(
@@ -59,19 +60,23 @@ async def _create_occurrence(
     *,
     studio_id: int,
     service_id: int,
+    instructor_id: int | None = None,
 ) -> int:
     start_time = datetime.now(UTC) + timedelta(days=7)
+    payload = {
+        "studio_id": studio_id,
+        "service_id": service_id,
+        "start_time": start_time.isoformat(),
+        "end_time": (start_time + timedelta(hours=1)).isoformat(),
+        "title": "RBAC Session",
+        "max_capacity": 10,
+        "price_cents": 1500,
+    }
+    if instructor_id is not None:
+        payload["instructor_id"] = instructor_id
     response = await client.post(
         "/api/v1/occurrences",
-        json={
-            "studio_id": studio_id,
-            "service_id": service_id,
-            "start_time": start_time.isoformat(),
-            "end_time": (start_time + timedelta(hours=1)).isoformat(),
-            "title": "RBAC Session",
-            "max_capacity": 10,
-            "price_cents": 1500,
-        },
+        json=payload,
         headers=headers,
     )
     assert response.status_code == 201, response.text
@@ -84,15 +89,43 @@ async def _add_studio_member(
     studio_id: int,
     user_id: int,
     role: StudioMemberRole,
-) -> None:
+) -> int:
     async with uow_scope(session=app_with_rollback_uow.state._integration_session) as uow:
-        await uow.studio_members.add(
+        member = await uow.studio_members.add(
             StudioMember(
                 studio_id=studio_id,
                 user_id=user_id,
                 role=role.value,
             )
         )
+        return member.id
+
+
+async def _create_booking(client: AsyncClient, *, occurrence_id: int, email: str) -> int:
+    response = await client.post(
+        "/api/v1/bookings",
+        json={
+            "occurrence_id": occurrence_id,
+            "guest_name": "Attendance Guest",
+            "guest_email": email,
+            "guest_phone": "+111111111",
+        },
+    )
+    assert response.status_code == 201, response.text
+    return response.json()["id"]
+
+
+async def _set_booking_status(
+    app_with_rollback_uow,
+    *,
+    booking_id: int,
+    status: str,
+) -> None:
+    async with uow_scope(session=app_with_rollback_uow.state._integration_session) as uow:
+        result = await uow.session.execute(select(Booking).where(Booking.id == booking_id))
+        booking = result.scalar_one()
+        booking.status = status
+        booking.reserved_until = None
 
 
 @pytest.mark.integration
@@ -256,3 +289,244 @@ async def test_non_member_cannot_access_studio_dashboard_endpoints(
         headers=stranger_headers,
     )
     assert response.status_code == 403
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_owner_assigns_instructor_to_occurrence(
+    client: AsyncClient,
+    app_with_rollback_uow,
+) -> None:
+    owner_headers, _owner = await _authenticate(
+        client,
+        email="fr03-assign-owner@example.com",
+        name="FR03 Owner",
+    )
+    instructor_headers, instructor = await _authenticate(
+        client,
+        email="fr03-assign-instructor@example.com",
+        name="FR03 Instructor",
+    )
+    studio_id = await _create_studio(client, owner_headers, name="FR03 Assign Studio")
+    service_id = await _create_service(client, owner_headers, studio_id=studio_id)
+    occurrence_id = await _create_occurrence(
+        client,
+        owner_headers,
+        studio_id=studio_id,
+        service_id=service_id,
+    )
+    instructor_member_id = await _add_studio_member(
+        app_with_rollback_uow,
+        studio_id=studio_id,
+        user_id=instructor["id"],
+        role=StudioMemberRole.INSTRUCTOR,
+    )
+
+    response = await client.patch(
+        f"/api/v1/occurrences/{occurrence_id}",
+        json={"instructor_id": instructor_member_id},
+        headers=owner_headers,
+    )
+
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["instructor_id"] == instructor_member_id
+    assert payload["instructor"] == {
+        "studio_member_id": instructor_member_id,
+        "user_id": instructor["id"],
+        "name": "FR03 Instructor",
+        "role": "instructor",
+    }
+
+    mine_response = await client.get(
+        f"/api/v1/occurrences/mine?studio_id={studio_id}",
+        headers=instructor_headers,
+    )
+    assert mine_response.status_code == 200, mine_response.text
+    assert [occurrence["id"] for occurrence in mine_response.json()] == [occurrence_id]
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_instructor_mine_endpoint_only_returns_assigned_occurrences(
+    client: AsyncClient,
+    app_with_rollback_uow,
+) -> None:
+    owner_headers, _owner = await _authenticate(
+        client,
+        email="fr03-mine-owner@example.com",
+        name="FR03 Owner",
+    )
+    first_headers, first_instructor = await _authenticate(
+        client,
+        email="fr03-mine-first@example.com",
+        name="FR03 First Instructor",
+    )
+    _second_headers, second_instructor = await _authenticate(
+        client,
+        email="fr03-mine-second@example.com",
+        name="FR03 Second Instructor",
+    )
+    studio_id = await _create_studio(client, owner_headers, name="FR03 Mine Studio")
+    service_id = await _create_service(client, owner_headers, studio_id=studio_id)
+    first_member_id = await _add_studio_member(
+        app_with_rollback_uow,
+        studio_id=studio_id,
+        user_id=first_instructor["id"],
+        role=StudioMemberRole.INSTRUCTOR,
+    )
+    second_member_id = await _add_studio_member(
+        app_with_rollback_uow,
+        studio_id=studio_id,
+        user_id=second_instructor["id"],
+        role=StudioMemberRole.INSTRUCTOR,
+    )
+    first_occurrence_id = await _create_occurrence(
+        client,
+        owner_headers,
+        studio_id=studio_id,
+        service_id=service_id,
+        instructor_id=first_member_id,
+    )
+    await _create_occurrence(
+        client,
+        owner_headers,
+        studio_id=studio_id,
+        service_id=service_id,
+        instructor_id=second_member_id,
+    )
+
+    response = await client.get(
+        f"/api/v1/occurrences/mine?studio_id={studio_id}",
+        headers=first_headers,
+    )
+
+    assert response.status_code == 200, response.text
+    occurrences = response.json()
+    assert [occurrence["id"] for occurrence in occurrences] == [first_occurrence_id]
+    assert occurrences[0]["instructor"]["user_id"] == first_instructor["id"]
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_attendance_actions_are_idempotent_and_permission_checked(
+    client: AsyncClient,
+    app_with_rollback_uow,
+) -> None:
+    owner_headers, _owner = await _authenticate(
+        client,
+        email="fr03-attendance-owner@example.com",
+        name="FR03 Owner",
+    )
+    instructor_headers, instructor = await _authenticate(
+        client,
+        email="fr03-attendance-instructor@example.com",
+        name="FR03 Instructor",
+    )
+    other_headers, other_instructor = await _authenticate(
+        client,
+        email="fr03-attendance-other@example.com",
+        name="FR03 Other Instructor",
+    )
+    studio_id = await _create_studio(client, owner_headers, name="FR03 Attendance Studio")
+    service_id = await _create_service(client, owner_headers, studio_id=studio_id)
+    instructor_member_id = await _add_studio_member(
+        app_with_rollback_uow,
+        studio_id=studio_id,
+        user_id=instructor["id"],
+        role=StudioMemberRole.INSTRUCTOR,
+    )
+    await _add_studio_member(
+        app_with_rollback_uow,
+        studio_id=studio_id,
+        user_id=other_instructor["id"],
+        role=StudioMemberRole.INSTRUCTOR,
+    )
+    occurrence_id = await _create_occurrence(
+        client,
+        owner_headers,
+        studio_id=studio_id,
+        service_id=service_id,
+        instructor_id=instructor_member_id,
+    )
+
+    check_in_booking_id = await _create_booking(
+        client,
+        occurrence_id=occurrence_id,
+        email="fr03-check-in@example.com",
+    )
+    no_show_booking_id = await _create_booking(
+        client,
+        occurrence_id=occurrence_id,
+        email="fr03-no-show@example.com",
+    )
+    cancelled_booking_id = await _create_booking(
+        client,
+        occurrence_id=occurrence_id,
+        email="fr03-cancelled@example.com",
+    )
+    await _set_booking_status(
+        app_with_rollback_uow,
+        booking_id=check_in_booking_id,
+        status=BookingStatus.CONFIRMED,
+    )
+    await _set_booking_status(
+        app_with_rollback_uow,
+        booking_id=no_show_booking_id,
+        status=BookingStatus.CONFIRMED,
+    )
+    await _set_booking_status(
+        app_with_rollback_uow,
+        booking_id=cancelled_booking_id,
+        status=BookingStatus.CANCELLED,
+    )
+
+    forbidden_response = await client.patch(
+        f"/api/v1/bookings/{check_in_booking_id}/check-in",
+        headers=other_headers,
+    )
+    assert forbidden_response.status_code == 403
+
+    first_check_in = await client.patch(
+        f"/api/v1/bookings/{check_in_booking_id}/check-in",
+        headers=instructor_headers,
+    )
+    second_check_in = await client.patch(
+        f"/api/v1/bookings/{check_in_booking_id}/check-in",
+        headers=instructor_headers,
+    )
+    assert first_check_in.status_code == 200, first_check_in.text
+    assert second_check_in.status_code == 200, second_check_in.text
+    assert first_check_in.json()["status"] == BookingStatus.COMPLETED
+    assert first_check_in.json()["checked_in_at"] == second_check_in.json()["checked_in_at"]
+
+    no_show_after_check_in = await client.patch(
+        f"/api/v1/bookings/{check_in_booking_id}/mark-no-show",
+        headers=owner_headers,
+    )
+    assert no_show_after_check_in.status_code == 400
+
+    first_no_show = await client.patch(
+        f"/api/v1/bookings/{no_show_booking_id}/mark-no-show",
+        headers=owner_headers,
+    )
+    second_no_show = await client.patch(
+        f"/api/v1/bookings/{no_show_booking_id}/mark-no-show",
+        headers=owner_headers,
+    )
+    assert first_no_show.status_code == 200, first_no_show.text
+    assert second_no_show.status_code == 200, second_no_show.text
+    assert first_no_show.json()["status"] == BookingStatus.NO_SHOW
+    assert first_no_show.json()["no_show_at"] == second_no_show.json()["no_show_at"]
+
+    cancel_no_show = await client.patch(
+        f"/api/v1/bookings/{no_show_booking_id}/cancel",
+        headers=owner_headers,
+    )
+    assert cancel_no_show.status_code == 400
+
+    cancelled_check_in = await client.patch(
+        f"/api/v1/bookings/{cancelled_booking_id}/check-in",
+        headers=owner_headers,
+    )
+    assert cancelled_check_in.status_code == 400

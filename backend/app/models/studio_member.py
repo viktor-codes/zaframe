@@ -12,6 +12,7 @@ from app.models import Base
 from app.models.mixins import TimestampMixin
 
 if TYPE_CHECKING:
+    from app.models.occurrence import Occurrence
     from app.models.studio import Studio
     from app.models.user import User
 
@@ -50,3 +51,7 @@ class StudioMember(TimestampMixin, Base):
 
     studio: Mapped[Studio] = relationship("Studio", back_populates="members")
     user: Mapped[User] = relationship("User", back_populates="studio_memberships")
+    assigned_occurrences: Mapped[list[Occurrence]] = relationship(
+        "Occurrence",
+        back_populates="instructor",
+    )

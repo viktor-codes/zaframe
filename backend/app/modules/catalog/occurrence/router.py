@@ -27,6 +27,7 @@ from app.modules.catalog.occurrence import (
     OccurrenceUpdate,
     create_occurrence,
     delete_occurrence,
+    get_my_instructor_occurrences,
     get_occurrence_or_raise,
     get_occurrences,
     get_occurrences_count,
@@ -44,6 +45,7 @@ async def list_occurrences(
     skip: int = Query(0, ge=0, description="Skip N records"),
     limit: int = Query(20, ge=1, le=100, description="Max records"),
     studio_id: int | None = Query(None, description="Filter by studio"),
+    instructor_id: int | None = Query(None, description="Filter by assigned studio member"),
     start_from: datetime | None = Query(None, description="Range start (UTC)"),
     start_to: datetime | None = Query(None, description="Range end (UTC)"),
     status: str | None = Query(None, description="Filter by status (active/cancelled)"),
@@ -54,6 +56,7 @@ async def list_occurrences(
         skip=skip,
         limit=limit,
         studio_id=studio_id,
+        instructor_id=instructor_id,
         start_from=start_from,
         start_to=start_to,
         status=status,
@@ -65,6 +68,7 @@ async def list_occurrences(
 async def count_occurrences(
     uow: Annotated[UnitOfWork, Depends(get_uow)],
     studio_id: int | None = Query(None, description="Filter by studio"),
+    instructor_id: int | None = Query(None, description="Filter by assigned studio member"),
     start_from: datetime | None = Query(None, description="Range start (UTC)"),
     start_to: datetime | None = Query(None, description="Range end (UTC)"),
     status: str | None = Query(None, description="Filter by status (active/cancelled)"),
@@ -73,11 +77,37 @@ async def count_occurrences(
     count = await get_occurrences_count(
         uow,
         studio_id=studio_id,
+        instructor_id=instructor_id,
         start_from=start_from,
         start_to=start_to,
         status=status,
     )
     return {"count": count}
+
+
+@router.get("/mine", response_model=list[OccurrenceResponse])
+async def list_my_instructor_occurrences(
+    user: Annotated[User, Depends(get_current_user_required)],
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
+    skip: int = Query(0, ge=0, description="Skip N records"),
+    limit: int = Query(20, ge=1, le=100, description="Max records"),
+    studio_id: int | None = Query(None, description="Filter by studio"),
+    start_from: datetime | None = Query(None, description="Range start (UTC)"),
+    start_to: datetime | None = Query(None, description="Range end (UTC)"),
+    status: str | None = Query(None, description="Filter by status (active/cancelled)"),
+) -> list[OccurrenceResponse]:
+    """List occurrences assigned to the current instructor."""
+    occurrences = await get_my_instructor_occurrences(
+        uow,
+        user_id=user.id,
+        skip=skip,
+        limit=limit,
+        studio_id=studio_id,
+        start_from=start_from,
+        start_to=start_to,
+        status=status,
+    )
+    return [OccurrenceResponse.model_validate(o) for o in occurrences]
 
 
 @router.get("/{occurrence_id}", response_model=OccurrenceResponse)
@@ -105,6 +135,7 @@ async def create_occurrence_endpoint(
         permission="manage_schedule",
     )
     occurrence = await create_occurrence(uow, schema)
+    occurrence = await get_occurrence_or_raise(uow, occurrence.id)
     return OccurrenceResponse.model_validate(occurrence)
 
 
@@ -125,6 +156,7 @@ async def update_occurrence_endpoint(
         permission="manage_schedule",
     )
     occurrence = await update_occurrence(uow, occurrence, schema)
+    occurrence = await get_occurrence_or_raise(uow, occurrence.id)
     return OccurrenceResponse.model_validate(occurrence)
 
 

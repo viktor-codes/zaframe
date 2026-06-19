@@ -23,6 +23,7 @@ from app.modules.booking import (
     BookingSelfListItem,
     BookingSelfResponse,
     cancel_booking,
+    check_in_booking,
     create_booking,
     get_booking_for_user_or_raise,
     get_bookings,
@@ -31,6 +32,7 @@ from app.modules.booking import (
     get_owner_bookings_count,
     map_booking_created_response,
     map_booking_for_user,
+    mark_booking_no_show,
 )
 from app.modules.booking.order import (
     CourseBookingCreate,
@@ -180,6 +182,28 @@ async def cancel_booking_endpoint(
     booking = await get_booking_for_user_or_raise(uow, booking_id, user)
     cancelled = await cancel_booking(uow, booking)
     return map_booking_for_user(cancelled, user)
+
+
+@router.patch("/{booking_id}/check-in", response_model=BookingOwnerResponse)
+async def check_in_booking_endpoint(
+    booking_id: int,
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
+    user: Annotated[User, Depends(get_current_user_required)],
+) -> BookingOwnerResponse:
+    """Check in an attendee for an occurrence."""
+    booking = await check_in_booking(uow, booking_id=booking_id, user=user)
+    return BookingOwnerResponse.model_validate(booking)
+
+
+@router.patch("/{booking_id}/mark-no-show", response_model=BookingOwnerResponse)
+async def mark_booking_no_show_endpoint(
+    booking_id: int,
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
+    user: Annotated[User, Depends(get_current_user_required)],
+) -> BookingOwnerResponse:
+    """Mark an attendee as no-show for an occurrence."""
+    booking = await mark_booking_no_show(uow, booking_id=booking_id, user=user)
+    return BookingOwnerResponse.model_validate(booking)
 
 
 @occurrence_bookings_router.get(

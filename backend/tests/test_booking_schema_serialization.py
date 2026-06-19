@@ -25,6 +25,8 @@ _SELF_SNAPSHOT = {
     "created_at": _FIXED_NOW.isoformat().replace("+00:00", "Z"),
     "updated_at": _FIXED_NOW.isoformat().replace("+00:00", "Z"),
     "cancelled_at": None,
+    "checked_in_at": None,
+    "no_show_at": None,
     "is_guest_booking": True,
     "guest_name": "Guest User",
     "guest_email": "guest@example.com",
@@ -41,6 +43,8 @@ _OWNER_SNAPSHOT = {
     "created_at": _FIXED_NOW.isoformat().replace("+00:00", "Z"),
     "updated_at": _FIXED_NOW.isoformat().replace("+00:00", "Z"),
     "cancelled_at": None,
+    "checked_in_at": None,
+    "no_show_at": None,
     "is_guest_booking": True,
     "guest_name": "Guest User",
     "guest_email": "guest@example.com",
@@ -68,6 +72,8 @@ def _booking_orm(**overrides: object) -> SimpleNamespace:
         "created_at": _FIXED_NOW,
         "updated_at": _FIXED_NOW,
         "cancelled_at": None,
+        "checked_in_at": None,
+        "no_show_at": None,
     }
     data.update(overrides)
     return SimpleNamespace(**data)

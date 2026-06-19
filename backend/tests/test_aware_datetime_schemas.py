@@ -40,6 +40,8 @@ def test_occurrence_response_serializes_utc_with_offset():
         course_price_cents=None,
         created_at=created,
         updated_at=created,
+        instructor_id=None,
+        instructor=None,
     )
 
     payload = OccurrenceResponse.model_validate(occurrence).model_dump(mode="json")
@@ -68,6 +70,8 @@ def test_booking_response_reserved_until_is_aware():
         created_at=reserved_until,
         updated_at=reserved_until,
         cancelled_at=None,
+        checked_in_at=None,
+        no_show_at=None,
     )
 
     payload = BookingSelfResponse.model_validate(booking).model_dump(mode="json")

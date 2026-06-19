@@ -28,6 +28,7 @@ class BookingStatus:
     CANCELLED = "cancelled"
     EXPIRED = "expired"
     COMPLETED = "completed"
+    NO_SHOW = "no_show"
 
     # WHY: only pending/confirmed block duplicate active bookings per occurrence+guest.
     ACTIVE_STATUSES: frozenset[str] = frozenset({PENDING, CONFIRMED})
@@ -105,6 +106,14 @@ class Booking(TimestampMixin, Base):
         DateTime(timezone=True),
         nullable=True,
     )
+    checked_in_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    no_show_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
 
     occurrence: Mapped[Occurrence] = relationship("Occurrence", back_populates="bookings")
     user: Mapped[User | None] = relationship("User", back_populates="bookings")
@@ -125,3 +134,6 @@ class Booking(TimestampMixin, Base):
 
     def is_completed(self) -> bool:
         return self.status == BookingStatus.COMPLETED
+
+    def is_no_show(self) -> bool:
+        return self.status == BookingStatus.NO_SHOW

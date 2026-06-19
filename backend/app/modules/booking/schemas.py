@@ -67,6 +67,14 @@ class BookingResponseBase(BookingBase):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     cancelled_at: AwareDatetime | None
+    checked_in_at: AwareDatetime | None = Field(
+        None,
+        description="UTC timestamp when studio staff checked the attendee in",
+    )
+    no_show_at: AwareDatetime | None = Field(
+        None,
+        description="UTC timestamp when studio staff marked the attendee as no-show",
+    )
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 

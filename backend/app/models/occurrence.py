@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from app.models.schedule_template import ScheduleTemplate
     from app.models.service import Service
     from app.models.studio import Studio
+    from app.models.studio_member import StudioMember
 
 
 class OccurrenceStatus:
@@ -51,6 +52,9 @@ class Occurrence(TimestampMixin, Base):
     )
     schedule_template_id: Mapped[int | None] = mapped_column(
         ForeignKey("schedule_templates.id"), nullable=True, index=True
+    )
+    instructor_id: Mapped[int | None] = mapped_column(
+        ForeignKey("studio_members.id"), nullable=True, index=True
     )
 
     start_time: Mapped[datetime] = mapped_column(
@@ -86,6 +90,10 @@ class Occurrence(TimestampMixin, Base):
     schedule_template: Mapped[ScheduleTemplate | None] = relationship(
         "ScheduleTemplate",
         back_populates="occurrences",
+    )
+    instructor: Mapped[StudioMember | None] = relationship(
+        "StudioMember",
+        back_populates="assigned_occurrences",
     )
     bookings: Mapped[list[Booking]] = relationship(
         "Booking", back_populates="occurrence", cascade="all, delete-orphan"

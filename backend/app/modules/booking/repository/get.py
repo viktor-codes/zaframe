@@ -47,6 +47,21 @@ class BookingGetMixin:
         )
         return result.scalar_one_or_none()
 
+    async def get_by_id_for_update_with_occurrence_and_studio(
+        self,
+        booking_id: int,
+    ) -> Booking | None:
+        result = await self._session.execute(
+            select(Booking)
+            .options(
+                selectinload(Booking.occurrence).selectinload(Occurrence.studio),
+                selectinload(Booking.occurrence).selectinload(Occurrence.instructor),
+            )
+            .where(Booking.id == booking_id)
+            .with_for_update()
+        )
+        return result.scalar_one_or_none()
+
     async def get_active_by_occurrence_and_guest_email(
         self,
         occurrence_id: int,
