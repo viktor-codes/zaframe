@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.elements import ColumnElement
@@ -10,6 +10,7 @@ from sqlalchemy.sql.elements import ColumnElement
 from app.models.booking import Booking
 from app.models.occurrence import Occurrence
 from app.models.studio import Studio
+from app.models.studio_member import StudioMember
 from app.modules.booking.repository.get import BookingGetMixin
 
 
@@ -17,13 +18,13 @@ class BookingListQueriesMixin(BookingGetMixin):
     _session: AsyncSession
 
     @staticmethod
-    def _studio_owner_clause(*, owner_id: int) -> ColumnElement[bool]:
-        return Studio.owner_id == owner_id
+    def _studio_member_clause(*, user_id: int) -> ColumnElement[bool]:
+        return or_(Studio.owner_id == user_id, StudioMember.user_id == user_id)
 
-    async def list_for_studio_owner(
+    async def list_for_studio_member(
         self,
         *,
-        owner_id: int,
+        user_id: int,
         skip: int = 0,
         limit: int = 20,
         occurrence_id: int | None = None,
@@ -33,7 +34,12 @@ class BookingListQueriesMixin(BookingGetMixin):
             select(Booking)
             .join(Booking.occurrence)
             .join(Occurrence.studio)
-            .where(self._studio_owner_clause(owner_id=owner_id))
+            .outerjoin(
+                StudioMember,
+                (StudioMember.studio_id == Studio.id) & (StudioMember.user_id == user_id),
+            )
+            .where(self._studio_member_clause(user_id=user_id))
+            .distinct()
         )
         if occurrence_id is not None:
             query = query.where(Booking.occurrence_id == occurrence_id)
@@ -43,10 +49,10 @@ class BookingListQueriesMixin(BookingGetMixin):
         result = await self._session.execute(query)
         return list(result.scalars().all())
 
-    async def count_for_studio_owner(
+    async def count_for_studio_member(
         self,
         *,
-        owner_id: int,
+        user_id: int,
         occurrence_id: int | None = None,
         status: str | None = None,
     ) -> int:
@@ -55,7 +61,11 @@ class BookingListQueriesMixin(BookingGetMixin):
             .select_from(Booking)
             .join(Booking.occurrence)
             .join(Occurrence.studio)
-            .where(self._studio_owner_clause(owner_id=owner_id))
+            .outerjoin(
+                StudioMember,
+                (StudioMember.studio_id == Studio.id) & (StudioMember.user_id == user_id),
+            )
+            .where(self._studio_member_clause(user_id=user_id))
         )
         if occurrence_id is not None:
             query = query.where(Booking.occurrence_id == occurrence_id)

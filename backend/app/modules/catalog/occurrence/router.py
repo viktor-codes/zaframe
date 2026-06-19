@@ -32,7 +32,7 @@ from app.modules.catalog.occurrence import (
     get_occurrences_count,
     update_occurrence,
 )
-from app.modules.catalog.studio import ensure_studio_owner, get_studio_or_raise
+from app.modules.catalog.studio import get_studio_or_raise, require_studio_permission
 
 router = APIRouter(prefix="/occurrences", tags=["occurrences"])
 studio_occurrence_router = APIRouter(prefix="/studios", tags=["studios"])
@@ -98,7 +98,12 @@ async def create_occurrence_endpoint(
 ) -> OccurrenceResponse:
     """Create occurrence (studio owner)."""
     studio = await get_studio_or_raise(uow, schema.studio_id)
-    ensure_studio_owner(studio, user.id)
+    await require_studio_permission(
+        uow,
+        studio=studio,
+        user=user,
+        permission="manage_schedule",
+    )
     occurrence = await create_occurrence(uow, schema)
     return OccurrenceResponse.model_validate(occurrence)
 
@@ -113,7 +118,12 @@ async def update_occurrence_endpoint(
     """Update occurrence (studio owner)."""
     occurrence = await get_occurrence_or_raise(uow, occurrence_id)
     studio = await get_studio_or_raise(uow, occurrence.studio_id)
-    ensure_studio_owner(studio, user.id)
+    await require_studio_permission(
+        uow,
+        studio=studio,
+        user=user,
+        permission="manage_schedule",
+    )
     occurrence = await update_occurrence(uow, occurrence, schema)
     return OccurrenceResponse.model_validate(occurrence)
 
@@ -127,7 +137,12 @@ async def delete_occurrence_endpoint(
     """Delete occurrence (studio owner). Cascades to related bookings."""
     occurrence = await get_occurrence_or_raise(uow, occurrence_id)
     studio = await get_studio_or_raise(uow, occurrence.studio_id)
-    ensure_studio_owner(studio, user.id)
+    await require_studio_permission(
+        uow,
+        studio=studio,
+        user=user,
+        permission="manage_schedule",
+    )
     await delete_occurrence(uow, occurrence)
 
 

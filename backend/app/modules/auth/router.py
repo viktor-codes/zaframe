@@ -18,6 +18,7 @@ from app.core.rate_limit import limiter
 from app.core.uow import UnitOfWork
 from app.models.user import User
 from app.modules.auth.schemas import (
+    CurrentUserResponse,
     OTPRequest,
     OTPSentResponse,
     OTPVerify,
@@ -30,6 +31,7 @@ from app.modules.auth.service import (
     request_otp,
     verify_otp,
 )
+from app.modules.catalog.studio import get_current_user_studio_roles
 from app.modules.identity import UserResponse
 from app.modules.identity.schemas import CurrentUserUpdate
 from app.modules.identity.service import update_current_user_profile
@@ -166,12 +168,16 @@ async def logout(
         await logout_current_session(uow, user, refresh_token)
 
 
-@router.get("/me", response_model=UserResponse)
+@router.get("/me", response_model=CurrentUserResponse)
 async def get_current_user_me(
     user: Annotated[User, Depends(get_current_user_required)],
-) -> UserResponse:
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
+) -> CurrentUserResponse:
     """Return the current user from the Bearer access token."""
-    return UserResponse.model_validate(user)
+    return CurrentUserResponse(
+        **UserResponse.model_validate(user).model_dump(),
+        roles=await get_current_user_studio_roles(uow, user_id=user.id),
+    )
 
 
 @router.patch("/me", response_model=UserResponse)

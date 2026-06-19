@@ -26,13 +26,14 @@ from app.modules.catalog.studio import (
     StudioCreate,
     StudioResponse,
     StudioUpdate,
+    StudioWithRoleResponse,
     create_studio,
     delete_studio,
-    ensure_studio_owner,
     get_my_studios,
     get_studio_or_raise,
     get_studios,
     get_studios_count,
+    require_studio_permission,
     update_studio,
 )
 from app.modules.catalog.studio.explore import attach_services_to_studios
@@ -80,14 +81,20 @@ async def list_studios(
     )
 
 
-@router.get("/my", response_model=list[StudioResponse])
+@router.get("/my", response_model=list[StudioWithRoleResponse])
 async def list_my_studios(
     user: Annotated[User, Depends(get_current_user_required)],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
-) -> list[StudioResponse]:
-    """List studios owned by the current authenticated user."""
-    studios = await get_my_studios(uow, owner_id=user.id)
-    return [StudioResponse.model_validate(studio) for studio in studios]
+) -> list[StudioWithRoleResponse]:
+    """List studios where the current authenticated user has a membership."""
+    memberships = await get_my_studios(uow, user_id=user.id)
+    return [
+        StudioWithRoleResponse(
+            **StudioResponse.model_validate(membership.studio).model_dump(),
+            role=membership.role,
+        )
+        for membership in memberships
+    ]
 
 
 @router.get("/count")
@@ -122,9 +129,14 @@ async def list_studio_services_endpoint(
     limit: int = Query(20, ge=1, le=100, description="Максимум записей"),
     is_active: bool | None = Query(None, description="Фильтр по статусу услуги"),
 ) -> list[ServiceResponse]:
-    """List services for a studio dashboard (owner only)."""
+    """List services for a studio dashboard with service-management permission."""
     studio = await get_studio_or_raise(uow, studio_id)
-    ensure_studio_owner(studio, user.id)
+    await require_studio_permission(
+        uow,
+        studio=studio,
+        user=user,
+        permission="manage_services",
+    )
     services = await get_services_for_studio(
         uow,
         studio_id=studio_id,
@@ -167,9 +179,14 @@ async def update_studio_endpoint(
     user: Annotated[User, Depends(get_current_user_required)],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> StudioResponse:
-    """Обновить студию (только владелец)."""
+    """Обновить студию при наличии права manage_studio."""
     studio = await get_studio_or_raise(uow, studio_id)
-    ensure_studio_owner(studio, user.id)
+    await require_studio_permission(
+        uow,
+        studio=studio,
+        user=user,
+        permission="manage_studio",
+    )
     studio = await update_studio(uow, studio, schema)
     return StudioResponse.model_validate(studio)
 
@@ -180,7 +197,12 @@ async def delete_studio_endpoint(
     user: Annotated[User, Depends(get_current_user_required)],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> None:
-    """Удалить студию (только владелец). Удалятся и связанные слоты."""
+    """Удалить студию при наличии права manage_studio. Удалятся и связанные слоты."""
     studio = await get_studio_or_raise(uow, studio_id)
-    ensure_studio_owner(studio, user.id)
+    await require_studio_permission(
+        uow,
+        studio=studio,
+        user=user,
+        permission="manage_studio",
+    )
     await delete_studio(uow, studio)

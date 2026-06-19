@@ -36,7 +36,7 @@ from app.modules.catalog.service import (
     update_service,
 )
 from app.modules.catalog.service.mappers import map_service_availability
-from app.modules.catalog.studio import ensure_studio_owner, get_studio_or_raise
+from app.modules.catalog.studio import get_studio_or_raise, require_studio_permission
 
 router = APIRouter(prefix="/services", tags=["services"])
 
@@ -50,10 +50,15 @@ async def create_service_endpoint(
     """
     Создать услугу (Service) в студии.
 
-    Требуется аутентификация и владение студией.
+    Требуется аутентификация и право управлять услугами студии.
     """
     studio = await get_studio_or_raise(uow, schema.studio_id)
-    ensure_studio_owner(studio, user.id)
+    await require_studio_permission(
+        uow,
+        studio=studio,
+        user=user,
+        permission="manage_services",
+    )
 
     data = schema.model_dump(exclude={"studio_id"})
     service = await create_service(uow, schema.studio_id, data)
@@ -97,10 +102,15 @@ async def update_service_endpoint(
     user: Annotated[User, Depends(get_current_user_required)],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> ServiceResponse:
-    """Обновить услугу (только владелец студии)."""
+    """Обновить услугу при наличии права manage_services."""
     service = await get_service_or_raise(uow, service_id)
     studio = await get_studio_or_raise(uow, service.studio_id)
-    ensure_studio_owner(studio, user.id)
+    await require_studio_permission(
+        uow,
+        studio=studio,
+        user=user,
+        permission="manage_services",
+    )
     service = await update_service(uow, service, schema)
     return ServiceResponse.model_validate(service)
 
@@ -118,7 +128,12 @@ async def deactivate_service_endpoint(
     """
     service = await get_service_or_raise(uow, service_id)
     studio = await get_studio_or_raise(uow, service.studio_id)
-    ensure_studio_owner(studio, user.id)
+    await require_studio_permission(
+        uow,
+        studio=studio,
+        user=user,
+        permission="manage_services",
+    )
     service = await deactivate_service(uow, service)
     return ServiceResponse.model_validate(service)
 
@@ -153,7 +168,12 @@ async def create_service_schedule_template_endpoint(
     """
     service = await get_service_or_raise(uow, service_id)
     studio = await get_studio_or_raise(uow, service.studio_id)
-    ensure_studio_owner(studio, user.id)
+    await require_studio_permission(
+        uow,
+        studio=studio,
+        user=user,
+        permission="manage_schedule",
+    )
 
     schedule_schema = ScheduleTemplateCreate(
         service_id=service_id,
@@ -169,9 +189,14 @@ async def delete_schedule_template_endpoint(
     user: Annotated[User, Depends(get_current_user_required)],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> None:
-    """Удалить шаблон расписания (только владелец студии услуги)."""
+    """Удалить шаблон расписания при наличии права manage_schedule."""
     schedule = await get_schedule_template_or_raise(uow, schedule_template_id)
     service = await get_service_or_raise(uow, schedule.service_id)
     studio = await get_studio_or_raise(uow, service.studio_id)
-    ensure_studio_owner(studio, user.id)
+    await require_studio_permission(
+        uow,
+        studio=studio,
+        user=user,
+        permission="manage_schedule",
+    )
     await delete_schedule_template(uow, schedule)

@@ -40,7 +40,11 @@ from app.modules.booking.order import (
 )
 from app.modules.booking.order.mappers import map_course_booking_result
 from app.modules.catalog.occurrence import OccurrenceResponse, get_occurrence_or_raise
-from app.modules.catalog.studio import StudioResponse, ensure_studio_owner, get_studio_or_raise
+from app.modules.catalog.studio import (
+    StudioResponse,
+    get_studio_or_raise,
+    require_studio_permission,
+)
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
 occurrence_bookings_router = APIRouter(tags=["occurrences"])
@@ -158,7 +162,7 @@ async def get_booking_by_id(
     uow: Annotated[UnitOfWork, Depends(get_uow)],
     user: Annotated[User, Depends(get_current_user_required)],
 ) -> BookingSelfResponse | BookingOwnerResponse:
-    """Получить бронирование по ID (только своё или студии владельца)."""
+    """Получить бронирование по ID: своё или доступное через studio permission."""
     booking = await get_booking_for_user_or_raise(uow, booking_id, user)
     return map_booking_for_user(booking, user)
 
@@ -172,7 +176,7 @@ async def cancel_booking_endpoint(
     uow: Annotated[UnitOfWork, Depends(get_uow)],
     user: Annotated[User, Depends(get_current_user_required)],
 ) -> BookingSelfResponse | BookingOwnerResponse:
-    """Отменить бронирование (только своё или студии владельца)."""
+    """Отменить бронирование: своё или доступное через studio permission."""
     booking = await get_booking_for_user_or_raise(uow, booking_id, user)
     cancelled = await cancel_booking(uow, booking)
     return map_booking_for_user(cancelled, user)
@@ -190,10 +194,15 @@ async def list_occurrence_bookings(
     limit: int = Query(20, ge=1, le=100),
     status: str | None = Query(None, description="Filter by status"),
 ) -> list[BookingOwnerResponse]:
-    """Bookings for an occurrence (studio owner only)."""
+    """Bookings for an occurrence with booking-view permission."""
     occurrence = await get_occurrence_or_raise(uow, occurrence_id)
     studio = await get_studio_or_raise(uow, occurrence.studio_id)
-    ensure_studio_owner(studio, user.id)
+    await require_studio_permission(
+        uow,
+        studio=studio,
+        user=user,
+        permission="view_bookings",
+    )
     bookings = await get_bookings(
         uow, skip=skip, limit=limit, occurrence_id=occurrence_id, status=status
     )

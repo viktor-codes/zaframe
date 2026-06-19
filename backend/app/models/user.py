@@ -14,10 +14,11 @@
 
 from __future__ import annotations
 
+import enum
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, String
+from sqlalchemy import DateTime, Enum, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models import Base
@@ -28,6 +29,15 @@ if TYPE_CHECKING:
     from app.models.order import Order
     from app.models.refresh_token import RefreshToken
     from app.models.studio import Studio
+    from app.models.studio_member import StudioMember
+
+
+class UserRole(enum.StrEnum):
+    """Global platform role. Studio access is handled by StudioMember."""
+
+    USER = "user"
+    STUDIO_OWNER = "studio_owner"
+    ADMIN = "admin"
 
 
 class User(TimestampMixin, Base):
@@ -46,6 +56,18 @@ class User(TimestampMixin, Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    role: Mapped[str] = mapped_column(
+        Enum(
+            "user",
+            "studio_owner",
+            "admin",
+            name="user_role",
+            create_constraint=False,
+        ),
+        nullable=False,
+        default=UserRole.USER.value,
+        server_default=UserRole.USER.value,
+    )
 
     is_active: Mapped[bool] = mapped_column(default=True)
 
@@ -58,6 +80,11 @@ class User(TimestampMixin, Base):
     studios: Mapped[list[Studio]] = relationship(
         "Studio",
         back_populates="owner",
+        cascade="all, delete-orphan",
+    )
+    studio_memberships: Mapped[list[StudioMember]] = relationship(
+        "StudioMember",
+        back_populates="user",
         cascade="all, delete-orphan",
     )
     bookings: Mapped[list[Booking]] = relationship(

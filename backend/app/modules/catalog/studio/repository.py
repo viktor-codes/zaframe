@@ -12,6 +12,7 @@ from sqlalchemy.sql.elements import ColumnElement
 from app.core.repository import WriteRepositoryMixin
 from app.models.service import Service
 from app.models.studio import Studio
+from app.models.studio_member import StudioMember
 
 
 class StudioRepository(WriteRepositoryMixin):
@@ -162,3 +163,48 @@ class StudioRepository(WriteRepositoryMixin):
                 stmt = stmt.where(*conditions)
         result = await self._session.execute(stmt)
         return result.scalar_one()
+
+
+class StudioMemberRepository(WriteRepositoryMixin):
+    """Repository for per-studio membership roles."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def get_by_id(self, member_id: int) -> StudioMember | None:
+        result = await self._session.execute(
+            select(StudioMember).where(StudioMember.id == member_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def get_by_studio_and_user(
+        self,
+        *,
+        studio_id: int,
+        user_id: int,
+    ) -> StudioMember | None:
+        result = await self._session.execute(
+            select(StudioMember).where(
+                StudioMember.studio_id == studio_id,
+                StudioMember.user_id == user_id,
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def list_for_user(self, *, user_id: int) -> list[StudioMember]:
+        result = await self._session.execute(
+            select(StudioMember)
+            .options(selectinload(StudioMember.studio))
+            .where(StudioMember.user_id == user_id)
+            .order_by(StudioMember.created_at.desc())
+        )
+        return list(result.scalars().all())
+
+    async def list_for_studio(self, *, studio_id: int) -> list[StudioMember]:
+        result = await self._session.execute(
+            select(StudioMember)
+            .options(selectinload(StudioMember.user))
+            .where(StudioMember.studio_id == studio_id)
+            .order_by(StudioMember.created_at.desc())
+        )
+        return list(result.scalars().all())

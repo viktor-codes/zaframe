@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from app.modules.catalog.occurrence.repository import OccurrenceRepository
     from app.modules.catalog.schedule.repository import ScheduleTemplateRepository
     from app.modules.catalog.service.repository import ServiceRepository
-    from app.modules.catalog.studio.repository import StudioRepository
+    from app.modules.catalog.studio.repository import StudioMemberRepository, StudioRepository
     from app.modules.identity.repository import UserRepository
     from app.modules.payment.repository import ProcessedWebhookEventRepository
     from app.modules.search.repository import SearchRepository
@@ -36,6 +36,7 @@ class UnitOfWork:
     studios: StudioRepository
     occurrences: OccurrenceRepository
     services: ServiceRepository
+    studio_members: StudioMemberRepository
     schedule_templates: ScheduleTemplateRepository
     refresh_tokens: RefreshTokenRepository
     orders: OrderRepository

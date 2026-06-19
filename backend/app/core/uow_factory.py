@@ -13,7 +13,7 @@ from app.modules.booking.repository import BookingRepository
 from app.modules.catalog.occurrence.repository import OccurrenceRepository
 from app.modules.catalog.schedule.repository import ScheduleTemplateRepository
 from app.modules.catalog.service.repository import ServiceRepository
-from app.modules.catalog.studio.repository import StudioRepository
+from app.modules.catalog.studio.repository import StudioMemberRepository, StudioRepository
 from app.modules.identity.repository import UserRepository
 from app.modules.payment.repository import ProcessedWebhookEventRepository
 from app.modules.search.repository import SearchRepository
@@ -29,6 +29,7 @@ def create_uow(session: AsyncSession) -> UnitOfWork:
         studios=StudioRepository(session),
         occurrences=OccurrenceRepository(session),
         services=ServiceRepository(session),
+        studio_members=StudioMemberRepository(session),
         schedule_templates=ScheduleTemplateRepository(session),
         refresh_tokens=RefreshTokenRepository(session),
         orders=OrderRepository(session),

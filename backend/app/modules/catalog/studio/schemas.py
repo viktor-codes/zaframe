@@ -129,6 +129,19 @@ class StudioResponse(StudioBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class StudioRoleResponse(BaseModel):
+    """Current user's role in one studio."""
+
+    studio_id: int = Field(..., description="Studio ID")
+    role: str = Field(..., description="Studio membership role")
+
+
+class StudioWithRoleResponse(StudioResponse):
+    """Studio response enriched with the current user's membership role."""
+
+    role: str = Field(..., description="Current user's role in this studio")
+
+
 class StudioWithOccurrences(StudioResponse):
     """Studio with occurrence count (for list views)."""
 

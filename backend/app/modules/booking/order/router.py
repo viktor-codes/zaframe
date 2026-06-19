@@ -7,7 +7,7 @@ from app.core.uow import UnitOfWork
 from app.models.user import User
 from app.modules.booking.order.schemas import OrderListItem
 from app.modules.booking.order.service import get_my_orders, get_owner_orders
-from app.modules.catalog.studio import ensure_studio_owner, get_studio_or_raise
+from app.modules.catalog.studio import get_studio_or_raise, require_studio_permission
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 
@@ -41,10 +41,15 @@ async def list_owner_orders_endpoint(
     """List orders for studios owned by the current user."""
     if studio_id is not None:
         studio = await get_studio_or_raise(uow, studio_id)
-        ensure_studio_owner(studio, user.id)
+        await require_studio_permission(
+            uow,
+            studio=studio,
+            user=user,
+            permission="view_bookings",
+        )
     orders = await get_owner_orders(
         uow,
-        owner_id=user.id,
+        user_id=user.id,
         studio_id=studio_id,
         skip=skip,
         limit=limit,

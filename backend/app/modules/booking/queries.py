@@ -6,7 +6,8 @@ from app.core.exceptions import NotFoundError
 from app.core.uow import UnitOfWork
 from app.models.booking import Booking
 from app.models.user import User
-from app.modules.booking.policies import can_access_booking
+from app.modules.booking.policies import is_own_booking
+from app.modules.catalog.studio import has_studio_permission
 
 
 async def get_booking(uow: UnitOfWork, booking_id: int) -> Booking | None:
@@ -36,8 +37,12 @@ async def get_booking_for_user_or_raise(
     booking = await uow.bookings.get_by_id_with_occurrence_and_studio(booking_id)
     if booking is None:
         raise NotFoundError("Booking not found")
-    studio_owner_id = booking.occurrence.studio.owner_id
-    if not can_access_booking(booking, user, studio_owner_id=studio_owner_id):
+    if not is_own_booking(booking, user) and not await has_studio_permission(
+        uow,
+        studio=booking.occurrence.studio,
+        user=user,
+        permission="view_bookings",
+    ):
         raise NotFoundError("Booking not found")
     return booking
 
@@ -51,9 +56,9 @@ async def get_owner_bookings(
     occurrence_id: int | None = None,
     status: str | None = None,
 ) -> list[Booking]:
-    """Owner dashboard: bookings for occurrences in studios owned by the user."""
-    return await uow.bookings.list_for_studio_owner(
-        owner_id=user.id,
+    """Studio dashboard: bookings for occurrences visible to this studio member."""
+    return await uow.bookings.list_for_studio_member(
+        user_id=user.id,
         skip=skip,
         limit=limit,
         occurrence_id=occurrence_id,
@@ -68,9 +73,9 @@ async def get_owner_bookings_count(
     occurrence_id: int | None = None,
     status: str | None = None,
 ) -> int:
-    """Count bookings for studios owned by the user."""
-    return await uow.bookings.count_for_studio_owner(
-        owner_id=user.id,
+    """Count bookings for studios visible to this studio member."""
+    return await uow.bookings.count_for_studio_member(
+        user_id=user.id,
         occurrence_id=occurrence_id,
         status=status,
     )

@@ -10,6 +10,7 @@ from app.core.repository import WriteRepositoryMixin
 from app.models.booking import Booking
 from app.models.order import Order
 from app.models.studio import Studio
+from app.models.studio_member import StudioMember
 
 
 class OrderRepository(WriteRepositoryMixin):
@@ -58,10 +59,10 @@ class OrderRepository(WriteRepositoryMixin):
         )
         return list(result.scalars().all())
 
-    async def list_for_studio_owner(
+    async def list_for_studio_member(
         self,
         *,
-        owner_id: int,
+        user_id: int,
         studio_id: int | None = None,
         skip: int = 0,
         limit: int = 20,
@@ -69,6 +70,10 @@ class OrderRepository(WriteRepositoryMixin):
         query = (
             select(Order)
             .join(Studio, Studio.id == Order.studio_id)
+            .outerjoin(
+                StudioMember,
+                (StudioMember.studio_id == Studio.id) & (StudioMember.user_id == user_id),
+            )
             .options(
                 selectinload(Order.service),
                 selectinload(Order.bookings).load_only(
@@ -78,7 +83,8 @@ class OrderRepository(WriteRepositoryMixin):
                     Booking.payment_status,
                 ),
             )
-            .where(Studio.owner_id == owner_id)
+            .where(or_(Studio.owner_id == user_id, StudioMember.user_id == user_id))
+            .distinct()
         )
         if studio_id is not None:
             query = query.where(Order.studio_id == studio_id)

@@ -166,14 +166,14 @@ async def get_my_orders(
 async def get_owner_orders(
     uow: UnitOfWork,
     *,
-    owner_id: int,
+    user_id: int,
     studio_id: int | None = None,
     skip: int = 0,
     limit: int = 20,
 ) -> list[Order]:
-    """List orders for studios owned by the current user."""
-    return await uow.orders.list_for_studio_owner(
-        owner_id=owner_id,
+    """List orders for studios visible to the current studio member."""
+    return await uow.orders.list_for_studio_member(
+        user_id=user_id,
         studio_id=studio_id,
         skip=skip,
         limit=limit,

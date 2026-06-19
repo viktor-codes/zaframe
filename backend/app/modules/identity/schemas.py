@@ -61,6 +61,7 @@ class UserResponse(UserBase):
     """Схема для ответа API (включает id и timestamps)."""
 
     id: int
+    role: str
     is_active: bool
     created_at: AwareDatetime
     updated_at: AwareDatetime

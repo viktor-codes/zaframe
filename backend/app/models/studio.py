@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from app.models.occurrence import Occurrence
     from app.models.order import Order
     from app.models.service import Service
+    from app.models.studio_member import StudioMember
     from app.models.user import User
 
 
@@ -80,6 +81,11 @@ class Studio(TimestampMixin, Base):
 
     # Связи
     owner: Mapped[User] = relationship("User", back_populates="studios")
+    members: Mapped[list[StudioMember]] = relationship(
+        "StudioMember",
+        back_populates="studio",
+        cascade="all, delete-orphan",
+    )
 
     # Одна студия может иметь множество слотов
     occurrences: Mapped[list[Occurrence]] = relationship(

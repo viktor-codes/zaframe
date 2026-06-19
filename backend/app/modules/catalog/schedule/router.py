@@ -9,7 +9,7 @@ from app.core.uow import UnitOfWork
 from app.models.user import User
 from app.modules.catalog.occurrence import OccurrenceResponse
 from app.modules.catalog.schedule import ScheduleGenerateRequest, occurrence_generator
-from app.modules.catalog.studio import ensure_studio_owner, get_studio_or_raise
+from app.modules.catalog.studio import get_studio_or_raise, require_studio_permission
 
 schedule_router = APIRouter(prefix="/studios", tags=["studios"])
 
@@ -27,7 +27,12 @@ async def generate_studio_occurrences_endpoint(
     Создаёт слоты на указанные дни недели в течение `weeks_count` недель.
     """
     studio = await get_studio_or_raise(uow, studio_id)
-    ensure_studio_owner(studio, user.id)
+    await require_studio_permission(
+        uow,
+        studio=studio,
+        user=user,
+        permission="manage_schedule",
+    )
 
     occurrences = await occurrence_generator(
         uow,

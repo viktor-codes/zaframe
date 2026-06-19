@@ -2,7 +2,12 @@
 
 from pydantic import BaseModel, EmailStr, Field
 
+from app.modules.catalog.studio.schemas import StudioRoleResponse
 from app.modules.identity import UserResponse
+
+
+def _empty_studio_roles() -> list[StudioRoleResponse]:
+    return []
 
 
 class OTPRequest(BaseModel):
@@ -51,6 +56,15 @@ class OTPSentResponse(BaseModel):
     message: str = Field(
         default="If the email is valid, you will receive a verification code",
         description="User-facing message",
+    )
+
+
+class CurrentUserResponse(UserResponse):
+    """Current user profile enriched with studio-scoped roles."""
+
+    roles: list[StudioRoleResponse] = Field(
+        default_factory=_empty_studio_roles,
+        description="Studio-scoped roles for dashboard navigation",
     )
 
 
