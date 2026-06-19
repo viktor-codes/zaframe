@@ -63,8 +63,10 @@ async def get_db() -> AsyncGenerator[AsyncSession]:
     Dependency для получения сессии БД в роутерах.
 
     Использование:
+        from typing import Annotated
+
         @router.get("/users")
-        async def get_users(db: AsyncSession = Depends(get_db)):
+        async def get_users(db: Annotated[AsyncSession, Depends(get_db)]):
             result = await db.execute(select(User))
             return result.scalars().all()
     """

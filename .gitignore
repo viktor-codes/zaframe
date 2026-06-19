@@ -202,6 +202,9 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
+# Local onboarding notes
+backend/onboarding/
+
 # Marimo
 marimo/_static/
 marimo/_lsp/
