@@ -7,7 +7,7 @@
 - Переиспользование в разных эндпоинтах (API, webhooks, CLI)
 """
 
-from app.core.exceptions import ForbiddenError, NotFoundError, ValidationError
+from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
 from app.models.studio import Studio
 from app.modules.catalog.studio.schemas import StudioCreate, StudioUpdate
@@ -64,6 +64,11 @@ async def get_studios_count(
     )
 
 
+async def get_my_studios(uow: UnitOfWork, *, owner_id: int) -> list[Studio]:
+    """List studios owned by the current user."""
+    return await uow.studios.list_(owner_id=owner_id, limit=100)
+
+
 async def get_studio_or_raise(uow: UnitOfWork, studio_id: int) -> Studio:
     """Получить студию по ID или выбросить NotFoundError."""
     studio = await uow.studios.get_by_id(studio_id)
@@ -78,6 +83,20 @@ def ensure_studio_owner(studio: Studio, user_id: int) -> None:
         raise ForbiddenError("Access denied for this studio")
 
 
+async def ensure_studio_slug_available(
+    uow: UnitOfWork,
+    *,
+    slug: str | None,
+    current_studio_id: int | None = None,
+) -> None:
+    """Validate slug uniqueness across studios."""
+    if slug is None:
+        return
+    existing = await uow.studios.get_by_slug(slug)
+    if existing is not None and existing.id != current_studio_id:
+        raise ConflictError("Studio slug is already in use")
+
+
 async def create_studio(uow: UnitOfWork, schema: StudioCreate) -> Studio:
     """Создать студию. owner_id должен быть передан в schema (из токена на уровне роутера)."""
     if schema.owner_id is None:
@@ -85,11 +104,15 @@ async def create_studio(uow: UnitOfWork, schema: StudioCreate) -> Studio:
     owner = await uow.users.get_by_id(schema.owner_id)
     if owner is None:
         raise ValidationError("Owner is missing or not found")
+    await ensure_studio_slug_available(uow, slug=schema.slug)
 
     studio = Studio(
         owner_id=schema.owner_id,
         name=schema.name,
+        slug=schema.slug,
         description=schema.description,
+        logo_url=schema.logo_url,
+        cover_url=schema.cover_url,
         email=schema.email,
         phone=schema.phone,
         address=schema.address,
@@ -113,6 +136,12 @@ async def update_studio(
         occurrence_count = await uow.occurrences.count(studio_id=studio.id)
         if occurrence_count > 0:
             raise ValidationError("Cannot change timezone after occurrences have been created")
+    if "slug" in update_data:
+        await ensure_studio_slug_available(
+            uow,
+            slug=update_data["slug"],
+            current_studio_id=studio.id,
+        )
     for field, value in update_data.items():
         setattr(studio, field, value)
     return await uow.studios.save(studio)

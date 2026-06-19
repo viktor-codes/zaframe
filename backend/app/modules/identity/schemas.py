@@ -37,6 +37,26 @@ class UserUpdate(BaseModel):
     phone: str | None = Field(None, max_length=20, description="Номер телефона")
 
 
+class CurrentUserUpdate(BaseModel):
+    """Editable current-user profile fields."""
+
+    name: str | None = Field(
+        None,
+        min_length=1,
+        max_length=100,
+        description="User display name",
+        examples=["Ada Lovelace"],
+    )
+    phone: str | None = Field(
+        None,
+        max_length=20,
+        description="Optional phone number",
+        examples=["+353871234567"],
+    )
+
+    model_config = ConfigDict(extra="forbid")
+
+
 class UserResponse(UserBase):
     """Схема для ответа API (включает id и timestamps)."""
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import cast
 
-from app.core.datetime_utils import utc_now
+from app.core import datetime_utils
 from app.core.exceptions import NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
 from app.models import ServiceType
@@ -25,6 +25,11 @@ from app.modules.catalog.service.dto import (
     ServiceAvailabilityDTO,
     ServiceAvailabilityScheduleItemDTO,
 )
+
+
+def utc_now() -> datetime:
+    """Return current UTC time via the shared datetime helper."""
+    return datetime_utils.utc_now()
 
 
 async def check_course_availability(

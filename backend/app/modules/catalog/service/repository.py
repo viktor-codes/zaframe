@@ -35,6 +35,21 @@ class ServiceRepository(WriteRepositoryMixin):
         )
         return result.scalar_one_or_none()
 
+    async def list_by_studio(
+        self,
+        studio_id: int,
+        *,
+        skip: int = 0,
+        limit: int = 20,
+        is_active: bool | None = None,
+    ) -> list[Service]:
+        query = select(Service).where(Service.studio_id == studio_id)
+        if is_active is not None:
+            query = query.where(Service.is_active.is_(is_active))
+        query = query.order_by(Service.created_at.desc()).offset(skip).limit(limit)
+        result = await self._session.execute(query)
+        return list(result.scalars().all())
+
     async def list_active_by_studio_ids(
         self,
         studio_ids: list[int],

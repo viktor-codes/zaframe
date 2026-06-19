@@ -106,7 +106,10 @@ async def seed_demo_data(
         start_date = studio_local_date_now(tz_name) + timedelta(days=7)
         studio_schema = StudioCreate(
             name=f"Demo Studio {i + 1}",
+            slug=f"demo-studio-{i + 1}",
             description="Demo studio for load testing",
+            logo_url=None,
+            cover_url=None,
             email=f"studio{i + 1}@example.com",
             phone=None,
             address="Demo Address",
@@ -117,7 +120,6 @@ async def seed_demo_data(
             timezone=tz_name,
         )
         studio = await create_studio(uow, studio_schema)
-        studio.slug = f"demo-studio-{i + 1}"
         studio.city = "Dublin"
         await uow.session.flush()
 

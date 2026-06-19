@@ -35,6 +35,7 @@ __all__ = [
     "create_service",
     "get_service",
     "get_service_or_raise",
+    "get_services_for_studio",
     "update_service",
     "deactivate_service",
     # Course availability
@@ -47,6 +48,7 @@ _SERVICE_FUNCTION_MODULES: dict[str, str] = {
     "create_service": "app.modules.catalog.service.service",
     "get_service": "app.modules.catalog.service.service",
     "get_service_or_raise": "app.modules.catalog.service.service",
+    "get_services_for_studio": "app.modules.catalog.service.service",
     "update_service": "app.modules.catalog.service.service",
     "deactivate_service": "app.modules.catalog.service.service",
     "check_course_availability": "app.modules.catalog.service.availability",
@@ -65,6 +67,7 @@ if TYPE_CHECKING:
         deactivate_service,
         get_service,
         get_service_or_raise,
+        get_services_for_studio,
         update_service,
     )
 

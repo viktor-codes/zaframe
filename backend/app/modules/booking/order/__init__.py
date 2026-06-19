@@ -8,6 +8,8 @@ from app.modules.booking.order.schemas import (
     CourseBookingPreviewItem,
     CourseBookingResponse,
     OrderBase,
+    OrderBookingSummary,
+    OrderListItem,
     OrderResponse,
 )
 
@@ -19,18 +21,30 @@ __all__ = [
     "CourseBookingResponse",
     "CourseBookingResultDTO",
     "OrderBase",
+    "OrderBookingSummary",
+    "OrderListItem",
     "OrderRepository",
     "OrderResponse",
     "create_course_booking",
+    "get_my_orders",
+    "get_owner_orders",
 ]
 
 if TYPE_CHECKING:
-    from app.modules.booking.order.service import create_course_booking
+    from app.modules.booking.order.service import (
+        create_course_booking,
+        get_my_orders,
+        get_owner_orders,
+    )
 
 
 def __getattr__(name: str):
-    if name == "create_course_booking":
+    if name in ("create_course_booking", "get_my_orders", "get_owner_orders"):
         from app.modules.booking.order import service
 
-        return service.create_course_booking
+        return {
+            "create_course_booking": service.create_course_booking,
+            "get_my_orders": service.get_my_orders,
+            "get_owner_orders": service.get_owner_orders,
+        }[name]
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

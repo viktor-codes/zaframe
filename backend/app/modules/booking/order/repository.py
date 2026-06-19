@@ -2,12 +2,14 @@
 Репозиторий для сущности Order.
 """
 
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.repository import WriteRepositoryMixin
+from app.models.booking import Booking
 from app.models.order import Order
+from app.models.studio import Studio
 
 
 class OrderRepository(WriteRepositoryMixin):
@@ -23,3 +25,63 @@ class OrderRepository(WriteRepositoryMixin):
             select(Order).options(selectinload(Order.service)).where(Order.id == order_id)
         )
         return result.scalar_one_or_none()
+
+    async def list_for_user(
+        self,
+        *,
+        user_id: int,
+        user_email: str,
+        skip: int = 0,
+        limit: int = 20,
+    ) -> list[Order]:
+        normalized_email = user_email.strip().lower()
+        result = await self._session.execute(
+            select(Order)
+            .options(
+                selectinload(Order.service),
+                selectinload(Order.bookings).load_only(
+                    Booking.id,
+                    Booking.occurrence_id,
+                    Booking.status,
+                    Booking.payment_status,
+                ),
+            )
+            .where(
+                or_(
+                    Order.user_id == user_id,
+                    func.lower(Order.guest_email) == normalized_email,
+                )
+            )
+            .order_by(Order.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+        )
+        return list(result.scalars().all())
+
+    async def list_for_studio_owner(
+        self,
+        *,
+        owner_id: int,
+        studio_id: int | None = None,
+        skip: int = 0,
+        limit: int = 20,
+    ) -> list[Order]:
+        query = (
+            select(Order)
+            .join(Studio, Studio.id == Order.studio_id)
+            .options(
+                selectinload(Order.service),
+                selectinload(Order.bookings).load_only(
+                    Booking.id,
+                    Booking.occurrence_id,
+                    Booking.status,
+                    Booking.payment_status,
+                ),
+            )
+            .where(Studio.owner_id == owner_id)
+        )
+        if studio_id is not None:
+            query = query.where(Order.studio_id == studio_id)
+        query = query.order_by(Order.created_at.desc()).offset(skip).limit(limit)
+        result = await self._session.execute(query)
+        return list(result.scalars().all())

@@ -254,7 +254,7 @@ async def _create_studio_and_single_occurrence(
     assert r_studio.status_code == 201
     studio_id = r_studio.json()["id"]
 
-    start = FROZEN_NOW + timedelta(days=3)
+    start = datetime.now(UTC) + timedelta(days=3)
     end = start + timedelta(hours=1)
     r_occ = await client.post(
         "/api/v1/occurrences",

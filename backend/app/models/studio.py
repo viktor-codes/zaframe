@@ -50,6 +50,8 @@ class Studio(TimestampMixin, Base):
         index=True,
     )
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    logo_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    cover_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
 
     # Контакты студии
     email: Mapped[str | None] = mapped_column(String(255), nullable=True)

@@ -21,6 +21,7 @@ from app.core.deps import get_current_user_required, get_uow
 from app.core.uow import UnitOfWork
 from app.models.service import ServiceCategory
 from app.models.user import User
+from app.modules.catalog.service import ServiceResponse, get_services_for_studio
 from app.modules.catalog.studio import (
     StudioCreate,
     StudioResponse,
@@ -28,6 +29,7 @@ from app.modules.catalog.studio import (
     create_studio,
     delete_studio,
     ensure_studio_owner,
+    get_my_studios,
     get_studio_or_raise,
     get_studios,
     get_studios_count,
@@ -78,6 +80,16 @@ async def list_studios(
     )
 
 
+@router.get("/my", response_model=list[StudioResponse])
+async def list_my_studios(
+    user: Annotated[User, Depends(get_current_user_required)],
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
+) -> list[StudioResponse]:
+    """List studios owned by the current authenticated user."""
+    studios = await get_my_studios(uow, owner_id=user.id)
+    return [StudioResponse.model_validate(studio) for studio in studios]
+
+
 @router.get("/count")
 async def count_studios(
     uow: Annotated[UnitOfWork, Depends(get_uow)],
@@ -99,6 +111,28 @@ async def count_studios(
         amenities=amenities,
     )
     return {"count": count}
+
+
+@router.get("/{studio_id}/services", response_model=list[ServiceResponse])
+async def list_studio_services_endpoint(
+    studio_id: int,
+    user: Annotated[User, Depends(get_current_user_required)],
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
+    skip: int = Query(0, ge=0, description="Пропустить N записей"),
+    limit: int = Query(20, ge=1, le=100, description="Максимум записей"),
+    is_active: bool | None = Query(None, description="Фильтр по статусу услуги"),
+) -> list[ServiceResponse]:
+    """List services for a studio dashboard (owner only)."""
+    studio = await get_studio_or_raise(uow, studio_id)
+    ensure_studio_owner(studio, user.id)
+    services = await get_services_for_studio(
+        uow,
+        studio_id=studio_id,
+        skip=skip,
+        limit=limit,
+        is_active=is_active,
+    )
+    return [ServiceResponse.model_validate(service) for service in services]
 
 
 @router.get("/{studio_id}", response_model=StudioResponse)

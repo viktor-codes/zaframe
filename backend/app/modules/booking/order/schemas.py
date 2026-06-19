@@ -7,6 +7,7 @@ from __future__ import annotations
 from pydantic import AwareDatetime, BaseModel, ConfigDict, EmailStr, Field
 
 from app.modules.booking.schemas import BookingSelfResponse
+from app.modules.catalog.service import ServiceResponse
 
 
 class OrderBase(BaseModel):
@@ -29,6 +30,29 @@ class OrderResponse(OrderBase):
     status: str = Field(..., description="Order status")
     created_at: AwareDatetime
     updated_at: AwareDatetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class OrderBookingSummary(BaseModel):
+    """Booking summary nested in order list responses."""
+
+    id: int
+    occurrence_id: int
+    status: str = Field(..., description="Booking lifecycle status")
+    payment_status: str | None = Field(None, description="Payment status when available")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class OrderListItem(OrderResponse):
+    """Order list item for customer account and owner dashboard."""
+
+    service: ServiceResponse | None = Field(None, description="Related service")
+    bookings: list[OrderBookingSummary] = Field(
+        default_factory=lambda: list[OrderBookingSummary](),
+        description="Bookings included in this order",
+    )
 
     model_config = ConfigDict(from_attributes=True)
 

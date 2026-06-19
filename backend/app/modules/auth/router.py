@@ -31,6 +31,8 @@ from app.modules.auth.service import (
     verify_otp,
 )
 from app.modules.identity import UserResponse
+from app.modules.identity.schemas import CurrentUserUpdate
+from app.modules.identity.service import update_current_user_profile
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -170,3 +172,14 @@ async def get_current_user_me(
 ) -> UserResponse:
     """Return the current user from the Bearer access token."""
     return UserResponse.model_validate(user)
+
+
+@router.patch("/me", response_model=UserResponse)
+async def update_current_user_me(
+    schema: CurrentUserUpdate,
+    user: Annotated[User, Depends(get_current_user_required)],
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
+) -> UserResponse:
+    """Update the current user's editable profile fields."""
+    updated_user = await update_current_user_profile(uow, user, schema)
+    return UserResponse.model_validate(updated_user)

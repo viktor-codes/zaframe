@@ -4,7 +4,8 @@ from fastapi import APIRouter, FastAPI
 
 from app.api.health import router as health_router
 from app.modules.auth.router import router as auth_router
-from app.modules.booking.order import CourseBookingResponse
+from app.modules.booking.order import CourseBookingResponse, OrderListItem
+from app.modules.booking.order.router import router as order_router
 from app.modules.booking.router import occurrence_bookings_router
 from app.modules.booking.router import router as booking_router
 from app.modules.booking.schemas import (
@@ -32,6 +33,7 @@ BookingOwnerResponse.model_rebuild()
 BookingWithUser.model_rebuild()
 BookingSelfListItem.model_rebuild()
 CourseBookingResponse.model_rebuild()
+OrderListItem.model_rebuild()
 SearchResult.model_rebuild()
 
 api_v1 = APIRouter(prefix="/api/v1")
@@ -44,6 +46,7 @@ for r in (
     occurrence_router,
     booking_router,
     occurrence_bookings_router,
+    order_router,
     payment_router,
     auth_router,
     search_router,

@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+
 from app.core.access_tokens import generate_resource_access_token
 from app.core.booking_holds import get_booking_reserved_until
-from app.core.datetime_utils import utc_now
 from app.core.exceptions import NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
 from app.models import (
@@ -20,7 +21,14 @@ from app.modules.booking.persistence import (
     ensure_no_active_booking_for_guest,
     persist_bookings,
 )
+from app.modules.catalog.service import availability as service_availability
 from app.modules.catalog.service import check_course_availability_for_update
+
+
+def utc_now() -> datetime:
+    """Return current UTC time via the shared datetime helper."""
+    # WHY: legacy integration tests patch the catalog availability clock.
+    return service_availability.utc_now()
 
 
 def _calculate_course_order_total_cents(
@@ -143,4 +151,38 @@ async def create_course_booking(
         order=order,
         bookings=bookings,
         availability=availability,
+    )
+
+
+async def get_my_orders(
+    uow: UnitOfWork,
+    *,
+    user_id: int,
+    user_email: str,
+    skip: int = 0,
+    limit: int = 20,
+) -> list[Order]:
+    """List orders linked to the current account or matching guest email."""
+    return await uow.orders.list_for_user(
+        user_id=user_id,
+        user_email=user_email,
+        skip=skip,
+        limit=limit,
+    )
+
+
+async def get_owner_orders(
+    uow: UnitOfWork,
+    *,
+    owner_id: int,
+    studio_id: int | None = None,
+    skip: int = 0,
+    limit: int = 20,
+) -> list[Order]:
+    """List orders for studios owned by the current user."""
+    return await uow.orders.list_for_studio_owner(
+        owner_id=owner_id,
+        studio_id=studio_id,
+        skip=skip,
+        limit=limit,
     )

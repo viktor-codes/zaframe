@@ -56,7 +56,10 @@ async def seed_e2e_bookable_occurrence() -> dict[str, int | str]:
         if studio is None:
             studio_schema = StudioCreate(
                 name=E2E_STUDIO_NAME,
+                slug="e2e-yoga",
                 description="Playwright guest checkout E2E",
+                logo_url=None,
+                cover_url=None,
                 email="e2e-yoga@example.com",
                 phone=None,
                 address="1 E2E Street",
@@ -67,7 +70,6 @@ async def seed_e2e_bookable_occurrence() -> dict[str, int | str]:
                 timezone="Europe/Dublin",
             )
             studio = await create_studio(uow, studio_schema)
-            studio.slug = "e2e-yoga"
             await uow.session.flush()
 
         tz_name = "Europe/Dublin"
@@ -81,6 +83,7 @@ async def seed_e2e_bookable_occurrence() -> dict[str, int | str]:
             description="Automated E2E test session",
             max_capacity=10,
             price_cents=2500,
+            course_price_cents=None,
             studio_id=studio.id,
             service_id=None,
         )

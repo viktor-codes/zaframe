@@ -2,16 +2,49 @@
 Pydantic schemas для Studio модели.
 """
 
+import re
+
 from pydantic import AwareDatetime, BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from app.core.datetime_utils import validate_iana_timezone
+
+SLUG_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+
+
+def validate_studio_slug(value: str | None) -> str | None:
+    """Normalize and validate a URL-safe studio slug."""
+    if value is None:
+        return None
+    normalized = value.strip().lower()
+    if not SLUG_PATTERN.fullmatch(normalized):
+        raise ValueError("Slug must use lowercase letters, numbers, and single hyphens")
+    return normalized
 
 
 class StudioBase(BaseModel):
     """Базовые поля студии."""
 
     name: str = Field(..., min_length=1, max_length=200, description="Название студии")
+    slug: str | None = Field(
+        None,
+        min_length=1,
+        max_length=255,
+        description="URL-safe public studio slug",
+        examples=["yoga-hub-dublin"],
+    )
     description: str | None = Field(None, description="Описание студии")
+    logo_url: str | None = Field(
+        None,
+        max_length=2048,
+        description="Public logo image URL",
+        examples=["https://cdn.example.com/studios/yoga-hub/logo.png"],
+    )
+    cover_url: str | None = Field(
+        None,
+        max_length=2048,
+        description="Public cover image URL",
+        examples=["https://cdn.example.com/studios/yoga-hub/cover.jpg"],
+    )
     email: EmailStr | None = Field(None, description="Email студии")
     phone: str | None = Field(None, max_length=20, description="Телефон студии")
     address: str | None = Field(None, max_length=500, description="Адрес студии")
@@ -22,6 +55,11 @@ class StudioBase(BaseModel):
         default_factory=list,
         description="Список удобств/опций студии (например, душ, парковка)",
     )
+
+    @field_validator("slug")
+    @classmethod
+    def validate_slug(cls, value: str | None) -> str | None:
+        return validate_studio_slug(value)
 
 
 class StudioCreate(StudioBase):
@@ -46,7 +84,10 @@ class StudioUpdate(BaseModel):
     """Схема для обновления студии (все поля опциональные)."""
 
     name: str | None = Field(None, min_length=1, max_length=200)
+    slug: str | None = Field(None, min_length=1, max_length=255)
     description: str | None = None
+    logo_url: str | None = Field(None, max_length=2048)
+    cover_url: str | None = Field(None, max_length=2048)
     email: EmailStr | None = None
     phone: str | None = Field(None, max_length=20)
     address: str | None = Field(None, max_length=500)
@@ -61,6 +102,11 @@ class StudioUpdate(BaseModel):
         max_length=64,
         description="IANA timezone (immutable after first occurrence is created)",
     )
+
+    @field_validator("slug")
+    @classmethod
+    def validate_slug(cls, value: str | None) -> str | None:
+        return validate_studio_slug(value)
 
     @field_validator("timezone")
     @classmethod

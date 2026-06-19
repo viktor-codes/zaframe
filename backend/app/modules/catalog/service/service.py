@@ -27,6 +27,23 @@ async def get_service_or_raise(uow: UnitOfWork, service_id: int) -> Service:
     return service
 
 
+async def get_services_for_studio(
+    uow: UnitOfWork,
+    *,
+    studio_id: int,
+    skip: int = 0,
+    limit: int = 20,
+    is_active: bool | None = None,
+) -> list[Service]:
+    """List services for a studio dashboard view."""
+    return await uow.services.list_by_studio(
+        studio_id,
+        skip=skip,
+        limit=limit,
+        is_active=is_active,
+    )
+
+
 async def update_service(
     uow: UnitOfWork,
     service: Service,
