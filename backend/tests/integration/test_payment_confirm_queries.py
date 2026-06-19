@@ -108,7 +108,7 @@ async def _create_course_with_occurrence_count(
         )
         assert r_occ.status_code == 201
 
-    with patch("app.modules.catalog.service.availability.utc_now", return_value=FROZEN_NOW):
+    with patch("app.core.datetime_utils.utc_now", return_value=FROZEN_NOW):
         r_order = await client.post(
             "/api/v1/bookings",
             json={

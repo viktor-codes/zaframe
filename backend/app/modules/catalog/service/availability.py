@@ -27,11 +27,6 @@ from app.modules.catalog.service.dto import (
 )
 
 
-def utc_now() -> datetime:
-    """Return current UTC time via the shared datetime helper."""
-    return datetime_utils.utc_now()
-
-
 async def check_course_availability(
     uow: UnitOfWork,
     *,
@@ -45,7 +40,7 @@ async def check_course_availability(
     if service.type != ServiceType.COURSE:
         raise ValidationError("Service is not a course")
 
-    now_utc = now or utc_now()
+    now_utc = now or datetime_utils.utc_now()
     stats = await get_course_occurrences_with_capacity(
         uow,
         service=service,
@@ -71,7 +66,7 @@ async def check_course_availability_for_update(
     if service.type != ServiceType.COURSE:
         raise ValidationError("Service is not a course")
 
-    now_utc = now or utc_now()
+    now_utc = now or datetime_utils.utc_now()
     stats = await get_course_occurrences_with_capacity_for_update(
         uow,
         service=service,
@@ -97,7 +92,7 @@ async def get_service_availability(
     if service.type != ServiceType.COURSE:
         raise ValidationError("Service is not a course")
 
-    now_utc = utc_now()
+    now_utc = datetime_utils.utc_now()
     availability = await check_course_availability(
         uow,
         service_id=service_id,

@@ -94,7 +94,7 @@ async def _create_pending_course_order(
     *,
     service_id: int,
 ) -> int:
-    with patch("app.modules.catalog.service.availability.utc_now", return_value=FROZEN_NOW):
+    with patch("app.core.datetime_utils.utc_now", return_value=FROZEN_NOW):
         r = await client.post(
             "/api/v1/bookings",
             json={
