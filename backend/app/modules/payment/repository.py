@@ -3,16 +3,19 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any, cast
 
-from sqlalchemy import or_, select
+from sqlalchemy import or_, select, update
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from sqlalchemy.sql.elements import ColumnElement
 
 from app.core.repository import WriteRepositoryMixin
 from app.models.booking import Booking
 from app.models.occurrence import Occurrence
 from app.models.order import Order
-from app.models.payment import Payment, Refund
+from app.models.payment import Payment, PaymentStatus, Refund
 from app.models.processed_webhook_event import ProcessedWebhookEvent
 
 
@@ -53,6 +56,40 @@ class PaymentRepository(WriteRepositoryMixin):
             select(Payment).where(Payment.stripe_checkout_session_id == checkout_session_id)
         )
         return result.scalar_one_or_none()
+
+    async def mark_booking_manual_review(
+        self,
+        *,
+        booking_id: int,
+        payment_intent_id: str | None = None,
+    ) -> int:
+        """Mark booking payment ledger rows that need owner/operator review."""
+        conditions: list[ColumnElement[bool]] = [Payment.booking_id == booking_id]
+        if payment_intent_id is not None:
+            conditions.append(Payment.stripe_payment_intent_id == payment_intent_id)
+        result = await self._session.execute(
+            update(Payment).where(*conditions).values(status=PaymentStatus.MANUAL_REVIEW)
+        )
+        await self._session.flush()
+        cursor = cast(CursorResult[Any], result)
+        return cursor.rowcount or 0
+
+    async def mark_order_manual_review(
+        self,
+        *,
+        order_id: int,
+        payment_intent_id: str | None = None,
+    ) -> int:
+        """Mark order payment ledger rows that need owner/operator review."""
+        conditions: list[ColumnElement[bool]] = [Payment.order_id == order_id]
+        if payment_intent_id is not None:
+            conditions.append(Payment.stripe_payment_intent_id == payment_intent_id)
+        result = await self._session.execute(
+            update(Payment).where(*conditions).values(status=PaymentStatus.MANUAL_REVIEW)
+        )
+        await self._session.flush()
+        cursor = cast(CursorResult[Any], result)
+        return cursor.rowcount or 0
 
     async def list_for_studio(
         self,

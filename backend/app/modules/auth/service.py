@@ -23,7 +23,7 @@ from app.integrations.email import send_otp_email
 from app.models.otp_code import OTPCode
 from app.models.refresh_token import RefreshToken
 from app.models.user import User
-from app.modules.booking import attach_guest_bookings
+from app.modules.booking import attach_guest_resources
 from app.modules.identity import get_or_create_user, get_user_by_id
 
 _INVALID_OTP_MESSAGE = "Verification code is invalid or has expired"
@@ -116,7 +116,7 @@ async def _complete_otp_login(
     user.last_login_at = now_utc
     user = await uow.users.save(user)
 
-    await attach_guest_bookings(uow, user, booking_id=booking_id)
+    await attach_guest_resources(uow, user, booking_id=booking_id)
 
     access_token = create_access_token(user.id, user.email)
     refresh_token = create_refresh_token(user.id)

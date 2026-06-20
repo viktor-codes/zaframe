@@ -28,7 +28,7 @@ async def create_booking(uow: UnitOfWork, schema: BookingCreate) -> Booking:
     - occurrence is in the future
     - seats are available
 
-    user_id is set after OTP verify (attach_guest_bookings).
+    user_id is set after OTP verify (attach_guest_resources).
     """
     occurrence = await uow.occurrences.get_by_id_for_update(schema.occurrence_id)
     if occurrence is None:

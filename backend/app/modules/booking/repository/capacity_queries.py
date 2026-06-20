@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, cast
 
-from sqlalchemy import case, func, select, update
+from sqlalchemy import case, func, or_, select, update
 from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import ColumnElement
@@ -54,8 +54,10 @@ class BookingCapacityQueriesMixin(BookingGetMixin):
         result = await self._session.execute(
             select(Booking).where(
                 Booking.status == BookingStatus.PENDING,
-                Booking.reserved_until.is_not(None),
-                Booking.reserved_until <= now_utc,
+                or_(
+                    Booking.reserved_until.is_(None),
+                    Booking.reserved_until <= now_utc,
+                ),
             )
         )
         return list(result.scalars().all())

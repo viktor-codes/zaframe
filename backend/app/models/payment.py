@@ -24,6 +24,7 @@ class PaymentStatus:
     REFUNDED = "refunded"
     PARTIALLY_REFUNDED = "partially_refunded"
     FAILED = "failed"
+    MANUAL_REVIEW = "manual_review"
 
 
 class PaymentProvider:

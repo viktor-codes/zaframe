@@ -148,19 +148,31 @@ async def get_my_bookings(
     )
 
 
-async def attach_guest_bookings(
+async def attach_guest_resources(
     uow: UnitOfWork,
     user: User,
     *,
     booking_id: int | None = None,
 ) -> int:
     """
-    Link guest bookings to the authenticated user after OTP verify.
+    Link guest bookings and related guest orders to the authenticated user after OTP verify.
 
-    Matches bookings by guest_email == user.email where user_id is still NULL.
+    Matches guest_email == user.email where user_id is still NULL.
     """
-    return await uow.bookings.attach_guest_bookings_by_email(
+    attached_bookings = await uow.bookings.attach_guest_bookings_by_email(
         user_id=user.id,
         guest_email=user.email,
         booking_id=booking_id,
     )
+    await uow.orders.attach_guest_orders_by_email(user_id=user.id, guest_email=user.email)
+    return attached_bookings
+
+
+async def attach_guest_bookings(
+    uow: UnitOfWork,
+    user: User,
+    *,
+    booking_id: int | None = None,
+) -> int:
+    """Compatibility wrapper for callers that still use the old booking-only name."""
+    return await attach_guest_resources(uow, user, booking_id=booking_id)

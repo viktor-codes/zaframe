@@ -1,5 +1,5 @@
 """
-Expire stale pending bookings and complete past confirmed ones.
+Expire stale pending bookings/orders and complete past confirmed bookings.
 
 Production: Render cron job `zaframe-booking-lifecycle` in root render.yaml (every 5 min UTC).
 Manual / other hosts:

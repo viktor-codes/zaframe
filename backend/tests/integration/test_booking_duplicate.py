@@ -157,3 +157,50 @@ async def test_create_booking_race_one_success_one_conflict(client: AsyncClient)
     assert len(conflicts) == 1
     assert conflicts[0].status_code == 409
     assert conflicts[0].detail == DUPLICATE_BOOKING_MESSAGE
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_concurrent_last_seat_booking_one_success_one_capacity_error(
+    client: AsyncClient,
+) -> None:
+    """Parallel last-seat attempts by different guests must not overbook the occurrence."""
+    occurrence_id = await _create_bookable_slot(
+        client,
+        owner_email="last-seat-owner@example.com",
+        max_capacity=1,
+    )
+    schemas = [
+        BookingCreate(
+            occurrence_id=occurrence_id,
+            guest_name="Last Seat Guest A",
+            guest_email="last-seat-a@example.com",
+            guest_phone="+1111111111",
+        ),
+        BookingCreate(
+            occurrence_id=occurrence_id,
+            guest_name="Last Seat Guest B",
+            guest_email="last-seat-b@example.com",
+            guest_phone="+2222222222",
+        ),
+    ]
+
+    async def attempt(schema: BookingCreate) -> Booking | AppError:
+        try:
+            async with async_session_maker() as session:
+                async with uow_scope(session=session) as uow:
+                    return await create_booking(uow, schema)
+        except AppError as exc:
+            return exc
+
+    results = await asyncio.gather(*(attempt(schema) for schema in schemas))
+
+    successes = [r for r in results if isinstance(r, Booking)]
+    capacity_errors = [
+        r
+        for r in results
+        if isinstance(r, ValidationError) and r.detail == "No seats available"
+    ]
+    assert len(successes) == 1
+    assert len(capacity_errors) == 1
+    assert capacity_errors[0].status_code == 400

@@ -2,13 +2,16 @@
 Репозиторий для сущности Order.
 """
 
-from sqlalchemy import func, or_, select
+from typing import Any, cast
+
+from sqlalchemy import func, or_, select, update
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.repository import WriteRepositoryMixin
-from app.models.booking import Booking
-from app.models.order import Order
+from app.models.booking import Booking, BookingStatus
+from app.models.order import Order, OrderStatus
 from app.models.studio import Studio
 from app.models.studio_member import StudioMember
 
@@ -99,3 +102,58 @@ class OrderRepository(WriteRepositoryMixin):
         query = query.order_by(Order.created_at.desc()).offset(skip).limit(limit)
         result = await self._session.execute(query)
         return list(result.scalars().all())
+
+    async def expire_pending_without_active_bookings(
+        self,
+        *,
+        order_ids: list[int],
+    ) -> int:
+        """Mark pending orders expired once none of their bookings can still become paid."""
+        if not order_ids:
+            return 0
+
+        active_booking_exists = (
+            select(Booking.id)
+            .where(
+                Booking.order_id == Order.id,
+                Booking.status.in_(
+                    (
+                        BookingStatus.PENDING,
+                        BookingStatus.CONFIRMED,
+                    )
+                ),
+            )
+            .exists()
+        )
+        result = await self._session.execute(
+            update(Order)
+            .where(
+                Order.id.in_(order_ids),
+                Order.status == OrderStatus.PENDING,
+                ~active_booking_exists,
+            )
+            .values(status=OrderStatus.EXPIRED, access_token=None)
+        )
+        await self._session.flush()
+        cursor = cast(CursorResult[Any], result)
+        return cursor.rowcount or 0
+
+    async def attach_guest_orders_by_email(
+        self,
+        *,
+        user_id: int,
+        guest_email: str,
+    ) -> int:
+        """Attach guest orders to a verified account by normalized guest email."""
+        normalized_email = guest_email.strip().lower()
+        result = await self._session.execute(
+            update(Order)
+            .where(
+                Order.user_id.is_(None),
+                func.lower(Order.guest_email) == normalized_email,
+            )
+            .values(user_id=user_id)
+        )
+        await self._session.flush()
+        cursor = cast(CursorResult[Any], result)
+        return cursor.rowcount or 0

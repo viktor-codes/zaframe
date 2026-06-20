@@ -30,7 +30,9 @@ class OrderStatus:
     PENDING = "pending"
     PAID = "paid"
     CANCELLED = "cancelled"
+    EXPIRED = "expired"
     REFUNDED = "refunded"
+    MANUAL_REVIEW = "manual_review"
 
 
 class Order(TimestampMixin, Base):

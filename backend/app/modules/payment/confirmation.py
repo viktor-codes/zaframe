@@ -16,6 +16,12 @@ from app.modules.payment.capacity import (
 )
 
 PAYMENT_STATUS_SUCCEEDED = "succeeded"
+PAYMENT_CONFIRMABLE_BOOKING_STATUSES = frozenset(
+    {
+        BookingStatus.PENDING,
+        BookingStatus.EXPIRED,
+    }
+)
 
 
 async def confirm_booking_after_payment(
@@ -40,6 +46,16 @@ async def confirm_booking_after_payment(
         booking.status == BookingStatus.CANCELLED
         and booking.payment_status == PAYMENT_STATUS_OVERBOOKED_MANUAL_REVIEW
     ):
+        await uow.payments.mark_booking_manual_review(
+            booking_id=booking.id,
+            payment_intent_id=payment_intent_id,
+        )
+        return True
+    if booking.status not in PAYMENT_CONFIRMABLE_BOOKING_STATUSES:
+        await uow.payments.mark_booking_manual_review(
+            booking_id=booking.id,
+            payment_intent_id=payment_intent_id,
+        )
         return True
 
     now_utc = utc_now()
@@ -84,12 +100,24 @@ async def confirm_order_after_payment(
         return False
     if order.status == OrderStatus.PAID:
         return True
+    if order.status in {OrderStatus.CANCELLED, OrderStatus.REFUNDED}:
+        order.status = OrderStatus.MANUAL_REVIEW
+        await uow.payments.mark_order_manual_review(
+            order_id=order.id,
+            payment_intent_id=payment_intent_id,
+        )
+        await uow.orders.flush()
+        return True
 
     now_utc = utc_now()
     bookings = await uow.bookings.list_(order_id=order_id, limit=1000)
 
     occurrence_ids_to_lock = sorted(
-        {b.occurrence_id for b in bookings if b.status == BookingStatus.PENDING}
+        {
+            b.occurrence_id
+            for b in bookings
+            if b.status in PAYMENT_CONFIRMABLE_BOOKING_STATUSES
+        }
     )
     occurrences_by_id: dict[int, Occurrence] = {}
     # WHY: global lock order to prevent deadlocks (matches occurrence_repo FOR UPDATE order)
@@ -107,19 +135,32 @@ async def confirm_order_after_payment(
         for occurrence_id in occurrence_ids_to_lock
     }
 
-    order.status = OrderStatus.PAID
     order.access_token = None
+    confirmed_count = 0
+    manual_review_count = 0
     for booking in bookings:
         if booking.status == BookingStatus.CONFIRMED:
+            confirmed_count += 1
             continue
         if (
             booking.status == BookingStatus.CANCELLED
             and booking.payment_status == PAYMENT_STATUS_OVERBOOKED_MANUAL_REVIEW
         ):
+            manual_review_count += 1
+            continue
+        if booking.status not in PAYMENT_CONFIRMABLE_BOOKING_STATUSES:
+            manual_review_count += 1
             continue
 
         occurrence = occurrences_by_id.get(booking.occurrence_id)
         if occurrence is None:
+            booking.status = BookingStatus.CANCELLED
+            booking.payment_status = PAYMENT_STATUS_OVERBOOKED_MANUAL_REVIEW
+            booking.reserved_until = None
+            booking.access_token = None
+            if payment_intent_id:
+                booking.payment_intent_id = payment_intent_id
+            manual_review_count += 1
             continue
 
         if would_exceed_occurrence_capacity_in_memory(
@@ -129,6 +170,7 @@ async def confirm_order_after_payment(
             now=now_utc,
         ):
             await handle_overbooked_payment(uow, booking, payment_intent_id=payment_intent_id)
+            manual_review_count += 1
             continue
 
         booking.status = BookingStatus.CONFIRMED
@@ -143,6 +185,15 @@ async def confirm_order_after_payment(
             capacity_state=capacity_state,
             now=now_utc,
         )
+        confirmed_count += 1
 
+    if manual_review_count > 0 or confirmed_count == 0:
+        order.status = OrderStatus.MANUAL_REVIEW
+        await uow.payments.mark_order_manual_review(
+            order_id=order.id,
+            payment_intent_id=payment_intent_id,
+        )
+    else:
+        order.status = OrderStatus.PAID
     await uow.orders.flush()
     return True

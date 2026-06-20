@@ -20,6 +20,7 @@ __all__ = [
     "BookingSelfResponse",
     "DUPLICATE_BOOKING_MESSAGE",
     "attach_guest_bookings",
+    "attach_guest_resources",
     "can_access_booking",
     "cancel_booking",
     "check_in_booking",
@@ -40,6 +41,7 @@ __all__ = [
 _SERVICE_FUNCTION_MODULES: dict[str, str] = {
     "DUPLICATE_BOOKING_MESSAGE": "app.modules.booking.persistence",
     "attach_guest_bookings": "app.modules.booking.queries",
+    "attach_guest_resources": "app.modules.booking.queries",
     "cancel_booking": "app.modules.booking.service",
     "check_in_booking": "app.modules.booking.service",
     "complete_past_confirmed": "app.modules.booking.lifecycle",
@@ -61,6 +63,7 @@ if TYPE_CHECKING:
     from app.modules.booking.persistence import DUPLICATE_BOOKING_MESSAGE
     from app.modules.booking.queries import (
         attach_guest_bookings,
+        attach_guest_resources,
         get_booking_for_user_or_raise,
         get_bookings,
         get_my_bookings,

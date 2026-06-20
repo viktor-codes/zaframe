@@ -29,6 +29,8 @@ def mock_uow():
     uow = MagicMock()
     uow.bookings.flush = AsyncMock()
     uow.orders.flush = AsyncMock()
+    uow.payments.mark_booking_manual_review = AsyncMock(return_value=1)
+    uow.payments.mark_order_manual_review = AsyncMock(return_value=1)
     return uow
 
 
@@ -87,7 +89,7 @@ def _mock_order_confirm_batch_capacity(
 
 @pytest.mark.asyncio
 async def test_create_checkout_session_booking_not_found(mock_uow):
-    mock_uow.bookings.get_by_id_with_occurrence = AsyncMock(return_value=None)
+    mock_uow.bookings.get_by_id_with_occurrence_and_studio = AsyncMock(return_value=None)
     with pytest.raises(NotFoundError, match="Booking not found"):
         await create_checkout_session(
             mock_uow, 1, success_url="http://localhost:3000/s", cancel_url="http://localhost:3000/c"
@@ -99,7 +101,7 @@ async def test_create_checkout_session_foreign_user_gets_not_found(mock_uow):
     booking = MagicMock(spec=Booking)
     booking.user_id = 99
     booking.guest_email = "other@example.com"
-    mock_uow.bookings.get_by_id_with_occurrence = AsyncMock(return_value=booking)
+    mock_uow.bookings.get_by_id_with_occurrence_and_studio = AsyncMock(return_value=booking)
     user = MagicMock(spec=User)
     user.id = 1
     user.email = "me@example.com"
@@ -128,7 +130,7 @@ async def test_create_checkout_session_guest_email_owner_allowed(mock_uow):
     booking.user_id = None
     booking.guest_email = "me@example.com"
     booking.access_token = "owner-token-not-needed"
-    mock_uow.bookings.get_by_id_with_occurrence = AsyncMock(return_value=booking)
+    mock_uow.bookings.get_by_id_with_occurrence_and_studio = AsyncMock(return_value=booking)
     user = MagicMock(spec=User)
     user.id = 1
     user.email = "me@example.com"
@@ -163,7 +165,7 @@ async def test_create_checkout_session_expired_hold(mock_uow):
     booking.checkout_session_id = None
     booking.occurrence = MagicMock(spec=Occurrence)
     booking.access_token = _GUEST_CHECKOUT_TOKEN
-    mock_uow.bookings.get_by_id_with_occurrence = AsyncMock(return_value=booking)
+    mock_uow.bookings.get_by_id_with_occurrence_and_studio = AsyncMock(return_value=booking)
     with pytest.raises(ValidationError, match="hold has expired"):
         await create_checkout_session(mock_uow, 1, **_checkout_kwargs())
 
@@ -177,7 +179,7 @@ async def test_create_checkout_session_wrong_status(mock_uow):
     booking.occurrence.price_cents = 1000
     booking.guest_email = "g@x.com"
     booking.access_token = _GUEST_CHECKOUT_TOKEN
-    mock_uow.bookings.get_by_id_with_occurrence = AsyncMock(return_value=booking)
+    mock_uow.bookings.get_by_id_with_occurrence_and_studio = AsyncMock(return_value=booking)
     with pytest.raises(ValidationError, match="already paid or cancelled"):
         await create_checkout_session(mock_uow, 1, **_checkout_kwargs())
 
@@ -190,7 +192,7 @@ async def test_create_checkout_session_already_has_session_id(mock_uow):
     booking.checkout_session_id = "cs_old"
     booking.occurrence = MagicMock(spec=Occurrence)
     booking.access_token = _GUEST_CHECKOUT_TOKEN
-    mock_uow.bookings.get_by_id_with_occurrence = AsyncMock(return_value=booking)
+    mock_uow.bookings.get_by_id_with_occurrence_and_studio = AsyncMock(return_value=booking)
     with pytest.raises(ValidationError, match="Checkout Session already created"):
         await create_checkout_session(mock_uow, 1, **_checkout_kwargs())
 
@@ -209,7 +211,7 @@ async def test_create_checkout_session_slot_price_zero(mock_uow):
     booking.occurrence = occurrence
     booking.guest_email = None
     booking.access_token = _GUEST_CHECKOUT_TOKEN
-    mock_uow.bookings.get_by_id_with_occurrence = AsyncMock(return_value=booking)
+    mock_uow.bookings.get_by_id_with_occurrence_and_studio = AsyncMock(return_value=booking)
     with pytest.raises(ValidationError, match="no price for checkout"):
         await create_checkout_session(mock_uow, 1, **_checkout_kwargs())
 
@@ -228,7 +230,7 @@ async def test_create_checkout_session_no_stripe_key(mock_uow):
     booking.occurrence = occurrence
     booking.guest_email = "g@x.com"
     booking.access_token = _GUEST_CHECKOUT_TOKEN
-    mock_uow.bookings.get_by_id_with_occurrence = AsyncMock(return_value=booking)
+    mock_uow.bookings.get_by_id_with_occurrence_and_studio = AsyncMock(return_value=booking)
     with patch("app.modules.payment.stripe_client.settings") as mock_settings:
         mock_settings.STRIPE_SECRET_KEY = None
         with pytest.raises(AppError) as exc_info:
@@ -251,7 +253,7 @@ async def test_create_checkout_session_success(mock_uow):
     booking.occurrence = occurrence
     booking.guest_email = "g@x.com"
     booking.access_token = _GUEST_CHECKOUT_TOKEN
-    mock_uow.bookings.get_by_id_with_occurrence = AsyncMock(return_value=booking)
+    mock_uow.bookings.get_by_id_with_occurrence_and_studio = AsyncMock(return_value=booking)
     mock_session = MagicMock()
     mock_session.id = "cs_123"
     mock_session.url = "https://checkout.stripe.com/pay"
@@ -281,7 +283,7 @@ async def test_create_checkout_session_success(mock_uow):
 
 @pytest.mark.asyncio
 async def test_create_order_checkout_session_order_not_found(mock_uow):
-    mock_uow.orders.get_by_id_with_service = AsyncMock(return_value=None)
+    mock_uow.orders.get_by_id_with_service_and_studio = AsyncMock(return_value=None)
     with pytest.raises(NotFoundError, match="Order not found"):
         await create_order_checkout_session(
             mock_uow, 1, success_url="http://localhost:3000/s", cancel_url="http://localhost:3000/c"
@@ -293,7 +295,7 @@ async def test_create_order_checkout_session_foreign_user_gets_not_found(mock_uo
     order = MagicMock(spec=Order)
     order.user_id = 99
     order.guest_email = "other@example.com"
-    mock_uow.orders.get_by_id_with_service = AsyncMock(return_value=order)
+    mock_uow.orders.get_by_id_with_service_and_studio = AsyncMock(return_value=order)
     user = MagicMock(spec=User)
     user.id = 1
     user.email = "me@example.com"
@@ -320,7 +322,7 @@ async def test_create_order_checkout_session_expired_hold(mock_uow):
     expired_booking.status = BookingStatus.PENDING
     expired_booking.reserved_until = datetime.now(UTC) - timedelta(minutes=1)
     order.access_token = _ORDER_CHECKOUT_TOKEN
-    mock_uow.orders.get_by_id_with_service = AsyncMock(return_value=order)
+    mock_uow.orders.get_by_id_with_service_and_studio = AsyncMock(return_value=order)
     mock_uow.bookings.list_ = AsyncMock(return_value=[expired_booking])
     with pytest.raises(ValidationError, match="hold has expired"):
         await create_order_checkout_session(mock_uow, 1, **_order_checkout_kwargs())
@@ -336,7 +338,7 @@ async def test_create_order_checkout_session_wrong_status(mock_uow):
     order.id = 1
     order.guest_email = None
     order.access_token = _ORDER_CHECKOUT_TOKEN
-    mock_uow.orders.get_by_id_with_service = AsyncMock(return_value=order)
+    mock_uow.orders.get_by_id_with_service_and_studio = AsyncMock(return_value=order)
     with pytest.raises(ValidationError, match="already paid or cancelled"):
         await create_order_checkout_session(mock_uow, 1, **_order_checkout_kwargs())
 
@@ -349,7 +351,7 @@ async def test_create_order_checkout_session_zero_amount(mock_uow):
     order.service = None
     order.id = 1
     order.access_token = _ORDER_CHECKOUT_TOKEN
-    mock_uow.orders.get_by_id_with_service = AsyncMock(return_value=order)
+    mock_uow.orders.get_by_id_with_service_and_studio = AsyncMock(return_value=order)
     mock_uow.bookings.list_ = AsyncMock(return_value=[])
     with pytest.raises(ValidationError, match="no payable amount"):
         await create_order_checkout_session(mock_uow, 1, **_order_checkout_kwargs())
@@ -365,7 +367,11 @@ async def test_create_order_checkout_session_success(mock_uow):
     order.id = 1
     order.guest_email = "o@x.com"
     order.access_token = _ORDER_CHECKOUT_TOKEN
-    mock_uow.orders.get_by_id_with_service = AsyncMock(return_value=order)
+    order.application_fee_cents = None
+    order.studio = MagicMock()
+    order.studio.stripe_account_id = None
+    order.studio.stripe_charges_enabled = False
+    mock_uow.orders.get_by_id_with_service_and_studio = AsyncMock(return_value=order)
     active_booking = MagicMock(spec=Booking)
     active_booking.status = BookingStatus.PENDING
     active_booking.reserved_until = _active_hold_until()
@@ -444,6 +450,10 @@ async def test_confirm_booking_after_payment_overbooked_manual_review(mock_uow):
     assert booking.status == BookingStatus.CANCELLED
     assert booking.payment_status == PAYMENT_STATUS_OVERBOOKED_MANUAL_REVIEW
     assert booking.payment_intent_id == "pi_late"
+    mock_uow.payments.mark_booking_manual_review.assert_awaited_once_with(
+        booking_id=1,
+        payment_intent_id="pi_late",
+    )
     mock_uow.bookings.flush.assert_awaited_once()
 
 
@@ -483,6 +493,54 @@ async def test_confirm_order_after_payment_already_paid(mock_uow):
     assert ok is True
     mock_uow.bookings.list_.assert_not_called()
     mock_uow.orders.flush.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_confirm_order_after_payment_expired_order_can_confirm_if_capacity_free(mock_uow):
+    """Late paid webhook after lifecycle expiry rechecks capacity before reviving seats."""
+    order = MagicMock(spec=Order)
+    order.status = OrderStatus.EXPIRED
+    order.id = 11
+    order.access_token = "order-token"
+    mock_uow.orders.get_by_id = AsyncMock(return_value=order)
+    booking = MagicMock(spec=Booking)
+    booking.id = 1
+    booking.occurrence_id = 1
+    booking.status = BookingStatus.EXPIRED
+    booking.reserved_until = None
+    mock_uow.bookings.list_ = AsyncMock(return_value=[booking])
+    occ = MagicMock(spec=Occurrence)
+    occ.id = 1
+    occ.max_capacity = 1
+    _mock_order_confirm_batch_capacity(mock_uow, occurrences=[occ], counts_map={1: (0, 0)})
+
+    ok = await confirm_order_after_payment(mock_uow, 11, payment_intent_id="pi_late_free")
+
+    assert ok is True
+    assert order.status == OrderStatus.PAID
+    assert order.access_token is None
+    assert booking.status == BookingStatus.CONFIRMED
+    assert booking.payment_status == "succeeded"
+    assert booking.payment_intent_id == "pi_late_free"
+
+
+@pytest.mark.asyncio
+async def test_confirm_order_after_payment_cancelled_order_does_not_revive_bookings(mock_uow):
+    order = MagicMock(spec=Order)
+    order.status = OrderStatus.CANCELLED
+    order.id = 12
+    mock_uow.orders.get_by_id = AsyncMock(return_value=order)
+
+    ok = await confirm_order_after_payment(mock_uow, 12, payment_intent_id="pi_cancelled")
+
+    assert ok is True
+    assert order.status == OrderStatus.MANUAL_REVIEW
+    mock_uow.payments.mark_order_manual_review.assert_awaited_once_with(
+        order_id=order.id,
+        payment_intent_id="pi_cancelled",
+    )
+    mock_uow.bookings.list_.assert_not_called()
+    mock_uow.orders.flush.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -576,10 +634,14 @@ async def test_confirm_order_after_payment_overbooked_manual_review(mock_uow):
     )
     ok = await confirm_order_after_payment(mock_uow, 30, payment_intent_id="pi_over")
     assert ok is True
-    assert order.status == OrderStatus.PAID
+    assert order.status == OrderStatus.MANUAL_REVIEW
     assert booking.status == BookingStatus.CANCELLED
     assert booking.payment_status == PAYMENT_STATUS_OVERBOOKED_MANUAL_REVIEW
     assert booking.payment_intent_id == "pi_over"
+    mock_uow.payments.mark_order_manual_review.assert_awaited_once_with(
+        order_id=30,
+        payment_intent_id="pi_over",
+    )
 
 
 @pytest.mark.asyncio
@@ -614,6 +676,11 @@ async def test_confirm_order_after_payment_two_bookings_same_occurrence_respects
     )
     ok = await confirm_order_after_payment(mock_uow, 40, payment_intent_id="pi_same_occ")
     assert ok is True
+    assert order.status == OrderStatus.MANUAL_REVIEW
     assert b1.status == BookingStatus.CONFIRMED
     assert b2.status == BookingStatus.CANCELLED
     assert b2.payment_status == PAYMENT_STATUS_OVERBOOKED_MANUAL_REVIEW
+    mock_uow.payments.mark_order_manual_review.assert_awaited_once_with(
+        order_id=40,
+        payment_intent_id="pi_same_occ",
+    )

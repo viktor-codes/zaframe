@@ -272,11 +272,13 @@ async def test_orders_my_and_owner_orders_are_scoped(client: AsyncClient):
     assert booking_response.status_code == 201, booking_response.text
     created_order = booking_response.json()["order"]
 
-    guest_headers = await _auth_headers(client, email=guest_email)
+    guest_auth = await authenticate_via_otp(client, email=guest_email, name="Order Guest")
+    guest_headers = {"Authorization": f"Bearer {guest_auth['access_token']}"}
     my_orders_response = await client.get("/api/v1/orders/my", headers=guest_headers)
     assert my_orders_response.status_code == 200
     my_orders = my_orders_response.json()
     assert [order["id"] for order in my_orders] == [created_order["id"]]
+    assert my_orders[0]["user_id"] == guest_auth["user"]["id"]
     assert my_orders[0]["service"]["id"] == service["id"]
     assert {booking["id"] for booking in my_orders[0]["bookings"]} == {
         booking["id"] for booking in booking_response.json()["bookings"]

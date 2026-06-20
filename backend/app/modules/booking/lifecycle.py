@@ -21,11 +21,13 @@ async def expire_stale_pending(
     """
     now_utc = now or utc_now()
     bookings = await uow.bookings.list_stale_pending(now=now_utc)
+    order_ids = sorted({booking.order_id for booking in bookings if booking.order_id is not None})
     for booking in bookings:
         booking.status = BookingStatus.EXPIRED
         booking.reserved_until = None
     if bookings:
         await uow.bookings.flush()
+        await uow.orders.expire_pending_without_active_bookings(order_ids=order_ids)
     return len(bookings)
 
 

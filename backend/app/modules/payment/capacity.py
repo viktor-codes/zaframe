@@ -91,6 +91,10 @@ async def handle_overbooked_payment(
     booking.cancelled_at = now_utc
     if payment_intent_id:
         booking.payment_intent_id = payment_intent_id
+    await uow.payments.mark_booking_manual_review(
+        booking_id=booking.id,
+        payment_intent_id=payment_intent_id,
+    )
     await uow.bookings.flush()
     logger.warning(
         "payment_confirm_overbooked_manual_review",

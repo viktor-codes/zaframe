@@ -129,7 +129,7 @@ and use `uow_scope()` — same transaction boundary as the app.
 
 | Job | Script | Schedule (prod) | Purpose |
 |-----|--------|-----------------|---------|
-| Booking lifecycle | `scripts/run_booking_lifecycle.py` | Every 5 min (UTC) | Expire stale `pending` holds; mark past `confirmed` as `completed` |
+| Booking lifecycle | `scripts/run_booking_lifecycle.py` | Every 5 min (UTC) | Expire stale `pending` holds/orders; mark past `confirmed` bookings as `completed` |
 | OTP cleanup | `scripts/pg_cron_otp_cleanup.sql` | Daily (pg_cron on DB) | Delete OTP rows older than retention window |
 
 ### Booking lifecycle (Render cron — Option A)
@@ -142,6 +142,10 @@ Production uses a **Render Cron Job** defined in root `render.yaml`:
 
 The script is **idempotent**: safe to re-run; each invocation logs
 `booking_lifecycle_complete` with `expired_count` and `completed_count`.
+When all bookings in a pending order expire, the order becomes `expired` and its checkout
+access token is cleared.
+If Stripe later reports a successful payment that cannot safely confirm seats, the order/payment
+ledger moves to `manual_review` instead of being shown as a normal paid booking.
 
 **Manual / local ops:**
 
