@@ -4,6 +4,8 @@ Booking write operations: create and cancel.
 
 from __future__ import annotations
 
+from datetime import timedelta
+
 from app.core.access_tokens import generate_resource_access_token
 from app.core.booking_holds import get_booking_reserved_until
 from app.core.datetime_utils import ensure_utc, utc_now
@@ -16,7 +18,9 @@ from app.modules.booking.persistence import (
     ensure_no_active_booking_for_guest,
     persist_booking,
 )
+from app.modules.booking.policies import is_own_booking
 from app.modules.booking.schemas import BookingCreate
+from app.modules.catalog.studio import has_studio_permission
 
 
 async def create_booking(uow: UnitOfWork, schema: BookingCreate) -> Booking:
@@ -33,7 +37,7 @@ async def create_booking(uow: UnitOfWork, schema: BookingCreate) -> Booking:
     occurrence = await uow.occurrences.get_by_id_for_update(schema.occurrence_id)
     if occurrence is None:
         raise NotFoundError("Occurrence not found")
-    if not occurrence.is_bookable():
+    if not occurrence.is_bookable() or not occurrence.service.is_bookable():
         raise ValidationError("Occurrence is not available for booking")
 
     now_utc = utc_now()
@@ -66,7 +70,7 @@ async def create_booking(uow: UnitOfWork, schema: BookingCreate) -> Booking:
     return await persist_booking(uow, booking)
 
 
-async def cancel_booking(uow: UnitOfWork, booking: Booking) -> Booking:
+async def cancel_booking(uow: UnitOfWork, booking: Booking, *, user: User | None = None) -> Booking:
     """
     Cancel a booking.
 
@@ -77,8 +81,21 @@ async def cancel_booking(uow: UnitOfWork, booking: Booking) -> Booking:
     if booking.status in (BookingStatus.EXPIRED, BookingStatus.COMPLETED, BookingStatus.NO_SHOW):
         raise ValidationError(f"Cannot cancel a {booking.status} booking")
 
+    now_utc = utc_now()
+    if user is not None and is_own_booking(booking, user):
+        occurrence_start = ensure_utc(booking.occurrence.start_time)
+        cutoff = occurrence_start - timedelta(hours=booking.occurrence.studio.cancel_before_hours)
+        can_bypass_cutoff = await has_studio_permission(
+            uow,
+            studio=booking.occurrence.studio,
+            user=user,
+            permission="manage_bookings",
+        )
+        if not can_bypass_cutoff and now_utc >= cutoff:
+            raise ForbiddenError("Cancellation cutoff has passed")
+
     booking.status = BookingStatus.CANCELLED
-    booking.cancelled_at = utc_now()
+    booking.cancelled_at = now_utc
     booking.reserved_until = None
     return await uow.bookings.save(booking)
 

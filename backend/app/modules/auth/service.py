@@ -43,6 +43,11 @@ async def request_otp(
     Does not create a User — registration happens on successful verify.
     """
     now_utc = utc_now()
+    existing_user = await uow.users.get_by_email_including_deleted(email)
+    if existing_user is not None and existing_user.deleted_at is not None:
+        # WHY: keep the public response indistinguishable, but do not email unusable codes.
+        return
+
     since = now_utc - timedelta(hours=1)
     recent_count = await uow.otp_codes.count_recent_requests(email, since)
     if recent_count >= settings.OTP_MAX_REQUESTS_PER_EMAIL_PER_HOUR:

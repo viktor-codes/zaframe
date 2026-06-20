@@ -51,8 +51,12 @@ async def update_current_user_profile(
 ) -> User:
     """Update only frontend-editable current-user profile fields."""
     update_data = schema.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(user, field, value)
+    if "name" in update_data:
+        user.name = update_data["name"]
+    if "phone" in update_data:
+        user.phone = update_data["phone"]
+    if "marketing_consent" in update_data:
+        user.marketing_consent = update_data["marketing_consent"]
     return await uow.users.save(user)
 
 

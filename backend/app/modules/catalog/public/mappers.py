@@ -41,5 +41,7 @@ def map_studio_public(dto: StudioPublicDTO) -> StudioPublicResponse:
         name=dto.name,
         slug=dto.slug,
         description=dto.description,
+        logo_url=dto.logo_url,
+        cover_url=dto.cover_url,
         services=[_map_public_service(service) for service in dto.services],
     )

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from app.core.exceptions import NotFoundError
 from app.core.uow import UnitOfWork
-from app.models import Service
+from app.models import Service, ServiceVisibility
 from app.modules.catalog.service.schemas import ServiceUpdate
 
 
@@ -59,4 +59,5 @@ async def update_service(
 async def deactivate_service(uow: UnitOfWork, service: Service) -> Service:
     """Deactivate service (soft delete to preserve slots/bookings)."""
     service.is_active = False
+    service.visibility = ServiceVisibility.ARCHIVED
     return await uow.services.save(service)

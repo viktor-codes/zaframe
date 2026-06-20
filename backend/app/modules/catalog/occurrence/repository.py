@@ -22,14 +22,20 @@ class OccurrenceRepository(WriteRepositoryMixin):
     async def get_by_id(self, occurrence_id: int) -> Occurrence | None:
         result = await self._session.execute(
             select(Occurrence)
-            .options(selectinload(Occurrence.instructor).selectinload(StudioMember.user))
+            .options(
+                selectinload(Occurrence.service),
+                selectinload(Occurrence.instructor).selectinload(StudioMember.user),
+            )
             .where(Occurrence.id == occurrence_id)
         )
         return result.scalar_one_or_none()
 
     async def get_by_id_for_update(self, occurrence_id: int) -> Occurrence | None:
         result = await self._session.execute(
-            select(Occurrence).where(Occurrence.id == occurrence_id).with_for_update()
+            select(Occurrence)
+            .options(selectinload(Occurrence.service))
+            .where(Occurrence.id == occurrence_id)
+            .with_for_update()
         )
         return result.scalar_one_or_none()
 
@@ -121,7 +127,7 @@ class OccurrenceRepository(WriteRepositoryMixin):
             select(Occurrence)
             .where(
                 Occurrence.service_id == service_id,
-                Occurrence.status == OccurrenceStatus.ACTIVE,
+                Occurrence.status == OccurrenceStatus.SCHEDULED,
             )
             .order_by(Occurrence.start_time.asc())
         )
@@ -138,7 +144,7 @@ class OccurrenceRepository(WriteRepositoryMixin):
             select(Occurrence)
             .where(
                 Occurrence.service_id == service_id,
-                Occurrence.status == OccurrenceStatus.ACTIVE,
+                Occurrence.status == OccurrenceStatus.SCHEDULED,
                 Occurrence.start_time >= ensure_utc(now),
             )
             .order_by(Occurrence.id.asc())
@@ -157,7 +163,7 @@ class OccurrenceRepository(WriteRepositoryMixin):
             select(Occurrence)
             .where(
                 Occurrence.service_id == service_id,
-                Occurrence.status == OccurrenceStatus.ACTIVE,
+                Occurrence.status == OccurrenceStatus.SCHEDULED,
                 Occurrence.start_time >= ensure_utc(now),
             )
             .with_for_update()
@@ -172,7 +178,7 @@ class OccurrenceRepository(WriteRepositoryMixin):
             select(Occurrence)
             .where(
                 Occurrence.service_id == service_id,
-                Occurrence.status == OccurrenceStatus.ACTIVE,
+                Occurrence.status == OccurrenceStatus.SCHEDULED,
             )
             .with_for_update()
             .order_by(Occurrence.id.asc())

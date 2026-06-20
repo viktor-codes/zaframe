@@ -7,9 +7,13 @@ WHY: search is a read-only leaf — it must not import catalog modules.
 Response shapes mirror catalog public schemas for API compatibility.
 """
 
+from typing import Literal
+
 from pydantic import AwareDatetime, BaseModel, ConfigDict, EmailStr, Field
 
-from app.models import ServiceCategory, ServiceType
+from app.models import ServiceCategory, ServiceType, ServiceVisibility
+
+ServiceVisibilityLiteral = Literal["draft", "published", "archived"]
 
 
 class SearchStudioResponse(BaseModel):
@@ -51,6 +55,7 @@ class SearchServiceResponse(BaseModel):
     hard_limit_ratio: float = Field(1.5, ge=1.0, le=3.0)
     max_overbooked_ratio: float = Field(0.3, ge=0.0, le=1.0)
     tags: list[str] = Field(default_factory=list)
+    visibility: ServiceVisibilityLiteral = Field(default=ServiceVisibility.PUBLISHED)
     is_active: bool
     created_at: AwareDatetime
     updated_at: AwareDatetime

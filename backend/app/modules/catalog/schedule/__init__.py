@@ -6,6 +6,7 @@ from app.modules.catalog.schedule.schemas import (
     ScheduleTemplateBase,
     ScheduleTemplateCreate,
     ScheduleTemplateResponse,
+    ScheduleTemplateUpdate,
 )
 
 __all__ = [
@@ -13,6 +14,7 @@ __all__ = [
     # Schemas
     "ScheduleTemplateBase",
     "ScheduleTemplateCreate",
+    "ScheduleTemplateUpdate",
     "ScheduleTemplateResponse",
     "ScheduleGenerateRequest",
     # Schedule CRUD + occurrence generation
@@ -21,6 +23,7 @@ __all__ = [
     "get_schedule_template",
     "get_schedule_template_or_raise",
     "delete_schedule_template",
+    "update_schedule_template",
     "occurrence_generator",
 ]
 
@@ -30,6 +33,7 @@ _SCHEDULE_FUNCTIONS = (
     "get_schedule_template",
     "get_schedule_template_or_raise",
     "delete_schedule_template",
+    "update_schedule_template",
     "occurrence_generator",
 )
 
@@ -41,6 +45,7 @@ if TYPE_CHECKING:
         get_schedule_template_or_raise,
         get_schedule_templates_for_service,
         occurrence_generator,
+        update_schedule_template,
     )
 
 

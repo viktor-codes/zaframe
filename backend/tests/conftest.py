@@ -125,3 +125,30 @@ async def authenticate_via_otp(
     )
     assert r_verify.status_code == 200
     return r_verify.json()
+
+
+async def create_test_service(
+    client,
+    *,
+    headers: dict[str, str],
+    studio_id: int,
+    name: str = "Test Service",
+    max_capacity: int = 10,
+    price_single_cents: int = 1000,
+) -> int:
+    """Create a published service for tests that need a bookable occurrence."""
+    response = await client.post(
+        "/api/v1/services",
+        json={
+            "studio_id": studio_id,
+            "name": name,
+            "type": "single",
+            "duration_minutes": 60,
+            "max_capacity": max_capacity,
+            "price_single_cents": price_single_cents,
+            "visibility": "published",
+        },
+        headers=headers,
+    )
+    assert response.status_code == 201, response.text
+    return response.json()["id"]

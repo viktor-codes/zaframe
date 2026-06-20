@@ -71,7 +71,7 @@ async def test_generate_schedule_happy_path(client: AsyncClient):
     assert isinstance(occurrences, list)
     assert len(occurrences) > 0
     assert all(s["studio_id"] == studio_id for s in occurrences)
-    assert all(s["status"] == "active" for s in occurrences)
+    assert all(s["status"] == "scheduled" for s in occurrences)
 
 
 @pytest.mark.integration

@@ -81,6 +81,8 @@ async def create_course_booking(
     service = await uow.services.get_by_id(data.service_id)
     if service is None:
         raise NotFoundError("Service not found")
+    if not service.is_bookable():
+        raise ValidationError("Service is not available for booking")
 
     occurrences = await uow.occurrences.list_active_future_by_service_for_update(
         data.service_id,

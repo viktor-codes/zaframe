@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 from httpx import AsyncClient
-from tests.conftest import authenticate_via_otp
+from tests.conftest import authenticate_via_otp, create_test_service
 
 
 @pytest.mark.integration
@@ -33,6 +33,12 @@ async def test_otp_verify_attaches_guest_bookings_by_email(client: AsyncClient):
     )
     assert r_studio.status_code == 201
     studio_id = r_studio.json()["id"]
+    service_id = await create_test_service(
+        client,
+        headers=owner_headers,
+        studio_id=studio_id,
+        name="Attach Occurrence",
+    )
 
     start = datetime.now(UTC) + timedelta(hours=3)
     end = start + timedelta(hours=1)
@@ -46,7 +52,7 @@ async def test_otp_verify_attaches_guest_bookings_by_email(client: AsyncClient):
             "max_capacity": 5,
             "price_cents": 1000,
             "studio_id": studio_id,
-            "service_id": None,
+            "service_id": service_id,
         },
         headers=owner_headers,
     )
@@ -101,6 +107,12 @@ async def test_otp_verify_attaches_only_specified_booking(client: AsyncClient):
     )
     assert r_studio.status_code == 201
     studio_id = r_studio.json()["id"]
+    service_id = await create_test_service(
+        client,
+        headers=owner_headers,
+        studio_id=studio_id,
+        name="Specific Attach Occurrence",
+    )
 
     start = datetime.now(UTC) + timedelta(hours=4)
     end = start + timedelta(hours=1)
@@ -115,6 +127,7 @@ async def test_otp_verify_attaches_only_specified_booking(client: AsyncClient):
                 "max_capacity": 5,
                 "price_cents": 500,
                 "studio_id": studio_id,
+                "service_id": service_id,
             },
             headers=owner_headers,
         )

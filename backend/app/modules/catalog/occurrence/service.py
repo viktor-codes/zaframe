@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from app.core.datetime_utils import ensure_utc
+from app.core.datetime_utils import ensure_utc, utc_now
 from app.core.exceptions import NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
 from app.models.occurrence import Occurrence, OccurrenceStatus
@@ -103,6 +103,9 @@ async def create_occurrence(uow: UnitOfWork, schema: OccurrenceCreate) -> Occurr
         raise ValidationError("End time must be after start time")
     if await uow.studios.get_by_id(schema.studio_id) is None:
         raise NotFoundError("Studio not found")
+    service = await uow.services.get_by_studio_and_id(schema.studio_id, schema.service_id)
+    if service is None:
+        raise NotFoundError("Service not found in this studio")
     await _validate_instructor_assignment(
         uow,
         studio_id=schema.studio_id,
@@ -130,8 +133,9 @@ async def update_occurrence(
 ) -> Occurrence:
     update_data = schema.model_dump(exclude_unset=True)
     if "status" in update_data and update_data["status"] not in (
-        OccurrenceStatus.ACTIVE,
+        OccurrenceStatus.SCHEDULED,
         OccurrenceStatus.CANCELLED,
+        OccurrenceStatus.COMPLETED,
     ):
         raise ValidationError("Invalid occurrence status")
     start_time = update_data.get("start_time", occurrence.start_time)
@@ -148,8 +152,21 @@ async def update_occurrence(
         if field in ("start_time", "end_time") and value is not None:
             value = ensure_utc(value)
         setattr(occurrence, field, value)
+    if update_data.get("status") == OccurrenceStatus.CANCELLED:
+        occurrence.cancelled_at = occurrence.cancelled_at or utc_now()
+    elif update_data.get("status") == OccurrenceStatus.SCHEDULED:
+        occurrence.cancelled_at = None
+        occurrence.cancellation_reason = None
     return await uow.occurrences.save(occurrence)
 
 
 async def delete_occurrence(uow: UnitOfWork, occurrence: Occurrence) -> None:
+    bookings_count = await uow.bookings.count_by_occurrence(occurrence.id)
+    if bookings_count > 0:
+        occurrence.status = OccurrenceStatus.CANCELLED
+        occurrence.cancelled_at = occurrence.cancelled_at or utc_now()
+        if occurrence.cancellation_reason is None:
+            occurrence.cancellation_reason = "Cancelled because deletion was requested with bookings"
+        await uow.occurrences.save(occurrence)
+        return
     await uow.occurrences.delete(occurrence)

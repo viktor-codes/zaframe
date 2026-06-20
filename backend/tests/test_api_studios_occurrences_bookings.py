@@ -9,7 +9,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from httpx import AsyncClient
-from tests.conftest import authenticate_via_otp
+from tests.conftest import authenticate_via_otp, create_test_service
 
 
 async def _authenticate_user(client: AsyncClient, email: str = "owner@example.com"):
@@ -93,12 +93,21 @@ async def test_slot_and_booking_flow(client: AsyncClient):
             "email": "slot-studio@example.com",
             "address": "Occurrence street 1",
             "timezone": "Europe/Dublin",
+            "cancel_before_hours": 0,
         },
         headers=headers,
     )
     assert r_studio.status_code == 201
     studio_id = r_studio.json()["id"]
     assert r_studio.json()["owner_id"] == user["id"]
+    service_id = await create_test_service(
+        client,
+        headers=headers,
+        studio_id=studio_id,
+        name="Morning Class",
+        max_capacity=5,
+        price_single_cents=1000,
+    )
 
     # Создаём слот в будущем
     start = datetime.now(UTC) + timedelta(hours=2)
@@ -113,7 +122,7 @@ async def test_slot_and_booking_flow(client: AsyncClient):
             "max_capacity": 5,
             "price_cents": 1000,
             "studio_id": studio_id,
-            "service_id": None,
+            "service_id": service_id,
         },
         headers=headers,
     )
@@ -156,6 +165,7 @@ async def test_slot_and_booking_flow(client: AsyncClient):
     )
     assert r_delete_occurrence.status_code == 204
 
-    # Слот больше не существует
+    # Слот сохраняется как cancelled, чтобы история бронирований не пропала
     r_get_occurrence = await client.get(f"/api/v1/occurrences/{occurrence_id}")
-    assert r_get_occurrence.status_code == 404
+    assert r_get_occurrence.status_code == 200
+    assert r_get_occurrence.json()["status"] == "cancelled"

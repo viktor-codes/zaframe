@@ -237,6 +237,7 @@ async def create_studio(uow: UnitOfWork, schema: StudioCreate) -> Studio:
         longitude=schema.longitude,
         amenities=schema.amenities,
         timezone=schema.timezone,
+        cancel_before_hours=schema.cancel_before_hours,
     )
     studio = await uow.studios.add(studio)
     await uow.studio_members.add(

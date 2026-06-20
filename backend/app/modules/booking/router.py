@@ -180,7 +180,7 @@ async def cancel_booking_endpoint(
 ) -> BookingSelfResponse | BookingOwnerResponse:
     """Отменить бронирование: своё или доступное через studio permission."""
     booking = await get_booking_for_user_or_raise(uow, booking_id, user)
-    cancelled = await cancel_booking(uow, booking)
+    cancelled = await cancel_booking(uow, booking, user=user)
     return map_booking_for_user(cancelled, user)
 
 

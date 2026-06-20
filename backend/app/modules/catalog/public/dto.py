@@ -37,4 +37,6 @@ class StudioPublicDTO:
     name: str
     slug: str | None
     description: str | None
+    logo_url: str | None
+    cover_url: str | None
     services: list[PublicServiceDTO] = field(default_factory=lambda: list[PublicServiceDTO]())

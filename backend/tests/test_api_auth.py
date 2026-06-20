@@ -262,6 +262,20 @@ async def test_delete_account_soft_deletes_user_and_revokes_sessions(client, app
     booking_id = booking.id
     order_id = order.id
 
+    pre_delete_codes: list[str] = []
+
+    async def capture_pre_delete_otp(to: str, code: str) -> bool:
+        pre_delete_codes.append(code)
+        return True
+
+    with patch("app.modules.auth.service.send_otp_email", side_effect=capture_pre_delete_otp):
+        pre_delete_otp_response = await client.post(
+            "/api/v1/auth/otp/request",
+            json={"email": email, "name": "Deleted User"},
+        )
+    assert pre_delete_otp_response.status_code == 200
+    assert len(pre_delete_codes) == 1
+
     delete_response = await client.post(
         "/api/v1/me/delete-account",
         headers={"Authorization": f"Bearer {access_token}"},
@@ -302,6 +316,12 @@ async def test_delete_account_soft_deletes_user_and_revokes_sessions(client, app
     assert persisted_booking.user_id == user_id
     assert persisted_order.user_id == user_id
 
+    login_response = await client.post(
+        "/api/v1/auth/otp/verify",
+        json={"email": email, "code": pre_delete_codes[0]},
+    )
+    assert login_response.status_code == 401
+
     captured_codes: list[str] = []
 
     async def capture_otp(to: str, code: str) -> bool:
@@ -314,10 +334,4 @@ async def test_delete_account_soft_deletes_user_and_revokes_sessions(client, app
             json={"email": email, "name": "Deleted User"},
         )
     assert otp_response.status_code == 200
-    assert len(captured_codes) == 1
-
-    login_response = await client.post(
-        "/api/v1/auth/otp/verify",
-        json={"email": email, "code": captured_codes[0]},
-    )
-    assert login_response.status_code == 401
+    assert captured_codes == []

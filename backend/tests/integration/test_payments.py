@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from httpx import AsyncClient
-from tests.conftest import authenticate_via_otp
+from tests.conftest import authenticate_via_otp, create_test_service
 
 _CHECKOUT_PAYLOAD = {
     "success_url": "http://localhost:3000/payments/success",
@@ -52,6 +52,12 @@ async def _create_pending_booking(
     )
     assert r_studio.status_code == 201
     studio_id = r_studio.json()["id"]
+    service_id = await create_test_service(
+        client,
+        headers=headers,
+        studio_id=studio_id,
+        name="Payments Occurrence",
+    )
 
     start = datetime.now(UTC) + timedelta(hours=2)
     end = start + timedelta(hours=1)
@@ -65,7 +71,7 @@ async def _create_pending_booking(
             "max_capacity": 5,
             "price_cents": 1000,
             "studio_id": studio_id,
-            "service_id": None,
+            "service_id": service_id,
         },
         headers=headers,
     )

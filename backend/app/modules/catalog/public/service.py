@@ -43,6 +43,8 @@ async def get_studio_public(
     now_utc = utc_now()
     all_upcoming_occurrences: list[Occurrence] = []
     for service in studio.services:
+        if not service.is_publicly_visible():
+            continue
         for occurrence in service.occurrences:
             if occurrence.start_time >= now_utc and occurrence.is_bookable():
                 all_upcoming_occurrences.append(occurrence)
@@ -56,6 +58,8 @@ async def get_studio_public(
         )
 
     for service in studio.services:
+        if not service.is_publicly_visible():
+            continue
         upcoming_occurrences = [
             o for o in service.occurrences if o.start_time >= now_utc and o.is_bookable()
         ]
@@ -115,5 +119,7 @@ async def get_studio_public(
         name=studio.name,
         slug=studio.slug,
         description=studio.description,
+        logo_url=studio.logo_url,
+        cover_url=studio.cover_url,
         services=services_public,
     )

@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.repository import WriteRepositoryMixin
-from app.models.service import Service
+from app.models.service import Service, ServiceVisibility
 
 
 class ServiceRepository(WriteRepositoryMixin):
@@ -59,6 +59,7 @@ class ServiceRepository(WriteRepositoryMixin):
         query = select(Service).where(
             Service.studio_id.in_(studio_ids),
             Service.is_active.is_(True),
+            Service.visibility == ServiceVisibility.PUBLISHED,
         )
         if category is not None:
             query = query.where(Service.category == category)

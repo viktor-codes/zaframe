@@ -8,7 +8,7 @@ from sqlalchemy import and_, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import ColumnElement
 
-from app.models.service import Service, ServiceCategory
+from app.models.service import Service, ServiceCategory, ServiceVisibility
 from app.models.studio import Studio
 
 
@@ -36,6 +36,7 @@ class SearchRepository:
         conditions: list[ColumnElement[bool]] = [
             Studio.is_active.is_(True),
             Service.is_active.is_(True),
+            Service.visibility == ServiceVisibility.PUBLISHED,
         ]
 
         if city:
@@ -92,6 +93,7 @@ class SearchRepository:
         service_conditions = [
             Service.studio_id.in_(studio_ids),
             Service.is_active.is_(True),
+            Service.visibility == ServiceVisibility.PUBLISHED,
         ]
         services_stmt = select(Service).where(*service_conditions)
         if category is not None:

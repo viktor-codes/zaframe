@@ -69,4 +69,6 @@ class StudioPublicResponse(BaseModel):
     name: str
     slug: str | None
     description: str | None
+    logo_url: str | None = Field(None, description="Public studio logo URL")
+    cover_url: str | None = Field(None, description="Public studio cover URL")
     services: list[PublicService] = Field(default_factory=lambda: list[PublicService]())

@@ -7,6 +7,7 @@ import re
 from pydantic import AwareDatetime, BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from app.core.datetime_utils import validate_iana_timezone
+from app.core.exceptions import ValidationError as AppValidationError
 
 SLUG_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
@@ -55,6 +56,12 @@ class StudioBase(BaseModel):
         default_factory=list,
         description="Список удобств/опций студии (например, душ, парковка)",
     )
+    cancel_before_hours: int = Field(
+        24,
+        ge=0,
+        le=720,
+        description="Customer cancellation cutoff before occurrence start, in hours",
+    )
 
     @field_validator("slug")
     @classmethod
@@ -77,7 +84,10 @@ class StudioCreate(StudioBase):
     @field_validator("timezone")
     @classmethod
     def validate_timezone(cls, value: str) -> str:
-        return validate_iana_timezone(value)
+        try:
+            return validate_iana_timezone(value)
+        except AppValidationError as exc:
+            raise ValueError(exc.detail) from exc
 
 
 class StudioUpdate(BaseModel):
@@ -96,6 +106,12 @@ class StudioUpdate(BaseModel):
     longitude: float | None = None
     amenities: list[str] | None = None
     is_active: bool | None = None
+    cancel_before_hours: int | None = Field(
+        None,
+        ge=0,
+        le=720,
+        description="Customer cancellation cutoff before occurrence start, in hours",
+    )
     timezone: str | None = Field(
         None,
         min_length=1,
@@ -113,7 +129,10 @@ class StudioUpdate(BaseModel):
     def validate_timezone(cls, value: str | None) -> str | None:
         if value is None:
             return None
-        return validate_iana_timezone(value)
+        try:
+            return validate_iana_timezone(value)
+        except AppValidationError as exc:
+            raise ValueError(exc.detail) from exc
 
 
 class StudioResponse(StudioBase):
@@ -123,6 +142,7 @@ class StudioResponse(StudioBase):
     owner_id: int
     timezone: str
     is_active: bool
+    cancel_before_hours: int
     created_at: AwareDatetime
     updated_at: AwareDatetime
 

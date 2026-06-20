@@ -18,7 +18,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
-from tests.conftest import authenticate_via_otp
+from tests.conftest import authenticate_via_otp, create_test_service
 
 from app.main import app
 
@@ -88,6 +88,12 @@ async def _authenticate_and_create_booking(client: AsyncClient) -> int:
     )
     assert r_studio.status_code == 201
     studio_id = r_studio.json()["id"]
+    service_id = await create_test_service(
+        client,
+        headers=headers,
+        studio_id=studio_id,
+        name="Webhook Occurrence",
+    )
 
     from datetime import datetime, timedelta
 
@@ -103,7 +109,7 @@ async def _authenticate_and_create_booking(client: AsyncClient) -> int:
             "max_capacity": 5,
             "price_cents": 1000,
             "studio_id": studio_id,
-            "service_id": None,
+            "service_id": service_id,
         },
         headers=headers,
     )

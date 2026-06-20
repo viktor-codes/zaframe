@@ -12,7 +12,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Float, ForeignKey, String, Text
+from sqlalchemy import CheckConstraint, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -35,6 +35,12 @@ class Studio(TimestampMixin, Base):
     """
 
     __tablename__ = "studios"
+    __table_args__ = (
+        CheckConstraint(
+            "cancel_before_hours >= 0",
+            name="ck_studios_cancel_before_hours_non_negative",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
 
@@ -79,6 +85,12 @@ class Studio(TimestampMixin, Base):
 
     # Настройки
     is_active: Mapped[bool] = mapped_column(default=True)  # Активна ли студия
+    cancel_before_hours: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=24,
+        server_default="24",
+    )
 
     # Stripe Connect payout state
     stripe_account_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)

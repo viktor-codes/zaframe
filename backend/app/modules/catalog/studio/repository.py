@@ -10,7 +10,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.elements import ColumnElement
 
 from app.core.repository import WriteRepositoryMixin
-from app.models.service import Service
+from app.models.service import Service, ServiceVisibility
 from app.models.studio import Studio
 from app.models.studio_member import StudioMember
 
@@ -83,6 +83,7 @@ class StudioRepository(WriteRepositoryMixin):
         join_conditions = list(conditions)
         join_conditions.append(Service.studio_id == Studio.id)
         join_conditions.append(Service.is_active.is_(True))
+        join_conditions.append(Service.visibility == ServiceVisibility.PUBLISHED)
         if category:
             join_conditions.append(Service.category == category)
         if query and query.strip():

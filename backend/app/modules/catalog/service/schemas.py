@@ -5,10 +5,13 @@ Pydantic schemas for Service (sellable offering container).
 from __future__ import annotations
 
 from datetime import date, datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models import ServiceCategory, ServiceType
+from app.models import ServiceCategory, ServiceType, ServiceVisibility
+
+ServiceVisibilityLiteral = Literal["draft", "published", "archived"]
 
 
 class ServiceBase(BaseModel):
@@ -62,6 +65,11 @@ class ServiceBase(BaseModel):
         default_factory=list,
         description="Service tags (e.g. beginner, evening, women_only)",
     )
+    visibility: ServiceVisibilityLiteral = Field(
+        default=ServiceVisibility.PUBLISHED,
+        description="Product lifecycle state: draft, published, or archived",
+        examples=[ServiceVisibility.PUBLISHED],
+    )
 
 
 class ServiceCreate(ServiceBase):
@@ -85,6 +93,11 @@ class ServiceUpdate(BaseModel):
     price_single_cents: int | None = Field(None, ge=0)
     price_course_cents: int | None = Field(None, ge=0)
     is_active: bool | None = None
+    visibility: ServiceVisibilityLiteral | None = Field(
+        None,
+        description="Product lifecycle state: draft, published, or archived",
+        examples=[ServiceVisibility.ARCHIVED],
+    )
     soft_limit_ratio: float | None = Field(
         None,
         ge=1.0,
@@ -115,6 +128,7 @@ class ServiceResponse(ServiceBase):
     id: int
     studio_id: int
     is_active: bool
+    visibility: ServiceVisibilityLiteral
     created_at: datetime
     updated_at: datetime
 

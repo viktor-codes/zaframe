@@ -9,7 +9,7 @@ from typing import Literal
 
 from pydantic import AliasPath, AwareDatetime, BaseModel, ConfigDict, Field, field_validator
 
-OccurrenceStatusLiteral = Literal["active", "cancelled"]
+OccurrenceStatusLiteral = Literal["scheduled", "cancelled", "completed"]
 
 
 def _normalize_to_utc(value: datetime) -> datetime:
@@ -48,9 +48,9 @@ class OccurrenceCreate(OccurrenceBase):
     """Create an occurrence."""
 
     studio_id: int = Field(..., description="Studio ID")
-    service_id: int | None = Field(
-        None,
-        description="Service ID when occurrence belongs to a service/course",
+    service_id: int = Field(
+        ...,
+        description="Service ID for the bookable class/course occurrence",
     )
     instructor_id: int | None = Field(
         None,
@@ -72,6 +72,11 @@ class OccurrenceUpdate(BaseModel):
         description="Studio member ID assigned to teach this occurrence",
     )
     status: OccurrenceStatusLiteral | None = Field(None, description="Occurrence status")
+    cancellation_reason: str | None = Field(
+        None,
+        max_length=500,
+        description="Reason shown when status is cancelled",
+    )
 
     @field_validator("start_time", "end_time")
     @classmethod
@@ -105,12 +110,21 @@ class OccurrenceResponse(OccurrenceBase):
 
     id: int
     studio_id: int
+    service_id: int
     instructor_id: int | None = Field(None, description="Assigned studio member ID")
     instructor: OccurrenceInstructorResponse | None = Field(
         None,
         description="Assigned instructor display data",
     )
     status: OccurrenceStatusLiteral
+    cancelled_at: AwareDatetime | None = Field(
+        None,
+        description="UTC timestamp when the occurrence was cancelled",
+    )
+    cancellation_reason: str | None = Field(
+        None,
+        description="Owner-provided cancellation reason",
+    )
     created_at: AwareDatetime
     updated_at: AwareDatetime
 

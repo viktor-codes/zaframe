@@ -19,10 +19,12 @@ from app.modules.catalog.schedule import (
     ScheduleTemplateBase,
     ScheduleTemplateCreate,
     ScheduleTemplateResponse,
+    ScheduleTemplateUpdate,
     create_schedule_template,
     delete_schedule_template,
     get_schedule_template_or_raise,
     get_schedule_templates_for_service,
+    update_schedule_template,
 )
 from app.modules.catalog.service import (
     ServiceAvailabilityResponse,
@@ -181,6 +183,35 @@ async def create_service_schedule_template_endpoint(
     )
     schedule = await create_schedule_template(uow, schedule_schema)
     return ScheduleTemplateResponse.model_validate(schedule)
+
+
+@router.patch(
+    "/schedule-templates/{schedule_template_id}",
+    response_model=ScheduleTemplateResponse,
+)
+async def update_schedule_template_endpoint(
+    schedule_template_id: int,
+    schema: ScheduleTemplateUpdate,
+    user: Annotated[User, Depends(get_current_user_required)],
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
+) -> ScheduleTemplateResponse:
+    """
+    Update a schedule template.
+
+    Existing generated occurrences are intentionally preserved; owners must edit
+    or cancel generated occurrences explicitly.
+    """
+    schedule = await get_schedule_template_or_raise(uow, schedule_template_id)
+    service = await get_service_or_raise(uow, schedule.service_id)
+    studio = await get_studio_or_raise(uow, service.studio_id)
+    await require_studio_permission(
+        uow,
+        studio=studio,
+        user=user,
+        permission="manage_schedule",
+    )
+    updated = await update_schedule_template(uow, schedule, schema)
+    return ScheduleTemplateResponse.model_validate(updated)
 
 
 @router.delete("/schedule-templates/{schedule_template_id}", status_code=204)

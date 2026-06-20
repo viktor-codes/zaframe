@@ -339,7 +339,7 @@ async def seed_100_studios(db: AsyncSession) -> None:
                 max_capacity=int(max_capacity),
                 price_cents=int(price_single_cents),
                 course_price_cents=None,
-                status=OccurrenceStatus.ACTIVE,
+                status=OccurrenceStatus.SCHEDULED,
             )
             db.add(occurrence)
 

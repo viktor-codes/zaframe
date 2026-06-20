@@ -39,6 +39,8 @@ async def check_course_availability(
         raise NotFoundError("Service not found")
     if service.type != ServiceType.COURSE:
         raise ValidationError("Service is not a course")
+    if not service.is_bookable():
+        raise ValidationError("Service is not available for booking")
 
     now_utc = now or datetime_utils.utc_now()
     stats = await get_course_occurrences_with_capacity(
@@ -65,6 +67,8 @@ async def check_course_availability_for_update(
         raise NotFoundError("Service not found")
     if service.type != ServiceType.COURSE:
         raise ValidationError("Service is not a course")
+    if not service.is_bookable():
+        raise ValidationError("Service is not available for booking")
 
     now_utc = now or datetime_utils.utc_now()
     stats = await get_course_occurrences_with_capacity_for_update(
@@ -91,6 +95,8 @@ async def get_service_availability(
         raise NotFoundError("Service not found")
     if service.type != ServiceType.COURSE:
         raise ValidationError("Service is not a course")
+    if not service.is_bookable():
+        raise ValidationError("Service is not available for booking")
 
     now_utc = datetime_utils.utc_now()
     availability = await check_course_availability(

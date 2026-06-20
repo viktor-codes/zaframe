@@ -27,11 +27,28 @@ class ScheduleTemplateCreate(ScheduleTemplateBase):
     service_id: int = Field(..., description="Service ID")
 
 
+class ScheduleTemplateUpdate(BaseModel):
+    """Update a recurring schedule template without mutating existing occurrences."""
+
+    day_of_week: int | None = Field(None, ge=0, le=6, description="Day of week 0-6 (Mon-Sun)")
+    start_time: time | None = Field(None, description="Wall-clock start time")
+    valid_from: date | None = Field(None, description="Template valid from date")
+    valid_to: date | None = Field(
+        None,
+        description="Template valid through date (inclusive)",
+    )
+
+
 class ScheduleTemplateResponse(ScheduleTemplateBase):
     """ScheduleTemplate template API response."""
 
     id: int
     service_id: int
+    edit_behavior: str = Field(
+        "Template changes affect only occurrences generated after the edit. Already generated "
+        "occurrences are not changed automatically; edit or cancel them explicitly.",
+        description="Frontend warning copy for schedule template edits",
+    )
     created_at: AwareDatetime
     updated_at: AwareDatetime
 

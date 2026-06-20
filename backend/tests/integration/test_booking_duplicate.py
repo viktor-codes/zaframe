@@ -14,7 +14,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from httpx import AsyncClient
-from tests.conftest import authenticate_via_otp
+from tests.conftest import authenticate_via_otp, create_test_service
 
 from app.core.database import async_session_maker
 from app.core.exceptions import AppError, ConflictError, ValidationError
@@ -50,6 +50,14 @@ async def _create_bookable_slot(
     )
     assert r_studio.status_code == 201
     studio_id = r_studio.json()["id"]
+    service_id = await create_test_service(
+        client,
+        headers=headers,
+        studio_id=studio_id,
+        name="Dup Class",
+        max_capacity=max_capacity,
+        price_single_cents=1500,
+    )
 
     start = datetime.now(UTC) + timedelta(hours=4)
     end = start + timedelta(hours=1)
@@ -63,7 +71,7 @@ async def _create_bookable_slot(
             "max_capacity": max_capacity,
             "price_cents": 1500,
             "studio_id": studio_id,
-            "service_id": None,
+            "service_id": service_id,
         },
         headers=headers,
     )

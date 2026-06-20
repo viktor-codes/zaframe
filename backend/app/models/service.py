@@ -11,7 +11,7 @@ from __future__ import annotations
 import enum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import JSON, Enum, Float, ForeignKey, Integer, String
+from sqlalchemy import JSON, CheckConstraint, Enum, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models import Base
@@ -44,6 +44,14 @@ class ServiceType:
     COURSE = "course"
 
 
+class ServiceVisibility:
+    """Product lifecycle state for storefront and dashboard behavior."""
+
+    DRAFT = "draft"
+    PUBLISHED = "published"
+    ARCHIVED = "archived"
+
+
 class Service(TimestampMixin, Base):
     """
     Услуга, предлагаемая студией.
@@ -54,6 +62,12 @@ class Service(TimestampMixin, Base):
     """
 
     __tablename__ = "services"
+    __table_args__ = (
+        CheckConstraint(
+            "visibility IN ('draft', 'published', 'archived')",
+            name="ck_services_visibility",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
 
@@ -128,7 +142,15 @@ class Service(TimestampMixin, Base):
         default=list,
     )
 
-    # Активна ли услуга
+    visibility: Mapped[str] = mapped_column(
+        String(20),
+        default=ServiceVisibility.PUBLISHED,
+        server_default=ServiceVisibility.PUBLISHED,
+        nullable=False,
+        index=True,
+    )
+
+    # Legacy operational flag; visibility is the product lifecycle source of truth.
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
 
     # Связи
@@ -150,6 +172,14 @@ class Service(TimestampMixin, Base):
         "Order",
         back_populates="service",
     )
+
+    def is_publicly_visible(self) -> bool:
+        """Service can appear in anonymous catalog/search surfaces."""
+        return self.is_active and self.visibility == ServiceVisibility.PUBLISHED
+
+    def is_bookable(self) -> bool:
+        """Service allows creating new bookings through its occurrences."""
+        return self.is_publicly_visible()
 
     # === Бизнес-логика вместимости ===
     def get_capacity_status(

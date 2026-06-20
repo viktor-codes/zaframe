@@ -48,7 +48,7 @@ async def list_occurrences(
     instructor_id: int | None = Query(None, description="Filter by assigned studio member"),
     start_from: datetime | None = Query(None, description="Range start (UTC)"),
     start_to: datetime | None = Query(None, description="Range end (UTC)"),
-    status: str | None = Query(None, description="Filter by status (active/cancelled)"),
+    status: str | None = Query(None, description="Filter by status (scheduled/cancelled/completed)"),
 ) -> list[OccurrenceResponse]:
     """List occurrences with optional studio and date filters."""
     occurrences = await get_occurrences(
@@ -71,7 +71,7 @@ async def count_occurrences(
     instructor_id: int | None = Query(None, description="Filter by assigned studio member"),
     start_from: datetime | None = Query(None, description="Range start (UTC)"),
     start_to: datetime | None = Query(None, description="Range end (UTC)"),
-    status: str | None = Query(None, description="Filter by status (active/cancelled)"),
+    status: str | None = Query(None, description="Filter by status (scheduled/cancelled/completed)"),
 ) -> dict[str, int]:
     """Occurrence count for pagination."""
     count = await get_occurrences_count(
@@ -94,7 +94,7 @@ async def list_my_instructor_occurrences(
     studio_id: int | None = Query(None, description="Filter by studio"),
     start_from: datetime | None = Query(None, description="Range start (UTC)"),
     start_to: datetime | None = Query(None, description="Range end (UTC)"),
-    status: str | None = Query(None, description="Filter by status (active/cancelled)"),
+    status: str | None = Query(None, description="Filter by status (scheduled/cancelled/completed)"),
 ) -> list[OccurrenceResponse]:
     """List occurrences assigned to the current instructor."""
     occurrences = await get_my_instructor_occurrences(
@@ -186,7 +186,7 @@ async def list_studio_occurrences(
     limit: int = Query(20, ge=1, le=100, description="Максимум записей"),
     start_from: datetime | None = Query(None, description="Начало диапазона дат"),
     start_to: datetime | None = Query(None, description="Конец диапазона дат"),
-    status: str | None = Query(None, description="Фильтр по статусу (active/cancelled)"),
+    status: str | None = Query(None, description="Фильтр по статусу (scheduled/cancelled/completed)"),
 ) -> list[OccurrenceResponse]:
     """Расписание студии: слоты с фильтрами по датам."""
     occurrences = await get_occurrences(

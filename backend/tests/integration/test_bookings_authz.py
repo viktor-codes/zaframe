@@ -9,7 +9,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from httpx import AsyncClient
-from tests.conftest import authenticate_via_otp
+from tests.conftest import authenticate_via_otp, create_test_service
 
 
 async def _authenticate_user(
@@ -40,6 +40,12 @@ async def _create_studio_slot_and_booking(
     )
     assert r_studio.status_code == 201
     studio_id = r_studio.json()["id"]
+    service_id = await create_test_service(
+        client,
+        headers=owner_headers,
+        studio_id=studio_id,
+        name="Authz Class",
+    )
 
     start = datetime.now(UTC) + timedelta(hours=3)
     end = start + timedelta(hours=1)
@@ -53,7 +59,7 @@ async def _create_studio_slot_and_booking(
             "max_capacity": 5,
             "price_cents": 1000,
             "studio_id": studio_id,
-            "service_id": None,
+            "service_id": service_id,
         },
         headers=owner_headers,
     )

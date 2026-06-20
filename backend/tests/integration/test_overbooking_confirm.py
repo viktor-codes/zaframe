@@ -18,7 +18,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import func, select
-from tests.conftest import authenticate_via_otp
+from tests.conftest import authenticate_via_otp, create_test_service
 
 from app.models.booking import Booking, BookingStatus
 from app.modules.payment.service import PAYMENT_STATUS_OVERBOOKED_MANUAL_REVIEW
@@ -78,6 +78,14 @@ async def _create_studio_and_slot(
     )
     assert r_studio.status_code == 201
     studio_id = r_studio.json()["id"]
+    service_id = await create_test_service(
+        client,
+        headers=headers,
+        studio_id=studio_id,
+        name="Overbook Occurrence",
+        max_capacity=max_capacity,
+        price_single_cents=2000,
+    )
 
     start = datetime.now(UTC) + timedelta(hours=3)
     end = start + timedelta(hours=1)
@@ -91,7 +99,7 @@ async def _create_studio_and_slot(
             "max_capacity": max_capacity,
             "price_cents": 2000,
             "studio_id": studio_id,
-            "service_id": None,
+            "service_id": service_id,
         },
         headers=headers,
     )

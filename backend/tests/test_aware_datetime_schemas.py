@@ -30,7 +30,10 @@ def test_occurrence_response_serializes_utc_with_offset():
     occurrence = SimpleNamespace(
         id=1,
         studio_id=2,
-        status="active",
+        service_id=3,
+        status="scheduled",
+        cancelled_at=None,
+        cancellation_reason=None,
         start_time=start,
         end_time=end,
         title="Evening Class",
@@ -86,6 +89,7 @@ def test_create_occurrence_schema_rejects_naive_datetime():
     with pytest.raises(ValueError, match="timezone"):
         OccurrenceCreate(
             studio_id=1,
+            service_id=1,
             start_time=datetime(2026, 6, 15, 18, 0),
             end_time=datetime(2026, 6, 15, 19, 0),
             title="Morning Class",
@@ -122,7 +126,7 @@ async def test_create_occurrence_rejects_naive_datetime(client: AsyncClient):
             "max_capacity": 5,
             "price_cents": 1000,
             "studio_id": studio_id,
-            "service_id": None,
+            "service_id": 1,
         },
         headers=headers,
     )

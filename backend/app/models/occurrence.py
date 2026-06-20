@@ -9,7 +9,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models import Base
@@ -26,8 +26,9 @@ if TYPE_CHECKING:
 class OccurrenceStatus:
     """Occurrence lifecycle status."""
 
-    ACTIVE = "active"
+    SCHEDULED = "scheduled"
     CANCELLED = "cancelled"
+    COMPLETED = "completed"
 
 
 class Occurrence(TimestampMixin, Base):
@@ -35,6 +36,10 @@ class Occurrence(TimestampMixin, Base):
 
     __tablename__ = "occurrences"
     __table_args__ = (
+        CheckConstraint(
+            "status IN ('scheduled', 'cancelled', 'completed')",
+            name="ck_occurrences_status",
+        ),
         Index(
             "idx_occurrences_studio_service_start_time",
             "studio_id",
@@ -47,9 +52,7 @@ class Occurrence(TimestampMixin, Base):
 
     studio_id: Mapped[int] = mapped_column(ForeignKey("studios.id"), nullable=False, index=True)
 
-    service_id: Mapped[int | None] = mapped_column(
-        ForeignKey("services.id"), nullable=True, index=True
-    )
+    service_id: Mapped[int] = mapped_column(ForeignKey("services.id"), nullable=False, index=True)
     schedule_template_id: Mapped[int | None] = mapped_column(
         ForeignKey("schedule_templates.id"), nullable=True, index=True
     )
@@ -77,13 +80,19 @@ class Occurrence(TimestampMixin, Base):
 
     status: Mapped[str] = mapped_column(
         String(20),
-        default=OccurrenceStatus.ACTIVE,
+        default=OccurrenceStatus.SCHEDULED,
+        server_default=OccurrenceStatus.SCHEDULED,
         nullable=False,
         index=True,
     )
+    cancelled_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    cancellation_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     studio: Mapped[Studio] = relationship("Studio", back_populates="occurrences")
-    service: Mapped[Service | None] = relationship(
+    service: Mapped[Service] = relationship(
         "Service",
         back_populates="occurrences",
     )
@@ -101,8 +110,12 @@ class Occurrence(TimestampMixin, Base):
 
     def is_bookable(self) -> bool:
         """Occurrence accepts new bookings."""
-        return self.status == OccurrenceStatus.ACTIVE
+        return self.status == OccurrenceStatus.SCHEDULED
 
     def is_cancelled(self) -> bool:
         """Occurrence was cancelled."""
         return self.status == OccurrenceStatus.CANCELLED
+
+    def is_completed(self) -> bool:
+        """Occurrence has been completed and preserved for history."""
+        return self.status == OccurrenceStatus.COMPLETED

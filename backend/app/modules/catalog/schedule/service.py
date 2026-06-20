@@ -15,7 +15,7 @@ from app.core.datetime_utils import studio_local_date_now, studio_local_to_utc
 from app.core.exceptions import NotFoundError, ValidationError
 from app.core.uow import UnitOfWork
 from app.models import Occurrence, ScheduleTemplate
-from app.modules.catalog.schedule.schemas import ScheduleTemplateCreate
+from app.modules.catalog.schedule.schemas import ScheduleTemplateCreate, ScheduleTemplateUpdate
 
 
 async def create_schedule_template(
@@ -54,6 +54,18 @@ async def get_schedule_template(
 async def delete_schedule_template(uow: UnitOfWork, schedule: ScheduleTemplate) -> None:
     """Удалить шаблон расписания."""
     await uow.schedule_templates.delete(schedule)
+
+
+async def update_schedule_template(
+    uow: UnitOfWork,
+    schedule: ScheduleTemplate,
+    schema: ScheduleTemplateUpdate,
+) -> ScheduleTemplate:
+    """Update schedule template metadata without mutating generated occurrences."""
+    update_data = schema.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(schedule, field, value)
+    return await uow.schedule_templates.save(schedule)
 
 
 async def get_schedule_template_or_raise(
