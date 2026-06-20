@@ -1,6 +1,6 @@
 """Add Stripe Connect fields and payment ledger.
 
-Revision ID: 012_stripe_connect_payment_ledger
+Revision ID: 012_stripe_connect_ledger
 Revises: 011_instructors_attendance
 Create Date: 2026-06-19
 """
@@ -10,7 +10,7 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "012_stripe_connect_payment_ledger"
+revision: str = "012_stripe_connect_ledger"
 down_revision: str | Sequence[str] | None = "011_instructors_attendance"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None

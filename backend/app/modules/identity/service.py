@@ -2,6 +2,8 @@
 Бизнес-логика для пользователей.
 """
 
+from app.core import datetime_utils
+from app.core.exceptions import UnauthorizedError
 from app.core.uow import UnitOfWork
 from app.models.user import User
 from app.modules.identity.schemas import CurrentUserUpdate
@@ -33,8 +35,10 @@ async def get_or_create_user(
     - Existing user: returned unchanged; `name` argument is ignored.
     - New user: created with the provided `name`.
     """
-    user = await uow.users.get_by_email(email)
+    user = await uow.users.get_by_email_including_deleted(email)
     if user is not None:
+        if user.deleted_at is not None:
+            raise UnauthorizedError("Account is deleted")
         return user
     user = User(email=email, name=name, phone=phone)
     return await uow.users.add(user)
@@ -49,4 +53,13 @@ async def update_current_user_profile(
     update_data = schema.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(user, field, value)
+    return await uow.users.save(user)
+
+
+async def soft_delete_current_user_account(uow: UnitOfWork, user: User) -> User:
+    """Soft-delete current user and revoke all active refresh-token sessions."""
+    now_utc = datetime_utils.utc_now()
+    if user.deleted_at is None:
+        user.deleted_at = now_utc
+    await uow.refresh_tokens.revoke_active_for_user(user.id, now_utc)
     return await uow.users.save(user)

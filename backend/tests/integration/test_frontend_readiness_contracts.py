@@ -104,7 +104,7 @@ async def test_patch_auth_me_updates_only_editable_profile_fields(client: AsyncC
 
     update_response = await client.patch(
         "/api/v1/auth/me",
-        json={"name": "Updated Name", "phone": "+353871234567"},
+        json={"name": "Updated Name", "phone": "+353871234567", "marketing_consent": True},
         headers=headers,
     )
     assert update_response.status_code == 200
@@ -112,6 +112,7 @@ async def test_patch_auth_me_updates_only_editable_profile_fields(client: AsyncC
     assert profile["email"] == email
     assert profile["name"] == "Updated Name"
     assert profile["phone"] == "+353871234567"
+    assert profile["marketing_consent"] is True
 
     protected_response = await client.patch(
         "/api/v1/auth/me",

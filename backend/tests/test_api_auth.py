@@ -4,13 +4,21 @@ Integration tests for authentication API.
 Requires DATABASE_URL and SECRET_KEY in the environment.
 """
 
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, patch
+from uuid import uuid4
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import select
 from tests.conftest import authenticate_via_otp
 
+from app.core.uow_factory import create_uow
 from app.main import app
+from app.models.booking import Booking, BookingStatus
+from app.models.occurrence import Occurrence
+from app.models.order import Order
+from app.models.studio import Studio
 
 
 @pytest.mark.integration
@@ -171,3 +179,145 @@ async def test_logout_without_auth_returns_401(client):
     """POST /auth/logout without Bearer returns 401."""
     r = await client.post("/api/v1/auth/logout")
     assert r.status_code == 401
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_patch_auth_me_updates_marketing_consent(client):
+    """PATCH /auth/me updates privacy consent alongside editable profile fields."""
+    suffix = uuid4().hex[:8]
+    auth_data = await authenticate_via_otp(
+        client,
+        email=f"privacy-update-{suffix}@example.com",
+        name="Privacy User",
+    )
+    headers = {"Authorization": f"Bearer {auth_data['access_token']}"}
+
+    response = await client.patch(
+        "/api/v1/auth/me",
+        json={"marketing_consent": True},
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["marketing_consent"] is True
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_delete_account_soft_deletes_user_and_revokes_sessions(client, app_with_rollback_uow):
+    """
+    Deleting an account hides the user from normal auth lookups and preserves history rows.
+    """
+    suffix = uuid4().hex[:8]
+    email = f"delete-account-{suffix}@example.com"
+    auth_data = await authenticate_via_otp(client, email=email, name="Deleted User")
+    access_token = auth_data["access_token"]
+    user_id = auth_data["user"]["id"]
+    refresh_cookie = client.cookies.get("refresh_token")
+    csrf_cookie = client.cookies.get("csrf_token")
+    assert refresh_cookie is not None
+    assert csrf_cookie is not None
+
+    session = app_with_rollback_uow.state._integration_session
+    uow = create_uow(session)
+    studio = await uow.studios.add(
+        Studio(
+            owner_id=user_id,
+            name=f"Privacy Studio {suffix}",
+            slug=f"privacy-studio-{suffix}",
+            email=f"studio-{suffix}@example.com",
+            timezone="Europe/Dublin",
+        )
+    )
+    occurrence = await uow.occurrences.add(
+        Occurrence(
+            studio_id=studio.id,
+            start_time=datetime.now(UTC) + timedelta(days=1),
+            end_time=datetime.now(UTC) + timedelta(days=1, hours=1),
+            title="Privacy Session",
+            max_capacity=10,
+            price_cents=1500,
+        )
+    )
+    order = await uow.orders.add(
+        Order(
+            studio_id=studio.id,
+            user_id=user_id,
+            total_amount_cents=1500,
+            currency="eur",
+            status="paid",
+        )
+    )
+    booking = await uow.bookings.add(
+        Booking(
+            occurrence_id=occurrence.id,
+            order_id=order.id,
+            user_id=user_id,
+            guest_name="Deleted User",
+            guest_email=email,
+            status=BookingStatus.CONFIRMED,
+        )
+    )
+    booking_id = booking.id
+    order_id = order.id
+
+    delete_response = await client.post(
+        "/api/v1/me/delete-account",
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+    assert delete_response.status_code == 204
+    assert client.cookies.get("refresh_token") is None
+    assert client.cookies.get("csrf_token") is None
+
+    refresh_response = await client.post(
+        "/api/v1/auth/refresh",
+        headers={
+            "X-CSRF-Token": csrf_cookie,
+            "Cookie": f"refresh_token={refresh_cookie}; csrf_token={csrf_cookie}",
+        },
+    )
+    assert refresh_response.status_code == 401
+
+    me_response = await client.get(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+    assert me_response.status_code == 401
+
+    lookup_uow = create_uow(session)
+    assert await lookup_uow.users.get_by_id(user_id) is None
+    deleted_user = await lookup_uow.users.get_by_id_including_deleted(user_id)
+    assert deleted_user is not None
+    assert deleted_user.deleted_at is not None
+
+    persisted_booking = (
+        await session.execute(select(Booking).where(Booking.id == booking_id))
+    ).scalar_one_or_none()
+    persisted_order = (
+        await session.execute(select(Order).where(Order.id == order_id))
+    ).scalar_one_or_none()
+    assert persisted_booking is not None
+    assert persisted_order is not None
+    assert persisted_booking.user_id == user_id
+    assert persisted_order.user_id == user_id
+
+    captured_codes: list[str] = []
+
+    async def capture_otp(to: str, code: str) -> bool:
+        captured_codes.append(code)
+        return True
+
+    with patch("app.modules.auth.service.send_otp_email", side_effect=capture_otp):
+        otp_response = await client.post(
+            "/api/v1/auth/otp/request",
+            json={"email": email, "name": "Deleted User"},
+        )
+    assert otp_response.status_code == 200
+    assert len(captured_codes) == 1
+
+    login_response = await client.post(
+        "/api/v1/auth/otp/verify",
+        json={"email": email, "code": captured_codes[0]},
+    )
+    assert login_response.status_code == 401

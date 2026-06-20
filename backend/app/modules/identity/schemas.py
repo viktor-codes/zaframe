@@ -26,7 +26,10 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     """Схема для создания пользователя."""
 
-    pass
+    marketing_consent: bool = Field(
+        default=False,
+        description="Whether the user explicitly agreed to marketing communications",
+    )
 
 
 class UserUpdate(BaseModel):
@@ -35,6 +38,10 @@ class UserUpdate(BaseModel):
     email: EmailStr | None = Field(None, description="Email пользователя")
     name: str | None = Field(None, min_length=1, max_length=100, description="Имя пользователя")
     phone: str | None = Field(None, max_length=20, description="Номер телефона")
+    marketing_consent: bool | None = Field(
+        None,
+        description="Whether the user agreed to marketing communications",
+    )
 
 
 class CurrentUserUpdate(BaseModel):
@@ -53,6 +60,11 @@ class CurrentUserUpdate(BaseModel):
         description="Optional phone number",
         examples=["+353871234567"],
     )
+    marketing_consent: bool | None = Field(
+        None,
+        description="Whether the user agreed to marketing communications",
+        examples=[False],
+    )
 
     model_config = ConfigDict(extra="forbid")
 
@@ -63,9 +75,14 @@ class UserResponse(UserBase):
     id: int
     role: str
     is_active: bool
+    marketing_consent: bool
     created_at: AwareDatetime
     updated_at: AwareDatetime
     last_login_at: AwareDatetime | None
+    deleted_at: AwareDatetime | None = Field(
+        None,
+        description="Soft-delete timestamp; null for active users",
+    )
 
     model_config = ConfigDict(
         from_attributes=True,

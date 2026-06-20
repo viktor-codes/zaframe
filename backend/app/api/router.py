@@ -3,6 +3,7 @@
 from fastapi import APIRouter, FastAPI
 
 from app.api.health import router as health_router
+from app.modules.auth.router import account_router
 from app.modules.auth.router import router as auth_router
 from app.modules.booking.order import CourseBookingResponse, OrderListItem
 from app.modules.booking.order.router import router as order_router
@@ -51,6 +52,7 @@ for r in (
     payment_router,
     studio_payment_router,
     auth_router,
+    account_router,
     search_router,
 ):
     api_v1.include_router(r)

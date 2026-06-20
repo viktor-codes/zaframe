@@ -34,9 +34,13 @@ from app.modules.auth.service import (
 from app.modules.catalog.studio import get_current_user_studio_roles
 from app.modules.identity import UserResponse
 from app.modules.identity.schemas import CurrentUserUpdate
-from app.modules.identity.service import update_current_user_profile
+from app.modules.identity.service import (
+    soft_delete_current_user_account,
+    update_current_user_profile,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+account_router = APIRouter(prefix="/me", tags=["auth"])
 
 REFRESH_TOKEN_COOKIE_NAME = "refresh_token"
 CSRF_COOKIE_NAME = "csrf_token"
@@ -189,3 +193,14 @@ async def update_current_user_me(
     """Update the current user's editable profile fields."""
     updated_user = await update_current_user_profile(uow, user, schema)
     return UserResponse.model_validate(updated_user)
+
+
+@account_router.post("/delete-account", status_code=204)
+async def delete_current_user_account(
+    response: Response,
+    user: Annotated[User, Depends(get_current_user_required)],
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
+) -> None:
+    """Soft-delete the current account and clear browser auth cookies."""
+    _clear_refresh_cookie(response)
+    await soft_delete_current_user_account(uow, user)

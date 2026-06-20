@@ -77,3 +77,21 @@ class RefreshTokenRepository(WriteRepositoryMixin):
             )
         )
         return result.scalar_one_or_none()
+
+    async def revoke_active_for_user(self, user_id: int, now: datetime) -> int:
+        """Revoke all currently active refresh-token sessions for a user."""
+        result = await self._session.execute(
+            update(RefreshToken)
+            .where(
+                RefreshToken.user_id == user_id,
+                RefreshToken.revoked_at.is_(None),
+                RefreshToken.expires_at > now,
+            )
+            .values(
+                revoked_at=now,
+                last_used_at=now,
+            )
+        )
+        await self._session.flush()
+        cursor = cast(CursorResult[Any], result)
+        return cursor.rowcount or 0

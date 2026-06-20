@@ -15,50 +15,70 @@ Implement a minimal privacy contract without overbuilding compliance tooling.
 
 Add to `User`:
 
-- [ ] `marketing_consent`
-- [ ] `deleted_at`
+- [x] `marketing_consent`
+- [x] `deleted_at`
 
 Rules:
 
-- [ ] Default `marketing_consent` should be false unless explicitly collected.
-- [ ] `deleted_at` means soft-deleted user.
-- [ ] Soft-deleted users must not be able to authenticate.
-- [ ] Bookings, orders, and payments must remain for business/legal history.
+- [x] Default `marketing_consent` should be false unless explicitly collected.
+- [x] `deleted_at` means soft-deleted user.
+- [x] Soft-deleted users must not be able to authenticate.
+- [x] Bookings, orders, and payments must remain for business/legal history.
 
 ## API Contract
 
-- [ ] `PATCH /auth/me` or `/users/me` can update:
+- [x] `PATCH /auth/me` can update:
   - `name`
   - `phone`
   - `marketing_consent`
-- [ ] `POST /me/delete-account`
+- [x] `POST /me/delete-account`
   - sets `deleted_at`
   - revokes refresh tokens
   - clears auth cookies if called in browser flow
 - [ ] `GET /me/export`
   - can be deferred, but document response shape if not implemented now
 
+Deferred export response shape:
+
+```json
+{
+  "user": {
+    "id": 123,
+    "email": "user@example.com",
+    "name": "Ada Lovelace",
+    "phone": "+353871234567",
+    "marketing_consent": false,
+    "created_at": "2026-06-20T00:00:00Z",
+    "updated_at": "2026-06-20T00:00:00Z",
+    "deleted_at": null
+  },
+  "bookings": [],
+  "orders": [],
+  "payments": []
+}
+```
+
 ## Deleted User Filtering
 
-- [ ] Auth lookup excludes deleted users.
-- [ ] User repository default read paths exclude deleted users where appropriate.
-- [ ] Admin/support paths may include deleted users only if explicitly named.
+- [x] Auth lookup excludes deleted users.
+- [x] User repository default read paths exclude deleted users where appropriate.
+- [x] Admin/support paths may include deleted users only if explicitly named.
 - [ ] Booking/order history should display anonymized or safe deleted-user data where needed.
 
 ## Tests
 
-- [ ] User can update marketing consent.
-- [ ] User can soft-delete account.
-- [ ] Soft-deleted user cannot refresh or log in.
-- [ ] Existing bookings/orders remain after soft delete.
-- [ ] Deleted user is filtered from normal user queries.
+- [x] User can update marketing consent.
+- [x] User can soft-delete account.
+- [x] Soft-deleted user cannot refresh or log in.
+- [x] Existing bookings/orders remain after soft delete.
+- [x] Deleted user is filtered from normal user queries.
 - [ ] Export endpoint returns expected user/account data if implemented.
 
 ## Definition of Done
 
-- [ ] Account settings screen can edit privacy fields.
-- [ ] Delete account flow is possible without losing transactional history.
-- [ ] Auth/session state is invalidated after deletion.
+- [x] Account settings screen can edit privacy fields.
+- [x] Delete account flow is possible without losing transactional history.
+- [x] Auth/session state is invalidated after deletion.
 
 ## Out of Scope
 
