@@ -4,9 +4,12 @@ Authentication business logic: email OTP and JWT sessions.
 
 from datetime import datetime, timedelta
 
+import structlog
+
 from app.core.config import settings
 from app.core.datetime_utils import utc_now
 from app.core.exceptions import UnauthorizedError, ValidationError
+from app.core.observability import log_domain_event
 from app.core.security import (
     create_access_token,
     create_csrf_token,
@@ -28,6 +31,7 @@ from app.modules.identity import get_or_create_user, get_user_by_id
 
 _INVALID_OTP_MESSAGE = "Verification code is invalid or has expired"
 _RATE_LIMIT_MESSAGE = "Too many verification codes requested. Try again later."
+logger = structlog.get_logger(__name__)
 
 
 async def request_otp(
@@ -46,11 +50,22 @@ async def request_otp(
     existing_user = await uow.users.get_by_email_including_deleted(email)
     if existing_user is not None and existing_user.deleted_at is not None:
         # WHY: keep the public response indistinguishable, but do not email unusable codes.
+        log_domain_event(
+            logger,
+            "otp_request_ignored_deleted_account",
+            user_id=existing_user.id,
+        )
         return
 
     since = now_utc - timedelta(hours=1)
     recent_count = await uow.otp_codes.count_recent_requests(email, since)
     if recent_count >= settings.OTP_MAX_REQUESTS_PER_EMAIL_PER_HOUR:
+        log_domain_event(
+            logger,
+            "otp_request_rate_limited",
+            level="warning",
+            recent_count=recent_count,
+        )
         raise ValidationError(_RATE_LIMIT_MESSAGE)
 
     await uow.otp_codes.invalidate_active_for_email(email, now_utc)
@@ -66,7 +81,13 @@ async def request_otp(
             request_ip=request_ip,
         )
     )
-    await send_otp_email(email, code)
+    email_sent = await send_otp_email(email, code)
+    log_domain_event(
+        logger,
+        "otp_requested",
+        user_id=existing_user.id if existing_user is not None else None,
+        delivery_accepted=email_sent,
+    )
 
 
 async def verify_otp(
@@ -84,11 +105,13 @@ async def verify_otp(
     now_utc = utc_now()
     otp = await uow.otp_codes.get_latest_active_for_email(email, now_utc)
     if otp is None:
+        log_domain_event(logger, "otp_verify_failed", level="warning", reason="missing_active_otp")
         raise ValidationError(_INVALID_OTP_MESSAGE)
 
     if otp.attempts >= settings.OTP_MAX_ATTEMPTS:
         otp.used_at = now_utc
         await uow.otp_codes.save(otp)
+        log_domain_event(logger, "otp_verify_failed", level="warning", reason="max_attempts")
         raise ValidationError(_INVALID_OTP_MESSAGE)
 
     if not verify_otp_code(code, otp.code_hash):
@@ -96,6 +119,13 @@ async def verify_otp(
         if otp.attempts >= settings.OTP_MAX_ATTEMPTS:
             otp.used_at = now_utc
         await uow.otp_codes.save(otp)
+        log_domain_event(
+            logger,
+            "otp_verify_failed",
+            level="warning",
+            reason="invalid_code",
+            attempts=otp.attempts,
+        )
         raise ValidationError(_INVALID_OTP_MESSAGE)
 
     return await _complete_otp_login(
@@ -122,6 +152,12 @@ async def _complete_otp_login(
     user = await uow.users.save(user)
 
     await attach_guest_resources(uow, user, booking_id=booking_id)
+    log_domain_event(
+        logger,
+        "otp_verified",
+        user_id=user.id,
+        booking_id=booking_id,
+    )
 
     access_token = create_access_token(user.id, user.email)
     refresh_token = create_refresh_token(user.id)

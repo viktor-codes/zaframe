@@ -6,10 +6,12 @@ from datetime import UTC, datetime
 from typing import Literal, cast
 
 import stripe
+import structlog
 from stripe.params._refund_create_params import RefundCreateParams
 
 from app.core.datetime_utils import utc_now
 from app.core.exceptions import ConflictError, NotFoundError, ValidationError
+from app.core.observability import log_domain_event
 from app.core.uow import UnitOfWork
 from app.models.booking import BookingStatus
 from app.models.order import OrderStatus
@@ -18,6 +20,7 @@ from app.models.studio import Studio
 from app.modules.payment.stripe_client import get_stripe_client, raise_stripe_app_error
 
 StripeRefundReason = Literal["duplicate", "fraudulent", "requested_by_customer"]
+logger = structlog.get_logger(__name__)
 
 
 def _object_value(source: object, key: str) -> object:
@@ -120,6 +123,13 @@ async def create_refund_for_payment(
     if existing_refund is not None:
         if existing_refund.payment_id != payment.id:
             raise ConflictError("Idempotency key is already used for another payment")
+        log_domain_event(
+            logger,
+            "refund_create_idempotent_replay",
+            payment_id=payment.id,
+            refund_id=existing_refund.id,
+            stripe_refund_id=existing_refund.stripe_refund_id,
+        )
         return existing_refund
 
     if not payment.stripe_payment_intent_id:
@@ -162,6 +172,15 @@ async def create_refund_for_payment(
         _apply_succeeded_refund_to_payment(payment, amount_cents=amount)
 
     await uow.payments.flush()
+    log_domain_event(
+        logger,
+        "refund_created",
+        payment_id=payment.id,
+        refund_id=refund.id,
+        stripe_refund_id=refund.stripe_refund_id,
+        status=refund.status,
+        amount_cents=refund.amount_cents,
+    )
     return refund
 
 
@@ -180,4 +199,13 @@ async def update_refund_from_stripe_object(uow: UnitOfWork, *, stripe_refund: ob
     if old_status != RefundStatus.SUCCEEDED and new_status == RefundStatus.SUCCEEDED:
         _apply_succeeded_refund_to_payment(refund.payment, amount_cents=refund.amount_cents)
     await uow.payments.flush()
+    log_domain_event(
+        logger,
+        "refund_updated_from_stripe",
+        payment_id=refund.payment_id,
+        refund_id=refund.id,
+        stripe_refund_id=stripe_refund_id,
+        old_status=old_status if old_status != new_status else None,
+        status=new_status,
+    )
     return True

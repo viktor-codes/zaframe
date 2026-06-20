@@ -5,6 +5,7 @@ ZaFrame API entrypoint.
 the lifespan hook. All business logic lives in `core/`, `api/`, and `modules/`.
 """
 
+import traceback
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from typing import Any
@@ -23,6 +24,7 @@ from app.core.database import engine
 from app.core.exceptions import AppError
 from app.core.logging_config import setup_logging
 from app.core.middleware.logging_middleware import (
+    REQUEST_ID_HEADER,
     REQUEST_ID_STATE_KEY,
     RequestLoggingMiddleware,
 )
@@ -79,7 +81,7 @@ app.state.limiter = limiter
 async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
     """429 in API format: detail + rate limit headers (X-RateLimit-*)."""
     request_id = _request_id(request)
-    response = JSONResponse(
+    response = _problem_response(
         status_code=429,
         content=_error_body(
             detail="Too many requests. Please try again later.",
@@ -87,6 +89,7 @@ async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) 
             request_id=request_id,
             problem_type="rate-limit-exceeded",
         ),
+        request_id=request_id,
     )
     if hasattr(request.state, "view_rate_limit"):
         response = request.app.state.limiter._inject_headers(
@@ -132,6 +135,17 @@ def _request_id(request: Request) -> str | None:
     return getattr(request.state, REQUEST_ID_STATE_KEY, None)
 
 
+def _problem_response(
+    *,
+    status_code: int,
+    content: dict[str, Any],
+    request_id: str | None,
+) -> JSONResponse:
+    """Create Problem JSON and keep X-Request-ID present on error responses."""
+    headers = {REQUEST_ID_HEADER: request_id} if request_id else None
+    return JSONResponse(status_code=status_code, content=content, headers=headers)
+
+
 async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
     """Map domain exceptions to HTTP responses and log the failure."""
     logger = structlog.get_logger(__name__)
@@ -140,9 +154,9 @@ async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
         "app_error",
         request_id=request_id,
         status=exc.status_code,
-        detail=exc.detail,
+        error_type=type(exc).__name__,
     )
-    return JSONResponse(
+    return _problem_response(
         status_code=exc.status_code,
         content=_error_body(
             detail=exc.detail,
@@ -150,6 +164,7 @@ async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
             request_id=request_id,
             problem_type=f"app-error:{type(exc).__name__}",
         ),
+        request_id=request_id,
     )
 
 
@@ -157,13 +172,17 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
     """Unhandled exception: log traceback and return 500."""
     logger = structlog.get_logger(__name__)
     request_id = _request_id(request)
-    logger.exception(
+    stack = "\n".join(
+        f'File "{frame.filename}", line {frame.lineno}, in {frame.name}'
+        for frame in traceback.extract_tb(exc.__traceback__)
+    )
+    logger.error(
         "unhandled_exception",
         request_id=request_id,
         exc_type=type(exc).__name__,
-        msg=str(exc),
+        stack=stack,
     )
-    return JSONResponse(
+    return _problem_response(
         status_code=500,
         content=_error_body(
             detail="Internal server error",
@@ -171,6 +190,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
             request_id=request_id,
             problem_type="internal-error",
         ),
+        request_id=request_id,
     )
 
 

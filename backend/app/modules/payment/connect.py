@@ -6,13 +6,17 @@ from datetime import UTC, datetime
 from typing import cast
 
 import stripe
+import structlog
 
 from app.core.datetime_utils import utc_now
 from app.core.exceptions import NotFoundError, ValidationError
+from app.core.observability import log_domain_event
 from app.core.uow import UnitOfWork
 from app.models.studio import Studio
 from app.modules.payment.schemas import validate_checkout_redirect_urls
 from app.modules.payment.stripe_client import get_stripe_client, raise_stripe_app_error
+
+logger = structlog.get_logger(__name__)
 
 
 def _object_value(source: object, key: str) -> object:
@@ -111,7 +115,14 @@ async def create_stripe_onboarding_link(
     if not onboarding_url:
         raise ValidationError("Stripe onboarding link was not created")
     studio.stripe_onboarding_url_expires_at = _datetime_from_unix(_object_value(link, "expires_at"))
-    return await uow.studios.save(studio), onboarding_url
+    studio = await uow.studios.save(studio)
+    log_domain_event(
+        logger,
+        "stripe_connect_onboarding_started",
+        studio_id=studio.id,
+        stripe_account_id=studio.stripe_account_id,
+    )
+    return studio, onboarding_url
 
 
 async def update_studio_connect_status_from_account(
@@ -128,4 +139,12 @@ async def update_studio_connect_status_from_account(
         return False
     _apply_account_status(studio, account)
     await uow.studios.save(studio)
+    log_domain_event(
+        logger,
+        "stripe_connect_account_updated",
+        studio_id=studio.id,
+        stripe_account_id=studio.stripe_account_id,
+        stripe_charges_enabled=studio.stripe_charges_enabled,
+        stripe_payouts_enabled=studio.stripe_payouts_enabled,
+    )
     return True

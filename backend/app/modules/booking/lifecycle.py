@@ -4,9 +4,14 @@ from __future__ import annotations
 
 from datetime import datetime
 
+import structlog
+
 from app.core.datetime_utils import utc_now
+from app.core.observability import log_domain_event
 from app.core.uow import UnitOfWork
 from app.models.booking import BookingStatus
+
+logger = structlog.get_logger(__name__)
 
 
 async def expire_stale_pending(
@@ -28,7 +33,14 @@ async def expire_stale_pending(
     if bookings:
         await uow.bookings.flush()
         await uow.orders.expire_pending_without_active_bookings(order_ids=order_ids)
-    return len(bookings)
+    expired_count = len(bookings)
+    log_domain_event(
+        logger,
+        "lifecycle_expired_pending_bookings",
+        expired_count=expired_count,
+        order_count=len(order_ids),
+    )
+    return expired_count
 
 
 async def complete_past_confirmed(
@@ -49,4 +61,10 @@ async def complete_past_confirmed(
         booking.reserved_until = None
     if bookings:
         await uow.bookings.flush()
-    return len(bookings)
+    completed_count = len(bookings)
+    log_domain_event(
+        logger,
+        "lifecycle_completed_past_bookings",
+        completed_count=completed_count,
+    )
+    return completed_count

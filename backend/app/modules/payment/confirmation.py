@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import structlog
+
 from app.core.datetime_utils import utc_now
+from app.core.observability import log_domain_event
 from app.core.uow import UnitOfWork
 from app.models.booking import BookingStatus
 from app.models.occurrence import Occurrence
@@ -22,6 +25,7 @@ PAYMENT_CONFIRMABLE_BOOKING_STATUSES = frozenset(
         BookingStatus.EXPIRED,
     }
 )
+logger = structlog.get_logger(__name__)
 
 
 async def confirm_booking_after_payment(
@@ -79,6 +83,14 @@ async def confirm_booking_after_payment(
     if payment_intent_id:
         booking.payment_intent_id = payment_intent_id
     await uow.bookings.flush()
+    log_domain_event(
+        logger,
+        "payment_confirmed",
+        booking_id=booking.id,
+        occurrence_id=booking.occurrence_id,
+        payment_intent_id=payment_intent_id,
+        payment_status=booking.payment_status,
+    )
     return True
 
 
@@ -196,4 +208,13 @@ async def confirm_order_after_payment(
     else:
         order.status = OrderStatus.PAID
     await uow.orders.flush()
+    log_domain_event(
+        logger,
+        "payment_confirmed",
+        order_id=order.id,
+        confirmed_count=confirmed_count,
+        manual_review_count=manual_review_count,
+        payment_intent_id=payment_intent_id,
+        order_status=order.status,
+    )
     return True

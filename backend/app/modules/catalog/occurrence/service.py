@@ -2,12 +2,17 @@
 
 from datetime import datetime
 
+import structlog
+
 from app.core.datetime_utils import ensure_utc, utc_now
 from app.core.exceptions import NotFoundError, ValidationError
+from app.core.observability import log_domain_event
 from app.core.uow import UnitOfWork
 from app.models.occurrence import Occurrence, OccurrenceStatus
 from app.models.studio_member import StudioMemberRole
 from app.modules.catalog.occurrence.schemas import OccurrenceCreate, OccurrenceUpdate
+
+logger = structlog.get_logger(__name__)
 
 
 async def get_occurrence(uow: UnitOfWork, occurrence_id: int) -> Occurrence | None:
@@ -123,7 +128,15 @@ async def create_occurrence(uow: UnitOfWork, schema: OccurrenceCreate) -> Occurr
         max_capacity=schema.max_capacity,
         price_cents=schema.price_cents,
     )
-    return await uow.occurrences.add(occurrence)
+    occurrence = await uow.occurrences.add(occurrence)
+    log_domain_event(
+        logger,
+        "occurrence_generated",
+        studio_id=occurrence.studio_id,
+        service_id=occurrence.service_id,
+        occurrence_id=occurrence.id,
+    )
+    return occurrence
 
 
 async def update_occurrence(
@@ -132,6 +145,7 @@ async def update_occurrence(
     schema: OccurrenceUpdate,
 ) -> Occurrence:
     update_data = schema.model_dump(exclude_unset=True)
+    old_status = occurrence.status
     if "status" in update_data and update_data["status"] not in (
         OccurrenceStatus.SCHEDULED,
         OccurrenceStatus.CANCELLED,
@@ -157,7 +171,24 @@ async def update_occurrence(
     elif update_data.get("status") == OccurrenceStatus.SCHEDULED:
         occurrence.cancelled_at = None
         occurrence.cancellation_reason = None
-    return await uow.occurrences.save(occurrence)
+    occurrence = await uow.occurrences.save(occurrence)
+    event = (
+        "occurrence_cancelled"
+        if old_status != OccurrenceStatus.CANCELLED
+        and occurrence.status == OccurrenceStatus.CANCELLED
+        else "occurrence_updated"
+    )
+    log_domain_event(
+        logger,
+        event,
+        studio_id=occurrence.studio_id,
+        service_id=occurrence.service_id,
+        occurrence_id=occurrence.id,
+        updated_fields=sorted(update_data.keys()),
+        old_status=old_status if old_status != occurrence.status else None,
+        status=occurrence.status,
+    )
+    return occurrence
 
 
 async def delete_occurrence(uow: UnitOfWork, occurrence: Occurrence) -> None:
@@ -168,5 +199,13 @@ async def delete_occurrence(uow: UnitOfWork, occurrence: Occurrence) -> None:
         if occurrence.cancellation_reason is None:
             occurrence.cancellation_reason = "Cancelled because deletion was requested with bookings"
         await uow.occurrences.save(occurrence)
+        log_domain_event(
+            logger,
+            "occurrence_cancelled",
+            studio_id=occurrence.studio_id,
+            service_id=occurrence.service_id,
+            occurrence_id=occurrence.id,
+            bookings_count=bookings_count,
+        )
         return
     await uow.occurrences.delete(occurrence)

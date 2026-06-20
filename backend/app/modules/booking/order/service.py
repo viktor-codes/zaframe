@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import structlog
+
 from app.core import datetime_utils
 from app.core.access_tokens import generate_resource_access_token
 from app.core.booking_holds import get_booking_reserved_until
 from app.core.exceptions import NotFoundError, ValidationError
+from app.core.observability import log_domain_event
 from app.core.uow import UnitOfWork
 from app.models import (
     Booking,
@@ -21,6 +24,8 @@ from app.modules.booking.persistence import (
     persist_bookings,
 )
 from app.modules.catalog.service import check_course_availability_for_update
+
+logger = structlog.get_logger(__name__)
 
 
 def _calculate_course_order_total_cents(
@@ -140,6 +145,15 @@ async def create_course_booking(
         )
 
     bookings = await persist_bookings(uow, bookings)
+    log_domain_event(
+        logger,
+        "booking_created",
+        order_id=order.id,
+        service_id=service.id,
+        studio_id=service.studio_id,
+        booking_count=len(bookings),
+        booking_type=BookingType.COURSE,
+    )
 
     return CourseBookingResultDTO(
         order=order,

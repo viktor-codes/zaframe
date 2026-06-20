@@ -9,7 +9,10 @@
 
 from typing import Literal
 
+import structlog
+
 from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError, ValidationError
+from app.core.observability import log_domain_event
 from app.core.uow import UnitOfWork
 from app.models.studio import Studio
 from app.models.studio_member import StudioMember, StudioMemberRole
@@ -27,6 +30,7 @@ StudioPermission = Literal[
     "manage_payouts",
     "manage_members",
 ]
+logger = structlog.get_logger(__name__)
 
 STUDIO_PERMISSIONS_BY_ROLE: dict[str, frozenset[StudioPermission]] = {
     StudioMemberRole.OWNER.value: frozenset(
@@ -196,6 +200,14 @@ async def require_studio_permission(
         permission=permission,
         allow_admin_bypass=allow_admin_bypass,
     ):
+        log_domain_event(
+            logger,
+            "permission_denied",
+            level="warning",
+            user_id=user.id,
+            studio_id=studio.id,
+            permission=permission,
+        )
         raise ForbiddenError("Access denied for this studio")
 
 
@@ -247,9 +259,17 @@ async def create_studio(uow: UnitOfWork, schema: StudioCreate) -> Studio:
             role=StudioMemberRole.OWNER.value,
         )
     )
+    log_domain_event(
+        logger,
+        "studio_member_added",
+        studio_id=studio.id,
+        user_id=schema.owner_id,
+        role=StudioMemberRole.OWNER.value,
+    )
     if owner.role == UserRole.USER.value:
         owner.role = UserRole.STUDIO_OWNER.value
         await uow.users.save(owner)
+    log_domain_event(logger, "studio_created", studio_id=studio.id, user_id=schema.owner_id)
     return studio
 
 
@@ -272,7 +292,14 @@ async def update_studio(
         )
     for field, value in update_data.items():
         setattr(studio, field, value)
-    return await uow.studios.save(studio)
+    updated_studio = await uow.studios.save(studio)
+    log_domain_event(
+        logger,
+        "studio_updated",
+        studio_id=updated_studio.id,
+        updated_fields=sorted(update_data.keys()),
+    )
+    return updated_studio
 
 
 async def delete_studio(uow: UnitOfWork, studio: Studio) -> None:

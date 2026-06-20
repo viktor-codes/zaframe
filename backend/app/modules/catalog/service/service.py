@@ -2,16 +2,29 @@
 
 from __future__ import annotations
 
+import structlog
+
 from app.core.exceptions import NotFoundError
+from app.core.observability import log_domain_event
 from app.core.uow import UnitOfWork
 from app.models import Service, ServiceVisibility
 from app.modules.catalog.service.schemas import ServiceUpdate
+
+logger = structlog.get_logger(__name__)
 
 
 async def create_service(uow: UnitOfWork, studio_id: int, data: dict[str, object]) -> Service:
     """Create a service."""
     service = Service(studio_id=studio_id, **data)
-    return await uow.services.add(service)
+    service = await uow.services.add(service)
+    log_domain_event(
+        logger,
+        "service_created",
+        studio_id=studio_id,
+        service_id=service.id,
+        visibility=service.visibility,
+    )
+    return service
 
 
 async def get_service(uow: UnitOfWork, service_id: int) -> Service | None:
@@ -51,13 +64,34 @@ async def update_service(
 ) -> Service:
     """Update service (partial update)."""
     update_data = schema.model_dump(exclude_unset=True)
+    old_visibility = service.visibility
     for field, value in update_data.items():
         setattr(service, field, value)
-    return await uow.services.save(service)
+    updated_service = await uow.services.save(service)
+    log_domain_event(
+        logger,
+        "service_updated",
+        studio_id=updated_service.studio_id,
+        service_id=updated_service.id,
+        updated_fields=sorted(update_data.keys()),
+        old_visibility=old_visibility if old_visibility != updated_service.visibility else None,
+        visibility=updated_service.visibility,
+    )
+    return updated_service
 
 
 async def deactivate_service(uow: UnitOfWork, service: Service) -> Service:
     """Deactivate service (soft delete to preserve slots/bookings)."""
+    old_visibility = service.visibility
     service.is_active = False
     service.visibility = ServiceVisibility.ARCHIVED
-    return await uow.services.save(service)
+    service = await uow.services.save(service)
+    log_domain_event(
+        logger,
+        "service_visibility_changed",
+        studio_id=service.studio_id,
+        service_id=service.id,
+        old_visibility=old_visibility,
+        visibility=service.visibility,
+    )
+    return service

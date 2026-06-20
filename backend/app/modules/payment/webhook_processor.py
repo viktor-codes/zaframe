@@ -108,12 +108,20 @@ async def _process_account_updated(
     ok = await update_studio_connect_status_from_account(uow, account=account)
     if ok:
         await _record_processed_event(uow, event_id=event_id, event_type=event_type)
-        logger.info("webhook_stripe_account_updated", request_id=request_id, event_id=event_id)
+        logger.info(
+            "webhook_stripe_account_updated",
+            request_id=request_id,
+            event_id=event_id,
+            event_type=event_type,
+            idempotency_outcome="processed",
+        )
         return
     logger.warning(
         "webhook_stripe_account_updated_unmatched",
         request_id=request_id,
         event_id=event_id,
+        event_type=event_type,
+        idempotency_outcome="unmatched",
     )
 
 
@@ -129,9 +137,21 @@ async def _process_refund_updated(
     ok = await update_refund_from_stripe_object(uow, stripe_refund=stripe_refund)
     if ok:
         await _record_processed_event(uow, event_id=event_id, event_type=event_type)
-        logger.info("webhook_refund_updated", request_id=request_id, event_id=event_id)
+        logger.info(
+            "webhook_refund_updated",
+            request_id=request_id,
+            event_id=event_id,
+            event_type=event_type,
+            idempotency_outcome="processed",
+        )
         return
-    logger.warning("webhook_refund_updated_unmatched", request_id=request_id, event_id=event_id)
+    logger.warning(
+        "webhook_refund_updated_unmatched",
+        request_id=request_id,
+        event_id=event_id,
+        event_type=event_type,
+        idempotency_outcome="unmatched",
+    )
 
 
 async def _process_paid_checkout(
@@ -145,7 +165,12 @@ async def _process_paid_checkout(
     logger = structlog.get_logger(__name__)
     checkout_session_id = _parse_checkout_session_id(session)
     if checkout_session_id is None:
-        logger.warning("webhook_checkout_missing_session_id", request_id=request_id, event_id=event_id)
+        logger.warning(
+            "webhook_checkout_missing_session_id",
+            request_id=request_id,
+            event_id=event_id,
+            event_type=event_type,
+        )
         return
 
     booking_id_str, order_id_str = _parse_checkout_session_metadata(session)
@@ -177,7 +202,9 @@ async def _process_paid_checkout(
                 request_id=request_id,
                 order_id=order_id,
                 event_id=event_id,
+                event_type=event_type,
                 payment_status=payment_status,
+                idempotency_outcome="processed",
             )
             return
         ok = await confirm_order_after_payment(uow, order_id, payment_intent_id=payment_intent_id)
@@ -188,6 +215,8 @@ async def _process_paid_checkout(
                 request_id=request_id,
                 order_id=order_id,
                 event_id=event_id,
+                event_type=event_type,
+                idempotency_outcome="processed",
             )
         else:
             logger.warning(
@@ -195,6 +224,8 @@ async def _process_paid_checkout(
                 request_id=request_id,
                 order_id=order_id,
                 event_id=event_id,
+                event_type=event_type,
+                idempotency_outcome="unmatched",
             )
         return
 
@@ -221,7 +252,9 @@ async def _process_paid_checkout(
                 request_id=request_id,
                 booking_id=booking_id,
                 event_id=event_id,
+                event_type=event_type,
                 payment_status=payment_status,
+                idempotency_outcome="processed",
             )
             return
         ok = await confirm_booking_after_payment(
@@ -236,6 +269,8 @@ async def _process_paid_checkout(
                 request_id=request_id,
                 booking_id=booking_id,
                 event_id=event_id,
+                event_type=event_type,
+                idempotency_outcome="processed",
             )
         else:
             logger.warning(
@@ -243,10 +278,17 @@ async def _process_paid_checkout(
                 request_id=request_id,
                 booking_id=booking_id,
                 event_id=event_id,
+                event_type=event_type,
+                idempotency_outcome="unmatched",
             )
         return
 
-    logger.warning("webhook_checkout_completed_missing_metadata", request_id=request_id, event_id=event_id)
+    logger.warning(
+        "webhook_checkout_completed_missing_metadata",
+        request_id=request_id,
+        event_id=event_id,
+        event_type=event_type,
+    )
 
 
 async def process_stripe_webhook_event(
@@ -264,7 +306,13 @@ async def process_stripe_webhook_event(
 
     try:
         if await uow.webhook_events.exists_by_event_id(event_id):
-            logger.info("webhook_duplicate_event_skipped", request_id=request_id, event_id=event_id)
+            logger.info(
+                "webhook_duplicate_event_skipped",
+                request_id=request_id,
+                event_id=event_id,
+                event_type=event_type,
+                idempotency_outcome="duplicate",
+            )
             return
 
         if event_type == "account.updated":
@@ -296,7 +344,13 @@ async def process_stripe_webhook_event(
         )
     except IntegrityError:
         await uow.rollback()
-        logger.info("webhook_duplicate_event_race", request_id=request_id, event_id=event_id)
+        logger.info(
+            "webhook_duplicate_event_race",
+            request_id=request_id,
+            event_id=event_id,
+            event_type=event_type,
+            idempotency_outcome="duplicate_race",
+        )
     except Exception:
         await uow.rollback()
         raise

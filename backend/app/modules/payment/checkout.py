@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import stripe
+import structlog
 
 from app.core.booking_holds import is_active_pending_hold
 from app.core.datetime_utils import utc_now
 from app.core.exceptions import NotFoundError, ValidationError
+from app.core.observability import log_domain_event
 from app.core.uow import UnitOfWork
 from app.integrations.stripe.checkout import (
     build_booking_checkout_params,
@@ -27,6 +29,8 @@ from app.modules.payment.stripe_client import (
     raise_stripe_app_error,
     settings,
 )
+
+logger = structlog.get_logger(__name__)
 
 
 async def create_checkout_session(
@@ -101,6 +105,15 @@ async def create_checkout_session(
 
     booking.checkout_session_id = session.id
     await uow.bookings.flush()
+    log_domain_event(
+        logger,
+        "checkout_session_created",
+        booking_id=booking.id,
+        occurrence_id=booking.occurrence_id,
+        payment_id=None,
+        checkout_session_id=session.id,
+        stripe_account_id=stripe_account_id,
+    )
 
     return {"checkout_url": session.url or "", "session_id": session.id}
 
@@ -180,5 +193,13 @@ async def create_order_checkout_session(
         raise_stripe_app_error(e, action="checkout session creation")
 
     await uow.orders.flush()
+    log_domain_event(
+        logger,
+        "checkout_session_created",
+        order_id=order.id,
+        studio_id=order.studio_id,
+        checkout_session_id=session.id,
+        stripe_account_id=stripe_account_id,
+    )
 
     return {"checkout_url": session.url or "", "session_id": session.id}
