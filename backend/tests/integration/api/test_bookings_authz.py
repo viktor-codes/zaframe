@@ -47,7 +47,8 @@ async def _create_studio_slot_and_booking(
         name="Authz Class",
     )
 
-    start = datetime.now(UTC) + timedelta(hours=3)
+    # WHY: beyond the studio default cancel_before_hours (24h) so a guest can cancel.
+    start = datetime.now(UTC) + timedelta(hours=48)
     end = start + timedelta(hours=1)
     r_occurrence = await client.post(
         "/api/v1/occurrences",

@@ -39,7 +39,7 @@ async def create_booking(uow: UnitOfWork, schema: BookingCreate) -> Booking:
 
     user_id is set after OTP verify (attach_guest_resources).
     """
-    occurrence = await uow.occurrences.get_by_id_for_update(schema.occurrence_id)
+    occurrence = await uow.occurrences.get_by_id_for_update_with_service(schema.occurrence_id)
     if occurrence is None:
         raise NotFoundError("Occurrence not found")
     if not occurrence.is_bookable() or not occurrence.service.is_bookable():

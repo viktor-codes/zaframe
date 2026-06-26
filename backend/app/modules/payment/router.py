@@ -16,7 +16,7 @@ from app.core.rate_limit import limiter
 from app.core.uow import UnitOfWork
 from app.models.studio import Studio
 from app.models.user import User
-from app.modules.catalog.studio import require_studio_permission
+from app.modules.payment.access import require_studio_payout_permission
 from app.modules.payment.schemas import (
     CheckoutSessionCreate,
     CheckoutSessionResponse,
@@ -146,11 +146,10 @@ async def get_studio_stripe_status_endpoint(
 ) -> StripeConnectStatusResponse:
     """Return Stripe Connect status for a studio payout dashboard."""
     studio = await get_stripe_connect_status(uow, studio_id=studio_id)
-    await require_studio_permission(
+    await require_studio_payout_permission(
         uow,
         studio=studio,
         user=user,
-        permission="manage_payouts",
     )
     return _stripe_connect_status_response(studio)
 
@@ -168,11 +167,10 @@ async def create_studio_stripe_onboarding_endpoint(
 ) -> StripeConnectOnboardResponse:
     """Create a Stripe-hosted Connect onboarding link for a studio."""
     studio = await get_stripe_connect_status(uow, studio_id=studio_id)
-    await require_studio_permission(
+    await require_studio_payout_permission(
         uow,
         studio=studio,
         user=user,
-        permission="manage_payouts",
     )
     studio, onboarding_url = await create_stripe_onboarding_link(
         uow,
@@ -197,11 +195,10 @@ async def get_studio_payout_settings_endpoint(
 ) -> StripeConnectStatusResponse:
     """Return payout settings for a studio dashboard."""
     studio = await get_stripe_connect_status(uow, studio_id=studio_id)
-    await require_studio_permission(
+    await require_studio_payout_permission(
         uow,
         studio=studio,
         user=user,
-        permission="manage_payouts",
     )
     return _stripe_connect_status_response(studio)
 
@@ -218,11 +215,10 @@ async def update_studio_payout_settings_endpoint(
 ) -> StripeConnectStatusResponse:
     """Refresh and return payout settings for a studio dashboard."""
     studio = await get_stripe_connect_status(uow, studio_id=studio_id)
-    await require_studio_permission(
+    await require_studio_payout_permission(
         uow,
         studio=studio,
         user=user,
-        permission="manage_payouts",
     )
     if schema.refresh_from_stripe:
         studio = await refresh_stripe_connect_status(uow, studio=studio)
@@ -247,11 +243,10 @@ async def list_studio_payments_endpoint(
 ) -> list[PaymentListItem]:
     """List studio payment history for owner/manager dashboard."""
     studio = await get_stripe_connect_status(uow, studio_id=studio_id)
-    await require_studio_permission(
+    await require_studio_payout_permission(
         uow,
         studio=studio,
         user=user,
-        permission="manage_payouts",
     )
     payments = await list_studio_payments(
         uow,
@@ -290,11 +285,10 @@ async def create_payment_refund_endpoint(
     """Create a Stripe refund for a payment after studio payout permission check."""
     payment = await get_payment_or_raise(uow, payment_id=payment_id, for_update=True)
     studio = await get_payment_studio_or_raise(uow, payment=payment)
-    await require_studio_permission(
+    await require_studio_payout_permission(
         uow,
         studio=studio,
         user=user,
-        permission="manage_payouts",
     )
     refund = await create_refund_for_payment(
         uow,

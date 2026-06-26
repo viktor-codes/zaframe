@@ -59,7 +59,8 @@ async def _create_bookable_slot(
         price_single_cents=1500,
     )
 
-    start = datetime.now(UTC) + timedelta(hours=4)
+    # WHY: beyond the studio default cancel_before_hours (24h) so a guest can cancel.
+    start = datetime.now(UTC) + timedelta(hours=48)
     end = start + timedelta(hours=1)
     r_occurrence = await client.post(
         "/api/v1/occurrences",

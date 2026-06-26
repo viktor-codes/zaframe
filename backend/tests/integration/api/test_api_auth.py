@@ -18,6 +18,7 @@ from app.main import app
 from app.models.booking import Booking, BookingStatus
 from app.models.occurrence import Occurrence
 from app.models.order import Order
+from app.models.service import Service
 from app.models.studio import Studio
 
 
@@ -230,9 +231,19 @@ async def test_delete_account_soft_deletes_user_and_revokes_sessions(client, app
             timezone="Europe/Dublin",
         )
     )
+    service = await uow.services.add(
+        Service(
+            studio_id=studio.id,
+            name="Privacy Service",
+            duration_minutes=60,
+            max_capacity=10,
+            price_single_cents=1500,
+        )
+    )
     occurrence = await uow.occurrences.add(
         Occurrence(
             studio_id=studio.id,
+            service_id=service.id,
             start_time=datetime.now(UTC) + timedelta(days=1),
             end_time=datetime.now(UTC) + timedelta(days=1, hours=1),
             title="Privacy Session",

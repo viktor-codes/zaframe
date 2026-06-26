@@ -77,6 +77,16 @@ logical, reviewable step.
   - export account data
   - deleted-user filtering
 
+## Phase 1.5 — Stabilization (Blocking)
+
+- [ ] [FR-12: Stabilization Before Frontend](./fr-12-stabilization.md)
+  - restore green quality gates (pytest, ruff, lint-imports, pyright)
+  - fix 13 failing tests (mock drift + occurrence `service_id` NOT NULL)
+  - fix broken `payment -> catalog` import contract
+  - fix prod auth/payment blockers (OTP delivery, OTP in logs, Connect fee/currency)
+  - close draft-service and enumeration access leaks
+  - based on the 2026-06-20 backend audit; do this before FR-10
+
 ## Phase 3 — Engineering Quality
 
 - [ ] [FR-08: Tests Structure](./fr-08-tests-structure.md)

@@ -254,12 +254,28 @@ async def _create_studio_and_single_occurrence(
     assert r_studio.status_code == 201
     studio_id = r_studio.json()["id"]
 
+    r_service = await client.post(
+        "/api/v1/services",
+        json={
+            "studio_id": studio_id,
+            "name": "Single Seat Service",
+            "type": "single",
+            "duration_minutes": 60,
+            "max_capacity": max_capacity,
+            "price_single_cents": 2000,
+        },
+        headers=headers,
+    )
+    assert r_service.status_code == 201, r_service.text
+    service_id = r_service.json()["id"]
+
     start = datetime.now(UTC) + timedelta(days=3)
     end = start + timedelta(hours=1)
     r_occ = await client.post(
         "/api/v1/occurrences",
         json={
             "studio_id": studio_id,
+            "service_id": service_id,
             "start_time": start.isoformat(),
             "end_time": end.isoformat(),
             "title": "Single seat",

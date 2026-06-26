@@ -121,11 +121,15 @@ def mock_uow():
 
 @pytest.mark.asyncio
 async def test_guest_checkout_with_valid_token_succeeds(mock_uow):
+    studio = MagicMock()
+    studio.stripe_account_id = None
+    studio.stripe_charges_enabled = False
     occurrence = MagicMock(spec=Occurrence)
     occurrence.price_cents = 1000
     occurrence.title = "Paid"
     occurrence.description = "Desc"
     occurrence.id = 1
+    occurrence.studio = studio
     booking = MagicMock(spec=Booking)
     booking.status = BookingStatus.PENDING
     booking.reserved_until = _active_hold_until()
@@ -134,7 +138,7 @@ async def test_guest_checkout_with_valid_token_succeeds(mock_uow):
     booking.user_id = None
     booking.guest_email = "g@x.com"
     booking.access_token = "valid-secret-token"
-    mock_uow.bookings.get_by_id_with_occurrence = AsyncMock(return_value=booking)
+    mock_uow.bookings.get_by_id_with_occurrence_and_studio = AsyncMock(return_value=booking)
     mock_client = _mock_stripe_checkout_session()
 
     with patch("app.modules.payment.stripe_client.settings") as mock_settings:
@@ -164,7 +168,7 @@ async def test_guest_checkout_without_token_returns_404(mock_uow):
     booking.guest_email = "g@x.com"
     booking.access_token = "stored-token"
     booking.occurrence = MagicMock(spec=Occurrence)
-    mock_uow.bookings.get_by_id_with_occurrence = AsyncMock(return_value=booking)
+    mock_uow.bookings.get_by_id_with_occurrence_and_studio = AsyncMock(return_value=booking)
 
     with pytest.raises(NotFoundError, match="Booking not found"):
         await create_checkout_session(
@@ -179,7 +183,7 @@ async def test_guest_checkout_with_wrong_token_returns_404(mock_uow):
     booking.guest_email = "g@x.com"
     booking.access_token = "stored-token"
     booking.occurrence = MagicMock(spec=Occurrence)
-    mock_uow.bookings.get_by_id_with_occurrence = AsyncMock(return_value=booking)
+    mock_uow.bookings.get_by_id_with_occurrence_and_studio = AsyncMock(return_value=booking)
 
     with pytest.raises(NotFoundError, match="Booking not found"):
         await create_checkout_session(
@@ -198,7 +202,7 @@ async def test_legacy_booking_without_token_guest_checkout_returns_404(mock_uow)
     booking.guest_email = "g@x.com"
     booking.access_token = None
     booking.occurrence = MagicMock(spec=Occurrence)
-    mock_uow.bookings.get_by_id_with_occurrence = AsyncMock(return_value=booking)
+    mock_uow.bookings.get_by_id_with_occurrence_and_studio = AsyncMock(return_value=booking)
 
     with pytest.raises(NotFoundError, match="Booking not found"):
         await create_checkout_session(
@@ -220,10 +224,14 @@ async def test_order_guest_checkout_with_valid_token_succeeds(mock_uow):
     order.id = 1
     order.guest_email = "o@x.com"
     order.access_token = "order-secret"
+    order.application_fee_cents = 0
+    order.studio = MagicMock()
+    order.studio.stripe_account_id = None
+    order.studio.stripe_charges_enabled = False
     active_booking = MagicMock(spec=Booking)
     active_booking.status = BookingStatus.PENDING
     active_booking.reserved_until = _active_hold_until()
-    mock_uow.orders.get_by_id_with_service = AsyncMock(return_value=order)
+    mock_uow.orders.get_by_id_with_service_and_studio = AsyncMock(return_value=order)
     mock_uow.bookings.list_ = AsyncMock(return_value=[active_booking])
     mock_client = _mock_stripe_checkout_session(session_id="cs_order_token")
 

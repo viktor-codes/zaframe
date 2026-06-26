@@ -31,6 +31,14 @@ class OccurrenceRepository(WriteRepositoryMixin):
         return result.scalar_one_or_none()
 
     async def get_by_id_for_update(self, occurrence_id: int) -> Occurrence | None:
+        # WHY: lock-only path (payment confirmation) — keep it free of eager loads so
+        # batched confirmation stays O(occurrences) in SQL, not O(occurrences)×relations.
+        result = await self._session.execute(
+            select(Occurrence).where(Occurrence.id == occurrence_id).with_for_update()
+        )
+        return result.scalar_one_or_none()
+
+    async def get_by_id_for_update_with_service(self, occurrence_id: int) -> Occurrence | None:
         result = await self._session.execute(
             select(Occurrence)
             .options(selectinload(Occurrence.service))

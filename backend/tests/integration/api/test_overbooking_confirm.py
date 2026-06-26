@@ -30,6 +30,10 @@ def _build_signed_stripe_webhook(
     payment_intent: str = "pi_test_overbook",
     event_id: str | None = None,
     secret: str = "whsec_test",
+    session_id: str | None = None,
+    payment_status: str = "paid",
+    amount_total: int = 2000,
+    currency: str = "eur",
 ) -> tuple[bytes, dict]:
     metadata: dict[str, str] = {}
     if booking_id is not None:
@@ -39,8 +43,12 @@ def _build_signed_stripe_webhook(
         "type": "checkout.session.completed",
         "data": {
             "object": {
+                "id": session_id or f"cs_{uuid.uuid4().hex}",
                 "metadata": metadata,
                 "payment_intent": payment_intent,
+                "payment_status": payment_status,
+                "amount_total": amount_total,
+                "currency": currency,
             }
         },
     }
