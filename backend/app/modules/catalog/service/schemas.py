@@ -128,7 +128,6 @@ class ServiceResponse(ServiceBase):
     id: int
     studio_id: int
     is_active: bool
-    visibility: ServiceVisibilityLiteral
     created_at: datetime
     updated_at: datetime
 

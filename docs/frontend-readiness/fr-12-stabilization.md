@@ -60,16 +60,19 @@ Two root causes, both are tests lagging behind shipped code.
 
 ### 3. Make `tests/` pass pyright strict
 
-- [ ] 1070 of 1076 pyright errors are in `tests/` (untyped mocks, `reportUnknownMemberType`,
+- [x] 1070 of 1076 pyright errors are in `tests/` (untyped mocks, `reportUnknownMemberType`,
       Stripe TypedDict access in assertions).
-- [ ] Decide and apply one consistent approach:
+- [x] Decide and apply one consistent approach:
   - type the test helpers/mocks and fixtures, or
   - explicitly scope strict checking (adjust `pyright` `include`/`exclude` in `pyproject.toml`)
     as a documented, intentional decision rather than silent drift.
-- [ ] Fix the single real `app/` error:
+- Decision: scope strict `pyright` to `app/` and `scripts/` for FR-12. `tests/` remain covered
+  by `pytest`; typing fixtures/mocks is deferred as explicit test-typing debt instead of
+  blocking frontend readiness on 1000+ test-only diagnostics.
+- [x] Fix the single real `app/` error:
       `backend/app/modules/catalog/service/schemas.py:131` — `visibility` overrides a field
       without a default value.
-- [ ] Goal: `uv run --group dev pyright` reports 0 errors under the chosen policy.
+- [x] Goal: `uv run --group dev pyright` reports 0 errors under the chosen policy.
 
 ### 4. Fix seed/simulation scripts
 

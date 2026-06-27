@@ -116,6 +116,7 @@ async def seed_demo_data(
             city=None,
             latitude=None,
             longitude=None,
+            cancel_before_hours=24,
             owner_id=owner.id,
             timezone=tz_name,
         )
@@ -173,6 +174,7 @@ async def seed_demo_data(
                         max_capacity=max_capacity,
                         price_cents=price_single,
                         course_price_cents=None,
+                        instructor_id=None,
                     )
                     await create_occurrence(uow, slot_schema)
 
@@ -202,8 +204,7 @@ async def simulate_bookings(
     single_occurrences = [
         s
         for s in occurrences
-        if s.service_id is not None
-        and any(srv.id == s.service_id and srv.type == ServiceType.SINGLE for srv in services)
+        if any(srv.id == s.service_id and srv.type == ServiceType.SINGLE for srv in services)
     ]
 
     course_occurrences = [

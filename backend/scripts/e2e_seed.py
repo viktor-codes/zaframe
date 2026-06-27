@@ -25,6 +25,7 @@ from sqlalchemy import select
 from app.core.datetime_utils import studio_local_date_now, studio_local_to_utc
 from app.core.security import create_access_token
 from app.core.uow_factory import uow_scope
+from app.models.service import Service
 from app.models.studio import Studio
 from app.models.user import User
 from app.modules.catalog.occurrence import OccurrenceCreate, create_occurrence
@@ -66,6 +67,7 @@ async def seed_e2e_bookable_occurrence() -> dict[str, int | str]:
                 city="Dublin",
                 latitude=None,
                 longitude=None,
+                cancel_before_hours=24,
                 owner_id=user.id,
                 timezone="Europe/Dublin",
             )
@@ -73,6 +75,27 @@ async def seed_e2e_bookable_occurrence() -> dict[str, int | str]:
             await uow.session.flush()
 
         tz_name = "Europe/Dublin"
+        service_result = await uow.session.execute(
+            select(Service).where(
+                Service.studio_id == studio.id,
+                Service.name == "E2E Morning Flow",
+            )
+        )
+        service = service_result.scalar_one_or_none()
+        if service is None:
+            service = Service(
+                studio_id=studio.id,
+                name="E2E Morning Flow",
+                description="Automated E2E test session",
+                type="single",
+                duration_minutes=60,
+                max_capacity=10,
+                price_single_cents=2500,
+            )
+            uow.session.add(service)
+            await uow.session.flush()
+            await uow.session.refresh(service)
+
         session_date = studio_local_date_now(tz_name) + timedelta(days=1)
         start = studio_local_to_utc(session_date, time(10, 0), tz_name)
         end = studio_local_to_utc(session_date, time(11, 0), tz_name)
@@ -85,7 +108,8 @@ async def seed_e2e_bookable_occurrence() -> dict[str, int | str]:
             price_cents=2500,
             course_price_cents=None,
             studio_id=studio.id,
-            service_id=None,
+            service_id=service.id,
+            instructor_id=None,
         )
         occurrence = await create_occurrence(uow, occurrence_schema)
 
