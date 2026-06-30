@@ -118,6 +118,8 @@ class Settings(BaseSettings):
     @property
     def cookie_samesite(self) -> Literal["lax", "strict", "none"]:
         """SameSite policy for browser auth cookies."""
+        if self.is_production:
+            return "none"
         return "lax"
 
     @computed_field
