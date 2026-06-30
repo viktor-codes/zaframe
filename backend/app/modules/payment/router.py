@@ -1,13 +1,12 @@
-from typing import Annotated, Literal
-
 """
-API роутер для платежей (Stripe Checkout).
+Payment API router (Stripe Checkout).
 
-Операции:
-- POST /payments/checkout-session — создать Checkout Session для бронирования
+Operations:
+- POST /payments/checkout-session - create a Checkout Session for a booking
 """
 
 from datetime import datetime
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Header, Query, Request
 
@@ -83,13 +82,13 @@ async def create_checkout_session_endpoint(
     ] = None,
 ) -> CheckoutSessionResponse:
     """
-    Создать Stripe Checkout Session для оплаты бронирования.
+    Create a Stripe Checkout Session for booking payment.
 
     Auth optional: guests pay during the active hold window; authenticated users
     may only checkout their own booking (404 on foreign IDs).
 
-    Возвращает URL для redirect пользователя на страницу оплаты Stripe.
-    После успешной оплаты Stripe вызовет webhook и обновит статус бронирования.
+    Returns a URL for redirecting the user to Stripe Checkout. After successful
+    payment, Stripe calls the webhook and updates the booking status.
     """
     result = await create_checkout_session(
         uow,
@@ -125,12 +124,12 @@ async def create_order_checkout_session_endpoint(
     ] = None,
 ) -> CheckoutSessionResponse:
     """
-    Создать Stripe Checkout Session для оплаты заказа (Order).
+    Create a Stripe Checkout Session for order payment.
 
     Auth optional: guests pay during the active hold window; authenticated users
     may only checkout their own order (404 on foreign IDs).
 
-    Сумма берётся из order.total_amount_cents, в metadata сессии попадает order_id.
+    The amount comes from order.total_amount_cents; session metadata includes order_id.
     """
     result = await create_order_checkout_session(
         uow,

@@ -173,7 +173,7 @@ async def create_order_checkout_session(
     if order.total_amount_cents <= 0:
         raise ValidationError("Order has no payable amount")
 
-    product_name = order.service.name if order.service is not None else f"Заказ #{order.id}"
+    product_name = order.service.name if order.service is not None else f"Order #{order.id}"
     stripe_account_id = _require_connect_account_for_checkout(order.studio)
 
     client = get_stripe_client()
@@ -184,7 +184,7 @@ async def create_order_checkout_session(
                 currency=settings.STRIPE_CURRENCY,
                 unit_amount_cents=order.total_amount_cents,
                 product_name=product_name,
-                product_description=f"Оплата заказа #{order.id}",
+                product_description=f"Payment for order #{order.id}",
                 success_url=success_url,
                 cancel_url=cancel_url,
                 guest_email=order.guest_email,

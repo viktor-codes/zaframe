@@ -1,9 +1,9 @@
 """
-Модель Order — заказ на оплату набора занятий.
+Order model for paying for one or more classes.
 
-Order — это "родитель" для одного или нескольких Booking:
-- для разового бронирования может быть не создан (legacy режим)
-- для курса один Order агрегирует все бронирования по слотам курса
+Order is the parent for one or more Booking rows:
+- it may be absent for single bookings in legacy mode
+- for courses, one Order aggregates all bookings across course occurrences
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 
 class OrderStatus:
-    """Статусы заказа."""
+    """Order statuses."""
 
     PENDING = "pending"
     PAID = "paid"
@@ -36,25 +36,25 @@ class OrderStatus:
 
 
 class Order(TimestampMixin, Base):
-    """Заказ на оплату услуги (single или курс)."""
+    """Payment order for a single service or course."""
 
     __tablename__ = "orders"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
 
-    # Привязка к студии и услуге
+    # Studio and service links
     studio_id: Mapped[int] = mapped_column(ForeignKey("studios.id"), nullable=False, index=True)
     service_id: Mapped[int | None] = mapped_column(
         ForeignKey("services.id"), nullable=True, index=True
     )
 
-    # Кто купил
+    # Buyer identity
     user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
     guest_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     guest_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     guest_phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
-    # Финансы
+    # Payment details
     total_amount_cents: Mapped[int] = mapped_column(Integer, nullable=False)
     currency: Mapped[str] = mapped_column(String(10), default="eur", nullable=False)
     application_fee_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -70,7 +70,7 @@ class Order(TimestampMixin, Base):
 
     access_token: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
 
-    # Связи
+    # Relationships
     studio: Mapped[Studio] = relationship("Studio", back_populates="orders")
     service: Mapped[Service | None] = relationship("Service", back_populates="orders")
     user: Mapped[User | None] = relationship("User", back_populates="orders")

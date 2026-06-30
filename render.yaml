@@ -1,8 +1,8 @@
-# Render Blueprint: New → Blueprint → подключи репо.
-# Сервис будет собран из папки backend.
+# Render Blueprint: New -> Blueprint -> connect the repository.
+# The service is built from the backend directory.
 services:
   - type: web
-    name: zaframe-api
+    name: zeeframe-api
     runtime: python
     plan: free
     rootDir: backend
@@ -21,7 +21,7 @@ services:
   # Expire stale pending holds and complete past confirmed bookings (TD-11).
   # Schedule is UTC; */5 = every 5 minutes.
   - type: cron
-    name: zaframe-booking-lifecycle
+    name: zeeframe-booking-lifecycle
     runtime: python
     plan: free
     rootDir: backend

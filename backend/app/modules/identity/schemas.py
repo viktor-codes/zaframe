@@ -1,30 +1,30 @@
 """
-Pydantic schemas для User модели.
+Pydantic schemas for the User model.
 
-Паттерн RORO (Receive an Object, Return an Object):
-- UserCreate: данные для создания пользователя
-- UserUpdate: данные для обновления (все поля опциональные)
-- UserResponse: данные для ответа API (включая id, timestamps)
+RORO pattern (Receive an Object, Return an Object):
+- UserCreate: data for creating a user
+- UserUpdate: data for updating a user, all fields optional
+- UserResponse: API response data including id and timestamps
 
-Почему отдельные схемы:
-- Безопасность: не возвращаем внутренние поля аутентификации
-- Валидация: разные правила для создания и обновления
-- Гибкость: можем добавлять вычисляемые поля в Response
+Why separate schemas:
+- Security: internal authentication fields are not returned
+- Validation: create and update have different rules
+- Flexibility: response schemas can add computed fields later
 """
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, EmailStr, Field
 
 
 class UserBase(BaseModel):
-    """Базовые поля пользователя (общие для Create и Update)."""
+    """Base user fields shared by create and update schemas."""
 
-    email: EmailStr = Field(..., description="Email пользователя (уникальный)")
-    name: str = Field(..., min_length=1, max_length=100, description="Имя пользователя")
-    phone: str | None = Field(None, max_length=20, description="Номер телефона (опционально)")
+    email: EmailStr = Field(..., description="Unique user email")
+    name: str = Field(..., min_length=1, max_length=100, description="User name")
+    phone: str | None = Field(None, max_length=20, description="Optional phone number")
 
 
 class UserCreate(UserBase):
-    """Схема для создания пользователя."""
+    """Schema for creating a user."""
 
     marketing_consent: bool = Field(
         default=False,
@@ -33,11 +33,11 @@ class UserCreate(UserBase):
 
 
 class UserUpdate(BaseModel):
-    """Схема для обновления пользователя (все поля опциональные)."""
+    """Schema for updating a user; all fields are optional."""
 
-    email: EmailStr | None = Field(None, description="Email пользователя")
-    name: str | None = Field(None, min_length=1, max_length=100, description="Имя пользователя")
-    phone: str | None = Field(None, max_length=20, description="Номер телефона")
+    email: EmailStr | None = Field(None, description="User email")
+    name: str | None = Field(None, min_length=1, max_length=100, description="User name")
+    phone: str | None = Field(None, max_length=20, description="Phone number")
     marketing_consent: bool | None = Field(
         None,
         description="Whether the user agreed to marketing communications",
@@ -70,7 +70,7 @@ class CurrentUserUpdate(BaseModel):
 
 
 class UserResponse(UserBase):
-    """Схема для ответа API (включает id и timestamps)."""
+    """API response schema including id and timestamps."""
 
     id: int
     role: str
@@ -86,11 +86,11 @@ class UserResponse(UserBase):
 
     model_config = ConfigDict(
         from_attributes=True,
-    )  # Pydantic v2: позволяет создавать из SQLAlchemy моделей
+    )  # Pydantic v2: allow creation from SQLAlchemy models
 
 
 class UserPublic(UserBase):
-    """Публичная информация о пользователе (без внутренних данных)."""
+    """Public user information without internal fields."""
 
     id: int
     created_at: AwareDatetime

@@ -36,7 +36,7 @@ frontend/e2e/
 
 ## Test scenario (happy path)
 
-1. **Arrange** — seed via API (preferred) or use known seed slug from `scripts/seed_and_simulate.py`:
+1. **Arrange** — seed via API (preferred) or use known seed slug from `tests.e2e.seed_and_simulate`:
    - Studio slug `test-yoga` (document actual slug in test constant)
    - Active occurrence with capacity > 0
 2. **Act**

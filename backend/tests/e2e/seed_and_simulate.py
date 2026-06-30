@@ -1,17 +1,17 @@
 """
-Утилита для сидирования демо-данных и имитации нагрузки.
+Seed demo data and simulate backend E2E/load scenarios.
 
-Цели:
-- создать N студий, у каждой по несколько услуг (single + course)
-- сгенерировать расписание курсов и слоты для одиночных занятий
-- симулировать пользователей: бронирования (single + course)
-- прогнать публичные сценарии и листинги (поиск студий, доступность)
-- опционально: создание Checkout Session (если настроен Stripe)
+Goals:
+- create N studios, each with several services (single + course)
+- generate course schedules and single-class occurrences
+- simulate users booking single classes and courses
+- run public scenarios and listings (studio search, availability)
+- optionally create Checkout Sessions when Stripe is configured
 
-Все вызовы идут через UnitOfWork и доменные исключения (AppError).
+All calls go through UnitOfWork and domain exceptions (AppError).
 
-Запуск (из директории backend):
-    uv run python -m scripts.seed_and_simulate
+Run from the backend directory:
+    uv run python -m tests.e2e.seed_and_simulate
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ import sys
 from datetime import datetime, time, timedelta
 from pathlib import Path
 
-sys.path.append(str(Path(__file__).resolve().parents[1]))
+sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from sqlalchemy import select, text
 
@@ -55,8 +55,10 @@ from app.modules.payment.service import (
 
 async def _get_or_create_owner(uow: UnitOfWork, idx: int) -> User:
     """
-    Найти или создать владельца для демо.
-    При повторном --force-seed пользователи остаются в БД — переиспользуем по email.
+    Find or create a demo studio owner.
+
+    Users remain in the database after repeated --force-seed runs, so owners are
+    reused by email.
     """
     email = f"seed-demo-owner-{idx}@example.com"
     user = await uow.users.get_by_email(email)
@@ -99,9 +101,7 @@ async def seed_demo_data(
     weeks_count: int = 4,
     single_slots_per_service: int = 3,
 ) -> None:
-    """
-    Сидирует базу тестовыми студиями, услугами, расписанием курсов и слотами для single-class.
-    """
+    """Seed studios, services, course schedules, and single-class occurrences."""
     random.seed(42)
 
     for i in range(studios_count):
@@ -173,7 +173,7 @@ async def seed_demo_data(
                         service_id=service.id,
                         start_time=start_dt,
                         end_time=end_dt,
-                        title=f"{service.name} — Drop-in",
+                        title=f"{service.name} - Drop-in",
                         description=None,
                         max_capacity=max_capacity,
                         price_cents=price_single,
@@ -191,9 +191,7 @@ async def simulate_bookings(
     users_count: int = 150,
     max_actions_per_user: int = 5,
 ) -> None:
-    """
-    Имитация бронирований: одиночные слоты и курсы.
-    """
+    """Simulate booking flows for single classes and courses."""
     random.seed(123)
 
     services_result = await uow.session.execute(select(Service))
@@ -318,7 +316,7 @@ async def simulate_bookings(
 
 
 async def simulate_public_flows(uow: UnitOfWork) -> None:
-    """Публичные сценарии: студия по slug, доступность курса."""
+    """Run public scenarios: studio by slug and course availability."""
     studios_result = await uow.session.execute(
         select(Studio)
         .where(
@@ -361,7 +359,7 @@ async def simulate_public_flows(uow: UnitOfWork) -> None:
 
 
 async def simulate_list_and_search(uow: UnitOfWork, *, rounds: int = 30) -> None:
-    """Нагрузка листингов и поиска: get_studios, get_studios_count."""
+    """Run listing and search load: get_studios and get_studios_count."""
     random.seed(456)
     for _ in range(rounds):
         skip = random.randint(0, 50)
@@ -373,7 +371,7 @@ async def simulate_list_and_search(uow: UnitOfWork, *, rounds: int = 30) -> None
 
 
 async def truncate_studios_services(uow: UnitOfWork) -> None:
-    """Очистить студии и услуги (CASCADE удалит слоты, бронирования, заказы)."""
+    """Clear studios and services; CASCADE removes occurrences, bookings, and orders."""
     await uow.session.execute(text("TRUNCATE TABLE services, studios RESTART IDENTITY CASCADE"))
     await uow.session.flush()
     print("[seed] truncated studios and services.")
@@ -381,10 +379,13 @@ async def truncate_studios_services(uow: UnitOfWork) -> None:
 
 async def main(force_seed: bool = False) -> None:
     """
-    1) Сидируем данные (при --force-seed сначала truncate)
-    2) Симуляция бронирований (single + course)
-    3) Публичные флоу (студия по slug, доступность)
-    4) Нагрузка листингов и поиска
+    Run the full demo scenario.
+
+    Steps:
+    1. Seed data, truncating first when --force-seed is set.
+    2. Simulate bookings for single classes and courses.
+    3. Run public flows for studio by slug and service availability.
+    4. Run listing and search load.
     """
     async with uow_scope() as uow:
         result = await uow.session.execute(select(Service))

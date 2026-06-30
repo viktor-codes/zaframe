@@ -1,7 +1,7 @@
 """
-Эндпоинт поиска студий и услуг.
+Studio and service search endpoint.
 
-MVP‑поиск с фильтрами по категории, городу, запросу, удобствам и гео‑координатам.
+MVP search with filters by category, city, query, amenities, and geo coordinates.
 """
 
 from __future__ import annotations
@@ -22,15 +22,15 @@ router = APIRouter(prefix="/search", tags=["search"])
 @router.get("", response_model=list[SearchResult])
 async def search_endpoint(
     uow: Annotated[UnitOfWork, Depends(get_uow)],
-    query: str | None = Query(None, description="Поисковый запрос по названию/описанию"),
-    category: ServiceCategory | None = Query(None, description="Категория услуги"),
-    city: str | None = Query(None, description="Город"),
-    lat: float | None = Query(None, description="Широта для гео-поиска"),
-    lng: float | None = Query(None, description="Долгота для гео-поиска"),
-    radius_km: int | None = Query(10, ge=0, description="Радиус в км"),
-    amenities: list[str] | None = Query(None, description="Удобства (можно передать несколько)"),
+    query: str | None = Query(None, description="Search query by name/description"),
+    category: ServiceCategory | None = Query(None, description="Service category"),
+    city: str | None = Query(None, description="City"),
+    lat: float | None = Query(None, description="Latitude for geo search"),
+    lng: float | None = Query(None, description="Longitude for geo search"),
+    radius_km: int | None = Query(10, ge=0, description="Radius in kilometers"),
+    amenities: list[str] | None = Query(None, description="Amenities; can be repeated"),
 ) -> list[SearchResult]:
-    """Поиск студий и услуг по комбинированным фильтрам."""
+    """Search studios and services by combined filters."""
     return await search_studios_and_services(
         uow,
         query=query,

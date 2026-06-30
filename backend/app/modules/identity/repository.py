@@ -1,6 +1,4 @@
-"""
-Репозиторий для сущности User.
-"""
+"""Repository for the User entity."""
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession

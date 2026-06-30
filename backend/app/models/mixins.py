@@ -5,7 +5,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 
 class TimestampMixin:
-    """Mixin для добавления полей created_at и updated_at (UTC, TIMESTAMPTZ)."""
+    """Mixin adding created_at and updated_at fields (UTC, TIMESTAMPTZ)."""
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

@@ -1,2 +1,2 @@
 # Core module: config, database, security
-# Содержит всё, что нужно приложению для работы: настройки, подключение к БД, безопасность.
+# Contains application essentials: settings, database connection, and security.

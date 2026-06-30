@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     """
 
     # === FastAPI settings ===
-    APP_NAME: str = Field(default="ZaFrame API", description="Smart Booking Service API")
+    APP_NAME: str = Field(default="ZeeFrame API", description="Smart Booking Service API")
     APP_VERSION: str = Field(default="0.1.0", description="Api Version")
     ENVIRONMENT: Literal["dev", "staging", "production"] = Field(
         default="dev",
@@ -25,14 +25,14 @@ class Settings(BaseSettings):
         default="INFO", description="Logging level (DEBUG, INFO, WARNING, ERROR)"
     )
 
-    # === Сервер ===
+    # === Server ===
     HOST: str = Field(default="0.0.0.0", description="Host for server startup")
     PORT: int = Field(default=8000, description="Port for server startup")
 
     # === Database (PostgreSQL) ===
     # Format: postgresql+asyncpg://user:password@host:port/dbname
     DATABASE_URL: str = Field(
-        default="postgresql+asyncpg://postgres:postgres@localhost:5432/zaframe",
+        default="postgresql+asyncpg://postgres:postgres@localhost:5432/zeeframe",
         description="Connection URL to PostgreSQL through asyncpg",
     )
 
@@ -40,10 +40,10 @@ class Settings(BaseSettings):
     @classmethod
     def normalize_database_url(cls, v: object) -> str:
         """
-        Нормализуем DATABASE_URL для корректной работы SQLAlchemy с asyncpg.
+        Normalize DATABASE_URL for SQLAlchemy + asyncpg compatibility.
 
-        Поддерживаем "сырые" URL из окружения (например, postgres://... с Heroku/Render)
-        и приводим их к унифицированному виду postgresql+asyncpg://...
+        Supports raw environment URLs such as postgres://... from Heroku/Render
+        and converts them to the canonical postgresql+asyncpg://... form.
         """
         if not isinstance(v, str):
             raise TypeError("DATABASE_URL must be a string")
@@ -54,7 +54,7 @@ class Settings(BaseSettings):
         if url.startswith("postgres://"):
             url = "postgresql://" + url[len("postgres://") :]
 
-        # 2) postgresql:// -> postgresql+asyncpg:// (если ещё не указали asyncpg)
+        # 2) postgresql:// -> postgresql+asyncpg:// when asyncpg is not set yet
         if url.startswith("postgresql://") and not url.startswith("postgresql+asyncpg://"):
             url = "postgresql+asyncpg://" + url[len("postgresql://") :]
 
@@ -90,13 +90,13 @@ class Settings(BaseSettings):
         default=None, description="Resend API key for sending emails (None = dev log mode)"
     )
     EMAIL_FROM: str = Field(
-        default="ZaFrame <onboarding@resend.dev>",
+        default="ZeeFrame <onboarding@resend.dev>",
         description="Verified sender identity for transactional email",
     )
 
     # === CORS ===
-    # В env задаётся одна строка, через запятую: https://zeeframe.vercel.app или url1,url2
-    # Локально: укажи точный origin фронта (порт из браузера), например http://localhost:3001
+    # Env uses one comma-separated string: https://zeeframe.vercel.app or url1,url2.
+    # Locally, set the exact frontend origin from the browser, e.g. http://localhost:3001.
     CORS_ORIGINS: str = Field(
         default="http://localhost:3000,http://localhost:3001,http://localhost:5173,http://localhost:5174,http://127.0.0.1:3000,http://127.0.0.1:3001,http://127.0.0.1:5173",
         description="Allowed origins for CORS (comma-separated in .env)",
@@ -125,7 +125,7 @@ class Settings(BaseSettings):
     @computed_field
     @property
     def cors_origins_list(self) -> list[str]:
-        """Список origins для CORSMiddleware (парсим из строки)."""
+        """Origins for CORSMiddleware parsed from a comma-separated string."""
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
 
     @computed_field
@@ -167,7 +167,7 @@ class Settings(BaseSettings):
         ),
     )
 
-    # === Pydantic Settings конфигурация ===
+    # === Pydantic Settings configuration ===
     model_config = SettingsConfigDict(
         env_file=".env",  # Load from .env file
         env_file_encoding="utf-8",  # Encoding of .env file

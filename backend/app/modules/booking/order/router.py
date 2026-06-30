@@ -17,8 +17,8 @@ router = APIRouter(prefix="/orders", tags=["orders"])
 async def list_my_orders_endpoint(
     user: Annotated[User, Depends(get_current_user_required)],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
-    skip: int = Query(0, ge=0, description="Пропустить N записей"),
-    limit: int = Query(20, ge=1, le=100, description="Максимум записей"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(20, ge=1, le=100, description="Maximum number of records"),
 ) -> list[OrderListItem]:
     """List orders for the current customer account."""
     orders = await get_my_orders(
@@ -35,8 +35,8 @@ async def list_my_orders_endpoint(
 async def list_owner_orders_endpoint(
     user: Annotated[User, Depends(get_current_user_required)],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
-    skip: int = Query(0, ge=0, description="Пропустить N записей"),
-    limit: int = Query(20, ge=1, le=100, description="Максимум записей"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(20, ge=1, le=100, description="Maximum number of records"),
     studio_id: int | None = Query(None, description="Required studio filter"),
 ) -> list[OrderListItem]:
     """List orders for studios owned by the current user."""

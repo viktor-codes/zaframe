@@ -1,9 +1,9 @@
 """
-Бизнес-логика для ScheduleTemplate и генерации occurrence'ов (Occurrence).
+Business logic for ScheduleTemplate rows and Occurrence generation.
 
-Здесь живут:
-- CRUD шаблонов расписания (ScheduleTemplate)
-- генерация occurrence'ов на основе параметров расписания
+This module owns:
+- ScheduleTemplate CRUD
+- Occurrence generation from schedule parameters
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ from app.modules.catalog.schedule.schemas import ScheduleTemplateCreate, Schedul
 async def create_schedule_template(
     uow: UnitOfWork, schema: ScheduleTemplateCreate
 ) -> ScheduleTemplate:
-    """Создать шаблон расписания для услуги."""
+    """Create a schedule template for a service."""
     if await uow.services.get_by_id(schema.service_id) is None:
         raise NotFoundError("Service not found")
 
@@ -40,19 +40,19 @@ async def get_schedule_templates_for_service(
     *,
     service_id: int,
 ) -> list[ScheduleTemplate]:
-    """Получить все шаблоны расписания для услуги."""
+    """Get all schedule templates for a service."""
     return await uow.schedule_templates.list_by_service_id(service_id)
 
 
 async def get_schedule_template(
     uow: UnitOfWork, schedule_template_id: int
 ) -> ScheduleTemplate | None:
-    """Получить один шаблон расписания."""
+    """Get one schedule template."""
     return await uow.schedule_templates.get_by_id(schedule_template_id)
 
 
 async def delete_schedule_template(uow: UnitOfWork, schedule: ScheduleTemplate) -> None:
-    """Удалить шаблон расписания."""
+    """Delete a schedule template."""
     await uow.schedule_templates.delete(schedule)
 
 
@@ -71,7 +71,7 @@ async def update_schedule_template(
 async def get_schedule_template_or_raise(
     uow: UnitOfWork, schedule_template_id: int
 ) -> ScheduleTemplate:
-    """Получить шаблон расписания или выбросить NotFoundError."""
+    """Get a schedule template or raise NotFoundError."""
     schedule = await uow.schedule_templates.get_by_id(schedule_template_id)
     if schedule is None:
         raise NotFoundError("ScheduleTemplate not found")
@@ -79,7 +79,7 @@ async def get_schedule_template_or_raise(
 
 
 def _iterate_weeks(start: date, weeks_count: int) -> Iterable[date]:
-    """Генерирует даты начала недель (по понедельникам) для заданного количества недель."""
+    """Generate week-start dates on Mondays for the requested number of weeks."""
     current = start
     for _ in range(weeks_count):
         yield current
@@ -97,9 +97,9 @@ async def occurrence_generator(
     start_date: date | None = None,
 ) -> list[Occurrence]:
     """
-    Генератор occurrence'ов (Occurrence) для курса.
+    Generate course occurrences.
 
-    Используется сценарием:
+    Used by:
     POST /studios/{id}/generate-occurrences
     Payload: {service_id, days: [1,3], start_time, weeks_count}
     """
@@ -118,11 +118,11 @@ async def occurrence_generator(
 
     start_date = start_date or studio_local_date_now(studio.timezone)
 
-    # Нормализуем start_date к ближайшему понедельнику назад, чтобы удобно идти по неделям.
+    # Normalize start_date to the closest previous Monday for simple week iteration.
     start_monday = start_date - timedelta(days=start_date.weekday())
 
-    # Сначала считаем все планируемые интервалы, потом одним запросом ищем пересечения,
-    # чтобы не плодить "мёртвые" слоты при повторной генерации.
+    # Compute every planned interval first, then query overlaps once to avoid
+    # creating dead sessions during repeated generation.
     planned_intervals: list[tuple[datetime, datetime]] = []
     duration = timedelta(minutes=service.duration_minutes)
 
@@ -132,7 +132,7 @@ async def occurrence_generator(
                 raise ValidationError("day_of_week must be between 0 and 6")
             day_date = week_start + timedelta(days=dow)
             if day_date < start_date:
-                # Пропускаем занятия до стартовой даты
+                # Skip sessions before the requested start date.
                 continue
 
             start_dt = studio_local_to_utc(day_date, start_time, studio.timezone)

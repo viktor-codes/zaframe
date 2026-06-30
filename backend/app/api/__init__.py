@@ -1,2 +1,2 @@
 # API routers
-# Роутеры будут организованы по версиям (v1) для обратной совместимости в будущем
+# Routers can be organized by versions (v1) for future backward compatibility.

@@ -44,7 +44,7 @@ export function seedBookableOccurrence(): E2eSeedData {
   }
 
   const backendDir = path.resolve(__dirname, "../../../backend");
-  const output = execSync("uv run python -m scripts.e2e_seed", {
+  const output = execSync("uv run python -m tests.e2e.e2e_seed", {
     cwd: backendDir,
     encoding: "utf-8",
     env: process.env,

@@ -1,14 +1,13 @@
-from typing import Annotated
-
 """
-API роутер для услуг (Service) и шаблонов расписания (ScheduleTemplate).
+Service and ScheduleTemplate API router.
 
-Операции:
-- CRUD для Service
-- Список и создание ScheduleTemplate для услуги
+Operations:
+- Service CRUD
+- List and create ScheduleTemplate rows for a service
 """
 
 from datetime import date
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 
@@ -51,9 +50,9 @@ async def create_service_endpoint(
     uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> ServiceResponse:
     """
-    Создать услугу (Service) в студии.
+    Create a service in a studio.
 
-    Требуется аутентификация и право управлять услугами студии.
+    Requires authentication and permission to manage studio services.
     """
     studio = await get_studio_or_raise(uow, schema.studio_id)
     await require_studio_permission(
@@ -86,14 +85,13 @@ async def get_service_availability_endpoint(
     uow: Annotated[UnitOfWork, Depends(get_uow)],
     start_date: date | None = Query(
         None,
-        description="Опциональная дата, с которой считать доступность (по умолчанию сегодня)",
+        description="Optional date to start availability calculation from; defaults to today",
     ),
 ) -> ServiceAvailabilityResponse:
     """
-    Получить подробную информацию о доступности курса.
+    Get detailed course availability information.
 
-    Используется фронтендом при открытии модалки покупки, чтобы
-    показать календарь занятости.
+    Used by the frontend purchase modal to show the occupancy calendar.
     """
     await get_public_or_authorized_service_or_raise(uow, service_id, user=user)
     return map_service_availability(
@@ -108,7 +106,7 @@ async def update_service_endpoint(
     user: Annotated[User, Depends(get_current_user_required)],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> ServiceResponse:
-    """Обновить услугу при наличии права manage_services."""
+    """Update a service when the user has manage_services permission."""
     service = await get_service_or_raise(uow, service_id)
     studio = await get_studio_or_raise(uow, service.studio_id)
     await require_studio_permission(
@@ -128,9 +126,9 @@ async def deactivate_service_endpoint(
     uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> ServiceResponse:
     """
-    Деактивировать услугу (soft delete).
+    Deactivate a service as a soft delete.
 
-    Связанные occurrence'ы и бронирования остаются в системе.
+    Related occurrences and bookings remain in the system.
     """
     service = await get_service_or_raise(uow, service_id)
     studio = await get_studio_or_raise(uow, service.studio_id)
@@ -153,7 +151,7 @@ async def list_service_schedule_templates_endpoint(
     user: Annotated[User | None, Depends(get_current_user)],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> list[ScheduleTemplateResponse]:
-    """Список шаблонов расписания для услуги."""
+    """List schedule templates for a service."""
     await get_public_or_authorized_service_or_raise(uow, service_id, user=user)
     schedules = await get_schedule_templates_for_service(uow, service_id=service_id)
     return [ScheduleTemplateResponse.model_validate(s) for s in schedules]
@@ -170,9 +168,7 @@ async def create_service_schedule_template_endpoint(
     user: Annotated[User, Depends(get_current_user_required)],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> ScheduleTemplateResponse:
-    """
-    Создать шаблон расписания (ScheduleTemplate) для услуги.
-    """
+    """Create a schedule template for a service."""
     service = await get_service_or_raise(uow, service_id)
     studio = await get_studio_or_raise(uow, service.studio_id)
     await require_studio_permission(
@@ -225,7 +221,7 @@ async def delete_schedule_template_endpoint(
     user: Annotated[User, Depends(get_current_user_required)],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> None:
-    """Удалить шаблон расписания при наличии права manage_schedule."""
+    """Delete a schedule template when the user has manage_schedule permission."""
     schedule = await get_schedule_template_or_raise(uow, schedule_template_id)
     service = await get_service_or_raise(uow, schedule.service_id)
     studio = await get_studio_or_raise(uow, service.studio_id)

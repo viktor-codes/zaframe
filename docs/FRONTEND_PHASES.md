@@ -1,4 +1,4 @@
-# ZaFrame — Project analysis and frontend work phases
+# ZeeFrame - Project analysis and frontend work phases
 
 ## 1. Current state analysis
 

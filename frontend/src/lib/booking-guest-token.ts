@@ -3,8 +3,8 @@
  * Stored in sessionStorage for the confirm page and Stripe checkout.
  */
 
-const TOKEN_PREFIX = "zaframe_booking_access_token_";
-const SNAPSHOT_PREFIX = "zaframe_booking_snapshot_";
+const TOKEN_PREFIX = "zeeframe_booking_access_token_";
+const SNAPSHOT_PREFIX = "zeeframe_booking_snapshot_";
 
 export interface GuestBookingSnapshot {
   id: number;

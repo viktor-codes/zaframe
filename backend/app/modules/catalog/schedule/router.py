@@ -1,6 +1,6 @@
-from typing import Annotated
-
 """HTTP routes for schedule generation (studio owner)."""
+
+from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
@@ -22,9 +22,9 @@ async def generate_studio_occurrences_endpoint(
     uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> list[OccurrenceResponse]:
     """
-    Сгенерировать расписание для услуги в студии.
+    Generate a schedule for a studio service.
 
-    Создаёт слоты на указанные дни недели в течение `weeks_count` недель.
+    Creates occurrences on the requested weekdays for `weeks_count` weeks.
     """
     studio = await get_studio_or_raise(uow, studio_id)
     await require_studio_permission(

@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Access token is memory-only now.
     try {
       if (typeof window !== "undefined") {
-        window.localStorage.removeItem("zaframe_access_token");
+        window.localStorage.removeItem("zeeframe_access_token");
       }
     } catch {
       // ignore storage errors (private mode, denied, etc.)

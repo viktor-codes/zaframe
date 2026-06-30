@@ -1,6 +1,4 @@
-"""
-Репозиторий для сущности Order.
-"""
+"""Repository for the Order entity."""
 
 from typing import Any, cast
 

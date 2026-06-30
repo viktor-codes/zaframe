@@ -1,5 +1,3 @@
-from typing import Annotated
-
 """Authentication API router.
 
 Email OTP flow (strict cookie mode):
@@ -8,6 +6,8 @@ Email OTP flow (strict cookie mode):
 3. POST /auth/refresh -> reads refresh token from cookie, rotates session
 4. POST /auth/logout -> revokes current refresh token and clears cookies
 """
+
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request, Response
 

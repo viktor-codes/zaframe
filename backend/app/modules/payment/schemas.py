@@ -1,5 +1,5 @@
 """
-Pydantic schemas для платежей (Stripe Checkout).
+Pydantic schemas for payments (Stripe Checkout).
 """
 
 from __future__ import annotations
@@ -28,19 +28,19 @@ def validate_checkout_redirect_urls(success_url: str, cancel_url: str) -> None:
 
 class CheckoutSessionCreate(BaseModel):
     """
-    Схема для создания Checkout Session для одиночного бронирования.
+    Schema for creating a Checkout Session for a single booking.
 
     Used for single-occurrence checkout (Booking).
     """
 
-    booking_id: int = Field(..., description="ID бронирования для оплаты")
+    booking_id: int = Field(..., description="Booking ID to pay for")
     success_url: HttpUrl = Field(
         ...,
-        description="URL перенаправления после успешной оплаты",
+        description="Redirect URL after successful payment",
     )
     cancel_url: HttpUrl = Field(
         ...,
-        description="URL перенаправления при отмене",
+        description="Redirect URL after cancellation",
     )
     access_token: str | None = Field(
         None,
@@ -50,19 +50,19 @@ class CheckoutSessionCreate(BaseModel):
 
 class OrderCheckoutSessionCreate(BaseModel):
     """
-    Схема для создания Checkout Session для заказа (Order).
+    Schema for creating a Checkout Session for an order.
 
-    Используется для курсового сценария, когда оплата идёт за весь заказ.
+    Used for course checkout when payment covers the whole order.
     """
 
-    order_id: int = Field(..., description="ID заказа для оплаты")
+    order_id: int = Field(..., description="Order ID to pay for")
     success_url: HttpUrl = Field(
         ...,
-        description="URL перенаправления после успешной оплаты",
+        description="Redirect URL after successful payment",
     )
     cancel_url: HttpUrl = Field(
         ...,
-        description="URL перенаправления при отмене",
+        description="Redirect URL after cancellation",
     )
     access_token: str | None = Field(
         None,
@@ -71,11 +71,11 @@ class OrderCheckoutSessionCreate(BaseModel):
 
 
 class CheckoutSessionResponse(BaseModel):
-    """Ответ с URL для перехода на Stripe Checkout."""
+    """Response containing the URL for redirecting to Stripe Checkout."""
 
     checkout_url: str = Field(
         ...,
-        description="URL для redirect на Stripe Checkout",
+        description="URL for redirecting to Stripe Checkout",
     )
     session_id: str = Field(
         ...,

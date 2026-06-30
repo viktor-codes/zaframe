@@ -1,10 +1,10 @@
 """
-Модель Studio - студия/бизнес, предлагающий классы.
+Studio model for a business offering classes.
 
-Почему отдельная модель Studio:
-- Один владелец может иметь несколько студий
-- Каждая студия имеет своё расписание и слоты
-- Удобно для масштабирования (несколько локаций, разные направления)
+Why Studio is a separate model:
+- One owner can have multiple studios
+- Each studio has its own schedule and occurrences
+- This scales to multiple locations and disciplines
 """
 
 from __future__ import annotations
@@ -29,9 +29,9 @@ if TYPE_CHECKING:
 
 class Studio(TimestampMixin, Base):
     """
-    Студия/бизнес, предлагающий классы для бронирования.
+    Studio or business offering bookable classes.
 
-    Принадлежит владельцу (User), имеет расписание и слоты.
+    Belongs to an owner (User) and has schedules and occurrences.
     """
 
     __tablename__ = "studios"
@@ -44,13 +44,13 @@ class Studio(TimestampMixin, Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
 
-    # Связь с владельцем
+    # Owner link
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
 
-    # Основная информация
+    # Core information
     name: Mapped[str] = mapped_column(String(200), nullable=False)
-    # Публичный slug для URL (например, /studios/yoga-hub-berlin).
-    # Делаем nullable для обратной совместимости, позже можно сделать обязательным.
+    # Public URL slug, e.g. /studios/yoga-hub-berlin.
+    # Nullable for backward compatibility; can become required later.
     slug: Mapped[str | None] = mapped_column(
         String(255),
         nullable=True,
@@ -61,7 +61,7 @@ class Studio(TimestampMixin, Base):
     logo_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     cover_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
 
-    # Контакты студии
+    # Studio contacts
     email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
     address: Mapped[str | None] = mapped_column(String(500), nullable=True)
@@ -83,8 +83,8 @@ class Studio(TimestampMixin, Base):
         server_default="UTC",
     )
 
-    # Настройки
-    is_active: Mapped[bool] = mapped_column(default=True)  # Активна ли студия
+    # Settings
+    is_active: Mapped[bool] = mapped_column(default=True)  # Whether the studio is active
     cancel_before_hours: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
@@ -105,7 +105,7 @@ class Studio(TimestampMixin, Base):
         nullable=True,
     )
 
-    # Связи
+    # Relationships
     owner: Mapped[User] = relationship("User", back_populates="studios")
     members: Mapped[list[StudioMember]] = relationship(
         "StudioMember",
@@ -113,17 +113,17 @@ class Studio(TimestampMixin, Base):
         cascade="all, delete-orphan",
     )
 
-    # Одна студия может иметь множество слотов
+    # One studio can have many occurrences
     occurrences: Mapped[list[Occurrence]] = relationship(
         "Occurrence", back_populates="studio", cascade="all, delete-orphan"
     )
-    # Одна студия может иметь множество услуг
+    # One studio can have many services
     services: Mapped[list[Service]] = relationship(
         "Service",
         back_populates="studio",
         cascade="all, delete-orphan",
     )
-    # Заказы, оформленные в этой студии
+    # Orders placed for this studio
     orders: Mapped[list[Order]] = relationship(
         "Order",
         back_populates="studio",

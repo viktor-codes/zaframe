@@ -1,6 +1,4 @@
-"""
-Бизнес-логика для пользователей.
-"""
+"""Business logic for users."""
 
 import structlog
 
@@ -22,12 +20,12 @@ def _anonymize_deleted_user_pii(user: User) -> None:
 
 
 async def get_user_by_id(uow: UnitOfWork, user_id: int) -> User | None:
-    """Получить пользователя по ID."""
+    """Get a user by ID."""
     return await uow.users.get_by_id(user_id)
 
 
 async def get_user_by_email(uow: UnitOfWork, email: str) -> User | None:
-    """Получить пользователя по email."""
+    """Get a user by email."""
     return await uow.users.get_by_email(email)
 
 

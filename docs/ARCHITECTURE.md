@@ -136,7 +136,7 @@ and use `uow_scope()` — same transaction boundary as the app.
 
 Production uses a **Render Cron Job** defined in root `render.yaml`:
 
-- Service: `zaframe-booking-lifecycle`
+- Service: `zeeframe-booking-lifecycle`
 - Schedule: `*/5 * * * *` (UTC)
 - Command: `python -m scripts.run_booking_lifecycle` (from `backend/` rootDir)
 

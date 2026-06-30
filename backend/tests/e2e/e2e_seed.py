@@ -1,5 +1,5 @@
 """
-Seed bookable studio + occurrence for Playwright E2E (guest checkout flow).
+Seed a bookable studio and occurrence for Playwright E2E tests (guest checkout flow).
 
 Prints a single JSON line to stdout:
   {
@@ -9,8 +9,8 @@ Prints a single JSON line to stdout:
     "ownerAccessToken": "..."
   }
 
-Run from backend directory:
-    uv run python -m scripts.e2e_seed
+Run from the backend directory:
+    uv run python -m tests.e2e.e2e_seed
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ import sys
 from datetime import time, timedelta
 from pathlib import Path
 
-sys.path.append(str(Path(__file__).resolve().parents[1]))
+sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from sqlalchemy import select
 
@@ -53,9 +53,7 @@ async def seed_e2e_bookable_occurrence() -> dict[str, int | str]:
             await uow.session.flush()
             await uow.session.refresh(user)
 
-        result = await uow.session.execute(
-            select(Studio).where(Studio.slug == "e2e-yoga")
-        )
+        result = await uow.session.execute(select(Studio).where(Studio.slug == "e2e-yoga"))
         studio = result.scalar_one_or_none()
         if studio is None:
             studio_schema = StudioCreate(
@@ -128,6 +126,7 @@ async def seed_e2e_bookable_occurrence() -> dict[str, int | str]:
 
 
 async def main() -> None:
+    """Seed E2E data and print it as JSON for frontend fixtures."""
     payload = await seed_e2e_bookable_occurrence()
     json.dump(payload, sys.stdout)
     sys.stdout.write("\n")

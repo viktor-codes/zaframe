@@ -27,11 +27,11 @@ async def get_studio_public(
     slug: str,
 ) -> StudioPublicDTO:
     """
-    Публичное представление студии по slug.
+    Public studio representation by slug.
 
-    Возвращает:
-    - основную информацию о студии
-    - список услуг с ближайшими occurrence'ами.
+    Returns:
+    - core studio information
+    - services with upcoming occurrences.
     """
     studio = await uow.studios.get_by_slug_with_services_occurrences(slug)
     if studio is None:
@@ -39,7 +39,7 @@ async def get_studio_public(
 
     services_public: list[PublicServiceDTO] = []
 
-    # Собираем все будущие слоты студии, чтобы одним запросом посчитать заполненность.
+    # Collect all upcoming studio occurrences to calculate fill counts in one query.
     now_utc = utc_now()
     all_upcoming_occurrences: list[Occurrence] = []
     for service in studio.services:
@@ -106,7 +106,7 @@ async def get_studio_public(
                 max_capacity=service.max_capacity,
                 price_single_cents=service.price_single_cents,
                 price_course_cents=service.price_course_cents,
-                cover_image_url=None,  # можно будет добавить из отдельного поля/таблицы
+                cover_image_url=None,  # can be added later from a dedicated field/table
                 next_term_start=next_term_start,
                 term_end=term_end,
                 occurrences_count=occurrences_count,

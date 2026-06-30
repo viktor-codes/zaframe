@@ -1,20 +1,20 @@
 """
-Настройка подключения к PostgreSQL через SQLAlchemy 2.0 (async).
+PostgreSQL connection setup through SQLAlchemy 2.0 async APIs.
 
-Почему asyncpg:
-- Асинхронный драйвер для PostgreSQL, работает с asyncio
-- Высокая производительность для I/O операций
-- Поддерживает connection pooling из коробки
+Why asyncpg:
+- Async PostgreSQL driver that works with asyncio
+- Strong performance for I/O-bound operations
+- Supports connection pooling out of the box
 
-Почему SQLAlchemy 2.0 AsyncSession:
-- Официальная поддержка async/await в SQLAlchemy 2.0
-- Использует create_async_engine вместо create_engine
-- AsyncSession вместо Session для всех операций с БД
+Why SQLAlchemy 2.0 AsyncSession:
+- Official async/await support in SQLAlchemy 2.0
+- Uses create_async_engine instead of create_engine
+- Uses AsyncSession instead of Session for all DB operations
 
-Почему DeclarativeBase:
-- Новая база для моделей в SQLAlchemy 2.0 (вместо declarative_base)
-- Поддерживает type hints через Mapped и mapped_column
-- Совместим с async операциями
+Why DeclarativeBase:
+- Modern SQLAlchemy 2.0 base class for models instead of declarative_base
+- Supports type hints through Mapped and mapped_column
+- Compatible with async operations
 """
 
 from collections.abc import AsyncGenerator
@@ -24,45 +24,45 @@ from sqlalchemy.orm import DeclarativeBase
 
 from app.core.config import settings
 
-# === Engine: пул соединений к БД ===
-# create_async_engine создаёт асинхронный engine с connection pooling.
-# pool_pre_ping=True — проверяет соединения перед использованием (автовосстановление).
-# echo=settings.DEBUG — логирует SQL запросы в режиме отладки.
+# === Engine: database connection pool ===
+# create_async_engine creates an async engine with connection pooling.
+# pool_pre_ping=True checks connections before use for automatic recovery.
+# echo=settings.DEBUG logs SQL queries in debug mode.
 engine = create_async_engine(
     settings.DATABASE_URL,
-    pool_pre_ping=True,  # Проверка соединений перед использованием
-    pool_size=20,  # Увеличиваем количество постоянных соединений
-    max_overflow=10,  # Сколько можно открыть сверх лимита в пике
-    pool_timeout=30,  # Сколько ждать свободного слота
-    pool_recycle=3600,  # Пересоздавать соединение раз в час
-    echo=settings.DEBUG,  # Логирование SQL в режиме отладки
+    pool_pre_ping=True,  # Check connections before use
+    pool_size=20,  # Number of persistent connections
+    max_overflow=10,  # Extra connections allowed during bursts
+    pool_timeout=30,  # Seconds to wait for an available connection
+    pool_recycle=3600,  # Recreate connections once per hour
+    echo=settings.DEBUG,  # Log SQL in debug mode
 )
 
 
 # === Session Factory ===
-# async_sessionmaker создаёт фабрику для AsyncSession.
-# expire_on_commit=False — объекты остаются доступными после commit (удобно для FastAPI).
-# class_=AsyncSession — явно указываем класс сессии.
+# async_sessionmaker creates a factory for AsyncSession.
+# expire_on_commit=False keeps objects available after commit, which fits FastAPI handlers.
+# class_=AsyncSession explicitly selects the session class.
 async_session_maker = async_sessionmaker(
     engine,
     class_=AsyncSession,
-    expire_on_commit=False,  # Объекты остаются доступными после commit
+    expire_on_commit=False,  # Objects remain available after commit
 )
 
 
-# === Base для моделей ===
-# DeclarativeBase — база для всех ORM моделей.
-# Все модели будут наследоваться от этого класса.
-# Используется в app/models/*.py
+# === Base for models ===
+# DeclarativeBase is the base for all ORM models.
+# All models inherit from this class.
+# Used in app/models/*.py
 class Base(DeclarativeBase):
     pass
 
 
 async def get_db() -> AsyncGenerator[AsyncSession]:
     """
-    Dependency для получения сессии БД в роутерах.
+    Dependency for obtaining a DB session in routers.
 
-    Использование:
+    Usage:
         from typing import Annotated
 
         @router.get("/users")

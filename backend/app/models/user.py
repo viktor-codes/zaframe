@@ -1,15 +1,15 @@
 """
-Модель User - пользователь системы.
+User model for application accounts.
 
-Почему email как основной идентификатор:
-- Уникальность для OTP-аутентификации
-- Не требует username (меньше полей для ввода)
-- Email уже используется для уведомлений
+Why email is the primary identifier:
+- Unique for OTP authentication
+- No username required, which keeps input short
+- Email is already used for notifications
 
-Почему phone опциональный:
-- Не все хотят делиться телефоном
-- Email достаточно для большинства случаев
-- Можно добавить позже при необходимости
+Why phone is optional:
+- Not every user wants to share a phone number
+- Email is enough for most flows
+- Phone can be added later when needed
 """
 
 from __future__ import annotations
@@ -42,17 +42,17 @@ class UserRole(enum.StrEnum):
 
 class User(TimestampMixin, Base):
     """
-    Пользователь системы (клиент или владелец студии).
+    Application user, either a customer or a studio owner.
 
-    Создаётся автоматически при первой успешной OTP-верификации.
-    Может быть привязан к студии как владелец (через Studio.owner_id).
+    Created automatically after the first successful OTP verification.
+    Can be linked to a studio as owner through Studio.owner_id.
     """
 
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
 
-    # Основные данные
+    # Core profile data
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
@@ -87,7 +87,7 @@ class User(TimestampMixin, Base):
         index=True,
     )
 
-    # Связи
+    # Relationships
     studios: Mapped[list[Studio]] = relationship(
         "Studio",
         back_populates="owner",

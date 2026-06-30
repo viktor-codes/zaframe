@@ -81,10 +81,10 @@ async def test_send_otp_email_uses_configured_sender():
 
     with (
         patch("app.integrations.email.service.settings.RESEND_API_KEY", "re_test"),
-        patch("app.integrations.email.service.settings.EMAIL_FROM", "ZaFrame <login@example.com>"),
+        patch("app.integrations.email.service.settings.EMAIL_FROM", "ZeeFrame <login@example.com>"),
         patch("resend.Emails.send", side_effect=capture_send),
     ):
         result = await send_otp_email("john@domain.com", "123456")
 
     assert result is True
-    assert sent_payloads[0]["from"] == "ZaFrame <login@example.com>"
+    assert sent_payloads[0]["from"] == "ZeeFrame <login@example.com>"

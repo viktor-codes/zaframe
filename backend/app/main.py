@@ -1,5 +1,5 @@
 """
-ZaFrame API entrypoint.
+ZeeFrame API entrypoint.
 
 `main.py` stays minimal: create the `FastAPI` app, include routers, and define
 the lifespan hook. All business logic lives in `core/`, `api/`, and `modules/`.

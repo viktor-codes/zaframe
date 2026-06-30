@@ -1,19 +1,19 @@
+"""
+Studio API router.
+
+CRUD operations:
+- GET /studios - paginated list
+- GET /studios/{id} - one studio
+- POST /studios - create
+- PATCH /studios/{id} - update
+- DELETE /studios/{id} - delete
+
+Why the router is separated:
+- Thin layer for HTTP concerns, validation, and service calls
+- Matches the structure defined in .cursorrules
+"""
+
 from typing import Annotated
-
-"""
-API роутер для студий.
-
-CRUD операции:
-- GET /studios — список с пагинацией
-- GET /studios/{id} — одна студия
-- POST /studios — создать
-- PATCH /studios/{id} — обновить
-- DELETE /studios/{id} — удалить
-
-Почему роутер вынесен отдельно:
-- Тонкий слой: только HTTP логика, валидация, вызов сервисов
-- Соответствует структуре из .cursorrules
-"""
 
 from fastapi import APIRouter, Depends, Query
 
@@ -46,21 +46,21 @@ router = APIRouter(prefix="/studios", tags=["studios"])
 async def list_studios(
     user: Annotated[User | None, Depends(get_current_user)],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
-    skip: int = Query(0, ge=0, description="Пропустить N записей"),
-    limit: int = Query(20, ge=1, le=100, description="Максимум записей"),
-    owner_id: int | None = Query(None, description="Фильтр по владельцу (для панели owner)"),
-    is_active: bool | None = Query(None, description="Фильтр по статусу"),
-    city: str | None = Query(None, description="Город (Explore)"),
-    category: ServiceCategory | None = Query(None, description="Категория услуги (Explore)"),
-    query: str | None = Query(None, description="Поиск по названию студии/услуги (Explore)"),
-    amenities: list[str] | None = Query(None, description="Удобства (Explore)"),
-    include_services: bool = Query(
-        False, description="Вернуть услуги для карточек (цена, категория)"
-    ),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(20, ge=1, le=100, description="Maximum number of records"),
+    owner_id: int | None = Query(None, description="Filter by owner for owner dashboards"),
+    is_active: bool | None = Query(None, description="Filter by active status"),
+    city: str | None = Query(None, description="Explore city filter"),
+    category: ServiceCategory | None = Query(None, description="Explore service category filter"),
+    query: str | None = Query(None, description="Explore studio/service name search"),
+    amenities: list[str] | None = Query(None, description="Explore amenities filter"),
+    include_services: bool = Query(False, description="Return card services with price/category"),
 ):
     """
-    Список студий с пагинацией и опциональными фильтрами для Explore.
-    При include_services=true возвращает list[SearchResult] (студия + услуги), иначе list[StudioResponse].
+    List studios with pagination and optional Explore filters.
+
+    When include_services=true, returns list[SearchResult] (studio + services);
+    otherwise returns list[StudioResponse].
     """
     if owner_id is not None:
         if user is None:
@@ -108,14 +108,14 @@ async def list_my_studios(
 async def count_studios(
     user: Annotated[User | None, Depends(get_current_user)],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
-    owner_id: int | None = Query(None, description="Фильтр по владельцу"),
-    is_active: bool | None = Query(None, description="Фильтр по статусу"),
-    city: str | None = Query(None, description="Город (Explore)"),
-    category: ServiceCategory | None = Query(None, description="Категория услуги (Explore)"),
-    query: str | None = Query(None, description="Поиск по названию (Explore)"),
-    amenities: list[str] | None = Query(None, description="Удобства (Explore)"),
+    owner_id: int | None = Query(None, description="Filter by owner"),
+    is_active: bool | None = Query(None, description="Filter by active status"),
+    city: str | None = Query(None, description="Explore city filter"),
+    category: ServiceCategory | None = Query(None, description="Explore service category filter"),
+    query: str | None = Query(None, description="Explore name search"),
+    amenities: list[str] | None = Query(None, description="Explore amenities filter"),
 ) -> dict[str, int]:
-    """Количество студий (для пагинации, те же фильтры что и list)."""
+    """Count studios for pagination using the same filters as list."""
     if owner_id is not None:
         if user is None:
             raise UnauthorizedError("Authentication required")
@@ -138,9 +138,9 @@ async def list_studio_services_endpoint(
     studio_id: int,
     user: Annotated[User, Depends(get_current_user_required)],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
-    skip: int = Query(0, ge=0, description="Пропустить N записей"),
-    limit: int = Query(20, ge=1, le=100, description="Максимум записей"),
-    is_active: bool | None = Query(None, description="Фильтр по статусу услуги"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(20, ge=1, le=100, description="Maximum number of records"),
+    is_active: bool | None = Query(None, description="Filter by service active status"),
 ) -> list[ServiceResponse]:
     """List services for a studio dashboard with service-management permission."""
     studio = await get_studio_or_raise(uow, studio_id)
@@ -165,7 +165,7 @@ async def get_studio_by_id(
     studio_id: int,
     uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> StudioResponse:
-    """Получить студию по ID."""
+    """Get a studio by ID."""
     studio = await get_studio_or_raise(uow, studio_id)
     return StudioResponse.model_validate(studio)
 
@@ -177,8 +177,9 @@ async def create_studio_endpoint(
     uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> StudioResponse:
     """
-    Создать студию (требуется аутентификация).
-    owner_id берётся из токена, переданный в schema игнорируется.
+    Create a studio; authentication is required.
+
+    owner_id comes from the token, and any schema-provided owner_id is ignored.
     """
     schema_with_owner = schema.model_copy(update={"owner_id": user.id})
     studio = await create_studio(uow, schema_with_owner)
@@ -192,7 +193,7 @@ async def update_studio_endpoint(
     user: Annotated[User, Depends(get_current_user_required)],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> StudioResponse:
-    """Обновить студию при наличии права manage_studio."""
+    """Update a studio when the user has manage_studio permission."""
     studio = await get_studio_or_raise(uow, studio_id)
     await require_studio_permission(
         uow,
@@ -210,7 +211,7 @@ async def delete_studio_endpoint(
     user: Annotated[User, Depends(get_current_user_required)],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> None:
-    """Удалить студию при наличии права manage_studio. Удалятся и связанные слоты."""
+    """Delete a studio when the user has manage_studio permission, including occurrences."""
     studio = await get_studio_or_raise(uow, studio_id)
     await require_studio_permission(
         uow,

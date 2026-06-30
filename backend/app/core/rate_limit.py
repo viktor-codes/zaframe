@@ -1,8 +1,8 @@
 """
-Rate limiting для чувствительных эндпоинтов (OTP, refresh и т.д.).
+Rate limiting for sensitive endpoints such as OTP and refresh.
 
-Используется SlowAPI; лимиты привязаны к IP (get_remote_address).
-In-memory backend по умолчанию; при заданном REDIS_URL — shared storage для нескольких инстансов.
+Uses SlowAPI; limits are bound to IP via get_remote_address.
+The default backend is in-memory; REDIS_URL enables shared storage across instances.
 """
 
 from typing import Any

@@ -58,7 +58,7 @@ test.describe("guest checkout critical flow", () => {
     expect(bookingId).toBeGreaterThan(0);
 
     const guestAccessToken = await page.evaluate((id) => {
-      return sessionStorage.getItem(`zaframe_booking_access_token_${id}`);
+      return sessionStorage.getItem(`zeeframe_booking_access_token_${id}`);
     }, bookingId);
     expect(guestAccessToken).toBeTruthy();
 

@@ -1,4 +1,4 @@
-"""Unit tests for scripts.run_booking_lifecycle entrypoint."""
+"""Integration tests for the scripts.run_booking_lifecycle entrypoint."""
 
 from unittest.mock import AsyncMock, MagicMock
 

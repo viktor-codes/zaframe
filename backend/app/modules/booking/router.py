@@ -1,14 +1,14 @@
+"""
+Booking API router.
+
+Operations:
+- POST /bookings - create a booking in guest mode
+- GET /bookings - list bookings with filters
+- GET /bookings/{id} - fetch one booking
+- PATCH /bookings/{id}/cancel - cancel a booking
+"""
+
 from typing import Annotated
-
-"""
-API роутер для бронирований.
-
-Операции:
-- POST /bookings — создать (гостевой режим)
-- GET /bookings — список с фильтрами
-- GET /bookings/{id} — одно бронирование
-- PATCH /bookings/{id}/cancel — отменить
-"""
 
 from fastapi import APIRouter, Depends, Query, Request
 
@@ -64,11 +64,11 @@ async def create_booking_endpoint(
     uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> BookingCreatedResponse | CourseBookingResponse:
     """
-    Создать бронирование.
+    Create a booking.
 
-    Варианты:
-    - разовое бронирование слота (BookingCreate)
-    - покупка курса (CourseBookingCreate) — создаёт Order и N бронирований
+    Variants:
+    - single occurrence booking (BookingCreate)
+    - course purchase (CourseBookingCreate), creating one Order and N bookings
     """
     if isinstance(schema, CourseBookingCreate):
         result = await create_course_booking(
@@ -89,12 +89,12 @@ async def create_booking_endpoint(
 async def list_bookings(
     uow: Annotated[UnitOfWork, Depends(get_uow)],
     user: Annotated[User, Depends(get_current_user_required)],
-    skip: int = Query(0, ge=0, description="Пропустить N записей"),
-    limit: int = Query(20, ge=1, le=100, description="Максимум записей"),
-    occurrence_id: int | None = Query(None, description="Фильтр по слоту"),
-    status: str | None = Query(None, description="Фильтр по статусу"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(20, ge=1, le=100, description="Maximum number of records"),
+    occurrence_id: int | None = Query(None, description="Filter by occurrence"),
+    status: str | None = Query(None, description="Filter by status"),
 ) -> list[BookingOwnerResponse]:
-    """Список бронирований студий, которыми владеет текущий пользователь."""
+    """List bookings for studios owned by the current user."""
     bookings = await get_owner_bookings(
         uow,
         user,
@@ -110,17 +110,17 @@ async def list_bookings(
 async def list_my_bookings(
     uow: Annotated[UnitOfWork, Depends(get_uow)],
     user: Annotated[User, Depends(get_current_user_required)],
-    skip: int = Query(0, ge=0, description="Пропустить N записей"),
-    limit: int = Query(50, ge=1, le=100, description="Максимум записей"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(50, ge=1, le=100, description="Maximum number of records"),
     include_guest_email: bool = Query(
         True,
-        description="Включать гостевые бронирования по совпадению guest_email с email пользователя",
+        description="Include guest bookings whose guest_email matches the user email",
     ),
 ) -> list[BookingSelfListItem]:
     """
-    Кабинетный список бронирований текущего пользователя (без N+1).
+    List current-user bookings for the account dashboard without N+1 queries.
 
-    Возвращает Booking + Occurrence + Studio, чтобы фронт не делал дополнительные запросы.
+    Returns Booking + Occurrence + Studio so the frontend does not need extra requests.
     """
     bookings = await get_my_bookings(
         uow,
@@ -145,10 +145,10 @@ async def list_my_bookings(
 async def count_bookings(
     uow: Annotated[UnitOfWork, Depends(get_uow)],
     user: Annotated[User, Depends(get_current_user_required)],
-    occurrence_id: int | None = Query(None, description="Фильтр по слоту"),
-    status: str | None = Query(None, description="Фильтр по статусу"),
+    occurrence_id: int | None = Query(None, description="Filter by occurrence"),
+    status: str | None = Query(None, description="Filter by status"),
 ) -> dict[str, int]:
-    """Количество бронирований студий владельца (для пагинации)."""
+    """Count owner-studio bookings for pagination."""
     count = await get_owner_bookings_count(
         uow,
         user,
@@ -164,7 +164,7 @@ async def get_booking_by_id(
     uow: Annotated[UnitOfWork, Depends(get_uow)],
     user: Annotated[User, Depends(get_current_user_required)],
 ) -> BookingSelfResponse | BookingOwnerResponse:
-    """Получить бронирование по ID: своё или доступное через studio permission."""
+    """Fetch a booking by ID when owned by the user or allowed by studio permission."""
     booking = await get_booking_for_user_or_raise(uow, booking_id, user)
     return map_booking_for_user(booking, user)
 
@@ -178,7 +178,7 @@ async def cancel_booking_endpoint(
     uow: Annotated[UnitOfWork, Depends(get_uow)],
     user: Annotated[User, Depends(get_current_user_required)],
 ) -> BookingSelfResponse | BookingOwnerResponse:
-    """Отменить бронирование: своё или доступное через studio permission."""
+    """Cancel a booking when owned by the user or allowed by studio permission."""
     booking = await get_booking_for_user_or_raise(uow, booking_id, user)
     cancelled = await cancel_booking(uow, booking, user=user)
     return map_booking_for_user(cancelled, user)

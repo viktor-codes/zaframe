@@ -33,7 +33,7 @@ manual testing through the frontend.
 
 Implementation:
 
-- Production runs Render cron `zaframe-booking-lifecycle` from `render.yaml` every 5 minutes UTC.
+- Production runs Render cron `zeeframe-booking-lifecycle` from `render.yaml` every 5 minutes UTC.
 - Local run: `make booking-lifecycle` or `cd backend && uv run python -m scripts.run_booking_lifecycle`.
 - Lifecycle is idempotent. It expires `pending` bookings whose `reserved_until <= now`, clears their holds, expires pending orders without active bookings, and completes `confirmed` bookings only when `occurrence.end_time < now`.
 

@@ -1,10 +1,10 @@
 """
-Бизнес-логика для студий.
+Business logic for studios.
 
-Почему сервисный слой:
-- Роутеры остаются тонкими (только HTTP логика)
-- Бизнес-логика в одном месте — проще тестировать
-- Переиспользование в разных эндпоинтах (API, webhooks, CLI)
+Why the service layer exists:
+- Routers stay thin and handle only HTTP concerns
+- Business logic lives in one place and is easier to test
+- Logic can be reused across endpoints, webhooks, and CLI scripts
 """
 
 from typing import Literal
@@ -68,7 +68,7 @@ STUDIO_PERMISSIONS_BY_ROLE: dict[str, frozenset[StudioPermission]] = {
 
 
 async def get_studio(uow: UnitOfWork, studio_id: int) -> Studio | None:
-    """Получить студию по ID. Возвращает None если не найдена."""
+    """Get a studio by ID, returning None when missing."""
     return await uow.studios.get_by_id(studio_id)
 
 
@@ -84,7 +84,7 @@ async def get_studios(
     query: str | None = None,
     amenities: list[str] | None = None,
 ) -> list[Studio]:
-    """Список студий с пагинацией и фильтрами."""
+    """List studios with pagination and filters."""
     return await uow.studios.list_(
         skip=skip,
         limit=limit,
@@ -107,7 +107,7 @@ async def get_studios_count(
     query: str | None = None,
     amenities: list[str] | None = None,
 ) -> int:
-    """Подсчёт студий для пагинации (те же фильтры, что и get_studios)."""
+    """Count studios for pagination using the same filters as get_studios."""
     return await uow.studios.count(
         owner_id=owner_id,
         is_active=is_active,
@@ -137,7 +137,7 @@ async def get_current_user_studio_roles(
 
 
 async def get_studio_or_raise(uow: UnitOfWork, studio_id: int) -> Studio:
-    """Получить студию по ID или выбросить NotFoundError."""
+    """Get a studio by ID or raise NotFoundError."""
     studio = await uow.studios.get_by_id(studio_id)
     if studio is None:
         raise NotFoundError("Studio not found")
@@ -226,7 +226,7 @@ async def ensure_studio_slug_available(
 
 
 async def create_studio(uow: UnitOfWork, schema: StudioCreate) -> Studio:
-    """Создать студию. owner_id должен быть передан в schema (из токена на уровне роутера)."""
+    """Create a studio; owner_id must be set from the router-level token."""
     if schema.owner_id is None:
         raise ValidationError("Owner is missing or not found")
     owner = await uow.users.get_by_id(schema.owner_id)
@@ -278,7 +278,7 @@ async def update_studio(
     studio: Studio,
     schema: StudioUpdate,
 ) -> Studio:
-    """Обновить студию (partial update)."""
+    """Partially update a studio."""
     update_data = schema.model_dump(exclude_unset=True)
     if "timezone" in update_data and update_data["timezone"] != studio.timezone:
         occurrence_count = await uow.occurrences.count(studio_id=studio.id)

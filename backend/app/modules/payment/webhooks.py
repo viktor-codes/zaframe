@@ -1,11 +1,11 @@
 """
-Webhook endpoints (вызываются внешними сервисами, не фронтендом).
+Webhook endpoints called by external services, not by the frontend.
 
-Stripe webhook требует raw body для проверки подписи.
-Эндпоинт не должен быть под /api/v1 — Stripe вызывает его напрямую.
+Stripe webhooks require the raw body for signature verification.
+The endpoint must not live under /api/v1 because Stripe calls it directly.
 
-Роль роутера: парсинг payload, проверка подписи, извлечение данных.
-Бизнес-логика подтверждения оплаты — в сервисе payment.
+Router responsibility: parse payload, verify signature, and extract data.
+Payment confirmation business logic lives in the payment service.
 """
 
 from typing import Any
@@ -25,10 +25,10 @@ router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 @router.post("/stripe", status_code=200)
 async def stripe_webhook(request: Request) -> Response:
     """
-    Обработчик Stripe webhook.
+    Handle Stripe webhook events.
 
-    Проверяет подпись, парсит событие checkout.session.completed,
-    вызывает сервисы confirm_order_after_payment или confirm_booking_after_payment.
+    Verifies the signature, parses checkout.session.completed events, and delegates
+    payment confirmation to the webhook processor.
     """
     logger = structlog.get_logger(__name__)
     request_id = getattr(request.state, REQUEST_ID_STATE_KEY, None)

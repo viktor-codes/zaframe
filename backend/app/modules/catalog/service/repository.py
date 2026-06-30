@@ -1,6 +1,4 @@
-"""
-Репозиторий для сущности Service.
-"""
+"""Repository for the Service entity."""
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession

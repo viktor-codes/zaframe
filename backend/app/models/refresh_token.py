@@ -15,12 +15,12 @@ if TYPE_CHECKING:
 
 class RefreshToken(Base):
     """
-    Сессия refresh-токена для пользователя.
+    Refresh-token session for a user.
 
-    Позволяет реализовать:
-    - ротацию refresh-токенов (одноразовое использование jti)
-    - logout со всех устройств (ревокация всех токенов пользователя)
-    - аудит активных сессий.
+    Enables:
+    - refresh-token rotation through single-use jti values
+    - logout from all devices by revoking every user token
+    - active-session audit.
     """
 
     __tablename__ = "refresh_tokens"
@@ -66,7 +66,7 @@ class RefreshToken(Base):
     )
 
     def is_active(self, now: datetime | None = None) -> bool:
-        """Активен ли токен на момент now (по умолчанию сейчас)."""
+        """Whether the token is active at now, defaulting to current UTC time."""
         if now is None:
             now = utc_now()
         if self.revoked_at is not None:

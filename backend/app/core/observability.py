@@ -29,7 +29,7 @@ SENSITIVE_KEY_PARTS = frozenset(
 )
 
 DOMAIN_EVENT_COUNTER = Counter(
-    "zaframe_domain_events_total",
+    "zeeframe_domain_events_total",
     "Domain events logged by application services.",
     ("event", "level"),
 )

@@ -1,20 +1,19 @@
-from typing import Annotated
-
 """
 API router for occurrences (bookable time instances).
 
 CRUD:
-- GET /occurrences — list with filters
-- GET /occurrences/{id} — single occurrence
-- POST /occurrences — create
-- PATCH /occurrences/{id} — update
-- DELETE /occurrences/{id} — delete
+- GET /occurrences - list with filters
+- GET /occurrences/{id} - single occurrence
+- POST /occurrences - create
+- PATCH /occurrences/{id} - update
+- DELETE /occurrences/{id} - delete
 
 Nested (studio_occurrence_router):
-- GET /studios/{studio_id}/occurrences — studio schedule
+- GET /studios/{studio_id}/occurrences - studio schedule
 """
 
 from datetime import datetime
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 
@@ -204,11 +203,11 @@ async def list_studio_occurrences(
     studio_id: int,
     user: Annotated[User, Depends(get_current_user_required)],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
-    skip: int = Query(0, ge=0, description="Пропустить N записей"),
-    limit: int = Query(20, ge=1, le=100, description="Максимум записей"),
-    start_from: datetime | None = Query(None, description="Начало диапазона дат"),
-    start_to: datetime | None = Query(None, description="Конец диапазона дат"),
-    status: str | None = Query(None, description="Фильтр по статусу (scheduled/cancelled/completed)"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(20, ge=1, le=100, description="Maximum number of records"),
+    start_from: datetime | None = Query(None, description="Date range start"),
+    start_to: datetime | None = Query(None, description="Date range end"),
+    status: str | None = Query(None, description="Filter by status (scheduled/cancelled/completed)"),
 ) -> list[OccurrenceResponse]:
     """Studio dashboard schedule: slots with date filters."""
     studio = await get_studio_or_raise(uow, studio_id)

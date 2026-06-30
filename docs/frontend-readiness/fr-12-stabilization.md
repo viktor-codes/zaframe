@@ -78,13 +78,13 @@ Two root causes, both are tests lagging behind shipped code.
 
 ### 4. Fix seed/simulation scripts
 
-- [x] Scripts fail because they lag the schema (missing required args).
-  - `scripts/e2e_seed.py:57` missing `cancel_before_hours`; `:79` missing `instructor_id`.
-  - `scripts/seed_and_simulate.py:107` missing `cancel_before_hours`; `:166` missing `instructor_id`;
+- [x] E2E seed/simulation modules failed because they lagged the schema (missing required args).
+  - `tests/e2e/e2e_seed.py:57` missing `cancel_before_hours`; `:79` missing `instructor_id`.
+  - `tests/e2e/seed_and_simulate.py:107` missing `cancel_before_hours`; `:166` missing `instructor_id`;
     `:205` dead comparison (`int` vs `None`).
-- [x] After fix, both scripts run end-to-end against a local DB.
-  - Verified: `uv run python scripts/seed_and_simulate.py` and
-    `uv run python scripts/e2e_seed.py` both complete.
+- [x] After fix, both modules run end-to-end against a local DB.
+  - Verified: `uv run python -m tests.e2e.seed_and_simulate` and
+    `uv run python -m tests.e2e.e2e_seed` both complete.
 
 ---
 
@@ -203,7 +203,7 @@ uv run --group dev pytest -q        # all pass
 uv run --group dev ruff check .     # clean
 uv run --group dev lint-imports     # all contracts KEPT
 uv run --group dev pyright          # 0 errors under documented policy
-uv run python scripts/seed_and_simulate.py   # runs end-to-end
+uv run python -m tests.e2e.seed_and_simulate # runs end-to-end
 ```
 
 - [x] All four gates green.

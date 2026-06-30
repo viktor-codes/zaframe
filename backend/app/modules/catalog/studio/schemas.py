@@ -1,5 +1,5 @@
 """
-Pydantic schemas для Studio модели.
+Pydantic schemas for the Studio model.
 """
 
 import re
@@ -23,9 +23,9 @@ def validate_studio_slug(value: str | None) -> str | None:
 
 
 class StudioBase(BaseModel):
-    """Базовые поля студии."""
+    """Base studio fields."""
 
-    name: str = Field(..., min_length=1, max_length=200, description="Название студии")
+    name: str = Field(..., min_length=1, max_length=200, description="Studio name")
     slug: str | None = Field(
         None,
         min_length=1,
@@ -33,7 +33,7 @@ class StudioBase(BaseModel):
         description="URL-safe public studio slug",
         examples=["yoga-hub-dublin"],
     )
-    description: str | None = Field(None, description="Описание студии")
+    description: str | None = Field(None, description="Studio description")
     logo_url: str | None = Field(
         None,
         max_length=2048,
@@ -46,15 +46,15 @@ class StudioBase(BaseModel):
         description="Public cover image URL",
         examples=["https://cdn.example.com/studios/yoga-hub/cover.jpg"],
     )
-    email: EmailStr | None = Field(None, description="Email студии")
-    phone: str | None = Field(None, max_length=20, description="Телефон студии")
-    address: str | None = Field(None, max_length=500, description="Адрес студии")
-    city: str | None = Field(None, max_length=100, description="Город студии")
-    latitude: float | None = Field(None, description="Широта студии")
-    longitude: float | None = Field(None, description="Долгота студии")
+    email: EmailStr | None = Field(None, description="Studio email")
+    phone: str | None = Field(None, max_length=20, description="Studio phone")
+    address: str | None = Field(None, max_length=500, description="Studio address")
+    city: str | None = Field(None, max_length=100, description="Studio city")
+    latitude: float | None = Field(None, description="Studio latitude")
+    longitude: float | None = Field(None, description="Studio longitude")
     amenities: list[str] = Field(
         default_factory=list,
-        description="Список удобств/опций студии (например, душ, парковка)",
+        description="Studio amenities/options, e.g. shower or parking",
     )
     cancel_before_hours: int = Field(
         24,
@@ -70,9 +70,9 @@ class StudioBase(BaseModel):
 
 
 class StudioCreate(StudioBase):
-    """Схема для создания студии. owner_id передаётся из токена на уровне роутера."""
+    """Schema for creating a studio; owner_id is set from the router-level token."""
 
-    owner_id: int | None = Field(None, description="ID владельца (устанавливается из токена)")
+    owner_id: int | None = Field(None, description="Owner ID set from the token")
     timezone: str = Field(
         ...,
         min_length=1,
@@ -91,7 +91,7 @@ class StudioCreate(StudioBase):
 
 
 class StudioUpdate(BaseModel):
-    """Схема для обновления студии (все поля опциональные)."""
+    """Schema for updating a studio; all fields are optional."""
 
     name: str | None = Field(None, min_length=1, max_length=200)
     slug: str | None = Field(None, min_length=1, max_length=255)
@@ -136,7 +136,7 @@ class StudioUpdate(BaseModel):
 
 
 class StudioResponse(StudioBase):
-    """Схема для ответа API."""
+    """API response schema."""
 
     id: int
     owner_id: int

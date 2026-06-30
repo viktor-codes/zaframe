@@ -52,10 +52,10 @@ async def send_otp_email(email: str, code: str) -> bool:
         params: resend.Emails.SendParams = {
             "from": settings.EMAIL_FROM,
             "to": [email],
-            "subject": "Your ZaFrame sign-in code",
+            "subject": "Your ZeeFrame sign-in code",
             "html": f"""
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #2c3e50;">Sign in to ZaFrame</h2>
+                <h2 style="color: #2c3e50;">Sign in to ZeeFrame</h2>
                 <p>Enter this code to continue:</p>
                 <p style="font-size: 32px; font-weight: bold; letter-spacing: 8px;
                           color: #2c3e50; margin: 24px 0;">

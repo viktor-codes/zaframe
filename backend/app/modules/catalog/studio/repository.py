@@ -1,7 +1,7 @@
 """
-Репозиторий для сущности Studio.
+Repository for the Studio entity.
 
-Выборки студий с фильтрами и по slug (для публичной страницы).
+Studio queries with filters and by slug for the public page.
 """
 
 from sqlalchemy import and_, func, or_, select

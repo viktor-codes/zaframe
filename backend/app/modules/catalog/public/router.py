@@ -1,6 +1,6 @@
-from typing import Annotated
-
 """HTTP routes for public studio pages (no auth)."""
+
+from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
@@ -18,8 +18,8 @@ async def get_studio_public_endpoint(
     uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> StudioPublicResponse:
     """
-    Публичное представление студии по slug.
+    Public studio representation by slug.
 
-    Возвращает список услуг и ближайшие занятия.
+    Returns services and upcoming classes.
     """
     return map_studio_public(await get_studio_public(uow, slug=slug))

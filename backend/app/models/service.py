@@ -1,9 +1,8 @@
 """
-Модель Service — описание услуги/класса, который может продаваться как
-разовое занятие (drop‑in) или как курс.
+Service model for an offering that can be sold as a single drop-in class or a course.
 
-Service не является конкретным занятием во времени — для этого есть
-Occurrence, которые ссылаются на Service.
+Service is not a concrete class in time. Occurrence rows represent scheduled
+instances and point back to Service.
 """
 
 from __future__ import annotations
@@ -26,7 +25,7 @@ if TYPE_CHECKING:
 
 
 class ServiceCategory(enum.StrEnum):
-    """Категория услуги для поиска и фильтрации."""
+    """Service category for search and filtering."""
 
     YOGA = "yoga"
     BOXING = "boxing"
@@ -54,9 +53,9 @@ class ServiceVisibility:
 
 class Service(TimestampMixin, Base):
     """
-    Услуга, предлагаемая студией.
+    Service offered by a studio.
 
-    Примеры:
+    Examples:
     - "Yoga for Couples"
     - "Adult Dance Class (6-week course)"
     """
@@ -71,14 +70,14 @@ class Service(TimestampMixin, Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
 
-    # Привязка к студии
+    # Studio link
     studio_id: Mapped[int] = mapped_column(ForeignKey("studios.id"), nullable=False, index=True)
 
-    # Основная информация
+    # Core information
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str | None] = mapped_column(String(1000), nullable=True)
 
-    # Тип услуги: разовое занятие или курс
+    # Service type: single drop-in class or course
     type: Mapped[str] = mapped_column(
         String(20),
         default=ServiceType.SINGLE,
@@ -86,8 +85,8 @@ class Service(TimestampMixin, Base):
         index=True,
     )
 
-    # Категория услуги (PostgreSQL enum service_category в БД).
-    # Явно задаём строковые значения, чтобы при чтении/записи не было расхождения name/value.
+    # Service category (PostgreSQL enum service_category in the database).
+    # Explicit string values avoid name/value drift when reading and writing.
     category: Mapped[str] = mapped_column(
         Enum(
             "yoga",
@@ -105,20 +104,20 @@ class Service(TimestampMixin, Base):
         index=True,
     )
 
-    # Настройки длительности и вместимости
+    # Duration and capacity settings
     duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
     max_capacity: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    # Цены в центах (Stripe‑френдли)
+    # Prices in cents for Stripe-friendly minor units
     price_single_cents: Mapped[int] = mapped_column(
         Integer, nullable=False
-    )  # цена за одно занятие (drop‑in)
+    )  # price for one drop-in class
     price_course_cents: Mapped[int | None] = mapped_column(
         Integer, nullable=True
-    )  # цена за весь курс
+    )  # price for the full course
 
-    # Параметры overbooking‑логики по умолчанию для этой услуги.
-    # Могут отличаться для разных типов классов (йога vs латина).
+    # Default overbooking parameters for this service.
+    # They can differ by class type, e.g. yoga vs latin dance.
     soft_limit_ratio: Mapped[float] = mapped_column(
         Float,
         nullable=False,
@@ -135,7 +134,7 @@ class Service(TimestampMixin, Base):
         default=0.3,
     )
 
-    # Теги для дополнительной классификации (например, "beginner", "evening")
+    # Tags for additional classification, e.g. "beginner" or "evening"
     tags: Mapped[list[str]] = mapped_column(
         JSON,
         nullable=False,
@@ -153,7 +152,7 @@ class Service(TimestampMixin, Base):
     # Legacy operational flag; visibility is the product lifecycle source of truth.
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
 
-    # Связи
+    # Relationships
     studio: Mapped[Studio] = relationship("Studio", back_populates="services")
     occurrences: Mapped[list[Occurrence]] = relationship(
         "Occurrence",
@@ -181,7 +180,7 @@ class Service(TimestampMixin, Base):
         """Service allows creating new bookings through its occurrences."""
         return self.is_publicly_visible()
 
-    # === Бизнес-логика вместимости ===
+    # === Capacity business logic ===
     def get_capacity_status(
         self,
         *,
@@ -190,14 +189,14 @@ class Service(TimestampMixin, Base):
         requested: int = 1,
     ) -> str | None:
         """
-        Возвращает статус заполненности для заданного количества мест.
+        Return the capacity status for the requested number of seats.
 
-        Используется для реализации soft/hard лимитов и overbooking-логики.
+        Used to implement soft/hard limits and overbooking logic.
 
-        Возвращаемые значения:
-        - "HARD_LIMIT_REACHED" — превышен жёсткий предел
-        - "SOFT_LIMIT_REACHED" — превышен мягкий предел
-        - None — в пределах soft‑лимита
+        Returns:
+        - "HARD_LIMIT_REACHED" when the hard limit is exceeded
+        - "SOFT_LIMIT_REACHED" when the soft limit is exceeded
+        - None when within the soft limit
         """
         total = current_bookings + requested
         soft_limit = int(max_capacity * self.soft_limit_ratio)
