@@ -187,8 +187,8 @@ async def _mock_uow_scope(uow: MagicMock, **kwargs):
 
 
 @pytest.mark.asyncio
-async def test_stripe_webhook_no_secret_returns_500(client):
-    """STRIPE_WEBHOOK_SECRET не задан → 500."""
+async def test_stripe_webhook_no_secret_returns_503(client):
+    """STRIPE_WEBHOOK_SECRET не задан → 503."""
     with patch("app.modules.payment.webhooks.settings") as mock_settings:
         mock_settings.STRIPE_WEBHOOK_SECRET = None
         r = await client.post(
@@ -196,7 +196,7 @@ async def test_stripe_webhook_no_secret_returns_500(client):
             content=b"{}",
             headers={"Stripe-Signature": "t=1,v1=abc"},
         )
-    assert r.status_code == 500
+    assert r.status_code == 503
     assert b"Webhook secret not configured" in r.content
 
 

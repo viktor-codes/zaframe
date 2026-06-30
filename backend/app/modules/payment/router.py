@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 """
 API роутер для платежей (Stripe Checkout).
@@ -14,6 +14,7 @@ from fastapi import APIRouter, Depends, Header, Query, Request
 from app.core.deps import get_current_user, get_current_user_required, get_uow
 from app.core.rate_limit import limiter
 from app.core.uow import UnitOfWork
+from app.models.payment import PaymentStatus
 from app.models.studio import Studio
 from app.models.user import User
 from app.modules.payment.access import require_studio_payout_permission
@@ -43,6 +44,14 @@ from app.modules.payment.service import (
 
 router = APIRouter(prefix="/payments", tags=["payments"])
 studio_payment_router = APIRouter(prefix="/studios", tags=["payments"])
+PaymentStatusFilter = Literal[
+    "pending",
+    "succeeded",
+    "refunded",
+    "partially_refunded",
+    "failed",
+    "manual_review",
+]
 
 
 def _stripe_connect_status_response(studio: Studio) -> StripeConnectStatusResponse:
@@ -233,7 +242,15 @@ async def list_studio_payments_endpoint(
     studio_id: int,
     user: Annotated[User, Depends(get_current_user_required)],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
-    status: str | None = Query(None, description="Filter by payment status"),
+    status: PaymentStatusFilter | None = Query(
+        None,
+        description=(
+            "Filter by payment status. Allowed values: "
+            f"{PaymentStatus.PENDING}, {PaymentStatus.SUCCEEDED}, {PaymentStatus.REFUNDED}, "
+            f"{PaymentStatus.PARTIALLY_REFUNDED}, {PaymentStatus.FAILED}, "
+            f"{PaymentStatus.MANUAL_REVIEW}"
+        ),
+    ),
     start_at: datetime | None = Query(None, description="Filter payments created at/after"),
     end_at: datetime | None = Query(None, description="Filter payments created at/before"),
     booking_id: int | None = Query(None, description="Filter by booking ID"),

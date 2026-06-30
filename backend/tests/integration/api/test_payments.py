@@ -29,6 +29,22 @@ async def _authenticate_user(
     return data["access_token"]
 
 
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_list_studio_payments_invalid_status_returns_422(client: AsyncClient):
+    """Payment status typos are rejected instead of silently returning an empty list."""
+    access_token = await _authenticate_user(client, "payment-filter-status@example.com")
+
+    response = await client.get(
+        "/api/v1/studios/1/payments",
+        params={"status": "succeeeded"},
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+
+    assert response.status_code == 422
+    assert "succeeded" in response.text
+
+
 async def _create_pending_booking(
     client: AsyncClient,
     *,

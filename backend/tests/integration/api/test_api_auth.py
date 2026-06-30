@@ -57,6 +57,57 @@ async def test_health_ready():
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+async def test_security_headers_hsts_only_in_production(monkeypatch):
+    """HSTS is production-only so local HTTP clients keep working."""
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as ac:
+        monkeypatch.setattr(settings, "ENVIRONMENT", "dev")
+        dev_response = await ac.get("/metrics")
+
+        monkeypatch.setattr(settings, "ENVIRONMENT", "production")
+        prod_response = await ac.get("/metrics")
+
+    assert "strict-transport-security" not in dev_response.headers
+    assert (
+        prod_response.headers["strict-transport-security"]
+        == "max-age=31536000; includeSubDomains"
+    )
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_docs_open_without_api_csp(monkeypatch):
+    """Swagger UI keeps working because API CSP is skipped for docs paths."""
+    monkeypatch.setattr(settings, "ENVIRONMENT", "production")
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as ac:
+        response = await ac.get("/docs")
+
+    assert response.status_code == 200
+    assert "swagger-ui" in response.text
+    assert "content-security-policy" not in response.headers
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_metrics_returns_200():
+    """Prometheus metrics endpoint is available without auth."""
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as ac:
+        response = await ac.get("/metrics")
+
+    assert response.status_code == 200
+    assert "text/plain" in response.headers["content-type"]
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_otp_request_returns_200(client):
     """POST /auth/otp/request returns 200."""
     with patch("app.modules.auth.service.send_otp_email", new_callable=AsyncMock):

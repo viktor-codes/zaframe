@@ -34,7 +34,7 @@ async def stripe_webhook(request: Request) -> Response:
     request_id = getattr(request.state, REQUEST_ID_STATE_KEY, None)
 
     if not settings.STRIPE_WEBHOOK_SECRET:
-        return Response(status_code=500, content="Webhook secret not configured")
+        return Response(status_code=503, content="Webhook secret not configured")
 
     payload = await request.body()
     sig_header = request.headers.get("Stripe-Signature", "")

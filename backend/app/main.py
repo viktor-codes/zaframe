@@ -30,6 +30,15 @@ from app.core.middleware.logging_middleware import (
 )
 from app.core.rate_limit import limiter
 
+API_CONTENT_SECURITY_POLICY = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+HSTS_HEADER_VALUE = "max-age=31536000; includeSubDomains"
+DOCS_PATH_PREFIXES = ("/docs", "/redoc")
+DOCS_PATHS = ("/openapi.json",)
+
+
+def _is_docs_path(path: str) -> bool:
+    return path in DOCS_PATHS or path.startswith(DOCS_PATH_PREFIXES)
+
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Add baseline security headers to every response."""
@@ -43,6 +52,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("X-Frame-Options", "DENY")
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        if settings.is_production:
+            response.headers.setdefault("Strict-Transport-Security", HSTS_HEADER_VALUE)
+        if not _is_docs_path(request.url.path):
+            response.headers.setdefault("Content-Security-Policy", API_CONTENT_SECURITY_POLICY)
         return response
 
 

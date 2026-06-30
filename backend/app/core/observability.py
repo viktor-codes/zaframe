@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Literal, Protocol
 
+from prometheus_client import Counter
+
 SENSITIVE_KEY_PARTS = frozenset(
     {
         "access_token",
@@ -24,6 +26,12 @@ SENSITIVE_KEY_PARTS = frozenset(
         "customer_name",
         "guest_name",
     }
+)
+
+DOMAIN_EVENT_COUNTER = Counter(
+    "zaframe_domain_events_total",
+    "Domain events logged by application services.",
+    ("event", "level"),
 )
 
 
@@ -60,6 +68,7 @@ def log_domain_event(
 ) -> None:
     """Log a domain event with a conservative field allowlist-by-exclusion."""
     safe_fields = safe_log_fields(fields)
+    DOMAIN_EVENT_COUNTER.labels(event=event, level=level).inc()
     if level == "warning":
         logger.warning(event, **safe_fields)
         return
