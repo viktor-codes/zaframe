@@ -12,6 +12,8 @@ from httpx import AsyncClient
 from tests.conftest import authenticate_via_otp, create_test_service
 
 from app.core.exceptions import NotFoundError
+from app.core.uow_factory import create_uow
+from app.main import app
 from app.models.booking import Booking, BookingStatus
 from app.models.occurrence import Occurrence
 from app.models.order import Order, OrderStatus
@@ -65,6 +67,14 @@ async def _create_pending_booking_with_token(
     )
     assert r_studio.status_code == 201
     studio_id = r_studio.json()["id"]
+    session = app.state._integration_session
+    uow = create_uow(session)
+    studio = await uow.studios.get_by_id(studio_id)
+    assert studio is not None
+    studio.stripe_account_id = "acct_ready"
+    studio.stripe_charges_enabled = True
+    await uow.studios.save(studio)
+
     service_id = await create_test_service(
         client,
         headers=headers,
@@ -122,8 +132,8 @@ def mock_uow():
 @pytest.mark.asyncio
 async def test_guest_checkout_with_valid_token_succeeds(mock_uow):
     studio = MagicMock()
-    studio.stripe_account_id = None
-    studio.stripe_charges_enabled = False
+    studio.stripe_account_id = "acct_ready"
+    studio.stripe_charges_enabled = True
     occurrence = MagicMock(spec=Occurrence)
     occurrence.price_cents = 1000
     occurrence.title = "Paid"
@@ -226,8 +236,8 @@ async def test_order_guest_checkout_with_valid_token_succeeds(mock_uow):
     order.access_token = "order-secret"
     order.application_fee_cents = 0
     order.studio = MagicMock()
-    order.studio.stripe_account_id = None
-    order.studio.stripe_charges_enabled = False
+    order.studio.stripe_account_id = "acct_ready"
+    order.studio.stripe_charges_enabled = True
     active_booking = MagicMock(spec=Booking)
     active_booking.status = BookingStatus.PENDING
     active_booking.reserved_until = _active_hold_until()

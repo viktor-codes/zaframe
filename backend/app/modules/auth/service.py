@@ -8,7 +8,7 @@ import structlog
 
 from app.core.config import settings
 from app.core.datetime_utils import utc_now
-from app.core.exceptions import UnauthorizedError, ValidationError
+from app.core.exceptions import ServiceUnavailableError, UnauthorizedError, ValidationError
 from app.core.observability import log_domain_event
 from app.core.security import (
     create_access_token,
@@ -31,6 +31,7 @@ from app.modules.identity import get_or_create_user, get_user_by_id
 
 _INVALID_OTP_MESSAGE = "Verification code is invalid or has expired"
 _RATE_LIMIT_MESSAGE = "Too many verification codes requested. Try again later."
+_OTP_DELIVERY_UNAVAILABLE_MESSAGE = "Verification email could not be sent. Please try again later."
 logger = structlog.get_logger(__name__)
 
 
@@ -82,6 +83,15 @@ async def request_otp(
         )
     )
     email_sent = await send_otp_email(email, code)
+    if not email_sent:
+        log_domain_event(
+            logger,
+            "otp_delivery_unavailable",
+            level="error",
+            user_id=existing_user.id if existing_user is not None else None,
+        )
+        raise ServiceUnavailableError(_OTP_DELIVERY_UNAVAILABLE_MESSAGE)
+
     log_domain_event(
         logger,
         "otp_requested",

@@ -1,7 +1,7 @@
 """
 Email delivery via Resend.
 
-Without RESEND_API_KEY: dev-only OTP logging when DEBUG=True; production returns False.
+Without RESEND_API_KEY: dev accepts the request without logging the OTP; production returns False.
 """
 
 import structlog
@@ -29,7 +29,7 @@ async def send_otp_email(email: str, code: str) -> bool:
     Send a numeric OTP to email.
 
     Returns True on success, False on provider error or missing provider in production.
-    Without RESEND_API_KEY and DEBUG=True logs the code for local development only.
+    Without RESEND_API_KEY and DEBUG=True accepts the request without provider delivery.
     """
     logger = structlog.get_logger(__name__)
 
@@ -37,7 +37,6 @@ async def send_otp_email(email: str, code: str) -> bool:
         if settings.DEBUG:
             logger.info(
                 "otp_dev_mode_no_provider",
-                otp_code=code,
                 otp_email_masked=_mask_email(email),
             )
             return True
@@ -51,7 +50,7 @@ async def send_otp_email(email: str, code: str) -> bool:
         resend.api_key = settings.RESEND_API_KEY
 
         params: resend.Emails.SendParams = {
-            "from": "ZaFrame <onboarding@resend.dev>",
+            "from": settings.EMAIL_FROM,
             "to": [email],
             "subject": "Your ZaFrame sign-in code",
             "html": f"""

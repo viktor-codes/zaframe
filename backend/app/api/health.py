@@ -27,8 +27,8 @@ async def health_check(response: Response) -> dict[str, str]:
     db_ok = await _check_database()
     if not db_ok:
         response.status_code = 503
-        return {"status": "unready", "version": "1.0.0", "db": "fail"}
-    return {"status": "ok", "version": "1.0.0", "db": "ok"}
+        return {"status": "unready", "version": settings.APP_VERSION, "db": "fail"}
+    return {"status": "ok", "version": settings.APP_VERSION, "db": "ok"}
 
 
 async def _check_database() -> bool:

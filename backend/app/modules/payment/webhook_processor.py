@@ -123,6 +123,7 @@ async def _process_account_updated(
         event_type=event_type,
         idempotency_outcome="unmatched",
     )
+    await _record_processed_event(uow, event_id=event_id, event_type=event_type)
 
 
 async def _process_refund_updated(
@@ -152,6 +153,7 @@ async def _process_refund_updated(
         event_type=event_type,
         idempotency_outcome="unmatched",
     )
+    await _record_processed_event(uow, event_id=event_id, event_type=event_type)
 
 
 async def _process_paid_checkout(
@@ -170,7 +172,9 @@ async def _process_paid_checkout(
             request_id=request_id,
             event_id=event_id,
             event_type=event_type,
+            idempotency_outcome="ignored",
         )
+        await _record_processed_event(uow, event_id=event_id, event_type=event_type)
         return
 
     booking_id_str, order_id_str = _parse_checkout_session_metadata(session)
@@ -183,6 +187,14 @@ async def _process_paid_checkout(
         try:
             order_id = int(order_id_str)
         except ValueError:
+            logger.warning(
+                "webhook_order_id_invalid",
+                request_id=request_id,
+                event_id=event_id,
+                event_type=event_type,
+                idempotency_outcome="ignored",
+            )
+            await _record_processed_event(uow, event_id=event_id, event_type=event_type)
             return
         ledger_ok = await record_checkout_completed_payment(
             uow,
@@ -227,12 +239,21 @@ async def _process_paid_checkout(
                 event_type=event_type,
                 idempotency_outcome="unmatched",
             )
+            await _record_processed_event(uow, event_id=event_id, event_type=event_type)
         return
 
     if booking_id_str:
         try:
             booking_id = int(booking_id_str)
         except ValueError:
+            logger.warning(
+                "webhook_booking_id_invalid",
+                request_id=request_id,
+                event_id=event_id,
+                event_type=event_type,
+                idempotency_outcome="ignored",
+            )
+            await _record_processed_event(uow, event_id=event_id, event_type=event_type)
             return
         ledger_ok = await record_checkout_completed_payment(
             uow,
@@ -281,6 +302,7 @@ async def _process_paid_checkout(
                 event_type=event_type,
                 idempotency_outcome="unmatched",
             )
+            await _record_processed_event(uow, event_id=event_id, event_type=event_type)
         return
 
     logger.warning(
@@ -288,7 +310,9 @@ async def _process_paid_checkout(
         request_id=request_id,
         event_id=event_id,
         event_type=event_type,
+        idempotency_outcome="ignored",
     )
+    await _record_processed_event(uow, event_id=event_id, event_type=event_type)
 
 
 async def process_stripe_webhook_event(

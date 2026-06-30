@@ -19,6 +19,9 @@ import asyncio
 import json
 import sys
 from datetime import time, timedelta
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from sqlalchemy import select
 

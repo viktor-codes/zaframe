@@ -19,7 +19,11 @@ from __future__ import annotations
 import argparse
 import asyncio
 import random
+import sys
 from datetime import datetime, time, timedelta
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from sqlalchemy import select, text
 

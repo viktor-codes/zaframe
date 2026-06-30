@@ -319,6 +319,38 @@ async def test_stripe_webhook_refund_updated_updates_refund_status(client):
 
 
 @pytest.mark.asyncio
+async def test_stripe_webhook_account_updated_unmatched_records_event(client):
+    """Unmatched account.updated is recorded so supported events are not silently lost."""
+    event = _stripe_event("account.updated", event_id="evt_account_unmatched")
+    mock_uow = _mock_webhook_uow()
+
+    with patch("app.modules.payment.webhooks.settings") as mock_settings:
+        mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
+        with patch("stripe.Webhook.construct_event", return_value=event):
+            with patch(
+                "app.modules.payment.webhooks.uow_scope",
+                side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw),
+            ):
+                with patch(
+                    "app.modules.payment.webhook_processor.update_studio_connect_status_from_account",
+                    new_callable=AsyncMock,
+                    return_value=False,
+                ):
+                    r = await client.post(
+                        "/webhooks/stripe",
+                        content=b"{}",
+                        headers={"Stripe-Signature": "t=1,v1=x"},
+                    )
+
+    assert r.status_code == 200
+    mock_uow.webhook_events.record.assert_awaited_once_with(
+        event_id="evt_account_unmatched",
+        event_type="account.updated",
+    )
+    mock_uow.commit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
 async def test_stripe_webhook_order_id_confirms_order(client):
     """metadata.order_id есть → confirm_order_after_payment, commit, 200."""
     event = _stripe_event("checkout.session.completed", {"order_id": "42"}, "pi_123")
@@ -391,7 +423,7 @@ async def test_stripe_webhook_unpaid_checkout_does_not_confirm_order(client):
 
 @pytest.mark.asyncio
 async def test_stripe_webhook_order_id_invalid_int_returns_200(client):
-    """order_id не int (ValueError) → 200 без commit."""
+    """order_id не int (ValueError) → 200 and record ignored outcome."""
     event = _stripe_event("checkout.session.completed", {"order_id": "not-a-number"})
     mock_uow = _mock_webhook_uow()
 
@@ -413,7 +445,11 @@ async def test_stripe_webhook_order_id_invalid_int_returns_200(client):
                     )
     assert r.status_code == 200
     mock_confirm.assert_not_awaited()
-    mock_uow.commit.assert_not_awaited()
+    mock_uow.webhook_events.record.assert_awaited_once_with(
+        event_id="evt_test_1",
+        event_type="checkout.session.completed",
+    )
+    mock_uow.commit.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -447,7 +483,7 @@ async def test_stripe_webhook_booking_id_confirms_booking(client):
 
 @pytest.mark.asyncio
 async def test_stripe_webhook_booking_id_invalid_int_returns_200(client):
-    """booking_id не int (ValueError) → 200 без вызова confirm_booking."""
+    """booking_id не int (ValueError) → 200 and record ignored outcome."""
     event = _stripe_event("checkout.session.completed", {"booking_id": "nope"})
     mock_uow = _mock_webhook_uow()
 
@@ -469,11 +505,16 @@ async def test_stripe_webhook_booking_id_invalid_int_returns_200(client):
                     )
     assert r.status_code == 200
     mock_confirm.assert_not_awaited()
+    mock_uow.webhook_events.record.assert_awaited_once_with(
+        event_id="evt_test_1",
+        event_type="checkout.session.completed",
+    )
+    mock_uow.commit.assert_awaited_once()
 
 
 @pytest.mark.asyncio
 async def test_stripe_webhook_no_metadata_returns_200(client):
-    """Нет ни booking_id, ни order_id в metadata → 200 (warning в логах)."""
+    """Нет ни booking_id, ни order_id в metadata → 200 and record ignored outcome."""
     event = _stripe_event("checkout.session.completed", {})
     mock_uow = _mock_webhook_uow()
 
@@ -490,11 +531,16 @@ async def test_stripe_webhook_no_metadata_returns_200(client):
                     headers={"Stripe-Signature": "t=1,v1=x"},
                 )
     assert r.status_code == 200
+    mock_uow.webhook_events.record.assert_awaited_once_with(
+        event_id="evt_test_1",
+        event_type="checkout.session.completed",
+    )
+    mock_uow.commit.assert_awaited_once()
 
 
 @pytest.mark.asyncio
 async def test_stripe_webhook_order_not_found_returns_200(client):
-    """confirm_order_after_payment возвращает False → 200 без commit."""
+    """confirm_order_after_payment returns False → 200 and records unmatched outcome."""
     event = _stripe_event("checkout.session.completed", {"order_id": "999"})
     mock_uow = _mock_webhook_uow()
 
@@ -516,13 +562,16 @@ async def test_stripe_webhook_order_not_found_returns_200(client):
                         headers={"Stripe-Signature": "t=1,v1=x"},
                     )
     assert r.status_code == 200
-    mock_uow.commit.assert_not_awaited()
-    mock_uow.webhook_events.record.assert_not_awaited()
+    mock_uow.webhook_events.record.assert_awaited_once_with(
+        event_id="evt_test_1",
+        event_type="checkout.session.completed",
+    )
+    mock_uow.commit.assert_awaited_once()
 
 
 @pytest.mark.asyncio
 async def test_stripe_webhook_booking_not_found_returns_200(client):
-    """confirm_booking_after_payment возвращает False → 200 без commit."""
+    """confirm_booking_after_payment returns False → 200 and records unmatched outcome."""
     event = _stripe_event("checkout.session.completed", {"booking_id": "999"})
     mock_uow = _mock_webhook_uow()
 
@@ -544,8 +593,11 @@ async def test_stripe_webhook_booking_not_found_returns_200(client):
                         headers={"Stripe-Signature": "t=1,v1=x"},
                     )
     assert r.status_code == 200
-    mock_uow.commit.assert_not_awaited()
-    mock_uow.webhook_events.record.assert_not_awaited()
+    mock_uow.webhook_events.record.assert_awaited_once_with(
+        event_id="evt_test_1",
+        event_type="checkout.session.completed",
+    )
+    mock_uow.commit.assert_awaited_once()
 
 
 @pytest.mark.asyncio

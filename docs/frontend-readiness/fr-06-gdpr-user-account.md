@@ -25,6 +25,10 @@ Rules:
 - [x] Soft-deleted users must not be able to authenticate.
 - [x] Bookings, orders, and payments must remain for business/legal history.
 
+Re-registration policy after soft delete: blocked for MVP. A deleted email remains tied to the
+soft-deleted account so transactional history stays legally attributable. Re-registration with the
+same email requires a future anonymization/support flow before this policy can change.
+
 ## API Contract
 
 - [x] `PATCH /auth/me` can update:

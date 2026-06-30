@@ -27,21 +27,23 @@ Definition of Done for FR-12: all four gates GREEN.
 
 Two root causes, both are tests lagging behind shipped code.
 
-- [ ] **Mock drift (Stripe Connect).** Production now calls
+- [x] **Mock drift (Stripe Connect).** Production now calls
       `uow.bookings.get_by_id_with_occurrence_and_studio(...)`, but tests still mock
       `get_by_id_with_occurrence`, returning a `MagicMock` that fails on `await`.
   - File: `backend/app/modules/payment/checkout.py:56`
   - Failing: `tests/integration/api/test_guest_checkout_access_token.py` (5 tests)
   - Fix: update mocks to the new method name with `AsyncMock`.
-- [ ] **`occurrences.service_id` is now NOT NULL (FR-07).** Several tests build occurrences
+- [x] **`occurrences.service_id` is now NOT NULL (FR-07).** Several tests build occurrences
       without `service_id` and hit `NotNullViolationError`.
   - Failing: `test_api_auth.py::test_delete_account_*`, `test_booking_duplicate.py::test_rebook_after_cancel_succeeds`,
     `test_bookings_authz.py::test_guest_can_view_and_cancel_own_booking`,
     `test_overbooking_confirm.py` (3 tests), `test_payment_confirm_queries.py` (2 tests)
   - Fix: give occurrence factories/builders a required `service_id` (create a service first).
-- [ ] **Verify safety tests actually assert again.** The overbooking, idempotency, and
+- [x] **Verify safety tests actually assert again.** The overbooking, idempotency, and
       payment-confirm-query-count tests currently error before their assertions. After the fix,
       confirm they pass on their real logic, not just stop erroring.
+  - Verified: FR-12 targeted safety tests pass (`36 passed`), and full backend pytest passes
+    (`229 passed`).
 
 ### 2. Fix the broken architecture contract
 
@@ -76,11 +78,13 @@ Two root causes, both are tests lagging behind shipped code.
 
 ### 4. Fix seed/simulation scripts
 
-- [ ] Scripts fail because they lag the schema (missing required args).
+- [x] Scripts fail because they lag the schema (missing required args).
   - `scripts/e2e_seed.py:57` missing `cancel_before_hours`; `:79` missing `instructor_id`.
   - `scripts/seed_and_simulate.py:107` missing `cancel_before_hours`; `:166` missing `instructor_id`;
     `:205` dead comparison (`int` vs `None`).
-- [ ] After fix, both scripts run end-to-end against a local DB.
+- [x] After fix, both scripts run end-to-end against a local DB.
+  - Verified: `uv run python scripts/seed_and_simulate.py` and
+    `uv run python scripts/e2e_seed.py` both complete.
 
 ---
 
@@ -88,34 +92,36 @@ Two root causes, both are tests lagging behind shipped code.
 
 ### 5. OTP delivery must not silently succeed
 
-- [ ] In production (`DEBUG=False`) without `RESEND_API_KEY`, `send_otp_email` returns `False`
+- [x] In production (`DEBUG=False`) without `RESEND_API_KEY`, `send_otp_email` returns `False`
       but the router still returns `OTPSentResponse`.
   - Files: `backend/app/modules/auth/service.py:74-90`, `backend/app/modules/auth/router.py:108-114`,
     `backend/app/integrations/email/service.py:36-46`
   - Fix: if delivery is not accepted in production, fail the OTP request with a clear error
     instead of reporting success.
-- [ ] Move the hardcoded sender out of code into config.
+- [x] Move the hardcoded sender out of code into config.
   - File: `backend/app/integrations/email/service.py:54` (`onboarding@resend.dev`)
   - Add a setting (e.g. `EMAIL_FROM`) and reference `.env.example`.
 
 ### 6. Never log OTP codes
 
-- [ ] `DEBUG=True` logs the raw OTP via a direct `logger.info(..., otp_code=code)` bypassing
+- [x] `DEBUG=True` logs the raw OTP via a direct `logger.info(..., otp_code=code)` bypassing
       `safe_log_fields`.
   - File: `backend/app/integrations/email/service.py:38-42`
   - Fix: remove the code from logs, or route through `safe_log_fields` so it is redacted.
 
 ### 7. Stripe Connect fee / currency must be real or explicitly deferred
 
-- [ ] When a studio's Connect onboarding is incomplete, checkout is created without
+- [x] When a studio's Connect onboarding is incomplete, checkout is created without
       `transfer_data`, so funds go to the platform account silently.
   - File: `backend/app/modules/payment/checkout.py:80-85`
-- [ ] `Order.application_fee_cents` is read at checkout but never set at order creation.
+- [x] `Order.application_fee_cents` is read at checkout but never set at order creation.
   - File: `backend/app/modules/booking/order/service.py:108-120`
-- [ ] Order currency is hardcoded `"eur"` instead of `settings.STRIPE_CURRENCY`.
+- [x] Order currency is hardcoded `"eur"` instead of `settings.STRIPE_CURRENCY`.
   - File: `backend/app/modules/booking/order/service.py:117`
-- [ ] Decision required: either implement platform fee + destination charges end-to-end, or
+- [x] Decision required: either implement platform fee + destination charges end-to-end, or
       explicitly gate paid checkout behind completed Connect onboarding and document the deferral.
+  - Decision: paid checkout is gated behind Connect readiness; platform fee remains explicitly
+    deferred until fee calculation is implemented end-to-end.
 
 ---
 
@@ -123,55 +129,59 @@ Two root causes, both are tests lagging behind shipped code.
 
 ### 8. Draft/archived services are publicly reachable by ID
 
-- [ ] `is_publicly_visible()` exists on the model but is not enforced on these endpoints:
+- [x] `is_publicly_visible()` exists on the model but is not enforced on these endpoints:
   - `GET /services/{service_id}` — `backend/app/modules/catalog/service/router.py:70-77`
   - `GET /services/{service_id}/availability` — same file, ~80-97
   - `GET /services/{service_id}/schedule-templates` — same file, ~143-154 (leaks draft schedules)
   - Model helper: `backend/app/models/service.py:176-182`
-- [ ] Fix: public reads return only published+active services; owner/manager can see all states
+- [x] Fix: public reads return only published+active services; owner/manager can see all states
       via authenticated access.
 
 ### 9. Unauthenticated list endpoints expose data
 
-- [ ] `GET /occurrences` has no auth and lets anyone enumerate slots by studio/instructor/status.
+- [x] `GET /occurrences` has no auth and lets anyone enumerate slots by studio/instructor/status.
   - File: `backend/app/modules/catalog/occurrence/router.py:42-64`
-- [ ] `GET /studios?owner_id=` is public and lets anyone enumerate a studio owner's studios.
+- [x] `GET /studios?owner_id=` is public and lets anyone enumerate a studio owner's studios.
   - File: `backend/app/modules/catalog/studio/router.py:44-68`
-- [ ] Fix: scope these to authenticated/authorized access, or strip owner-only filters from
+- [x] Fix: scope these to authenticated/authorized access, or strip owner-only filters from
       public variants (align with `GET /studios/my`).
 
 ### 10. Orders permission check is conditional
 
-- [ ] `GET /orders` only checks permission when `studio_id` is explicitly provided; without it,
+- [x] `GET /orders` only checks permission when `studio_id` is explicitly provided; without it,
       a studio member with `view_bookings` can see orders across all their studios.
   - File: `backend/app/modules/booking/order/router.py:33-57`
-- [ ] Fix: always enforce per-studio permission, or require `studio_id`.
+- [x] Fix: always enforce per-studio permission, or require `studio_id`.
 
 ### 11. RBAC `manage_members` has no API
 
-- [ ] Permission is declared but there are no invite/update/remove member endpoints.
+- [x] Permission is declared but there are no invite/update/remove member endpoints.
   - File: `backend/app/modules/catalog/studio/service.py:35-47`
-- [ ] Fix: add minimal member management endpoints (or explicitly defer if no screen needs it yet
+- [x] Fix: add minimal member management endpoints (or explicitly defer if no screen needs it yet
       per the FR-11 promotion rule).
+  - Decision: explicitly deferred; no current UI needs member management endpoints.
 
 ---
 
 ## Minor
 
-- [ ] Rate limiting is in-memory unless `REDIS_URL` is set; multiple instances bypass OTP/checkout
+- [x] Rate limiting is in-memory unless `REDIS_URL` is set; multiple instances bypass OTP/checkout
       limits. Document Redis as required for multi-instance prod.
   - File: `backend/app/core/rate_limit.py:16-20`
-- [ ] `GET /health` returns hardcoded `"version": "1.0.0"` instead of `settings.APP_VERSION`.
+- [x] `GET /health` returns hardcoded `"version": "1.0.0"` instead of `settings.APP_VERSION`.
   - File: `backend/app/api/health.py:31`
-- [ ] Unmatched webhook events return 200 without recording, losing some Connect status updates.
+- [x] Unmatched webhook events return 200 without recording, losing some Connect status updates.
   - File: `backend/app/modules/payment/webhook_processor.py:119-125, 286-291`
-- [ ] Files over the 150-line rule (≤200 acceptable as a soft gate for now): `webhook_processor.py` (317),
+- [x] Files over the 150-line rule (≤200 acceptable as a soft gate for now): `webhook_processor.py` (317),
       `payment/router.py` (278), `catalog/studio/service.py` (272), `auth/service.py` (220), `main.py` (217),
       `booking/router.py` (208), `catalog/service/router.py` (203), `booking/service.py` (201).
-- [ ] Default `DATABASE_URL` points to local postgres with `postgres:postgres`; ensure prod always
+  - Decision: tracked as refactor debt; splitting all large files remains out of scope for FR-12.
+- [x] Default `DATABASE_URL` points to local postgres with `postgres:postgres`; ensure prod always
       overrides it. File: `backend/app/core/config.py:29-31`.
-- [ ] Decide re-registration policy after GDPR soft delete (same email is currently blocked forever).
+- [x] Decide re-registration policy after GDPR soft delete (same email is currently blocked forever).
   - Files: `backend/app/modules/auth/service.py:50-58`, `backend/app/modules/identity/service.py:43-47`
+  - Decision: same-email re-registration remains blocked for MVP until anonymization/support flow
+    is designed.
 
 ---
 
@@ -196,11 +206,11 @@ uv run --group dev pyright          # 0 errors under documented policy
 uv run python scripts/seed_and_simulate.py   # runs end-to-end
 ```
 
-- [ ] All four gates green.
-- [ ] Safety tests (overbooking, webhook idempotency, payment query counts) pass on real logic.
-- [ ] No OTP codes or secrets in logs; OTP request fails honestly when undeliverable in prod.
-- [ ] No draft/archived service data or owner enumeration without authorization.
-- [ ] Platform fee/currency behavior is either implemented or explicitly, documentedly deferred.
+- [x] All four gates green.
+- [x] Safety tests (overbooking, webhook idempotency, payment query counts) pass on real logic.
+- [x] No OTP codes or secrets in logs; OTP request fails honestly when undeliverable in prod.
+- [x] No draft/archived service data or owner enumeration without authorization.
+- [x] Platform fee/currency behavior is either implemented or explicitly, documentedly deferred.
 
 ## Out of Scope
 

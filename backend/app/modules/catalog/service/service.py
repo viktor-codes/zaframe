@@ -8,7 +8,9 @@ from app.core.exceptions import NotFoundError
 from app.core.observability import log_domain_event
 from app.core.uow import UnitOfWork
 from app.models import Service, ServiceVisibility
+from app.models.user import User
 from app.modules.catalog.service.schemas import ServiceUpdate
+from app.modules.catalog.studio import has_studio_permission
 
 logger = structlog.get_logger(__name__)
 
@@ -38,6 +40,30 @@ async def get_service_or_raise(uow: UnitOfWork, service_id: int) -> Service:
     if service is None:
         raise NotFoundError("Service not found")
     return service
+
+
+async def get_public_or_authorized_service_or_raise(
+    uow: UnitOfWork,
+    service_id: int,
+    *,
+    user: User | None,
+) -> Service:
+    """Read service publicly only when published; managers can read all lifecycle states."""
+    service = await get_service_or_raise(uow, service_id)
+    if service.is_publicly_visible():
+        return service
+    if user is None:
+        raise NotFoundError("Service not found")
+
+    studio = await uow.studios.get_by_id(service.studio_id)
+    if studio is not None and await has_studio_permission(
+        uow,
+        studio=studio,
+        user=user,
+        permission="manage_services",
+    ):
+        return service
+    raise NotFoundError("Service not found")
 
 
 async def get_services_for_studio(

@@ -11,6 +11,10 @@ history, and refunds before the owner dashboard can show reliable money-related 
 `Order.application_fee_cents` only becomes meaningful when Stripe Connect destination charges or
 equivalent Connect flow is implemented.
 
+FR-12 decision: paid checkout is blocked until a studio has a Connect destination that can accept
+charges. Platform fee calculation/storage remains deferred; do not display or rely on platform fee
+amounts in frontend flows until the fee model is implemented end-to-end.
+
 ## Goal
 
 Add a minimal but production-shaped payment ledger and Stripe Connect onboarding/status contracts.

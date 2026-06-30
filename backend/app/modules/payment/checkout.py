@@ -17,6 +17,7 @@ from app.integrations.stripe.checkout import (
 from app.models.booking import BookingStatus
 from app.models.occurrence import Occurrence
 from app.models.order import OrderStatus
+from app.models.studio import Studio
 from app.models.user import User
 from app.modules.payment.access import (
     assert_booking_checkout_access,
@@ -31,6 +32,16 @@ from app.modules.payment.stripe_client import (
 )
 
 logger = structlog.get_logger(__name__)
+_CONNECT_NOT_READY_MESSAGE = (
+    "Paid checkout is unavailable until the studio completes Stripe Connect onboarding"
+)
+
+
+def _require_connect_account_for_checkout(studio: Studio) -> str:
+    """Return the destination account for checkout or fail before charging the customer."""
+    if studio.stripe_account_id and studio.stripe_charges_enabled:
+        return studio.stripe_account_id
+    raise ValidationError(_CONNECT_NOT_READY_MESSAGE)
 
 
 async def create_checkout_session(
@@ -78,11 +89,7 @@ async def create_checkout_session(
         raise ValidationError("Occurrence has no price for checkout")
 
     studio = occurrence.studio
-    stripe_account_id = (
-        studio.stripe_account_id
-        if studio.stripe_account_id and studio.stripe_charges_enabled
-        else None
-    )
+    stripe_account_id = _require_connect_account_for_checkout(studio)
     client = get_stripe_client()
     try:
         session = client.v1.checkout.sessions.create(
@@ -165,11 +172,7 @@ async def create_order_checkout_session(
         raise ValidationError("Order has no payable amount")
 
     product_name = order.service.name if order.service is not None else f"Заказ #{order.id}"
-    stripe_account_id = (
-        order.studio.stripe_account_id
-        if order.studio.stripe_account_id and order.studio.stripe_charges_enabled
-        else None
-    )
+    stripe_account_id = _require_connect_account_for_checkout(order.studio)
 
     client = get_stripe_client()
     try:

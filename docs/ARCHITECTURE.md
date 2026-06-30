@@ -162,3 +162,17 @@ make booking-lifecycle
 
 Alternatives not used: always-on worker loop (Option B), HTTP internal endpoint (Option D).
 See [TD-11](./tech-debt/td-11-booking-lifecycle-cron.md).
+
+## Production Readiness Notes
+
+- `DATABASE_URL` has a local-development default only. Every deployed API and cron process must
+  override it with the managed production Postgres URL.
+- `REDIS_URL` is required for multi-instance production rate limiting. Without Redis, slowapi uses
+  process-local counters, which is acceptable only for single-instance development.
+- Paid checkout is gated behind a completed Stripe Connect account (`stripe_account_id` plus
+  `stripe_charges_enabled`). Platform fee calculation remains deferred until the Connect fee model
+  is implemented end-to-end.
+- `manage_members` is present in the RBAC permission matrix, but member management endpoints are
+  intentionally deferred until a current UI flow needs them.
+- Soft-deleted accounts cannot authenticate again with the same email in the MVP policy. A future
+  re-registration/anonymization flow must be designed before changing that behavior.

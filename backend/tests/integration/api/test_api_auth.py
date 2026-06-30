@@ -13,6 +13,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 from tests.conftest import authenticate_via_otp
 
+from app.core.config import settings
 from app.core.uow_factory import create_uow
 from app.main import app
 from app.models.booking import Booking, BookingStatus
@@ -32,6 +33,7 @@ async def test_health():
     ) as ac:
         r = await ac.get("/api/v1/health")
     assert r.status_code == 200
+    assert r.json()["version"] == settings.APP_VERSION
 
 
 @pytest.mark.integration
@@ -65,6 +67,22 @@ async def test_otp_request_returns_200(client):
     assert r.status_code == 200
     data = r.json()
     assert "message" in data
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_otp_request_delivery_failure_returns_503(client):
+    """POST /auth/otp/request fails honestly when email delivery is unavailable."""
+    with patch("app.modules.auth.service.send_otp_email", AsyncMock(return_value=False)):
+        response = await client.post(
+            "/api/v1/auth/otp/request",
+            json={"email": "delivery-failed@example.com", "name": "Delivery Failed"},
+        )
+
+    assert response.status_code == 503
+    data = response.json()
+    assert data["status"] == 503
+    assert "could not be sent" in data["detail"]
 
 
 @pytest.mark.integration

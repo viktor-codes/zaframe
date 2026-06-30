@@ -71,6 +71,10 @@ Add one backend permission layer:
   - `PATCH /studios/{studio_id}/members/{member_id}`
   - `DELETE /studios/{studio_id}/members/{member_id}`
 
+FR-12 decision: member management endpoints remain deferred. The backend keeps
+`manage_members` in the permission matrix so the role contract is explicit, but no current
+frontend screen needs invite/update/remove member flows yet.
+
 ## Ownership Policy Note
 
 TD-03 (`identity.is_owned_by_user`) must remain the single shared helper for "mine" ownership

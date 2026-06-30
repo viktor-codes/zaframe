@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 
 from app.core.deps import get_current_user_required, get_uow
+from app.core.exceptions import ValidationError
 from app.core.uow import UnitOfWork
 from app.models.user import User
 from app.modules.booking.order.schemas import OrderListItem
@@ -36,17 +37,18 @@ async def list_owner_orders_endpoint(
     uow: Annotated[UnitOfWork, Depends(get_uow)],
     skip: int = Query(0, ge=0, description="Пропустить N записей"),
     limit: int = Query(20, ge=1, le=100, description="Максимум записей"),
-    studio_id: int | None = Query(None, description="Optional owned studio filter"),
+    studio_id: int | None = Query(None, description="Required studio filter"),
 ) -> list[OrderListItem]:
     """List orders for studios owned by the current user."""
-    if studio_id is not None:
-        studio = await get_studio_or_raise(uow, studio_id)
-        await require_studio_permission(
-            uow,
-            studio=studio,
-            user=user,
-            permission="view_bookings",
-        )
+    if studio_id is None:
+        raise ValidationError("studio_id is required")
+    studio = await get_studio_or_raise(uow, studio_id)
+    await require_studio_permission(
+        uow,
+        studio=studio,
+        user=user,
+        permission="view_bookings",
+    )
     orders = await get_owner_orders(
         uow,
         user_id=user.id,

@@ -19,6 +19,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, Query
 
 from app.core.deps import get_current_user_required, get_uow
+from app.core.exceptions import ValidationError
 from app.core.uow import UnitOfWork
 from app.models.user import User
 from app.modules.catalog.occurrence import (
@@ -41,6 +42,7 @@ studio_occurrence_router = APIRouter(prefix="/studios", tags=["studios"])
 
 @router.get("", response_model=list[OccurrenceResponse])
 async def list_occurrences(
+    user: Annotated[User, Depends(get_current_user_required)],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
     skip: int = Query(0, ge=0, description="Skip N records"),
     limit: int = Query(20, ge=1, le=100, description="Max records"),
@@ -50,7 +52,16 @@ async def list_occurrences(
     start_to: datetime | None = Query(None, description="Range end (UTC)"),
     status: str | None = Query(None, description="Filter by status (scheduled/cancelled/completed)"),
 ) -> list[OccurrenceResponse]:
-    """List occurrences with optional studio and date filters."""
+    """List studio occurrences for an authenticated studio dashboard."""
+    if studio_id is None:
+        raise ValidationError("studio_id is required")
+    studio = await get_studio_or_raise(uow, studio_id)
+    await require_studio_permission(
+        uow,
+        studio=studio,
+        user=user,
+        permission="view_dashboard",
+    )
     occurrences = await get_occurrences(
         uow,
         skip=skip,
@@ -66,6 +77,7 @@ async def list_occurrences(
 
 @router.get("/count")
 async def count_occurrences(
+    user: Annotated[User, Depends(get_current_user_required)],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
     studio_id: int | None = Query(None, description="Filter by studio"),
     instructor_id: int | None = Query(None, description="Filter by assigned studio member"),
@@ -74,6 +86,15 @@ async def count_occurrences(
     status: str | None = Query(None, description="Filter by status (scheduled/cancelled/completed)"),
 ) -> dict[str, int]:
     """Occurrence count for pagination."""
+    if studio_id is None:
+        raise ValidationError("studio_id is required")
+    studio = await get_studio_or_raise(uow, studio_id)
+    await require_studio_permission(
+        uow,
+        studio=studio,
+        user=user,
+        permission="view_dashboard",
+    )
     count = await get_occurrences_count(
         uow,
         studio_id=studio_id,
@@ -181,6 +202,7 @@ async def delete_occurrence_endpoint(
 @studio_occurrence_router.get("/{studio_id}/occurrences", response_model=list[OccurrenceResponse])
 async def list_studio_occurrences(
     studio_id: int,
+    user: Annotated[User, Depends(get_current_user_required)],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
     skip: int = Query(0, ge=0, description="Пропустить N записей"),
     limit: int = Query(20, ge=1, le=100, description="Максимум записей"),
@@ -188,7 +210,14 @@ async def list_studio_occurrences(
     start_to: datetime | None = Query(None, description="Конец диапазона дат"),
     status: str | None = Query(None, description="Фильтр по статусу (scheduled/cancelled/completed)"),
 ) -> list[OccurrenceResponse]:
-    """Расписание студии: слоты с фильтрами по датам."""
+    """Studio dashboard schedule: slots with date filters."""
+    studio = await get_studio_or_raise(uow, studio_id)
+    await require_studio_permission(
+        uow,
+        studio=studio,
+        user=user,
+        permission="view_dashboard",
+    )
     occurrences = await get_occurrences(
         uow,
         skip=skip,

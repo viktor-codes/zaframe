@@ -84,6 +84,10 @@ class Settings(BaseSettings):
     RESEND_API_KEY: str | None = Field(
         default=None, description="Resend API key for sending emails (None = dev log mode)"
     )
+    EMAIL_FROM: str = Field(
+        default="ZaFrame <onboarding@resend.dev>",
+        description="Verified sender identity for transactional email",
+    )
 
     # === CORS ===
     # В env задаётся одна строка, через запятую: https://zeeframe.vercel.app или url1,url2

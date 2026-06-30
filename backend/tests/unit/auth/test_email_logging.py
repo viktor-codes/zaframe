@@ -49,8 +49,8 @@ async def test_no_otp_or_plain_email_in_logs_when_debug_false(log_capture):
 
 
 @pytest.mark.asyncio
-async def test_dev_mode_logs_otp_code_when_debug_true(log_capture):
-    """Local DEBUG=True may log OTP code; email stays masked."""
+async def test_dev_mode_does_not_log_otp_code_when_debug_true(log_capture):
+    """Local DEBUG=True accepts requests without leaking OTP or full email."""
     email = "john@domain.com"
     code = "654321"
 
@@ -64,6 +64,27 @@ async def test_dev_mode_logs_otp_code_when_debug_true(log_capture):
     assert len(log_capture.entries) == 1
     entry = log_capture.entries[0]
     assert entry["event"] == "otp_dev_mode_no_provider"
-    assert entry["otp_code"] == code
     assert entry["otp_email_masked"] == "j***@d***.com"
+    assert "otp_code" not in entry
+    assert code not in str(entry)
     assert email not in str(entry)
+
+
+@pytest.mark.asyncio
+async def test_send_otp_email_uses_configured_sender():
+    """Resend payload uses EMAIL_FROM from settings, not a hardcoded sender."""
+    sent_payloads: list[dict[str, object]] = []
+
+    def capture_send(payload: dict[str, object]) -> dict[str, str]:
+        sent_payloads.append(payload)
+        return {"id": "email_123"}
+
+    with (
+        patch("app.integrations.email.service.settings.RESEND_API_KEY", "re_test"),
+        patch("app.integrations.email.service.settings.EMAIL_FROM", "ZaFrame <login@example.com>"),
+        patch("resend.Emails.send", side_effect=capture_send),
+    ):
+        result = await send_otp_email("john@domain.com", "123456")
+
+    assert result is True
+    assert sent_payloads[0]["from"] == "ZaFrame <login@example.com>"

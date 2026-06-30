@@ -7,6 +7,7 @@ import structlog
 from app.core import datetime_utils
 from app.core.access_tokens import generate_resource_access_token
 from app.core.booking_holds import get_booking_reserved_until
+from app.core.config import settings
 from app.core.exceptions import NotFoundError, ValidationError
 from app.core.observability import log_domain_event
 from app.core.uow import UnitOfWork
@@ -114,7 +115,7 @@ async def create_course_booking(
             guest_name=data.guest_name,
             guest_phone=data.guest_phone,
             total_amount_cents=total_amount_cents,
-            currency="eur",
+            currency=settings.STRIPE_CURRENCY,
             status=OrderStatus.PENDING,
             access_token=generate_resource_access_token(),
         )

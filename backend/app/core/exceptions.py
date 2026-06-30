@@ -43,6 +43,13 @@ class ConflictError(AppError):
         super().__init__(detail=detail, status_code=409)
 
 
+class ServiceUnavailableError(AppError):
+    """Required upstream service is unavailable or not configured (503)."""
+
+    def __init__(self, detail: str) -> None:
+        super().__init__(detail=detail, status_code=503)
+
+
 class UnauthorizedError(AppError):
     """Authentication required or invalid credentials (401)."""
 

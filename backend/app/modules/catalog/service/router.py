@@ -12,7 +12,7 @@ from datetime import date
 
 from fastapi import APIRouter, Depends, Query
 
-from app.core.deps import get_current_user_required, get_uow
+from app.core.deps import get_current_user, get_current_user_required, get_uow
 from app.core.uow import UnitOfWork
 from app.models.user import User
 from app.modules.catalog.schedule import (
@@ -33,6 +33,7 @@ from app.modules.catalog.service import (
     ServiceUpdate,
     create_service,
     deactivate_service,
+    get_public_or_authorized_service_or_raise,
     get_service_availability,
     get_service_or_raise,
     update_service,
@@ -70,16 +71,18 @@ async def create_service_endpoint(
 @router.get("/{service_id}", response_model=ServiceResponse)
 async def get_service_endpoint(
     service_id: int,
+    user: Annotated[User | None, Depends(get_current_user)],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> ServiceResponse:
-    """Получить услугу по ID (публично)."""
-    service = await get_service_or_raise(uow, service_id)
+    """Get a public service by ID, or any lifecycle state for studio managers."""
+    service = await get_public_or_authorized_service_or_raise(uow, service_id, user=user)
     return ServiceResponse.model_validate(service)
 
 
 @router.get("/{service_id}/availability", response_model=ServiceAvailabilityResponse)
 async def get_service_availability_endpoint(
     service_id: int,
+    user: Annotated[User | None, Depends(get_current_user)],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
     start_date: date | None = Query(
         None,
@@ -92,6 +95,7 @@ async def get_service_availability_endpoint(
     Используется фронтендом при открытии модалки покупки, чтобы
     показать календарь занятости.
     """
+    await get_public_or_authorized_service_or_raise(uow, service_id, user=user)
     return map_service_availability(
         await get_service_availability(uow, service_id=service_id, start_date=start_date),
     )
@@ -146,10 +150,11 @@ async def deactivate_service_endpoint(
 )
 async def list_service_schedule_templates_endpoint(
     service_id: int,
+    user: Annotated[User | None, Depends(get_current_user)],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> list[ScheduleTemplateResponse]:
     """Список шаблонов расписания для услуги."""
-    await get_service_or_raise(uow, service_id)
+    await get_public_or_authorized_service_or_raise(uow, service_id, user=user)
     schedules = await get_schedule_templates_for_service(uow, service_id=service_id)
     return [ScheduleTemplateResponse.model_validate(s) for s in schedules]
 

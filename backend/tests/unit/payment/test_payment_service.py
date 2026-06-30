@@ -42,6 +42,13 @@ _GUEST_CHECKOUT_TOKEN = "test-guest-checkout-token"
 _ORDER_CHECKOUT_TOKEN = "test-order-checkout-token"
 
 
+def _ready_connect_studio() -> MagicMock:
+    studio = MagicMock()
+    studio.stripe_account_id = "acct_ready"
+    studio.stripe_charges_enabled = True
+    return studio
+
+
 def _checkout_kwargs(*, access_token: str = _GUEST_CHECKOUT_TOKEN) -> dict[str, str]:
     return {
         "success_url": "http://localhost:3000/s",
@@ -122,6 +129,7 @@ async def test_create_checkout_session_guest_email_owner_allowed(mock_uow):
     occurrence.title = "Paid"
     occurrence.description = "Desc"
     occurrence.id = 1
+    occurrence.studio = _ready_connect_studio()
     booking = MagicMock(spec=Booking)
     booking.status = BookingStatus.PENDING
     booking.reserved_until = _active_hold_until()
@@ -217,12 +225,41 @@ async def test_create_checkout_session_slot_price_zero(mock_uow):
 
 
 @pytest.mark.asyncio
+async def test_create_checkout_session_requires_connect_ready(mock_uow):
+    occurrence = MagicMock(spec=Occurrence)
+    occurrence.price_cents = 1000
+    occurrence.title = "Paid"
+    occurrence.description = None
+    occurrence.id = 1
+    occurrence.studio = MagicMock()
+    occurrence.studio.stripe_account_id = None
+    occurrence.studio.stripe_charges_enabled = False
+    booking = MagicMock(spec=Booking)
+    booking.status = BookingStatus.PENDING
+    booking.reserved_until = _active_hold_until()
+    booking.checkout_session_id = None
+    booking.occurrence = occurrence
+    booking.guest_email = "g@x.com"
+    booking.access_token = _GUEST_CHECKOUT_TOKEN
+    mock_uow.bookings.get_by_id_with_occurrence_and_studio = AsyncMock(return_value=booking)
+
+    with (
+        patch("app.modules.payment.checkout.get_stripe_client") as mock_get_client,
+        pytest.raises(ValidationError, match="Stripe Connect onboarding"),
+    ):
+        await create_checkout_session(mock_uow, 1, **_checkout_kwargs())
+
+    mock_get_client.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_create_checkout_session_no_stripe_key(mock_uow):
     occurrence = MagicMock(spec=Occurrence)
     occurrence.price_cents = 1000
     occurrence.title = "Paid"
     occurrence.description = None
     occurrence.id = 1
+    occurrence.studio = _ready_connect_studio()
     booking = MagicMock(spec=Booking)
     booking.status = BookingStatus.PENDING
     booking.reserved_until = _active_hold_until()
@@ -246,6 +283,7 @@ async def test_create_checkout_session_success(mock_uow):
     occurrence.title = "Paid"
     occurrence.description = "Desc"
     occurrence.id = 1
+    occurrence.studio = _ready_connect_studio()
     booking = MagicMock(spec=Booking)
     booking.status = BookingStatus.PENDING
     booking.reserved_until = _active_hold_until()
@@ -358,6 +396,34 @@ async def test_create_order_checkout_session_zero_amount(mock_uow):
 
 
 @pytest.mark.asyncio
+async def test_create_order_checkout_session_requires_connect_ready(mock_uow):
+    order = MagicMock(spec=Order)
+    order.status = OrderStatus.PENDING
+    order.total_amount_cents = 5000
+    order.service = MagicMock(spec=Service)
+    order.service.name = "Service"
+    order.id = 1
+    order.guest_email = None
+    order.access_token = _ORDER_CHECKOUT_TOKEN
+    order.studio = MagicMock()
+    order.studio.stripe_account_id = None
+    order.studio.stripe_charges_enabled = False
+    mock_uow.orders.get_by_id_with_service_and_studio = AsyncMock(return_value=order)
+    active_booking = MagicMock(spec=Booking)
+    active_booking.status = BookingStatus.PENDING
+    active_booking.reserved_until = _active_hold_until()
+    mock_uow.bookings.list_ = AsyncMock(return_value=[active_booking])
+
+    with (
+        patch("app.modules.payment.checkout.get_stripe_client") as mock_get_client,
+        pytest.raises(ValidationError, match="Stripe Connect onboarding"),
+    ):
+        await create_order_checkout_session(mock_uow, 1, **_order_checkout_kwargs())
+
+    mock_get_client.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_create_order_checkout_session_success(mock_uow):
     order = MagicMock(spec=Order)
     order.status = OrderStatus.PENDING
@@ -368,9 +434,7 @@ async def test_create_order_checkout_session_success(mock_uow):
     order.guest_email = "o@x.com"
     order.access_token = _ORDER_CHECKOUT_TOKEN
     order.application_fee_cents = None
-    order.studio = MagicMock()
-    order.studio.stripe_account_id = None
-    order.studio.stripe_charges_enabled = False
+    order.studio = _ready_connect_studio()
     mock_uow.orders.get_by_id_with_service_and_studio = AsyncMock(return_value=order)
     active_booking = MagicMock(spec=Booking)
     active_booking.status = BookingStatus.PENDING

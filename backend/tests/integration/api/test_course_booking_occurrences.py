@@ -195,6 +195,30 @@ async def test_create_course_booking_skips_past_occurrences(client: AsyncClient)
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+async def test_create_course_booking_uses_configured_stripe_currency(client: AsyncClient):
+    headers, studio_id, service_id = await _create_studio_and_course(
+        client,
+        email="crit1-currency@example.com",
+    )
+    await _create_occurrence(
+        client,
+        headers,
+        studio_id=studio_id,
+        service_id=service_id,
+        start_time=FROZEN_NOW + timedelta(days=3),
+    )
+
+    with (
+        patch("app.modules.booking.order.service.settings.STRIPE_CURRENCY", "usd"),
+        frozen_utc_now(),
+    ):
+        result = await _book_course(client, service_id=service_id)
+
+    assert result["order"]["currency"] == "usd"
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_create_course_booking_skips_cancelled_occurrences(client: AsyncClient):
     headers, studio_id, service_id = await _create_studio_and_course(
         client,

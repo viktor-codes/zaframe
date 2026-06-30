@@ -17,7 +17,8 @@ CRUD операции:
 
 from fastapi import APIRouter, Depends, Query
 
-from app.core.deps import get_current_user_required, get_uow
+from app.core.deps import get_current_user, get_current_user_required, get_uow
+from app.core.exceptions import ForbiddenError, UnauthorizedError
 from app.core.uow import UnitOfWork
 from app.models.service import ServiceCategory
 from app.models.user import User
@@ -43,6 +44,7 @@ router = APIRouter(prefix="/studios", tags=["studios"])
 
 @router.get("")
 async def list_studios(
+    user: Annotated[User | None, Depends(get_current_user)],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
     skip: int = Query(0, ge=0, description="Пропустить N записей"),
     limit: int = Query(20, ge=1, le=100, description="Максимум записей"),
@@ -60,6 +62,11 @@ async def list_studios(
     Список студий с пагинацией и опциональными фильтрами для Explore.
     При include_services=true возвращает list[SearchResult] (студия + услуги), иначе list[StudioResponse].
     """
+    if owner_id is not None:
+        if user is None:
+            raise UnauthorizedError("Authentication required")
+        if owner_id != user.id:
+            raise ForbiddenError("Access denied for this owner filter")
     studios = await get_studios(
         uow,
         skip=skip,
@@ -99,6 +106,7 @@ async def list_my_studios(
 
 @router.get("/count")
 async def count_studios(
+    user: Annotated[User | None, Depends(get_current_user)],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
     owner_id: int | None = Query(None, description="Фильтр по владельцу"),
     is_active: bool | None = Query(None, description="Фильтр по статусу"),
@@ -108,6 +116,11 @@ async def count_studios(
     amenities: list[str] | None = Query(None, description="Удобства (Explore)"),
 ) -> dict[str, int]:
     """Количество студий (для пагинации, те же фильтры что и list)."""
+    if owner_id is not None:
+        if user is None:
+            raise UnauthorizedError("Authentication required")
+        if owner_id != user.id:
+            raise ForbiddenError("Access denied for this owner filter")
     count = await get_studios_count(
         uow,
         owner_id=owner_id,

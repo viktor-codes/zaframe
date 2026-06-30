@@ -95,21 +95,14 @@ async def get_service_availability(
         raise NotFoundError("Service not found")
     if service.type != ServiceType.COURSE:
         raise ValidationError("Service is not a course")
-    if not service.is_bookable():
-        raise ValidationError("Service is not available for booking")
 
     now_utc = datetime_utils.utc_now()
-    availability = await check_course_availability(
-        uow,
-        service_id=service_id,
-        now=now_utc,
-    )
-
     stats = await get_course_occurrences_with_capacity(
         uow,
         service=service,
         now=now_utc,
     )
+    availability = evaluate_course_availability(service, stats)
     if start_date is not None:
         stats = [s for s in stats if s.occurrence.start_time.date() >= start_date]
 

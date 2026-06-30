@@ -11,6 +11,9 @@ import pytest
 from httpx import AsyncClient
 from tests.conftest import authenticate_via_otp, create_test_service
 
+from app.core.uow_factory import create_uow
+from app.main import app
+
 _CHECKOUT_PAYLOAD = {
     "success_url": "http://localhost:3000/payments/success",
     "cancel_url": "http://localhost:3000/payments/cancel",
@@ -52,6 +55,14 @@ async def _create_pending_booking(
     )
     assert r_studio.status_code == 201
     studio_id = r_studio.json()["id"]
+    session = app.state._integration_session
+    uow = create_uow(session)
+    studio = await uow.studios.get_by_id(studio_id)
+    assert studio is not None
+    studio.stripe_account_id = "acct_ready"
+    studio.stripe_charges_enabled = True
+    await uow.studios.save(studio)
+
     service_id = await create_test_service(
         client,
         headers=headers,

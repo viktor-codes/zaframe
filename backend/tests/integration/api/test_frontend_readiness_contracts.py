@@ -165,6 +165,62 @@ async def test_studios_my_slug_media_and_slug_conflict(client: AsyncClient):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+async def test_owner_id_studio_filters_require_matching_authenticated_owner(client: AsyncClient):
+    suffix = uuid4().hex[:8]
+    owner_auth = await authenticate_via_otp(
+        client,
+        email=f"fr01-owner-filter-{suffix}@example.com",
+        name="Owner Filter",
+    )
+    owner_headers = {"Authorization": f"Bearer {owner_auth['access_token']}"}
+    other_headers = await _auth_headers(
+        client,
+        email=f"fr01-owner-filter-other-{suffix}@example.com",
+    )
+    studio = await _create_studio(
+        client,
+        owner_headers,
+        name="Owner Filter Studio",
+        slug=f"fr01-owner-filter-studio-{suffix}",
+    )
+    owner_id = owner_auth["user"]["id"]
+
+    public_list = await client.get("/api/v1/studios", params={"owner_id": owner_id})
+    public_count = await client.get("/api/v1/studios/count", params={"owner_id": owner_id})
+    assert public_list.status_code == 401
+    assert public_count.status_code == 401
+
+    other_list = await client.get(
+        "/api/v1/studios",
+        params={"owner_id": owner_id},
+        headers=other_headers,
+    )
+    other_count = await client.get(
+        "/api/v1/studios/count",
+        params={"owner_id": owner_id},
+        headers=other_headers,
+    )
+    assert other_list.status_code == 403
+    assert other_count.status_code == 403
+
+    owner_list = await client.get(
+        "/api/v1/studios",
+        params={"owner_id": owner_id},
+        headers=owner_headers,
+    )
+    owner_count = await client.get(
+        "/api/v1/studios/count",
+        params={"owner_id": owner_id},
+        headers=owner_headers,
+    )
+    assert owner_list.status_code == 200
+    assert [item["id"] for item in owner_list.json()] == [studio["id"]]
+    assert owner_count.status_code == 200
+    assert owner_count.json()["count"] == 1
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_studio_services_endpoint_is_owner_scoped(client: AsyncClient):
     suffix = uuid4().hex[:8]
     owner_headers = await _auth_headers(
@@ -285,10 +341,21 @@ async def test_orders_my_and_owner_orders_are_scoped(client: AsyncClient):
         booking["id"] for booking in booking_response.json()["bookings"]
     }
 
-    owner_orders_response = await client.get("/api/v1/orders", headers=owner_headers)
+    missing_studio_response = await client.get("/api/v1/orders", headers=owner_headers)
+    assert missing_studio_response.status_code == 400
+    assert missing_studio_response.json()["detail"] == "studio_id is required"
+
+    owner_orders_response = await client.get(
+        "/api/v1/orders",
+        params={"studio_id": studio["id"]},
+        headers=owner_headers,
+    )
     assert owner_orders_response.status_code == 200
     assert [order["id"] for order in owner_orders_response.json()] == [created_order["id"]]
 
-    stranger_orders_response = await client.get("/api/v1/orders", headers=stranger_headers)
-    assert stranger_orders_response.status_code == 200
-    assert stranger_orders_response.json() == []
+    stranger_orders_response = await client.get(
+        "/api/v1/orders",
+        params={"studio_id": studio["id"]},
+        headers=stranger_headers,
+    )
+    assert stranger_orders_response.status_code == 403

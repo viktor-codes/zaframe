@@ -181,6 +181,63 @@ async def test_public_catalog_shows_only_published_services_and_owner_sees_all(
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+async def test_direct_public_service_reads_hide_draft_but_owner_can_preview(
+    client: AsyncClient,
+) -> None:
+    headers = await _owner_headers(client, email="fr07-direct-draft-owner@example.com")
+    studio_id = await _create_studio(client, headers=headers)
+    service_id = await _create_service(
+        client,
+        headers=headers,
+        studio_id=studio_id,
+        name="Draft Course",
+        visibility="draft",
+        type_="course",
+    )
+    await _create_occurrence(
+        client,
+        headers=headers,
+        studio_id=studio_id,
+        service_id=service_id,
+    )
+    schedule_response = await client.post(
+        f"/api/v1/services/{service_id}/schedule-templates",
+        json={
+            "day_of_week": 1,
+            "start_time": "18:00:00",
+            "valid_from": "2026-06-01",
+        },
+        headers=headers,
+    )
+    assert schedule_response.status_code == 201, schedule_response.text
+
+    public_detail = await client.get(f"/api/v1/services/{service_id}")
+    public_availability = await client.get(f"/api/v1/services/{service_id}/availability")
+    public_schedules = await client.get(f"/api/v1/services/{service_id}/schedule-templates")
+
+    assert public_detail.status_code == 404
+    assert public_availability.status_code == 404
+    assert public_schedules.status_code == 404
+
+    owner_detail = await client.get(f"/api/v1/services/{service_id}", headers=headers)
+    owner_availability = await client.get(
+        f"/api/v1/services/{service_id}/availability",
+        headers=headers,
+    )
+    owner_schedules = await client.get(
+        f"/api/v1/services/{service_id}/schedule-templates",
+        headers=headers,
+    )
+
+    assert owner_detail.status_code == 200, owner_detail.text
+    assert owner_detail.json()["visibility"] == "draft"
+    assert owner_availability.status_code == 200, owner_availability.text
+    assert owner_schedules.status_code == 200, owner_schedules.text
+    assert len(owner_schedules.json()) == 1
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_archived_service_occurrence_is_not_bookable(client: AsyncClient) -> None:
     headers = await _owner_headers(client, email="fr07-archived-owner@example.com")
     studio_id = await _create_studio(client, headers=headers)
