@@ -54,7 +54,7 @@ class User(TimestampMixin, Base):
 
     # Основные данные
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
-    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
     marketing_consent: Mapped[bool] = mapped_column(
         Boolean,

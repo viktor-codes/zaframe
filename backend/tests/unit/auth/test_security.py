@@ -1,9 +1,11 @@
 """
-Юнит-тесты для app.core.security: JWT, OTP, refresh token.
+Unit tests for app.core.security: JWT, OTP, and refresh tokens.
 """
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
+
+import jwt
 
 from app.core.config import settings
 from app.core.security import (
@@ -95,6 +97,54 @@ class TestDecodeToken:
     def test_invalid_returns_none(self):
         assert decode_token("x") is None
         assert decode_token("Bearer abc") is None
+
+    def test_expired_token_returns_none(self):
+        now = datetime.now(UTC)
+        token = jwt.encode(
+            {
+                "sub": "1",
+                "email": "expired@example.com",
+                "type": "access",
+                "exp": now - timedelta(minutes=1),
+                "iat": now - timedelta(minutes=2),
+            },
+            settings.SECRET_KEY,
+            algorithm=settings.ALGORITHM,
+        )
+
+        assert decode_token(token) is None
+
+    def test_wrong_signature_returns_none(self):
+        now = datetime.now(UTC)
+        token = jwt.encode(
+            {
+                "sub": "1",
+                "email": "wrong-signature@example.com",
+                "type": "access",
+                "exp": now + timedelta(minutes=5),
+                "iat": now,
+            },
+            "different-secret-with-enough-length",
+            algorithm=settings.ALGORITHM,
+        )
+
+        assert decode_token(token) is None
+
+    def test_wrong_algorithm_returns_none(self):
+        now = datetime.now(UTC)
+        token = jwt.encode(
+            {
+                "sub": "1",
+                "email": "wrong-algorithm@example.com",
+                "type": "access",
+                "exp": now + timedelta(minutes=5),
+                "iat": now,
+            },
+            "hs512-test-secret-with-enough-length-for-the-algorithm-000000000000",
+            algorithm="HS512",
+        )
+
+        assert decode_token(token) is None
 
 
 class TestHashOtpCode:

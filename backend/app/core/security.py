@@ -1,10 +1,8 @@
 """
-JWT и OTP: создание и проверка токенов.
+JWT and OTP helpers.
 
-Почему python-jose:
-- Стандартная библиотека для JWT в Python
-- Поддержка HS256, RS256
-- Простой API: encode/decode
+PyJWT is used for JWT signing and verification because the previous JWT
+library is unmaintained and affected by public parsing vulnerabilities.
 """
 
 import hashlib
@@ -14,14 +12,14 @@ from datetime import UTC, datetime, timedelta
 from secrets import randbelow, token_urlsafe
 from typing import Any
 
-from jose import JWTError, jwt
+import jwt
 
 from app.core.config import settings
 from app.core.datetime_utils import utc_now
 
 
 def _utcnow() -> datetime:
-    """Возвращает текущий момент времени в UTC (aware datetime)."""
+    """Return the current aware UTC timestamp."""
     return utc_now()
 
 
@@ -29,7 +27,7 @@ def create_access_token(
     user_id: int,
     email: str,
 ) -> str:
-    """Создать access token (короткоживущий)."""
+    """Create a short-lived access token."""
     now = _utcnow()
     expire = now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {
@@ -39,7 +37,7 @@ def create_access_token(
         "exp": expire,
         "iat": now,
     }
-    return jwt.encode(
+    return jwt.encode(  # pyright: ignore[reportUnknownMemberType]
         payload,
         settings.SECRET_KEY,
         algorithm=settings.ALGORITHM,
@@ -48,10 +46,9 @@ def create_access_token(
 
 def create_refresh_token(user_id: int) -> str:
     """
-    Создать refresh token (долгоживущий).
+    Create a long-lived refresh token.
 
-    Добавляем jti (unique JWT ID) для возможности последующей ротации
-    и точечного отзыва конкретных refresh-токенов.
+    The jti claim allows refresh-token rotation and per-session revocation.
     """
     now = _utcnow()
     expire = now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
@@ -63,7 +60,7 @@ def create_refresh_token(user_id: int) -> str:
         "exp": expire,
         "iat": now,
     }
-    return jwt.encode(
+    return jwt.encode(  # pyright: ignore[reportUnknownMemberType]
         payload,
         settings.SECRET_KEY,
         algorithm=settings.ALGORITHM,
@@ -72,22 +69,23 @@ def create_refresh_token(user_id: int) -> str:
 
 def decode_token(token: str) -> dict[str, Any] | None:
     """
-    Декодировать и проверить JWT.
-    Возвращает payload или None при ошибке.
+    Decode and verify a JWT.
+
+    Returns the payload or None for invalid/expired tokens.
     """
     try:
-        payload = jwt.decode(
+        payload = jwt.decode(  # pyright: ignore[reportUnknownMemberType]
             token,
             settings.SECRET_KEY,
             algorithms=[settings.ALGORITHM],
         )
         return payload
-    except JWTError:
+    except jwt.PyJWTError:
         return None
 
 
 def get_user_id_from_access_token(token: str) -> int | None:
-    """Извлечь user_id из access token."""
+    """Extract user_id from an access token."""
     payload = decode_token(token)
     if payload is None or payload.get("type") != "access":
         return None
@@ -98,7 +96,7 @@ def get_user_id_from_access_token(token: str) -> int | None:
 
 
 def get_user_id_from_refresh_token(token: str) -> int | None:
-    """Извлечь user_id из refresh token."""
+    """Extract user_id from a refresh token."""
     payload = decode_token(token)
     if payload is None or payload.get("type") != "refresh":
         return None
@@ -110,7 +108,7 @@ def get_user_id_from_refresh_token(token: str) -> int | None:
 
 @dataclass
 class RefreshTokenData:
-    """Структурированное содержимое refresh-токена после валидации."""
+    """Structured refresh-token claims after validation."""
 
     user_id: int
     jti: str
@@ -119,9 +117,9 @@ class RefreshTokenData:
 
 def parse_refresh_token(token: str) -> RefreshTokenData | None:
     """
-    Распарсить и провалидировать refresh-token.
+    Parse and validate a refresh token.
 
-    Возвращает RefreshTokenData или None, если токен недействителен.
+    Returns RefreshTokenData or None when the token is invalid.
     """
     payload = decode_token(token)
     if payload is None or payload.get("type") != "refresh":

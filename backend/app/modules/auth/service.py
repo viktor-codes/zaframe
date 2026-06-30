@@ -49,14 +49,6 @@ async def request_otp(
     """
     now_utc = utc_now()
     existing_user = await uow.users.get_by_email_including_deleted(email)
-    if existing_user is not None and existing_user.deleted_at is not None:
-        # WHY: keep the public response indistinguishable, but do not email unusable codes.
-        log_domain_event(
-            logger,
-            "otp_request_ignored_deleted_account",
-            user_id=existing_user.id,
-        )
-        return
 
     since = now_utc - timedelta(hours=1)
     recent_count = await uow.otp_codes.count_recent_requests(email, since)
@@ -205,7 +197,21 @@ async def refresh_access_token(
     now_utc = utc_now()
 
     refresh_session = await uow.refresh_tokens.get_by_user_and_jti(user_id, jti)
-    if refresh_session is None or not refresh_session.is_active(now_utc):
+    if refresh_session is None:
+        raise UnauthorizedError("Invalid refresh token")
+    if refresh_session.revoked_at is not None:
+        revoked_count = await uow.refresh_tokens.revoke_active_for_user(user_id, now_utc)
+        log_domain_event(
+            logger,
+            "refresh_token_reuse_detected",
+            level="warning",
+            user_id=user_id,
+            revoked_sessions=revoked_count,
+        )
+        # WHY: this security side effect must survive the 401 response rollback path.
+        await uow.commit()
+        raise UnauthorizedError("Invalid refresh token")
+    if not refresh_session.is_active(now_utc):
         raise UnauthorizedError("Invalid refresh token")
 
     refresh_session.revoked_at = now_utc

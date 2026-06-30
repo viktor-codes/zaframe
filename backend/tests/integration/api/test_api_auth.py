@@ -18,7 +18,7 @@ from app.core.uow_factory import create_uow
 from app.main import app
 from app.models.booking import Booking, BookingStatus
 from app.models.occurrence import Occurrence
-from app.models.order import Order
+from app.models.refresh_token import RefreshToken
 from app.models.service import Service
 from app.models.studio import Studio
 
@@ -162,6 +162,60 @@ async def test_full_auth_flow_refresh_logout_me(client):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+async def test_refresh_token_reuse_revokes_all_active_sessions(client, app_with_rollback_uow):
+    """Reusing a rotated refresh token revokes the user's active refresh sessions."""
+    suffix = uuid4().hex[:8]
+    auth_data = await authenticate_via_otp(
+        client,
+        email=f"reuse-detected-{suffix}@example.com",
+        name="Reuse Detected",
+    )
+    user_id = auth_data["user"]["id"]
+    old_refresh_cookie = client.cookies.get("refresh_token")
+    old_csrf_cookie = client.cookies.get("csrf_token")
+    assert old_refresh_cookie is not None
+    assert old_csrf_cookie is not None
+
+    rotation_response = await client.post(
+        "/api/v1/auth/refresh",
+        headers={"X-CSRF-Token": old_csrf_cookie},
+    )
+    assert rotation_response.status_code == 200
+    new_refresh_cookie = client.cookies.get("refresh_token")
+    new_csrf_cookie = client.cookies.get("csrf_token")
+    assert new_refresh_cookie is not None
+    assert new_refresh_cookie != old_refresh_cookie
+    assert new_csrf_cookie is not None
+    assert new_csrf_cookie != old_csrf_cookie
+
+    reuse_response = await client.post(
+        "/api/v1/auth/refresh",
+        headers={
+            "X-CSRF-Token": old_csrf_cookie,
+            "Cookie": f"refresh_token={old_refresh_cookie}; csrf_token={old_csrf_cookie}",
+        },
+    )
+    assert reuse_response.status_code == 401
+
+    current_session_response = await client.post(
+        "/api/v1/auth/refresh",
+        headers={
+            "X-CSRF-Token": new_csrf_cookie,
+            "Cookie": f"refresh_token={new_refresh_cookie}; csrf_token={new_csrf_cookie}",
+        },
+    )
+    assert current_session_response.status_code == 401
+
+    session = app_with_rollback_uow.state._integration_session
+    refresh_sessions = (
+        await session.execute(select(RefreshToken).where(RefreshToken.user_id == user_id))
+    ).scalars().all()
+    assert refresh_sessions
+    assert all(refresh_session.revoked_at is not None for refresh_session in refresh_sessions)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_me_without_bearer_returns_401(client):
     """GET /auth/me without Authorization returns 401."""
     r = await client.get("/api/v1/auth/me")
@@ -269,19 +323,9 @@ async def test_delete_account_soft_deletes_user_and_revokes_sessions(client, app
             price_cents=1500,
         )
     )
-    order = await uow.orders.add(
-        Order(
-            studio_id=studio.id,
-            user_id=user_id,
-            total_amount_cents=1500,
-            currency="eur",
-            status="paid",
-        )
-    )
     booking = await uow.bookings.add(
         Booking(
             occurrence_id=occurrence.id,
-            order_id=order.id,
             user_id=user_id,
             guest_name="Deleted User",
             guest_email=email,
@@ -289,7 +333,6 @@ async def test_delete_account_soft_deletes_user_and_revokes_sessions(client, app
         )
     )
     booking_id = booking.id
-    order_id = order.id
 
     pre_delete_codes: list[str] = []
 
@@ -333,23 +376,22 @@ async def test_delete_account_soft_deletes_user_and_revokes_sessions(client, app
     deleted_user = await lookup_uow.users.get_by_id_including_deleted(user_id)
     assert deleted_user is not None
     assert deleted_user.deleted_at is not None
+    assert deleted_user.email == f"deleted+{user_id}@deleted.local"
+    assert deleted_user.name is None
+    assert deleted_user.phone is None
 
     persisted_booking = (
         await session.execute(select(Booking).where(Booking.id == booking_id))
     ).scalar_one_or_none()
-    persisted_order = (
-        await session.execute(select(Order).where(Order.id == order_id))
-    ).scalar_one_or_none()
     assert persisted_booking is not None
-    assert persisted_order is not None
     assert persisted_booking.user_id == user_id
-    assert persisted_order.user_id == user_id
+    assert persisted_booking.guest_email == email
 
     login_response = await client.post(
         "/api/v1/auth/otp/verify",
         json={"email": email, "code": pre_delete_codes[0]},
     )
-    assert login_response.status_code == 401
+    assert login_response.status_code == 400
 
     captured_codes: list[str] = []
 
@@ -363,4 +405,13 @@ async def test_delete_account_soft_deletes_user_and_revokes_sessions(client, app
             json={"email": email, "name": "Deleted User"},
         )
     assert otp_response.status_code == 200
-    assert captured_codes == []
+    assert len(captured_codes) == 1
+
+    new_login_response = await client.post(
+        "/api/v1/auth/otp/verify",
+        json={"email": email, "code": captured_codes[0]},
+    )
+    assert new_login_response.status_code == 200
+    new_user = new_login_response.json()["user"]
+    assert new_user["id"] != user_id
+    assert new_user["email"] == email
