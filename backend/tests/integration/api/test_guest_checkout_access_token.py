@@ -234,6 +234,7 @@ async def test_order_guest_checkout_with_valid_token_succeeds(mock_uow):
     order.id = 1
     order.guest_email = "o@x.com"
     order.access_token = "order-secret"
+    order.checkout_session_id = None
     order.application_fee_cents = 0
     order.studio = MagicMock()
     order.studio.stripe_account_id = "acct_ready"

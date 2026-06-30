@@ -155,6 +155,8 @@ async def create_order_checkout_session(
     )
     if order.status != OrderStatus.PENDING:
         raise ValidationError("Order is already paid or cancelled")
+    if order.checkout_session_id:
+        raise ValidationError("Checkout Session already created for this order")
 
     now_utc = utc_now()
     bookings = await uow.bookings.list_(order_id=order_id, limit=1000)
@@ -195,6 +197,7 @@ async def create_order_checkout_session(
     except stripe.StripeError as e:
         raise_stripe_app_error(e, action="checkout session creation")
 
+    order.checkout_session_id = session.id
     await uow.orders.flush()
     log_domain_event(
         logger,

@@ -58,6 +58,7 @@ class Order(TimestampMixin, Base):
     total_amount_cents: Mapped[int] = mapped_column(Integer, nullable=False)
     currency: Mapped[str] = mapped_column(String(10), default="eur", nullable=False)
     application_fee_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    checkout_session_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     payment_intent_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
 
     status: Mapped[str] = mapped_column(

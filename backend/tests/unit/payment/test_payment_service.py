@@ -360,6 +360,7 @@ async def test_create_order_checkout_session_expired_hold(mock_uow):
     expired_booking.status = BookingStatus.PENDING
     expired_booking.reserved_until = datetime.now(UTC) - timedelta(minutes=1)
     order.access_token = _ORDER_CHECKOUT_TOKEN
+    order.checkout_session_id = None
     mock_uow.orders.get_by_id_with_service_and_studio = AsyncMock(return_value=order)
     mock_uow.bookings.list_ = AsyncMock(return_value=[expired_booking])
     with pytest.raises(ValidationError, match="hold has expired"):
@@ -389,6 +390,7 @@ async def test_create_order_checkout_session_zero_amount(mock_uow):
     order.service = None
     order.id = 1
     order.access_token = _ORDER_CHECKOUT_TOKEN
+    order.checkout_session_id = None
     mock_uow.orders.get_by_id_with_service_and_studio = AsyncMock(return_value=order)
     mock_uow.bookings.list_ = AsyncMock(return_value=[])
     with pytest.raises(ValidationError, match="no payable amount"):
@@ -405,6 +407,7 @@ async def test_create_order_checkout_session_requires_connect_ready(mock_uow):
     order.id = 1
     order.guest_email = None
     order.access_token = _ORDER_CHECKOUT_TOKEN
+    order.checkout_session_id = None
     order.studio = MagicMock()
     order.studio.stripe_account_id = None
     order.studio.stripe_charges_enabled = False
@@ -424,6 +427,26 @@ async def test_create_order_checkout_session_requires_connect_ready(mock_uow):
 
 
 @pytest.mark.asyncio
+async def test_create_order_checkout_session_rejects_duplicate_session(mock_uow):
+    order = MagicMock(spec=Order)
+    order.status = OrderStatus.PENDING
+    order.user_id = None
+    order.guest_email = None
+    order.access_token = _ORDER_CHECKOUT_TOKEN
+    order.checkout_session_id = "cs_existing"
+    mock_uow.orders.get_by_id_with_service_and_studio = AsyncMock(return_value=order)
+
+    with (
+        patch("app.modules.payment.checkout.get_stripe_client") as mock_get_client,
+        pytest.raises(ValidationError, match="Checkout Session already created"),
+    ):
+        await create_order_checkout_session(mock_uow, 1, **_order_checkout_kwargs())
+
+    mock_get_client.assert_not_called()
+    mock_uow.bookings.list_.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_create_order_checkout_session_success(mock_uow):
     order = MagicMock(spec=Order)
     order.status = OrderStatus.PENDING
@@ -433,6 +456,7 @@ async def test_create_order_checkout_session_success(mock_uow):
     order.id = 1
     order.guest_email = "o@x.com"
     order.access_token = _ORDER_CHECKOUT_TOKEN
+    order.checkout_session_id = None
     order.application_fee_cents = None
     order.studio = _ready_connect_studio()
     mock_uow.orders.get_by_id_with_service_and_studio = AsyncMock(return_value=order)
@@ -460,6 +484,7 @@ async def test_create_order_checkout_session_success(mock_uow):
             )
     assert result["session_id"] == "cs_order_1"
     assert result["checkout_url"] == "https://checkout.stripe.com/order"
+    assert order.checkout_session_id == "cs_order_1"
     mock_uow.orders.flush.assert_awaited_once()
 
 
