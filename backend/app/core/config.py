@@ -1,3 +1,4 @@
+from typing import Literal
 from urllib.parse import urlparse
 
 from pydantic import Field, computed_field, field_validator
@@ -15,6 +16,10 @@ class Settings(BaseSettings):
     # === FastAPI settings ===
     APP_NAME: str = Field(default="ZaFrame API", description="Smart Booking Service API")
     APP_VERSION: str = Field(default="0.1.0", description="Api Version")
+    ENVIRONMENT: Literal["dev", "staging", "production"] = Field(
+        default="dev",
+        description="Runtime environment: dev, staging, or production",
+    )
     DEBUG: bool = Field(default=False, description="Debugging mode")
     LOG_LEVEL: str = Field(
         default="INFO", description="Logging level (DEBUG, INFO, WARNING, ERROR)"
@@ -96,6 +101,24 @@ class Settings(BaseSettings):
         default="http://localhost:3000,http://localhost:3001,http://localhost:5173,http://localhost:5174,http://127.0.0.1:3000,http://127.0.0.1:3001,http://127.0.0.1:5173",
         description="Allowed origins for CORS (comma-separated in .env)",
     )
+
+    @computed_field
+    @property
+    def is_production(self) -> bool:
+        """Whether the application is running in production."""
+        return self.ENVIRONMENT == "production"
+
+    @computed_field
+    @property
+    def cookie_secure(self) -> bool:
+        """Send auth cookies only over HTTPS in production."""
+        return self.is_production
+
+    @computed_field
+    @property
+    def cookie_samesite(self) -> Literal["lax", "strict", "none"]:
+        """SameSite policy for browser auth cookies."""
+        return "lax"
 
     @computed_field
     @property

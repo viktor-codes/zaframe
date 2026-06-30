@@ -13,8 +13,8 @@ import pytest
 # Before any `from app.main import app` — Settings() reads env at import time.
 if "SECRET_KEY" not in os.environ:
     os.environ["SECRET_KEY"] = "test-secret-key-min-32-chars-for-pytest"
-# httpx uses http://test; Secure cookies are not stored/sent over HTTP — force DEBUG for tests.
-os.environ["DEBUG"] = "true"
+# httpx uses http://test; dev disables Secure cookies for local/test HTTP clients.
+os.environ["ENVIRONMENT"] = "dev"
 
 
 def pytest_configure(config):

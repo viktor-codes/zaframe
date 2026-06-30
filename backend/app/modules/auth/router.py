@@ -59,8 +59,8 @@ def _set_csrf_cookie(response: Response, csrf_token: str) -> None:
         key=CSRF_COOKIE_NAME,
         value=csrf_token,
         httponly=False,
-        secure=not settings.DEBUG,
-        samesite="lax",
+        secure=settings.cookie_secure,
+        samesite=settings.cookie_samesite,
         max_age=max_age_seconds,
         path="/",
     )
@@ -72,8 +72,8 @@ def _set_refresh_cookie(response: Response, refresh_token: str) -> None:
         key=REFRESH_TOKEN_COOKIE_NAME,
         value=refresh_token,
         httponly=True,
-        secure=not settings.DEBUG,
-        samesite="lax",
+        secure=settings.cookie_secure,
+        samesite=settings.cookie_samesite,
         max_age=max_age_seconds,
         path="/",
     )
