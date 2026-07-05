@@ -3,7 +3,7 @@
  * Do not surface raw stack traces or internal keys to end users.
  */
 
-import { ApiError } from "./client";
+import { ApiError } from "./api-error";
 
 type ValidationIssue = {
   loc?: (string | number)[];

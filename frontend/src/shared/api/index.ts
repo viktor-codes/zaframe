@@ -1,9 +1,9 @@
 /** API client, error helpers, and generated OpenAPI types. */
+export { ApiError } from "./api-error";
 export {
   api,
   setAuthTokenProvider,
   setRefreshTokensFn,
-  ApiError,
   type AuthTokenProvider,
   type RefreshTokensFn,
   type RequestConfig,

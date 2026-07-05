@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ApiError } from "./client";
+import { ApiError } from "./api-error";
 import { getUserFacingApiMessage } from "./error-message";
 
 describe("getUserFacingApiMessage", () => {

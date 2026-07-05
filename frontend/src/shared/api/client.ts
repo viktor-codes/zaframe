@@ -10,7 +10,10 @@ import "client-only";
 
 import { config } from "@shared/lib/config";
 
+import { ApiError } from "./api-error";
 import { buildApiUrl, type QueryParams } from "./build-url";
+
+export { ApiError };
 
 export type AuthTokenProvider = () => string | null;
 export type RefreshTokensFn = () => Promise<{ access_token: string } | null>;
@@ -24,17 +27,6 @@ export function setAuthTokenProvider(provider: AuthTokenProvider): void {
 
 export function setRefreshTokensFn(fn: RefreshTokensFn): void {
   refreshTokens = fn;
-}
-
-export class ApiError extends Error {
-  constructor(
-    message: string,
-    public status: number,
-    public body?: unknown,
-  ) {
-    super(message);
-    this.name = "ApiError";
-  }
 }
 
 export interface RequestConfig extends RequestInit {
