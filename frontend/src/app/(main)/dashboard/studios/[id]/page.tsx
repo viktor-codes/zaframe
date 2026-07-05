@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@shared/auth";
 import { Card, Button, Input, Textarea, Skeleton } from "@/components/ui";
 import {
   fetchStudio,

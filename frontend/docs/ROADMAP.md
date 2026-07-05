@@ -43,7 +43,7 @@ One commit per step, history stays readable:
 
 - [x] 1. Create `shared/`, `entities/`, `features/` skeleton + tsconfig path aliases
 - [x] 2. `shared/api`: move client, set up `openapi-typescript` generation (`npm run generate:api`)
-- [ ] 3. `shared/auth`: context, storage, types
+- [x] 3. `shared/auth`: context, storage, types
 - [ ] 4. `shared/ui`: move UI kit components (no business logic inside)
 - [ ] 5. `entities/` for studio, service, occurrence, booking, order, user — types + base models only
 - [ ] 6. Move `features/auth`

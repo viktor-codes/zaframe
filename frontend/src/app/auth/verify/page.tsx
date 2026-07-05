@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@shared/auth";
 import { verifyMagicLink } from "@/lib/api/auth";
 import { getUserFacingApiMessage } from "@/lib/api";
 import { Alert } from "@/components/ui";

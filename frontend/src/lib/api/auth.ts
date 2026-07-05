@@ -1,21 +1,16 @@
 /**
- * API аутентификации: Magic Link.
+ * Magic-link auth API (login flow).
+ *
+ * Session refresh/logout live in `@shared/auth/api`.
  */
 import { api } from "@shared/api";
-import type {
-  MagicLinkVerifyResponse,
-  RefreshTokenResponse,
-} from "@/types/auth";
+import type { components } from "@shared/api";
 
-function getCookieValue(name: string): string | null {
-  if (typeof document === "undefined") return null;
-  const parts = document.cookie.split(";").map((p) => p.trim());
-  for (const p of parts) {
-    if (!p.startsWith(`${name}=`)) continue;
-    return decodeURIComponent(p.slice(name.length + 1));
-  }
-  return null;
-}
+type MagicLinkVerifyResponse = components["schemas"]["TokenResponse"] & {
+  user: components["schemas"]["UserResponse"];
+};
+
+export { logoutSession, refreshAccessToken } from "@shared/auth/api";
 
 export async function requestMagicLink(params: {
   email: string;
@@ -35,16 +30,4 @@ export async function verifyMagicLink(
     params: { token },
     skipAuth: true,
   });
-}
-
-export async function refreshAccessToken(): Promise<RefreshTokenResponse> {
-  const csrf = getCookieValue("csrf_token");
-  return api.post<RefreshTokenResponse>("/api/v1/auth/refresh", undefined, {
-    skipAuth: true,
-    headers: csrf ? { "X-CSRF-Token": csrf } : undefined,
-  });
-}
-
-export async function logoutSession(): Promise<void> {
-  await api.post<void>("/api/v1/auth/logout", undefined, { skipAuth: false });
 }

@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Card, Button, Skeleton } from "@/components/ui";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@shared/auth";
 import { fetchStudios } from "@/lib/api";
 import type { StudioResponse } from "@/types/studio";
 

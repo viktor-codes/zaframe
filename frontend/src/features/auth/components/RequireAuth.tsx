@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@shared/auth";
 import { Skeleton } from "@/components/ui";
 
 export function RequireAuth({ children }: { children: React.ReactNode }) {

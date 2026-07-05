@@ -1,11 +1,11 @@
 "use client";
 
 /**
- * Auth контекст и провайдер.
+ * Auth context and provider.
  *
- * - Инициализирует API client с getAccessToken и refreshTokens
- * - Предоставляет user, login, logout
- * - User загружается через TanStack Query при наличии токена
+ * - Wires API client with getAccessToken and refreshTokens
+ * - Exposes user, login, logout
+ * - User is loaded via TanStack Query when a token is present
  */
 
 import {
@@ -18,14 +18,13 @@ import {
 } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api, setAuthTokenProvider, setRefreshTokensFn } from "@shared/api";
+import { logoutSession, refreshAccessToken } from "./api";
 import {
   clearStoredTokens,
   getStoredAccessToken,
   setStoredTokens,
 } from "./storage";
-import type { AuthActions, AuthState } from "./types";
-import type { UserResponse } from "@/types";
-import { logoutSession, refreshAccessToken } from "@/lib/api/auth";
+import type { AuthActions, AuthState, AuthUser, LoginUser } from "./types";
 
 type AuthContextValue = AuthState & AuthActions;
 
@@ -34,7 +33,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 function useAuthQuery(loginTrigger: number, isReady: boolean) {
   return useQuery({
     queryKey: ["auth", "me", loginTrigger],
-    queryFn: () => api.get<UserResponse>("/api/v1/auth/me"),
+    queryFn: () => api.get<AuthUser>("/api/v1/auth/me"),
     enabled: isReady,
     staleTime: 5 * 60 * 1000,
     retry: false,
@@ -47,7 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const { data: user, isLoading } = useAuthQuery(loginTrigger, isBootstrapped);
 
-  const login = useCallback((accessToken: string, _userData: UserResponse) => {
+  const login = useCallback((accessToken: string, _user: LoginUser) => {
     setStoredTokens(accessToken);
     setAuthTokenProvider(getStoredAccessToken);
     setLoginTrigger((prev) => prev + 1);

@@ -1,11 +1,19 @@
 /**
- * Реэкспорт auth: явный файл для разрешения @/lib/auth в бандлере (Vercel и др.).
+ * @deprecated Import from `@shared/auth` — kept for gradual migration.
  */
-export { AuthProvider, useAuth } from "./auth/index";
 export {
+  AuthProvider,
+  useAuth,
   clearStoredTokens,
   getStoredAccessToken,
   getStoredRefreshToken,
+  logoutSession,
+  refreshAccessToken,
   setStoredTokens,
-} from "./auth/storage";
-export type { AuthActions, AuthState } from "./auth/types";
+} from "@shared/auth";
+export type {
+  AuthActions,
+  AuthState,
+  AuthUser,
+  LoginUser,
+} from "@shared/auth";
