@@ -5,8 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@shared/auth";
 import { verifyMagicLink } from "@/lib/api/auth";
 import { getUserFacingApiMessage } from "@/lib/api";
-import { Alert } from "@/components/ui";
-import { Skeleton } from "@/components/ui";
+import { Alert } from "@shared/ui";
+import { Skeleton } from "@shared/ui";
 
 /** Dedupe verify in React Strict Mode (dev): second effect must not call the API again. */
 const verifyInFlight = new Set<string>();

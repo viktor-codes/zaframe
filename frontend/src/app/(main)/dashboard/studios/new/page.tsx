@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Card, Button, Input, Textarea } from "@/components/ui";
+import { Card, Button, Input, Textarea } from "@shared/ui";
 import { createStudio, getUserFacingApiMessage } from "@/lib/api";
 
 export default function NewStudioPage() {

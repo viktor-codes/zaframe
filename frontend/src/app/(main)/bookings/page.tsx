@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { RequireAuth } from "@/features/auth/components";
-import { Card, Button, Skeleton } from "@/components/ui";
+import { Card, Button, Skeleton } from "@shared/ui";
 import { fetchMyBookings } from "@/lib/api";
 import type { BookingSelfListItem } from "@/types/booking";
 

@@ -25,7 +25,7 @@ import {
   StudiosSkeleton,
   EmptyState,
 } from "@/features/studios/components";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@shared/ui";
 
 const PAGE_SIZE = 12;
 

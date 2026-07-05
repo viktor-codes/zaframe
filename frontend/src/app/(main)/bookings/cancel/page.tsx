@@ -3,7 +3,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Card, Button, Skeleton } from "@/components/ui";
+import { Card, Button, Skeleton } from "@shared/ui";
 
 function CancelContent() {
   const searchParams = useSearchParams();

@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Button, Card, Input } from "@/components/ui";
-import { Alert } from "@/components/ui";
+import { Button, Card, Input } from "@shared/ui";
+import { Alert } from "@shared/ui";
 import { requestMagicLink } from "@/lib/api/auth";
 import { getUserFacingApiMessage } from "@/lib/api";
 

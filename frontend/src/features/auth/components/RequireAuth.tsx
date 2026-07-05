@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@shared/auth";
-import { Skeleton } from "@/components/ui";
+import { Skeleton } from "@shared/ui";
 
 export function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, isInitialized } = useAuth();

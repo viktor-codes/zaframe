@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Card, Button, Skeleton } from "@/components/ui";
+import { Card, Button, Skeleton } from "@shared/ui";
 import {
   fetchBooking,
   fetchOccurrence,

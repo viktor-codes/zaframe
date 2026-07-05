@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { Card, Button, Input, Skeleton } from "@/components/ui";
+import { Card, Button, Input, Skeleton } from "@shared/ui";
 import { fetchStudio, fetchStudioOccurrences, createBooking } from "@/lib/api";
 import { storeGuestBookingAccess } from "@/lib/booking-guest-token";
 
