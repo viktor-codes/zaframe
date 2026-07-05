@@ -83,6 +83,16 @@ async def get_services_for_studio(
     )
 
 
+async def get_services_for_studio_count(
+    uow: UnitOfWork,
+    *,
+    studio_id: int,
+    is_active: bool | None = None,
+) -> int:
+    """Count services for a studio dashboard view."""
+    return await uow.services.count_by_studio(studio_id, is_active=is_active)
+
+
 async def update_service(
     uow: UnitOfWork,
     service: Service,

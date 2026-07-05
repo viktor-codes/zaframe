@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, cast
 
-from sqlalchemy import or_, select, update
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -128,6 +128,38 @@ class PaymentRepository(WriteRepositoryMixin):
         stmt = stmt.order_by(Payment.created_at.desc()).offset(skip).limit(limit)
         result = await self._session.execute(stmt)
         return list(result.scalars().unique().all())
+
+    async def count_for_studio(
+        self,
+        *,
+        studio_id: int,
+        status: str | None = None,
+        start_at: datetime | None = None,
+        end_at: datetime | None = None,
+        booking_id: int | None = None,
+        order_id: int | None = None,
+    ) -> int:
+        """Count payments belonging to a studio via order or booking occurrence."""
+        stmt = (
+            select(func.count(func.distinct(Payment.id)))
+            .select_from(Payment)
+            .outerjoin(Order, Order.id == Payment.order_id)
+            .outerjoin(Booking, Booking.id == Payment.booking_id)
+            .outerjoin(Occurrence, Occurrence.id == Booking.occurrence_id)
+            .where(or_(Order.studio_id == studio_id, Occurrence.studio_id == studio_id))
+        )
+        if status is not None:
+            stmt = stmt.where(Payment.status == status)
+        if start_at is not None:
+            stmt = stmt.where(Payment.created_at >= start_at)
+        if end_at is not None:
+            stmt = stmt.where(Payment.created_at <= end_at)
+        if booking_id is not None:
+            stmt = stmt.where(Payment.booking_id == booking_id)
+        if order_id is not None:
+            stmt = stmt.where(Payment.order_id == order_id)
+        result = await self._session.execute(stmt)
+        return result.scalar_one()
 
     async def add_refund(self, refund: Refund) -> Refund:
         """Persist a refund row."""

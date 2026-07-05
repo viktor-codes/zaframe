@@ -206,9 +206,7 @@ async def test_concurrent_last_seat_booking_one_success_one_capacity_error(
 
     successes = [r for r in results if isinstance(r, Booking)]
     capacity_errors = [
-        r
-        for r in results
-        if isinstance(r, ValidationError) and r.detail == "No seats available"
+        r for r in results if isinstance(r, ValidationError) and r.detail == "No seats available"
     ]
     assert len(successes) == 1
     assert len(capacity_errors) == 1

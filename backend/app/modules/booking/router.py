@@ -13,6 +13,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, Request
 
 from app.core.deps import get_current_user_required, get_uow
+from app.core.pagination import PaginatedResponse, build_paginated_response, pagination_offset
 from app.core.rate_limit import limiter
 from app.core.uow import UnitOfWork
 from app.models.user import User
@@ -27,7 +28,9 @@ from app.modules.booking import (
     create_booking,
     get_booking_for_user_or_raise,
     get_bookings,
+    get_bookings_count,
     get_my_bookings,
+    get_my_bookings_count,
     get_owner_bookings,
     get_owner_bookings_count,
     map_booking_created_response,
@@ -85,16 +88,17 @@ async def create_booking_endpoint(
     return map_booking_created_response(booking)
 
 
-@router.get("", response_model=list[BookingOwnerResponse])
+@router.get("", response_model=PaginatedResponse[BookingOwnerResponse])
 async def list_bookings(
     uow: Annotated[UnitOfWork, Depends(get_uow)],
     user: Annotated[User, Depends(get_current_user_required)],
-    skip: int = Query(0, ge=0, description="Number of records to skip"),
-    limit: int = Query(20, ge=1, le=100, description="Maximum number of records"),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    size: int = Query(20, ge=1, le=100, description="Records per page"),
     occurrence_id: int | None = Query(None, description="Filter by occurrence"),
     status: str | None = Query(None, description="Filter by status"),
-) -> list[BookingOwnerResponse]:
+) -> PaginatedResponse[BookingOwnerResponse]:
     """List bookings for studios owned by the current user."""
+    skip, limit = pagination_offset(page, size)
     bookings = await get_owner_bookings(
         uow,
         user,
@@ -103,25 +107,33 @@ async def list_bookings(
         occurrence_id=occurrence_id,
         status=status,
     )
-    return [BookingOwnerResponse.model_validate(b) for b in bookings]
+    total = await get_owner_bookings_count(
+        uow,
+        user,
+        occurrence_id=occurrence_id,
+        status=status,
+    )
+    items = [BookingOwnerResponse.model_validate(booking) for booking in bookings]
+    return build_paginated_response(items, total=total, page=page, size=size)
 
 
-@router.get("/my", response_model=list[BookingSelfListItem])
+@router.get("/my", response_model=PaginatedResponse[BookingSelfListItem])
 async def list_my_bookings(
     uow: Annotated[UnitOfWork, Depends(get_uow)],
     user: Annotated[User, Depends(get_current_user_required)],
-    skip: int = Query(0, ge=0, description="Number of records to skip"),
-    limit: int = Query(50, ge=1, le=100, description="Maximum number of records"),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    size: int = Query(20, ge=1, le=100, description="Records per page"),
     include_guest_email: bool = Query(
         True,
         description="Include guest bookings whose guest_email matches the user email",
     ),
-) -> list[BookingSelfListItem]:
+) -> PaginatedResponse[BookingSelfListItem]:
     """
     List current-user bookings for the account dashboard without N+1 queries.
 
     Returns Booking + Occurrence + Studio so the frontend does not need extra requests.
     """
+    skip, limit = pagination_offset(page, size)
     bookings = await get_my_bookings(
         uow,
         user=user,
@@ -129,33 +141,22 @@ async def list_my_bookings(
         limit=limit,
         include_guest_email=include_guest_email,
     )
-    return [
-        BookingSelfListItem(
-            **BookingSelfResponse.model_validate(b).model_dump(),
-            occurrence=OccurrenceResponse.model_validate(b.occurrence),
-            studio=StudioResponse.model_validate(b.occurrence.studio),
-        )
-        for b in bookings
-        if getattr(b, "occurrence", None) is not None
-        and getattr(b.occurrence, "studio", None) is not None
-    ]
-
-
-@router.get("/count")
-async def count_bookings(
-    uow: Annotated[UnitOfWork, Depends(get_uow)],
-    user: Annotated[User, Depends(get_current_user_required)],
-    occurrence_id: int | None = Query(None, description="Filter by occurrence"),
-    status: str | None = Query(None, description="Filter by status"),
-) -> dict[str, int]:
-    """Count owner-studio bookings for pagination."""
-    count = await get_owner_bookings_count(
+    total = await get_my_bookings_count(
         uow,
-        user,
-        occurrence_id=occurrence_id,
-        status=status,
+        user=user,
+        include_guest_email=include_guest_email,
     )
-    return {"count": count}
+    items = [
+        BookingSelfListItem(
+            **BookingSelfResponse.model_validate(booking).model_dump(),
+            occurrence=OccurrenceResponse.model_validate(booking.occurrence),
+            studio=StudioResponse.model_validate(booking.occurrence.studio),
+        )
+        for booking in bookings
+        if getattr(booking, "occurrence", None) is not None
+        and getattr(booking.occurrence, "studio", None) is not None
+    ]
+    return build_paginated_response(items, total=total, page=page, size=size)
 
 
 @router.get("/{booking_id}", response_model=BookingSelfResponse | BookingOwnerResponse)
@@ -208,16 +209,16 @@ async def mark_booking_no_show_endpoint(
 
 @occurrence_bookings_router.get(
     "/occurrences/{occurrence_id}/bookings",
-    response_model=list[BookingOwnerResponse],
+    response_model=PaginatedResponse[BookingOwnerResponse],
 )
 async def list_occurrence_bookings(
     occurrence_id: int,
     user: Annotated[User, Depends(get_current_user_required)],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
-    skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    size: int = Query(20, ge=1, le=100, description="Records per page"),
     status: str | None = Query(None, description="Filter by status"),
-) -> list[BookingOwnerResponse]:
+) -> PaginatedResponse[BookingOwnerResponse]:
     """Bookings for an occurrence with booking-view permission."""
     occurrence = await get_occurrence_or_raise(uow, occurrence_id)
     studio = await get_studio_or_raise(uow, occurrence.studio_id)
@@ -227,7 +228,18 @@ async def list_occurrence_bookings(
         user=user,
         permission="view_bookings",
     )
+    skip, limit = pagination_offset(page, size)
     bookings = await get_bookings(
-        uow, skip=skip, limit=limit, occurrence_id=occurrence_id, status=status
+        uow,
+        skip=skip,
+        limit=limit,
+        occurrence_id=occurrence_id,
+        status=status,
     )
-    return [BookingOwnerResponse.model_validate(b) for b in bookings]
+    total = await get_bookings_count(
+        uow,
+        occurrence_id=occurrence_id,
+        status=status,
+    )
+    items = [BookingOwnerResponse.model_validate(booking) for booking in bookings]
+    return build_paginated_response(items, total=total, page=page, size=size)

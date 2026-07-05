@@ -71,8 +71,7 @@ async def test_security_headers_hsts_only_in_production(monkeypatch):
 
     assert "strict-transport-security" not in dev_response.headers
     assert (
-        prod_response.headers["strict-transport-security"]
-        == "max-age=31536000; includeSubDomains"
+        prod_response.headers["strict-transport-security"] == "max-age=31536000; includeSubDomains"
     )
 
 
@@ -259,8 +258,10 @@ async def test_refresh_token_reuse_revokes_all_active_sessions(client, app_with_
 
     session = app_with_rollback_uow.state._integration_session
     refresh_sessions = (
-        await session.execute(select(RefreshToken).where(RefreshToken.user_id == user_id))
-    ).scalars().all()
+        (await session.execute(select(RefreshToken).where(RefreshToken.user_id == user_id)))
+        .scalars()
+        .all()
+    )
     assert refresh_sessions
     assert all(refresh_session.revoked_at is not None for refresh_session in refresh_sessions)
 

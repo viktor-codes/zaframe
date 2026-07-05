@@ -145,11 +145,11 @@ async def test_studios_my_slug_media_and_slug_conflict(client: AsyncClient):
 
     my_response = await client.get("/api/v1/studios/my", headers=owner_headers)
     assert my_response.status_code == 200
-    assert [item["id"] for item in my_response.json()] == [studio["id"]]
+    assert [item["id"] for item in my_response.json()["items"]] == [studio["id"]]
 
     other_response = await client.get("/api/v1/studios/my", headers=other_headers)
     assert other_response.status_code == 200
-    assert other_response.json() == []
+    assert other_response.json()["items"] == []
 
     duplicate_response = await client.post(
         "/api/v1/studios",
@@ -186,37 +186,24 @@ async def test_owner_id_studio_filters_require_matching_authenticated_owner(clie
     owner_id = owner_auth["user"]["id"]
 
     public_list = await client.get("/api/v1/studios", params={"owner_id": owner_id})
-    public_count = await client.get("/api/v1/studios/count", params={"owner_id": owner_id})
     assert public_list.status_code == 401
-    assert public_count.status_code == 401
 
     other_list = await client.get(
         "/api/v1/studios",
         params={"owner_id": owner_id},
         headers=other_headers,
     )
-    other_count = await client.get(
-        "/api/v1/studios/count",
-        params={"owner_id": owner_id},
-        headers=other_headers,
-    )
     assert other_list.status_code == 403
-    assert other_count.status_code == 403
 
     owner_list = await client.get(
         "/api/v1/studios",
         params={"owner_id": owner_id},
         headers=owner_headers,
     )
-    owner_count = await client.get(
-        "/api/v1/studios/count",
-        params={"owner_id": owner_id},
-        headers=owner_headers,
-    )
     assert owner_list.status_code == 200
-    assert [item["id"] for item in owner_list.json()] == [studio["id"]]
-    assert owner_count.status_code == 200
-    assert owner_count.json()["count"] == 1
+    owner_payload = owner_list.json()
+    assert [item["id"] for item in owner_payload["items"]] == [studio["id"]]
+    assert owner_payload["total"] == 1
 
 
 @pytest.mark.integration
@@ -260,7 +247,7 @@ async def test_studio_services_endpoint_is_owner_scoped(client: AsyncClient):
         headers=owner_headers,
     )
     assert response.status_code == 200
-    service_ids = {item["id"] for item in response.json()}
+    service_ids = {item["id"] for item in response.json()["items"]}
     assert service_ids == {active_service["id"], inactive_service["id"]}
 
     active_response = await client.get(
@@ -269,7 +256,7 @@ async def test_studio_services_endpoint_is_owner_scoped(client: AsyncClient):
         headers=owner_headers,
     )
     assert active_response.status_code == 200
-    assert [item["id"] for item in active_response.json()] == [active_service["id"]]
+    assert [item["id"] for item in active_response.json()["items"]] == [active_service["id"]]
 
     forbidden_response = await client.get(
         f"/api/v1/studios/{studio['id']}/services",
@@ -333,7 +320,7 @@ async def test_orders_my_and_owner_orders_are_scoped(client: AsyncClient):
     guest_headers = {"Authorization": f"Bearer {guest_auth['access_token']}"}
     my_orders_response = await client.get("/api/v1/orders/my", headers=guest_headers)
     assert my_orders_response.status_code == 200
-    my_orders = my_orders_response.json()
+    my_orders = my_orders_response.json()["items"]
     assert [order["id"] for order in my_orders] == [created_order["id"]]
     assert my_orders[0]["user_id"] == guest_auth["user"]["id"]
     assert my_orders[0]["service"]["id"] == service["id"]
@@ -351,7 +338,7 @@ async def test_orders_my_and_owner_orders_are_scoped(client: AsyncClient):
         headers=owner_headers,
     )
     assert owner_orders_response.status_code == 200
-    assert [order["id"] for order in owner_orders_response.json()] == [created_order["id"]]
+    assert [order["id"] for order in owner_orders_response.json()["items"]] == [created_order["id"]]
 
     stranger_orders_response = await client.get(
         "/api/v1/orders",

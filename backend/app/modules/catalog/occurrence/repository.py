@@ -107,6 +107,35 @@ class OccurrenceRepository(WriteRepositoryMixin):
         result = await self._session.execute(query)
         return list(result.scalars().all())
 
+    async def count_for_instructor_user(
+        self,
+        *,
+        user_id: int,
+        studio_id: int | None = None,
+        start_from: datetime | None = None,
+        start_to: datetime | None = None,
+        status: str | None = None,
+    ) -> int:
+        query = (
+            select(func.count())
+            .select_from(Occurrence)
+            .join(Occurrence.instructor)
+            .where(
+                StudioMember.user_id == user_id,
+                StudioMember.role == StudioMemberRole.INSTRUCTOR.value,
+            )
+        )
+        if studio_id is not None:
+            query = query.where(Occurrence.studio_id == studio_id)
+        if start_from is not None:
+            query = query.where(Occurrence.start_time >= ensure_utc(start_from))
+        if start_to is not None:
+            query = query.where(Occurrence.start_time <= ensure_utc(start_to))
+        if status is not None:
+            query = query.where(Occurrence.status == status)
+        result = await self._session.execute(query)
+        return result.scalar_one()
+
     async def count(
         self,
         *,

@@ -99,6 +99,24 @@ class BookingListQueriesMixin(BookingGetMixin):
         result = await self._session.execute(query)
         return list(result.scalars().all())
 
+    async def count_my_with_occurrence_and_studio(
+        self,
+        *,
+        user_id: int,
+        user_email: str,
+        include_guest_email: bool = True,
+    ) -> int:
+        query = (
+            select(func.count())
+            .select_from(Booking)
+            .where(
+                (Booking.user_id == user_id)
+                | ((Booking.guest_email == user_email) if include_guest_email else False)
+            )
+        )
+        result = await self._session.execute(query)
+        return result.scalar_one()
+
     async def list_(
         self,
         *,

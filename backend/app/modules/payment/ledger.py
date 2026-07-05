@@ -50,6 +50,27 @@ async def list_studio_payments(
     )
 
 
+async def count_studio_payments(
+    uow: UnitOfWork,
+    *,
+    studio_id: int,
+    status: str | None = None,
+    start_at: datetime | None = None,
+    end_at: datetime | None = None,
+    booking_id: int | None = None,
+    order_id: int | None = None,
+) -> int:
+    """Count filtered payments for a studio dashboard."""
+    return await uow.payments.count_for_studio(
+        studio_id=studio_id,
+        status=status,
+        start_at=start_at,
+        end_at=end_at,
+        booking_id=booking_id,
+        order_id=order_id,
+    )
+
+
 async def record_checkout_completed_payment(
     uow: UnitOfWork,
     *,

@@ -172,7 +172,7 @@ async def test_public_catalog_shows_only_published_services_and_owner_sees_all(
 
     owner_response = await client.get(f"/api/v1/studios/{studio_id}/services", headers=headers)
     assert owner_response.status_code == 200, owner_response.text
-    assert {service["visibility"] for service in owner_response.json()} == {
+    assert {service["visibility"] for service in owner_response.json()["items"]} == {
         "draft",
         "published",
         "archived",
@@ -233,7 +233,7 @@ async def test_direct_public_service_reads_hide_draft_but_owner_can_preview(
     assert owner_detail.json()["visibility"] == "draft"
     assert owner_availability.status_code == 200, owner_availability.text
     assert owner_schedules.status_code == 200, owner_schedules.text
-    assert len(owner_schedules.json()) == 1
+    assert len(owner_schedules.json()["items"]) == 1
 
 
 @pytest.mark.integration
@@ -286,7 +286,9 @@ async def test_deleting_occurrence_with_booking_preserves_cancelled_history(
         studio_id=studio_id,
         service_id=service_id,
     )
-    await _create_booking(client, occurrence_id=occurrence_id, guest_email="delete-guest@example.com")
+    await _create_booking(
+        client, occurrence_id=occurrence_id, guest_email="delete-guest@example.com"
+    )
 
     delete_response = await client.delete(f"/api/v1/occurrences/{occurrence_id}", headers=headers)
     assert delete_response.status_code == 204, delete_response.text
@@ -328,7 +330,9 @@ async def test_customer_cancellation_cutoff_blocks_late_cancel_but_owner_can_byp
 
     guest_data = await authenticate_via_otp(client, email=guest_email, name="Cutoff Guest")
     guest_headers = {"Authorization": f"Bearer {guest_data['access_token']}"}
-    guest_cancel = await client.patch(f"/api/v1/bookings/{booking_id}/cancel", headers=guest_headers)
+    guest_cancel = await client.patch(
+        f"/api/v1/bookings/{booking_id}/cancel", headers=guest_headers
+    )
     assert guest_cancel.status_code == 403
 
     owner_cancel = await client.patch(f"/api/v1/bookings/{booking_id}/cancel", headers=headers)
@@ -362,7 +366,9 @@ async def test_schedule_template_edit_does_not_mutate_generated_occurrences(
     )
     assert template_response.status_code == 201, template_response.text
     template = template_response.json()
-    assert "Already generated occurrences are not changed automatically" in template["edit_behavior"]
+    assert (
+        "Already generated occurrences are not changed automatically" in template["edit_behavior"]
+    )
 
     generate_response = await client.post(
         f"/api/v1/studios/{studio_id}/generate-occurrences",

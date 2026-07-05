@@ -12,6 +12,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 
 from app.core.deps import get_current_user, get_current_user_required, get_uow
+from app.core.pagination import PaginatedResponse, paginate_all
 from app.core.uow import UnitOfWork
 from app.models.user import User
 from app.modules.catalog.schedule import (
@@ -144,17 +145,18 @@ async def deactivate_service_endpoint(
 
 @router.get(
     "/{service_id}/schedule-templates",
-    response_model=list[ScheduleTemplateResponse],
+    response_model=PaginatedResponse[ScheduleTemplateResponse],
 )
 async def list_service_schedule_templates_endpoint(
     service_id: int,
     user: Annotated[User | None, Depends(get_current_user)],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
-) -> list[ScheduleTemplateResponse]:
+) -> PaginatedResponse[ScheduleTemplateResponse]:
     """List schedule templates for a service."""
     await get_public_or_authorized_service_or_raise(uow, service_id, user=user)
     schedules = await get_schedule_templates_for_service(uow, service_id=service_id)
-    return [ScheduleTemplateResponse.model_validate(s) for s in schedules]
+    items = [ScheduleTemplateResponse.model_validate(schedule) for schedule in schedules]
+    return paginate_all(items)
 
 
 @router.post(

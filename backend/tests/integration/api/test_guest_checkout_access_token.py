@@ -342,8 +342,8 @@ async def test_token_not_leaked_in_list_and_owner_responses(client: AsyncClient)
 
     r_list = await client.get("/api/v1/bookings/my", headers=guest_headers)
     assert r_list.status_code == 200
-    assert r_list.json()
-    for item in r_list.json():
+    assert r_list.json()["items"]
+    for item in r_list.json()["items"]:
         assert "access_token" not in item
 
     owner_auth = await authenticate_via_otp(
@@ -354,7 +354,7 @@ async def test_token_not_leaked_in_list_and_owner_responses(client: AsyncClient)
     owner_headers = {"Authorization": f"Bearer {owner_auth['access_token']}"}
     r_owner_list = await client.get("/api/v1/bookings", headers=owner_headers)
     assert r_owner_list.status_code == 200
-    for item in r_owner_list.json():
+    for item in r_owner_list.json()["items"]:
         assert "access_token" not in item
 
     r_owner_get = await client.get(f"/api/v1/bookings/{booking_id}", headers=owner_headers)

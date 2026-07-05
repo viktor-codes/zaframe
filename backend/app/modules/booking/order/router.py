@@ -4,23 +4,30 @@ from fastapi import APIRouter, Depends, Query
 
 from app.core.deps import get_current_user_required, get_uow
 from app.core.exceptions import ValidationError
+from app.core.pagination import PaginatedResponse, build_paginated_response, pagination_offset
 from app.core.uow import UnitOfWork
 from app.models.user import User
 from app.modules.booking.order.schemas import OrderListItem
-from app.modules.booking.order.service import get_my_orders, get_owner_orders
+from app.modules.booking.order.service import (
+    get_my_orders,
+    get_my_orders_count,
+    get_owner_orders,
+    get_owner_orders_count,
+)
 from app.modules.catalog.studio import get_studio_or_raise, require_studio_permission
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 
 
-@router.get("/my", response_model=list[OrderListItem])
+@router.get("/my", response_model=PaginatedResponse[OrderListItem])
 async def list_my_orders_endpoint(
     user: Annotated[User, Depends(get_current_user_required)],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
-    skip: int = Query(0, ge=0, description="Number of records to skip"),
-    limit: int = Query(20, ge=1, le=100, description="Maximum number of records"),
-) -> list[OrderListItem]:
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    size: int = Query(20, ge=1, le=100, description="Records per page"),
+) -> PaginatedResponse[OrderListItem]:
     """List orders for the current customer account."""
+    skip, limit = pagination_offset(page, size)
     orders = await get_my_orders(
         uow,
         user_id=user.id,
@@ -28,17 +35,23 @@ async def list_my_orders_endpoint(
         skip=skip,
         limit=limit,
     )
-    return [OrderListItem.model_validate(order) for order in orders]
+    total = await get_my_orders_count(
+        uow,
+        user_id=user.id,
+        user_email=user.email,
+    )
+    items = [OrderListItem.model_validate(order) for order in orders]
+    return build_paginated_response(items, total=total, page=page, size=size)
 
 
-@router.get("", response_model=list[OrderListItem])
+@router.get("", response_model=PaginatedResponse[OrderListItem])
 async def list_owner_orders_endpoint(
     user: Annotated[User, Depends(get_current_user_required)],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
-    skip: int = Query(0, ge=0, description="Number of records to skip"),
-    limit: int = Query(20, ge=1, le=100, description="Maximum number of records"),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    size: int = Query(20, ge=1, le=100, description="Records per page"),
     studio_id: int | None = Query(None, description="Required studio filter"),
-) -> list[OrderListItem]:
+) -> PaginatedResponse[OrderListItem]:
     """List orders for studios owned by the current user."""
     if studio_id is None:
         raise ValidationError("studio_id is required")
@@ -49,6 +62,7 @@ async def list_owner_orders_endpoint(
         user=user,
         permission="view_bookings",
     )
+    skip, limit = pagination_offset(page, size)
     orders = await get_owner_orders(
         uow,
         user_id=user.id,
@@ -56,4 +70,10 @@ async def list_owner_orders_endpoint(
         skip=skip,
         limit=limit,
     )
-    return [OrderListItem.model_validate(order) for order in orders]
+    total = await get_owner_orders_count(
+        uow,
+        user_id=user.id,
+        studio_id=studio_id,
+    )
+    items = [OrderListItem.model_validate(order) for order in orders]
+    return build_paginated_response(items, total=total, page=page, size=size)

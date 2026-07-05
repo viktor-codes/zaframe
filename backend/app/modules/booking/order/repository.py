@@ -101,6 +101,46 @@ class OrderRepository(WriteRepositoryMixin):
         result = await self._session.execute(query)
         return list(result.scalars().all())
 
+    async def count_for_user(
+        self,
+        *,
+        user_id: int,
+        user_email: str,
+    ) -> int:
+        normalized_email = user_email.strip().lower()
+        result = await self._session.execute(
+            select(func.count())
+            .select_from(Order)
+            .where(
+                or_(
+                    Order.user_id == user_id,
+                    func.lower(Order.guest_email) == normalized_email,
+                )
+            )
+        )
+        return result.scalar_one()
+
+    async def count_for_studio_member(
+        self,
+        *,
+        user_id: int,
+        studio_id: int | None = None,
+    ) -> int:
+        query = (
+            select(func.count(func.distinct(Order.id)))
+            .select_from(Order)
+            .join(Studio, Studio.id == Order.studio_id)
+            .outerjoin(
+                StudioMember,
+                (StudioMember.studio_id == Studio.id) & (StudioMember.user_id == user_id),
+            )
+            .where(or_(Studio.owner_id == user_id, StudioMember.user_id == user_id))
+        )
+        if studio_id is not None:
+            query = query.where(Order.studio_id == studio_id)
+        result = await self._session.execute(query)
+        return result.scalar_one()
+
     async def expire_pending_without_active_bookings(
         self,
         *,

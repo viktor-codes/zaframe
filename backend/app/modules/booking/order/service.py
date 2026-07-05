@@ -180,6 +180,16 @@ async def get_my_orders(
     )
 
 
+async def get_my_orders_count(
+    uow: UnitOfWork,
+    *,
+    user_id: int,
+    user_email: str,
+) -> int:
+    """Count orders linked to the current account or matching guest email."""
+    return await uow.orders.count_for_user(user_id=user_id, user_email=user_email)
+
+
 async def get_owner_orders(
     uow: UnitOfWork,
     *,
@@ -195,3 +205,13 @@ async def get_owner_orders(
         skip=skip,
         limit=limit,
     )
+
+
+async def get_owner_orders_count(
+    uow: UnitOfWork,
+    *,
+    user_id: int,
+    studio_id: int | None = None,
+) -> int:
+    """Count orders for studios visible to the current studio member."""
+    return await uow.orders.count_for_studio_member(user_id=user_id, studio_id=studio_id)

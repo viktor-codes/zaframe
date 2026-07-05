@@ -90,7 +90,6 @@ async def test_anonymous_booking_endpoints_return_401(client: AsyncClient):
 
     assert (await client.get("/api/v1/bookings")).status_code == 401
     assert (await client.get(f"/api/v1/bookings/{booking_id}")).status_code == 401
-    assert (await client.get("/api/v1/bookings/count")).status_code == 401
     assert (await client.patch(f"/api/v1/bookings/{booking_id}/cancel")).status_code == 401
     assert (await client.get(f"/api/v1/occurrences/{occurrence_id}/bookings")).status_code == 401
 
@@ -171,7 +170,7 @@ async def test_studio_owner_sees_slot_bookings_and_single_booking(client: AsyncC
         f"/api/v1/occurrences/{occurrence_id}/bookings", headers=owner_headers
     )
     assert r_list.status_code == 200
-    bookings = r_list.json()
+    bookings = r_list.json()["items"]
     assert len(bookings) == 1
     assert bookings[0]["id"] == booking_id
     assert bookings[0]["guest_email"] == "participant-authz@example.com"
@@ -180,7 +179,7 @@ async def test_studio_owner_sees_slot_bookings_and_single_booking(client: AsyncC
 
     r_owner_list = await client.get("/api/v1/bookings", headers=owner_headers)
     assert r_owner_list.status_code == 200
-    assert any(b["id"] == booking_id for b in r_owner_list.json())
+    assert any(b["id"] == booking_id for b in r_owner_list.json()["items"])
 
     r_get = await client.get(f"/api/v1/bookings/{booking_id}", headers=owner_headers)
     assert r_get.status_code == 200
@@ -198,7 +197,7 @@ async def test_owner_list_excludes_foreign_studio_bookings(client: AsyncClient):
 
     r_list = await client.get("/api/v1/bookings", headers=stranger_headers)
     assert r_list.status_code == 200
-    assert all(b["id"] != booking_id for b in r_list.json())
+    assert all(b["id"] != booking_id for b in r_list.json()["items"])
 
 
 @pytest.mark.integration
@@ -216,5 +215,5 @@ async def test_guest_booking_visible_in_my_after_otp_login(client: AsyncClient):
 
     r_my = await client.get("/api/v1/bookings/my", headers=guest_headers)
     assert r_my.status_code == 200
-    my_ids = [item["id"] for item in r_my.json()]
+    my_ids = [item["id"] for item in r_my.json()["items"]]
     assert booking_id in my_ids

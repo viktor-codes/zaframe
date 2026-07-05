@@ -11,12 +11,14 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, Header, Query, Request
 
 from app.core.deps import get_current_user, get_current_user_required, get_uow
+from app.core.pagination import PaginatedResponse, build_paginated_response, pagination_offset
 from app.core.rate_limit import limiter
 from app.core.uow import UnitOfWork
 from app.models.payment import PaymentStatus
 from app.models.studio import Studio
 from app.models.user import User
 from app.modules.payment.access import require_studio_payout_permission
+from app.modules.payment.ledger import count_studio_payments, list_studio_payments
 from app.modules.payment.schemas import (
     CheckoutSessionCreate,
     CheckoutSessionResponse,
@@ -37,7 +39,6 @@ from app.modules.payment.service import (
     get_payment_or_raise,
     get_payment_studio_or_raise,
     get_stripe_connect_status,
-    list_studio_payments,
     refresh_stripe_connect_status,
 )
 
@@ -235,7 +236,7 @@ async def update_studio_payout_settings_endpoint(
 
 @studio_payment_router.get(
     "/{studio_id}/payments",
-    response_model=list[PaymentListItem],
+    response_model=PaginatedResponse[PaymentListItem],
 )
 async def list_studio_payments_endpoint(
     studio_id: int,
@@ -254,9 +255,9 @@ async def list_studio_payments_endpoint(
     end_at: datetime | None = Query(None, description="Filter payments created at/before"),
     booking_id: int | None = Query(None, description="Filter by booking ID"),
     order_id: int | None = Query(None, description="Filter by order ID"),
-    skip: int = Query(0, ge=0, description="Records to skip"),
-    limit: int = Query(20, ge=1, le=100, description="Max records"),
-) -> list[PaymentListItem]:
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    size: int = Query(20, ge=1, le=100, description="Records per page"),
+) -> PaginatedResponse[PaymentListItem]:
     """List studio payment history for owner/manager dashboard."""
     studio = await get_stripe_connect_status(uow, studio_id=studio_id)
     await require_studio_payout_permission(
@@ -264,6 +265,7 @@ async def list_studio_payments_endpoint(
         studio=studio,
         user=user,
     )
+    skip, limit = pagination_offset(page, size)
     payments = await list_studio_payments(
         uow,
         studio_id=studio_id,
@@ -275,7 +277,17 @@ async def list_studio_payments_endpoint(
         skip=skip,
         limit=limit,
     )
-    return [PaymentListItem.model_validate(payment) for payment in payments]
+    total = await count_studio_payments(
+        uow,
+        studio_id=studio_id,
+        status=status,
+        start_at=start_at,
+        end_at=end_at,
+        booking_id=booking_id,
+        order_id=order_id,
+    )
+    items = [PaymentListItem.model_validate(payment) for payment in payments]
+    return build_paginated_response(items, total=total, page=page, size=size)
 
 
 @router.post(

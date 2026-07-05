@@ -148,7 +148,7 @@ async def test_studio_creator_gets_owner_membership_and_roles_contract(
 
     my_studios_response = await client.get("/api/v1/studios/my", headers=owner_headers)
     assert my_studios_response.status_code == 200, my_studios_response.text
-    my_studios = my_studios_response.json()
+    my_studios = my_studios_response.json()["items"]
     assert my_studios[0]["id"] == studio_id
     assert my_studios[0]["role"] == "owner"
 
@@ -343,7 +343,7 @@ async def test_owner_assigns_instructor_to_occurrence(
         headers=instructor_headers,
     )
     assert mine_response.status_code == 200, mine_response.text
-    assert [occurrence["id"] for occurrence in mine_response.json()] == [occurrence_id]
+    assert [occurrence["id"] for occurrence in mine_response.json()["items"]] == [occurrence_id]
 
 
 @pytest.mark.integration
@@ -402,7 +402,7 @@ async def test_instructor_mine_endpoint_only_returns_assigned_occurrences(
     )
 
     assert response.status_code == 200, response.text
-    occurrences = response.json()
+    occurrences = response.json()["items"]
     assert [occurrence["id"] for occurrence in occurrences] == [first_occurrence_id]
     assert occurrences[0]["instructor"]["user_id"] == first_instructor["id"]
 

@@ -147,15 +147,9 @@ async def test_slot_and_booking_flow(client: AsyncClient):
         headers=headers,
     )
     assert owner_occurrences.status_code == 200
-    assert [item["id"] for item in owner_occurrences.json()] == [occurrence_id]
-
-    owner_count = await client.get(
-        "/api/v1/occurrences/count",
-        params={"studio_id": studio_id},
-        headers=headers,
-    )
-    assert owner_count.status_code == 200
-    assert owner_count.json()["count"] == 1
+    owner_occurrence_items = owner_occurrences.json()["items"]
+    assert [item["id"] for item in owner_occurrence_items] == [occurrence_id]
+    assert owner_occurrences.json()["total"] == 1
 
     public_nested = await client.get(f"/api/v1/studios/{studio_id}/occurrences")
     assert public_nested.status_code == 401

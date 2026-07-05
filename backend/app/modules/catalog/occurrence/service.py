@@ -88,6 +88,24 @@ async def get_my_instructor_occurrences(
     )
 
 
+async def get_my_instructor_occurrences_count(
+    uow: UnitOfWork,
+    *,
+    user_id: int,
+    studio_id: int | None = None,
+    start_from: datetime | None = None,
+    start_to: datetime | None = None,
+    status: str | None = None,
+) -> int:
+    return await uow.occurrences.count_for_instructor_user(
+        user_id=user_id,
+        studio_id=studio_id,
+        start_from=start_from,
+        start_to=start_to,
+        status=status,
+    )
+
+
 async def _validate_instructor_assignment(
     uow: UnitOfWork,
     *,
@@ -197,7 +215,9 @@ async def delete_occurrence(uow: UnitOfWork, occurrence: Occurrence) -> None:
         occurrence.status = OccurrenceStatus.CANCELLED
         occurrence.cancelled_at = occurrence.cancelled_at or utc_now()
         if occurrence.cancellation_reason is None:
-            occurrence.cancellation_reason = "Cancelled because deletion was requested with bookings"
+            occurrence.cancellation_reason = (
+                "Cancelled because deletion was requested with bookings"
+            )
         await uow.occurrences.save(occurrence)
         log_domain_event(
             logger,

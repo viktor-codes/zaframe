@@ -148,6 +148,20 @@ async def get_my_bookings(
     )
 
 
+async def get_my_bookings_count(
+    uow: UnitOfWork,
+    *,
+    user: User,
+    include_guest_email: bool = True,
+) -> int:
+    """Count bookings visible in the personal cabinet."""
+    return await uow.bookings.count_my_with_occurrence_and_studio(
+        user_id=user.id,
+        user_email=user.email,
+        include_guest_email=include_guest_email,
+    )
+
+
 async def attach_guest_resources(
     uow: UnitOfWork,
     user: User,

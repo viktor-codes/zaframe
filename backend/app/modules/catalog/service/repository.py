@@ -1,6 +1,6 @@
 """Repository for the Service entity."""
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -47,6 +47,18 @@ class ServiceRepository(WriteRepositoryMixin):
         query = query.order_by(Service.created_at.desc()).offset(skip).limit(limit)
         result = await self._session.execute(query)
         return list(result.scalars().all())
+
+    async def count_by_studio(
+        self,
+        studio_id: int,
+        *,
+        is_active: bool | None = None,
+    ) -> int:
+        query = select(func.count()).select_from(Service).where(Service.studio_id == studio_id)
+        if is_active is not None:
+            query = query.where(Service.is_active.is_(is_active))
+        result = await self._session.execute(query)
+        return result.scalar_one()
 
     async def list_active_by_studio_ids(
         self,

@@ -80,20 +80,17 @@ UI notes:
 - **No machine-readable business code yet** (`BOOKING_CONFLICT` etc.). MVP maps errors by
   `status` + context of the call. Adding a `code` field is in the backend backlog.
 
-## 5. Pagination — DECISION: envelope required (backend task before frontend lists)
+## 5. Pagination — envelope (shipped 2026-07-05)
 
-Current state: all list endpoints return **plain arrays** with `skip` / `limit` query params
-(default limit 20–50, max 100). Some endpoints compensate with separate `/count` routes
-(`/bookings/count`, `/studios/count`, `/occurrences/count`).
-
-**Agreed target contract** (backend must implement before frontend list screens):
+All list endpoints return a uniform envelope with `page` / `size` query params
+(1-based page, default `size=20`, max `100`):
 
 ```json
 { "items": [], "total": 120, "page": 1, "size": 20 }
 ```
 
-Uniform across all list endpoints. `/count` endpoints become redundant afterwards.
-Until the envelope ships, any interim UI uses "load more" on raw arrays.
+Legacy `/count` endpoints and `skip` / `limit` query params are removed.
+`GET /search` still returns a plain array until search pagination is added.
 
 ## 6. Key endpoints by surface
 
@@ -161,6 +158,6 @@ booking/order status instead of assuming instant confirmation.
 
 | Gap | Owner | Status |
 |-----|-------|--------|
-| Pagination envelope `{items, total, page, size}` | backend | **agreed, pending** — blocks account/dashboard list screens |
+| Pagination envelope `{items, total, page, size}` | backend | **done** — all paginated list endpoints |
 | Machine-readable error `code` | backend | backlog (post-MVP) |
-| FR-12 stabilization (failing tests, auth/payment prod blockers) | backend | prerequisite for frontend Phase 3+, see `docs/frontend-readiness/fr-12-stabilization.md` |
+| FR-12 stabilization (failing tests, auth/payment prod blockers) | backend | **done** — see `docs/frontend-readiness/fr-12-stabilization.md` |

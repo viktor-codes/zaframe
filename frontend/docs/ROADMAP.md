@@ -7,7 +7,7 @@
 
 - The landing page is **not touched** — it ships as-is.
 - One phase = a sequence of small commits by FSD layer: entity → feature → app.
-  Conventional Commits (`feat(web): …`, `refactor(web): …`).
+  Conventional Commits (`feat(web): …`, `refactor(web): …`) must be added as text in chat, do not commit to github yourself.
 - A screen is done only when it passes the Definition of Done (below).
 - API-first: before building a screen, verify the endpoint exists, matches CONTRACTS.md,
   and is covered by generated types. Never build on mocks that will drift.
@@ -34,8 +34,8 @@
 
 **External blockers to schedule with backend:**
 
-- [ ] Pagination envelope `{items, total, page, size}` (blocks Phase 4–5 list screens)
-- [ ] FR-12 stabilization pack (blocks Phase 3 payments happy path in prod)
+- [x] Pagination envelope `{items, total, page, size}` (blocks Phase 4–5 list screens)
+- [x] FR-12 stabilization pack (blocks Phase 3 payments happy path in prod)
 
 ## Phase 1 — FSD refactoring (no new features)
 
@@ -77,7 +77,7 @@ Public zone first: simplest auth-wise, demoable to studios, closes the money loo
 ## Phase 4 — Customer account (P0 stories 2, 5)
 
 - [ ] `entities/booking` ui: BookingCard, BookingStatusBadge, timeline
-- [ ] `app/(account)/bookings`: upcoming / past / cancelled (needs pagination envelope)
+- [ ] `app/(account)/bookings`: upcoming / past / cancelled (paginated via envelope)
 - [ ] `features/cancel-booking` with `cancel_before_hours` cutoff logic
 - [ ] `features/manage-account`: profile (PATCH /auth/me)
 - [ ] `app/(account)/orders`: course orders list

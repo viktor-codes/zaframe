@@ -19,10 +19,20 @@ from fastapi import APIRouter, Depends, Query
 
 from app.core.deps import get_current_user, get_current_user_required, get_uow
 from app.core.exceptions import ForbiddenError, UnauthorizedError
+from app.core.pagination import (
+    PaginatedResponse,
+    build_paginated_response,
+    paginate_all,
+    pagination_offset,
+)
 from app.core.uow import UnitOfWork
 from app.models.service import ServiceCategory
 from app.models.user import User
-from app.modules.catalog.service import ServiceResponse, get_services_for_studio
+from app.modules.catalog.service import (
+    ServiceResponse,
+    get_services_for_studio,
+    get_services_for_studio_count,
+)
 from app.modules.catalog.studio import (
     StudioCreate,
     StudioResponse,
@@ -38,6 +48,7 @@ from app.modules.catalog.studio import (
     update_studio,
 )
 from app.modules.catalog.studio.explore import attach_services_to_studios
+from app.modules.search import SearchResult
 
 router = APIRouter(prefix="/studios", tags=["studios"])
 
@@ -46,8 +57,8 @@ router = APIRouter(prefix="/studios", tags=["studios"])
 async def list_studios(
     user: Annotated[User | None, Depends(get_current_user)],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
-    skip: int = Query(0, ge=0, description="Number of records to skip"),
-    limit: int = Query(20, ge=1, le=100, description="Maximum number of records"),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    size: int = Query(20, ge=1, le=100, description="Records per page"),
     owner_id: int | None = Query(None, description="Filter by owner for owner dashboards"),
     is_active: bool | None = Query(None, description="Filter by active status"),
     city: str | None = Query(None, description="Explore city filter"),
@@ -55,18 +66,19 @@ async def list_studios(
     query: str | None = Query(None, description="Explore studio/service name search"),
     amenities: list[str] | None = Query(None, description="Explore amenities filter"),
     include_services: bool = Query(False, description="Return card services with price/category"),
-):
+) -> PaginatedResponse[StudioResponse] | PaginatedResponse[SearchResult]:
     """
     List studios with pagination and optional Explore filters.
 
-    When include_services=true, returns list[SearchResult] (studio + services);
-    otherwise returns list[StudioResponse].
+    When include_services=true, returns PaginatedResponse[SearchResult];
+    otherwise returns PaginatedResponse[StudioResponse].
     """
     if owner_id is not None:
         if user is None:
             raise UnauthorizedError("Authentication required")
         if owner_id != user.id:
             raise ForbiddenError("Access denied for this owner filter")
+    skip, limit = pagination_offset(page, size)
     studios = await get_studios(
         uow,
         skip=skip,
@@ -78,50 +90,7 @@ async def list_studios(
         query=query,
         amenities=amenities,
     )
-    if not include_services:
-        return [StudioResponse.model_validate(s) for s in studios]
-
-    return await attach_services_to_studios(
-        uow,
-        studios,
-        category=category.value if category is not None else None,
-    )
-
-
-@router.get("/my", response_model=list[StudioWithRoleResponse])
-async def list_my_studios(
-    user: Annotated[User, Depends(get_current_user_required)],
-    uow: Annotated[UnitOfWork, Depends(get_uow)],
-) -> list[StudioWithRoleResponse]:
-    """List studios where the current authenticated user has a membership."""
-    memberships = await get_my_studios(uow, user_id=user.id)
-    return [
-        StudioWithRoleResponse(
-            **StudioResponse.model_validate(membership.studio).model_dump(),
-            role=membership.role,
-        )
-        for membership in memberships
-    ]
-
-
-@router.get("/count")
-async def count_studios(
-    user: Annotated[User | None, Depends(get_current_user)],
-    uow: Annotated[UnitOfWork, Depends(get_uow)],
-    owner_id: int | None = Query(None, description="Filter by owner"),
-    is_active: bool | None = Query(None, description="Filter by active status"),
-    city: str | None = Query(None, description="Explore city filter"),
-    category: ServiceCategory | None = Query(None, description="Explore service category filter"),
-    query: str | None = Query(None, description="Explore name search"),
-    amenities: list[str] | None = Query(None, description="Explore amenities filter"),
-) -> dict[str, int]:
-    """Count studios for pagination using the same filters as list."""
-    if owner_id is not None:
-        if user is None:
-            raise UnauthorizedError("Authentication required")
-        if owner_id != user.id:
-            raise ForbiddenError("Access denied for this owner filter")
-    count = await get_studios_count(
+    total = await get_studios_count(
         uow,
         owner_id=owner_id,
         is_active=is_active,
@@ -130,18 +99,44 @@ async def count_studios(
         query=query,
         amenities=amenities,
     )
-    return {"count": count}
+    if not include_services:
+        items = [StudioResponse.model_validate(studio) for studio in studios]
+        return build_paginated_response(items, total=total, page=page, size=size)
+
+    search_items = await attach_services_to_studios(
+        uow,
+        studios,
+        category=category.value if category is not None else None,
+    )
+    return build_paginated_response(search_items, total=total, page=page, size=size)
 
 
-@router.get("/{studio_id}/services", response_model=list[ServiceResponse])
+@router.get("/my", response_model=PaginatedResponse[StudioWithRoleResponse])
+async def list_my_studios(
+    user: Annotated[User, Depends(get_current_user_required)],
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
+) -> PaginatedResponse[StudioWithRoleResponse]:
+    """List studios where the current authenticated user has a membership."""
+    memberships = await get_my_studios(uow, user_id=user.id)
+    items = [
+        StudioWithRoleResponse(
+            **StudioResponse.model_validate(membership.studio).model_dump(),
+            role=membership.role,
+        )
+        for membership in memberships
+    ]
+    return paginate_all(items)
+
+
+@router.get("/{studio_id}/services", response_model=PaginatedResponse[ServiceResponse])
 async def list_studio_services_endpoint(
     studio_id: int,
     user: Annotated[User, Depends(get_current_user_required)],
     uow: Annotated[UnitOfWork, Depends(get_uow)],
-    skip: int = Query(0, ge=0, description="Number of records to skip"),
-    limit: int = Query(20, ge=1, le=100, description="Maximum number of records"),
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    size: int = Query(20, ge=1, le=100, description="Records per page"),
     is_active: bool | None = Query(None, description="Filter by service active status"),
-) -> list[ServiceResponse]:
+) -> PaginatedResponse[ServiceResponse]:
     """List services for a studio dashboard with service-management permission."""
     studio = await get_studio_or_raise(uow, studio_id)
     await require_studio_permission(
@@ -150,6 +145,7 @@ async def list_studio_services_endpoint(
         user=user,
         permission="manage_services",
     )
+    skip, limit = pagination_offset(page, size)
     services = await get_services_for_studio(
         uow,
         studio_id=studio_id,
@@ -157,7 +153,13 @@ async def list_studio_services_endpoint(
         limit=limit,
         is_active=is_active,
     )
-    return [ServiceResponse.model_validate(service) for service in services]
+    total = await get_services_for_studio_count(
+        uow,
+        studio_id=studio_id,
+        is_active=is_active,
+    )
+    items = [ServiceResponse.model_validate(service) for service in services]
+    return build_paginated_response(items, total=total, page=page, size=size)
 
 
 @router.get("/{studio_id}", response_model=StudioResponse)
