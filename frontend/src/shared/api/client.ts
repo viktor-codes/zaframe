@@ -1,12 +1,14 @@
 /**
- * HTTP-клиент для API.
+ * HTTP client for the ZeeFrame API (browser / client components only).
  *
- * - Base URL из config
- * - Bearer token из getAccessToken (подключается через setAuthTokenProvider)
- * - При 401: refresh token → retry (если настроен onRefresh)
+ * - Base URL from shared config
+ * - Bearer token via setAuthTokenProvider
+ * - On 401: refresh token → retry when setRefreshTokensFn is configured
  */
 
-import { config } from "@/lib/config";
+import "client-only";
+
+import { config } from "@shared/lib/config";
 
 import { buildApiUrl, type QueryParams } from "./build-url";
 

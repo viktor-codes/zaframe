@@ -41,6 +41,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# OpenAPI snapshot (intermediate; types.generated.ts is committed)
+/openapi.snapshot.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

@@ -26,7 +26,6 @@ export function getUserFacingApiMessage(error: unknown): string {
     if (isNetworkOrNoiseErrorMessage(error.message)) {
       return defaultMessageForStatus(error.status);
     }
-    // Prefer status-based copy when the API did not return a Problem `detail` string/list.
     if (error.status > 0) {
       return defaultMessageForStatus(error.status);
     }
@@ -58,9 +57,6 @@ function isNetworkOrNoiseErrorMessage(message: string): boolean {
   );
 }
 
-/**
- * Avoid surfacing stack fragments, paths, or verbose runtime dumps as UI copy.
- */
 function isSafeToShowGenericErrorMessage(message: string): boolean {
   if (message.length === 0 || message.length > 120) return false;
   if (/[\r\n]/.test(message)) return false;

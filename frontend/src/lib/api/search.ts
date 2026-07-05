@@ -2,7 +2,7 @@
  * API поиска студий и услуг.
  */
 
-import { api } from "./client";
+import { api } from "@shared/api";
 import type { SearchQueryParams, SearchResult } from "@/types/search";
 
 export async function fetchSearch(

@@ -1,13 +1,15 @@
 /**
  * API client and module re-exports.
+ *
+ * @deprecated Import from `@shared/api` — kept for gradual migration.
  */
 export {
   api,
   setAuthTokenProvider,
   setRefreshTokensFn,
   ApiError,
-} from "./client";
-export { getUserFacingApiMessage } from "./error-message";
+  getUserFacingApiMessage,
+} from "@shared/api";
 export {
   fetchStudios,
   fetchStudiosCount,

@@ -2,7 +2,7 @@
  * API для платежей (Stripe Checkout).
  */
 
-import { api } from "./client";
+import { api } from "@shared/api";
 import type {
   CheckoutSessionCreate,
   CheckoutSessionResponse,

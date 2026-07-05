@@ -1,2 +1,3 @@
-/** FSD shared layer — zero domain knowledge. Populated in Phase 1 steps 2–4. */
-export {};
+/** FSD shared layer — zero domain knowledge. */
+export * from "./api";
+export * from "./lib";

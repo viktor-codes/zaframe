@@ -17,7 +17,7 @@ import {
   useState,
 } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { api, setAuthTokenProvider, setRefreshTokensFn } from "@/lib/api";
+import { api, setAuthTokenProvider, setRefreshTokensFn } from "@shared/api";
 import {
   clearStoredTokens,
   getStoredAccessToken,

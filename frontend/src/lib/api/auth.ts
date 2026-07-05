@@ -1,7 +1,7 @@
 /**
  * API аутентификации: Magic Link.
  */
-import { api } from "./client";
+import { api } from "@shared/api";
 import type {
   MagicLinkVerifyResponse,
   RefreshTokenResponse,
