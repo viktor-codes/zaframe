@@ -22,9 +22,8 @@ MAX_REQUEST_ID_LENGTH = 128
 
 
 def _is_valid_request_id(value: str) -> bool:
-    return (
-        0 < len(value) <= MAX_REQUEST_ID_LENGTH
-        and all(char.isprintable() and char not in "\r\n\t" for char in value)
+    return 0 < len(value) <= MAX_REQUEST_ID_LENGTH and all(
+        char.isprintable() and char not in "\r\n\t" for char in value
     )
 
 

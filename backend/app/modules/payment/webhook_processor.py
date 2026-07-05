@@ -20,10 +20,14 @@ _CHECKOUT_SUCCESS_EVENTS = frozenset(
     {"checkout.session.completed", "checkout.session.async_payment_succeeded"}
 )
 _CHECKOUT_FAILED_EVENTS = frozenset({"checkout.session.async_payment_failed"})
-_SUPPORTED_EVENTS = _CHECKOUT_SUCCESS_EVENTS | _CHECKOUT_FAILED_EVENTS | {
-    "account.updated",
-    "refund.updated",
-}
+_SUPPORTED_EVENTS = (
+    _CHECKOUT_SUCCESS_EVENTS
+    | _CHECKOUT_FAILED_EVENTS
+    | {
+        "account.updated",
+        "refund.updated",
+    }
+)
 
 
 def _object_value(source: object, key: str) -> object:

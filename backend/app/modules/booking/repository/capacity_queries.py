@@ -32,9 +32,7 @@ class BookingCapacityQueriesMixin(BookingGetMixin):
 
     async def count_by_occurrence(self, occurrence_id: int) -> int:
         result = await self._session.execute(
-            select(func.count())
-            .select_from(Booking)
-            .where(Booking.occurrence_id == occurrence_id)
+            select(func.count()).select_from(Booking).where(Booking.occurrence_id == occurrence_id)
         )
         return result.scalar_one()
 

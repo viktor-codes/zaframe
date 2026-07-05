@@ -98,7 +98,8 @@ async def create_checkout_session(
                 currency=settings.STRIPE_CURRENCY,
                 unit_amount_cents=occurrence.price_cents,
                 product_name=occurrence.title,
-                product_description=occurrence.description or f"Booking occurrence #{occurrence.id}",
+                product_description=occurrence.description
+                or f"Booking occurrence #{occurrence.id}",
                 success_url=success_url,
                 cancel_url=cancel_url,
                 guest_email=booking.guest_email,

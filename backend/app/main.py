@@ -30,7 +30,9 @@ from app.core.middleware.logging_middleware import (
 )
 from app.core.rate_limit import limiter
 
-API_CONTENT_SECURITY_POLICY = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+API_CONTENT_SECURITY_POLICY = (
+    "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+)
 HSTS_HEADER_VALUE = "max-age=31536000; includeSubDomains"
 DOCS_PATH_PREFIXES = ("/docs", "/redoc")
 DOCS_PATHS = ("/openapi.json",)

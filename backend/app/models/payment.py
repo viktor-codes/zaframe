@@ -107,8 +107,12 @@ class Refund(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     payment_id: Mapped[int] = mapped_column(ForeignKey("payments.id"), nullable=False, index=True)
-    stripe_refund_id: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
-    idempotency_key: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
+    stripe_refund_id: Mapped[str] = mapped_column(
+        String(255), nullable=False, unique=True, index=True
+    )
+    idempotency_key: Mapped[str] = mapped_column(
+        String(255), nullable=False, unique=True, index=True
+    )
     amount_cents: Mapped[int] = mapped_column(Integer, nullable=False)
     reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
     status: Mapped[str] = mapped_column(
