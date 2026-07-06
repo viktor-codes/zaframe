@@ -1,2 +1,2 @@
-/** Booking entity — types, models, base UI. See Phase 1 step 5. */
-export {};
+/** Booking entity — types, models, base UI. */
+export * from "./model";
