@@ -39,6 +39,8 @@ export default function NewStudioPage() {
       email: form.email.trim() || undefined,
       phone: form.phone.trim() || undefined,
       address: form.address.trim() || undefined,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+      cancel_before_hours: 24,
     });
   };
 

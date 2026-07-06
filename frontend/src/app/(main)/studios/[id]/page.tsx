@@ -87,7 +87,7 @@ export default function StudioDetailPage() {
     ],
     queryFn: () =>
       fetchStudioOccurrences(id, {
-        status: "active",
+        status: "scheduled",
         ...(dateRange ?? {}),
       }),
     enabled: !Number.isNaN(id) && !!studio,

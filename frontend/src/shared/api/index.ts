@@ -36,6 +36,7 @@ export {
   deleteStudio,
   fetchStudio,
   fetchStudioOccurrences,
+  fetchStudioServices,
   fetchStudios,
   fetchStudiosCount,
   updateStudio,

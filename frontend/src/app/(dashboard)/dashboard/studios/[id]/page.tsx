@@ -12,8 +12,10 @@ import {
   fetchOccurrenceBookings,
   fetchStudio,
   fetchStudioOccurrences,
+  fetchStudioServices,
   updateStudio,
 } from "@shared/api";
+import type { OccurrenceResponse } from "@entities/occurrence";
 
 function formatPrice(cents: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -309,7 +311,13 @@ function OccurrenceCreateForm({
   const endTime = new Date(tomorrow);
   endTime.setHours(11, 0, 0, 0);
 
+  const { data: services, isLoading: loadingServices } = useQuery({
+    queryKey: ["studio", studioId, "services"],
+    queryFn: () => fetchStudioServices(studioId),
+  });
+
   const [form, setForm] = useState({
+    service_id: "",
     title: "",
     start_time: tomorrow.toISOString().slice(0, 16),
     end_time: endTime.toISOString().slice(0, 16),
@@ -322,6 +330,7 @@ function OccurrenceCreateForm({
     mutationFn: () =>
       createOccurrence({
         studio_id: studioId,
+        service_id: Number(form.service_id),
         title: form.title,
         start_time: new Date(form.start_time).toISOString(),
         end_time: new Date(form.end_time).toISOString(),
@@ -334,12 +343,52 @@ function OccurrenceCreateForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.service_id) return;
     mutate();
   };
+
+  if (loadingServices) {
+    return (
+      <Card className="mb-4">
+        <Skeleton className="h-32 w-full" />
+      </Card>
+    );
+  }
+
+  if (!services?.length) {
+    return (
+      <Card className="mb-4 p-6 text-center text-neutral-600">
+        <p>Create a service before adding sessions.</p>
+        <Button type="button" variant="outline" className="mt-4" onClick={onCancel}>
+          Close
+        </Button>
+      </Card>
+    );
+  }
 
   return (
     <Card className="mb-4">
       <form onSubmit={handleSubmit} className="space-y-4">
+        <label className="block">
+          <span className="mb-1 block text-sm font-medium text-neutral-700">
+            Service
+          </span>
+          <select
+            required
+            className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+            value={form.service_id}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, service_id: e.target.value }))
+            }
+          >
+            <option value="">Select a service</option>
+            {services.map((service) => (
+              <option key={service.id} value={service.id}>
+                {service.name}
+              </option>
+            ))}
+          </select>
+        </label>
         <Input
           label="Title"
           required
@@ -417,14 +466,7 @@ function OccurrenceCard({
   occurrence,
   onDeleted,
 }: {
-  occurrence: {
-    id: number;
-    title: string;
-    start_time: string;
-    end_time: string;
-    price_cents: number;
-    status: "active" | "cancelled";
-  };
+  occurrence: OccurrenceResponse;
   onDeleted: () => void;
 }) {
   const [showBookings, setShowBookings] = useState(false);
@@ -450,7 +492,11 @@ function OccurrenceCard({
             {formatDateTime(occurrence.start_time)} · {formatPrice(occurrence.price_cents)}
           </p>
           <p className="text-xs text-neutral-500">
-            {occurrence.status === "active" ? "Active" : "Cancelled"}
+            {occurrence.status === "scheduled"
+              ? "Scheduled"
+              : occurrence.status === "completed"
+                ? "Completed"
+                : "Cancelled"}
           </p>
         </div>
         <div className="flex gap-2">

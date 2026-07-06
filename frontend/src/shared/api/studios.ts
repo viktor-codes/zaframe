@@ -4,6 +4,7 @@
 
 import { api } from "./client";
 import type { OccurrenceResponse } from "@entities/occurrence";
+import type { PaginatedServiceList, ServiceResponse } from "@entities/service";
 import type {
   SearchResult,
   StudioCreate,
@@ -36,7 +37,7 @@ export interface StudioOccurrencesParams {
   limit?: number;
   start_from?: string;
   start_to?: string;
-  status?: "active" | "cancelled";
+  status?: "scheduled" | "cancelled" | "completed";
 }
 
 const PAGE_SIZE = 12;
@@ -125,6 +126,15 @@ export async function fetchStudio(id: number): Promise<StudioResponse> {
   return api.get<StudioResponse>(`api/v1/studios/${id}`, {
     skipAuth: true,
   });
+}
+
+export async function fetchStudioServices(
+  studioId: number,
+): Promise<ServiceResponse[]> {
+  const response = await api.get<PaginatedServiceList>(
+    `api/v1/studios/${studioId}/services`,
+  );
+  return response.items;
 }
 
 export async function fetchStudioOccurrences(

@@ -47,7 +47,7 @@ function BookPageContent() {
 
   const { data: occurrences } = useQuery({
     queryKey: ["studio", studioId, "occurrences"],
-    queryFn: () => fetchStudioOccurrences(studioId, { status: "active" }),
+    queryFn: () => fetchStudioOccurrences(studioId, { status: "scheduled" }),
     enabled: !!studio,
   });
 
@@ -59,10 +59,10 @@ function BookPageContent() {
       storeGuestBookingAccess(booking.id, booking.access_token, {
         id: booking.id,
         occurrence_id: booking.occurrence_id,
-        guest_name: booking.guest_name,
-        guest_email: booking.guest_email,
+        guest_name: booking.guest_name ?? null,
+        guest_email: booking.guest_email ?? null,
         status: booking.status,
-        payment_status: booking.payment_status,
+        payment_status: booking.payment_status ?? null,
       });
       window.location.href = `/bookings/${booking.id}/confirm`;
     },
@@ -76,6 +76,8 @@ function BookPageContent() {
       guest_name: form.guest_name.trim(),
       guest_email: form.guest_email.trim(),
       guest_phone: form.guest_phone.trim() || undefined,
+      booking_type: "single",
+      service_id: occurrence.service_id,
     });
   };
 
