@@ -46,7 +46,7 @@ One commit per step, history stays readable:
 - [x] 3. `shared/auth`: context, storage, types
 - [x] 4. `shared/ui`: move UI kit components (no business logic inside)
 - [x] 5. `entities/` for studio, service, occurrence, booking, order, user — types + base models only
-- [ ] 6. Move `features/auth`
+- [x] 6. Move `features/auth`
 - [ ] 7. Route groups: `(main)` / `(account)` / `(dashboard)` with own layouts
 - [ ] 8. ESLint boundary rule for FSD layers
 - [ ] 9. Delete dead assets from `public/` and unused hand-written types
