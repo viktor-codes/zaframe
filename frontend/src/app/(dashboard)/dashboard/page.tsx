@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Card, Button, Skeleton } from "@shared/ui";
 import { useAuth } from "@shared/auth";
 import { fetchStudios } from "@/lib/api";
-import type { StudioResponse } from "@/types/studio";
+import type { StudioResponse } from "@entities/studio";
 
 export default function DashboardPage() {
   return (

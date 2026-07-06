@@ -16,8 +16,9 @@ import {
 import {
   getGuestBookingAccessToken,
   getGuestBookingSnapshot,
+  type GuestBookingSnapshot,
 } from "@/lib/booking-guest-token";
-import type { BookingResponse } from "@/types/booking";
+import type { BookingDetailResponse } from "@entities/booking";
 
 function formatPrice(cents: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -57,8 +58,11 @@ export default function BookingConfirmPage() {
 
   const guestSnapshot =
     typeof window !== "undefined" ? getGuestBookingSnapshot(id) : null;
-  const resolvedBooking: BookingResponse | null | undefined =
-    booking ?? guestSnapshot;
+  const resolvedBooking:
+    | BookingDetailResponse
+    | GuestBookingSnapshot
+    | null
+    | undefined = booking ?? guestSnapshot;
 
   const { data: occurrence } = useQuery({
     queryKey: ["occurrence", resolvedBooking?.occurrence_id],

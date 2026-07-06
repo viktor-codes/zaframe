@@ -6,9 +6,10 @@ import { api } from "@shared/api";
 import type {
   BookingCreate,
   BookingCreatedResponse,
-  BookingResponse,
+  BookingDetailResponse,
+  BookingOwnerResponse,
   BookingSelfListItem,
-} from "@/types/booking";
+} from "@entities/booking";
 
 export interface BookingsListParams {
   skip?: number;
@@ -28,7 +29,7 @@ export interface BookingsCountParams {
 
 export async function fetchBookings(
   params: BookingsListParams = {},
-): Promise<BookingResponse[]> {
+): Promise<BookingOwnerResponse[]> {
   const {
     skip = 0,
     limit = 20,
@@ -46,7 +47,7 @@ export async function fetchBookings(
   if (guest_email) searchParams.guest_email = guest_email;
   if (status) searchParams.status = status;
 
-  return api.get<BookingResponse[]>("api/v1/bookings", {
+  return api.get<BookingOwnerResponse[]>("api/v1/bookings", {
     params: searchParams,
   });
 }
@@ -82,8 +83,10 @@ export async function fetchBookingsCount(
   });
 }
 
-export async function fetchBooking(id: number): Promise<BookingResponse> {
-  return api.get<BookingResponse>(`api/v1/bookings/${id}`, {
+export async function fetchBooking(
+  id: number,
+): Promise<BookingDetailResponse> {
+  return api.get<BookingDetailResponse>(`api/v1/bookings/${id}`, {
     skipAuth: true,
   });
 }
@@ -96,8 +99,14 @@ export async function createBooking(
   });
 }
 
-export async function cancelBooking(id: number): Promise<BookingResponse> {
-  return api.patch<BookingResponse>(`api/v1/bookings/${id}/cancel`, undefined, {
-    skipAuth: true,
-  });
+export async function cancelBooking(
+  id: number,
+): Promise<BookingDetailResponse> {
+  return api.patch<BookingDetailResponse>(
+    `api/v1/bookings/${id}/cancel`,
+    undefined,
+    {
+      skipAuth: true,
+    },
+  );
 }

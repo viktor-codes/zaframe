@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Heart, Check } from "lucide-react";
-import type { SearchResult } from "@/types/search";
+import type { SearchResult } from "@entities/studio";
 
 const PLACEHOLDER_IMAGE =
   "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?auto=format&fit=crop&q=80&w=800";
@@ -52,7 +52,7 @@ const cardDuration = 0.35;
 export function StudioSearchCard({ result, index = 0 }: StudioSearchCardProps) {
   const [saved, setSaved] = useState(false);
   const { studio, matched_services } = result;
-  const imageUrl = studio.cover_image_url ?? PLACEHOLDER_IMAGE;
+  const imageUrl = PLACEHOLDER_IMAGE;
   const priceCandidates = (matched_services ?? []).map((s) => {
     const cents =
       s.price_course_cents != null && s.price_course_cents > 0

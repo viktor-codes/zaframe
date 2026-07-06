@@ -15,8 +15,8 @@ import { X, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { fetchStudios } from "@/lib/api/studios";
-import type { SearchResult } from "@/types/search";
-import type { ServiceCategory } from "@/types/service";
+import type { SearchResult } from "@entities/studio";
+import type { ServiceCategory } from "@entities/service";
 import { getUserFacingApiMessage } from "@/lib/api";
 import { Header } from "@/features/navigation/components";
 import {

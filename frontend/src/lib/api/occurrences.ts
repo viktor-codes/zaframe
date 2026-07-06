@@ -3,12 +3,12 @@
  */
 
 import { api } from "@shared/api";
-import type { BookingResponse } from "@/types/booking";
+import type { BookingOwnerResponse } from "@entities/booking";
 import type {
   OccurrenceCreate,
   OccurrenceResponse,
   OccurrenceUpdate,
-} from "@/types/occurrence";
+} from "@entities/occurrence";
 
 export async function fetchOccurrence(id: number): Promise<OccurrenceResponse> {
   return api.get<OccurrenceResponse>(`api/v1/occurrences/${id}`, {
@@ -36,14 +36,14 @@ export async function deleteOccurrence(id: number): Promise<void> {
 export async function fetchOccurrenceBookings(
   occurrenceId: number,
   params?: { skip?: number; limit?: number; status?: string },
-): Promise<BookingResponse[]> {
+): Promise<BookingOwnerResponse[]> {
   const { skip = 0, limit = 50, status } = params ?? {};
   const searchParams: Record<string, string | number | undefined> = {
     skip,
     limit,
   };
   if (status) searchParams.status = status;
-  return api.get<BookingResponse[]>(
+  return api.get<BookingOwnerResponse[]>(
     `api/v1/occurrences/${occurrenceId}/bookings`,
     {
       params: searchParams,

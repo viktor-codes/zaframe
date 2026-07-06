@@ -3,7 +3,7 @@
  */
 
 import { api } from "@shared/api";
-import type { SearchQueryParams, SearchResult } from "@/types/search";
+import type { SearchQueryParams, SearchResult } from "@entities/studio";
 
 export async function fetchSearch(
   params: SearchQueryParams = {},
@@ -14,8 +14,7 @@ export async function fetchSearch(
   > = {};
   if (params.query != null && params.query !== "")
     searchParams.query = params.query;
-  if (params.category != null && params.category !== "")
-    searchParams.category = params.category;
+  if (params.category != null) searchParams.category = params.category;
   if (params.city != null && params.city !== "")
     searchParams.city = params.city;
   if (params.lat != null) searchParams.lat = params.lat;

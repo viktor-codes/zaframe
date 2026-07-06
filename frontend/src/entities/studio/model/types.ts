@@ -1,6 +1,11 @@
+import type { operations } from "@shared/api/types.generated";
 import type { Schema } from "@shared/api/schema";
 
 export type StudioResponse = Schema<"StudioResponse">;
+export type SearchResult = Schema<"SearchResult">;
+export type SearchQueryParams = NonNullable<
+  operations["search_endpoint_api_v1_search_get"]["parameters"]["query"]
+>;
 export type StudioCreate = Schema<"StudioCreate">;
 export type StudioUpdate = Schema<"StudioUpdate">;
 export type StudioPublicResponse = Schema<"StudioPublicResponse">;

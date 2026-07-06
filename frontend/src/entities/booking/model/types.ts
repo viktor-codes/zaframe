@@ -5,6 +5,11 @@ export type BookingCreatedResponse = Schema<"BookingCreatedResponse">;
 export type BookingSelfResponse = Schema<"BookingSelfResponse">;
 export type BookingSelfListItem = Schema<"BookingSelfListItem">;
 export type BookingOwnerResponse = Schema<"BookingOwnerResponse">;
+export type BookingDetailResponse =
+  | BookingSelfResponse
+  | BookingOwnerResponse;
+export type CheckoutSessionCreate = Schema<"CheckoutSessionCreate">;
+export type CheckoutSessionResponse = Schema<"CheckoutSessionResponse">;
 export type CourseBookingCreate = Schema<"CourseBookingCreate">;
 export type CourseBookingResponse = Schema<"CourseBookingResponse">;
 export type PaginatedBookingSelfList =

@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Card, Button, Skeleton } from "@shared/ui";
 import { fetchMyBookings } from "@/lib/api";
-import type { BookingSelfListItem } from "@/types/booking";
+import type { BookingSelfListItem } from "@entities/booking";
 
 function formatPrice(cents: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -25,7 +25,7 @@ function formatDateTime(iso: string): string {
   });
 }
 
-function getStatusBadge(status: string, paymentStatus: string | null) {
+function getStatusBadge(status: string, paymentStatus: string | null | undefined) {
   if (status === "cancelled") {
     return (
       <span className="rounded-full bg-neutral-200 px-2 py-0.5 text-xs font-medium text-neutral-700">

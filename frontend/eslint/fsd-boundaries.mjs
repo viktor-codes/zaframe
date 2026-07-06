@@ -8,8 +8,7 @@ import boundaries from "eslint-plugin-boundaries";
  * - Features never import sibling features (only internal slice imports).
  * - Entities never import sibling entities.
  *
- * `legacy` covers pre-FSD folders (lib, components, types, context, store).
- * Remove the legacy element and policy in ROADMAP step 9.
+ * `legacy` covers pre-FSD folders (lib, components, context, store).
  */
 export const fsdBoundaryConfig = {
   files: ["src/**/*.{ts,tsx}"],
@@ -29,7 +28,6 @@ export const fsdBoundaryConfig = {
       { type: "app", pattern: "app/*" },
       { type: "legacy", pattern: "lib/*" },
       { type: "legacy", pattern: "components/*" },
-      { type: "legacy", pattern: "types/*" },
       { type: "legacy", pattern: "context/*" },
       { type: "legacy", pattern: "store/*" },
     ],

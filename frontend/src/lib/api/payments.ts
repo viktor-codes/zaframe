@@ -6,7 +6,7 @@ import { api } from "@shared/api";
 import type {
   CheckoutSessionCreate,
   CheckoutSessionResponse,
-} from "@/types/payment";
+} from "@entities/booking";
 
 export async function createCheckoutSession(
   data: CheckoutSessionCreate,

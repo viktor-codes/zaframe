@@ -3,9 +3,12 @@
  */
 
 import { api } from "@shared/api";
-import type { StudioCreate, StudioResponse } from "@/types/studio";
-import type { OccurrenceResponse } from "@/types/occurrence";
-import type { SearchResult } from "@/types/search";
+import type { OccurrenceResponse } from "@entities/occurrence";
+import type {
+  SearchResult,
+  StudioCreate,
+  StudioResponse,
+} from "@entities/studio";
 
 export interface StudiosListParams {
   skip?: number;

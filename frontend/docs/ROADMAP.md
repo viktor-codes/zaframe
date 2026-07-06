@@ -49,7 +49,7 @@ One commit per step, history stays readable:
 - [x] 6. Move `features/auth`
 - [x] 7. Route groups: `(main)` / `(account)` / `(dashboard)` with own layouts
 - [x] 8. ESLint boundary rule for FSD layers
-- [ ] 9. Delete dead assets from `public/` and unused hand-written types
+- [x] 9. Delete dead assets from `public/` and unused hand-written types
 
 ## Phase 2 — Shared foundation
 
