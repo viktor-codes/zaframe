@@ -48,7 +48,7 @@ One commit per step, history stays readable:
 - [x] 5. `entities/` for studio, service, occurrence, booking, order, user — types + base models only
 - [x] 6. Move `features/auth`
 - [x] 7. Route groups: `(main)` / `(account)` / `(dashboard)` with own layouts
-- [ ] 8. ESLint boundary rule for FSD layers
+- [x] 8. ESLint boundary rule for FSD layers
 - [ ] 9. Delete dead assets from `public/` and unused hand-written types
 
 ## Phase 2 — Shared foundation
