@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { Search, Zap, Star } from "lucide-react";
-import { SectionHeading } from "@/components/SectionHeading";
+import { SectionHeading } from "@shared/ui";
 
 const PROPOSITIONS = [
   {

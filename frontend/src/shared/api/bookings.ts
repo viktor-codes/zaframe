@@ -2,7 +2,7 @@
  * Bookings API.
  */
 
-import { api } from "@shared/api";
+import { api } from "./client";
 import type {
   BookingCreate,
   BookingCreatedResponse,

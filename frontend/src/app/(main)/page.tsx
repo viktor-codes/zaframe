@@ -9,7 +9,7 @@ import {
 import { SearchSection } from "@/features/studios/components";
 import { Header } from "@/features/navigation/components";
 import { Moments } from "@/features/home/components/Moments";
-import { Section } from "@/components/Section";
+import { Section } from "@shared/ui";
 
 export default function HomePage() {
   return (

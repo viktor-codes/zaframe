@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Scan, Minimize, ArrowRight, Search } from "lucide-react";
-import { useUIStore } from "@/store/useUIStore";
+import { useUIStore } from "@shared/lib";
 import { MobileMenu, type NavLink } from "./MobileMenu";
 import { Logo } from "./Logo";
 

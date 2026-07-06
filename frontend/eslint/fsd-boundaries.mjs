@@ -7,8 +7,6 @@ import boundaries from "eslint-plugin-boundaries";
  * - Lower layers never import from higher layers.
  * - Features never import sibling features (only internal slice imports).
  * - Entities never import sibling entities.
- *
- * `legacy` covers pre-FSD folders (lib, components, context, store).
  */
 export const fsdBoundaryConfig = {
   files: ["src/**/*.{ts,tsx}"],
@@ -26,10 +24,6 @@ export const fsdBoundaryConfig = {
       { type: "entity", pattern: "entities/*", capture: ["name"] },
       { type: "shared", pattern: "shared/*" },
       { type: "app", pattern: "app/*" },
-      { type: "legacy", pattern: "lib/*" },
-      { type: "legacy", pattern: "components/*" },
-      { type: "legacy", pattern: "context/*" },
-      { type: "legacy", pattern: "store/*" },
     ],
   },
   rules: {
@@ -48,13 +42,20 @@ export const fsdBoundaryConfig = {
             allow: { to: { element: { types: "shared" } } },
           },
           {
+            from: { element: { types: "shared" } },
+            allow: {
+              to: { element: { types: "entity" } },
+              dependency: { kind: "type" },
+            },
+          },
+          {
             from: { element: { types: "entity" } },
             allow: { to: { element: { types: "shared" } } },
           },
           {
             from: { element: { types: "feature" } },
             allow: {
-              to: { element: { types: ["shared", "entity", "legacy"] } },
+              to: { element: { types: ["shared", "entity"] } },
             },
           },
           {
@@ -62,17 +63,7 @@ export const fsdBoundaryConfig = {
             allow: {
               to: {
                 element: {
-                  types: ["shared", "entity", "feature", "legacy", "app"],
-                },
-              },
-            },
-          },
-          {
-            from: { element: { types: "legacy" } },
-            allow: {
-              to: {
-                element: {
-                  types: ["shared", "entity", "feature", "app", "legacy"],
+                  types: ["shared", "entity", "feature", "app"],
                 },
               },
             },

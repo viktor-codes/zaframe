@@ -1,7 +1,7 @@
 "use client";
 
-import { useSectionInView } from "@/components/Section";
-import { cn } from "@/lib/utils";
+import { cn } from "@shared/lib";
+import { useSectionInView } from "./section";
 
 type SectionHeadingSize = "hero" | "section" | "subsection" | "label";
 

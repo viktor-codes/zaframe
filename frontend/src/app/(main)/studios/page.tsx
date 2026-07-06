@@ -8,16 +8,15 @@ import {
   useRef,
   useState,
 } from "react";
-import { useUIStore } from "@/store/useUIStore";
+import { useUIStore } from "@shared/lib";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { X, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { fetchStudios } from "@/lib/api/studios";
+import { fetchStudios, getUserFacingApiMessage } from "@shared/api";
 import type { SearchResult } from "@entities/studio";
 import type { ServiceCategory } from "@entities/service";
-import { getUserFacingApiMessage } from "@/lib/api";
 import { Header } from "@/features/navigation/components";
 import {
   StudioSearchCard,

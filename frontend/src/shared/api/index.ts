@@ -1,4 +1,4 @@
-/** API client, error helpers, and generated OpenAPI types. */
+/** API client, domain fetchers, error helpers, and generated OpenAPI types. */
 export { ApiError } from "./api-error";
 export {
   api,
@@ -12,3 +12,34 @@ export { buildApiUrl, type QueryParamValue, type QueryParams } from "./build-url
 export { getUserFacingApiMessage } from "./error-message";
 export type { Schema } from "./schema";
 export type { components, operations, paths } from "./types.generated";
+export {
+  cancelBooking,
+  createBooking,
+  fetchBooking,
+  fetchBookings,
+  fetchBookingsCount,
+  fetchMyBookings,
+  type BookingsCountParams,
+  type BookingsListParams,
+} from "./bookings";
+export {
+  createOccurrence,
+  deleteOccurrence,
+  fetchOccurrence,
+  fetchOccurrenceBookings,
+  updateOccurrence,
+} from "./occurrences";
+export { createCheckoutSession } from "./payments";
+export { fetchSearch } from "./search";
+export {
+  createStudio,
+  deleteStudio,
+  fetchStudio,
+  fetchStudioOccurrences,
+  fetchStudios,
+  fetchStudiosCount,
+  updateStudio,
+  type StudioOccurrencesParams,
+  type StudiosCountParams,
+  type StudiosListParams,
+} from "./studios";

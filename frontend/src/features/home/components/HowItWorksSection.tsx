@@ -3,7 +3,7 @@
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 import { Camera, Calendar, Trophy } from "lucide-react";
-import { SectionHeading } from "@/components/SectionHeading";
+import { SectionHeading } from "@shared/ui";
 
 const steps = [
   {

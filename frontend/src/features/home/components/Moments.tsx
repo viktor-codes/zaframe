@@ -3,9 +3,8 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import React from "react";
-import { useSectionInView } from "@/components/Section";
-import { SectionHeading } from "@/components/SectionHeading";
-import { cn } from "@/lib/utils";
+import { SectionHeading, useSectionInView } from "@shared/ui";
+import { cn } from "@shared/lib";
 
 interface Moment {
   text: string;

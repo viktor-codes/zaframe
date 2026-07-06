@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Card, Button, Skeleton, Input } from "@shared/ui";
-import { fetchStudio, fetchStudioOccurrences, getUserFacingApiMessage } from "@/lib/api";
+import { fetchStudio, fetchStudioOccurrences, getUserFacingApiMessage } from "@shared/api";
 
 function toISOStartOfDay(d: Date): string {
   const c = new Date(d);

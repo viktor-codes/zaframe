@@ -6,18 +6,18 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Card, Button, Skeleton } from "@shared/ui";
 import {
+  cancelBooking,
+  createCheckoutSession,
   fetchBooking,
   fetchOccurrence,
   fetchStudio,
-  createCheckoutSession,
-  cancelBooking,
   getUserFacingApiMessage,
-} from "@/lib/api";
+} from "@shared/api";
 import {
   getGuestBookingAccessToken,
   getGuestBookingSnapshot,
   type GuestBookingSnapshot,
-} from "@/lib/booking-guest-token";
+} from "@shared/lib";
 import type { BookingDetailResponse } from "@entities/booking";
 
 function formatPrice(cents: number): string {

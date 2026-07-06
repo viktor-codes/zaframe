@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { SectionHeading } from "@/components/SectionHeading";
+import { SectionHeading } from "@shared/ui";
 import FloatingCards from "./FloatingCards";
 import Link from "next/link";
 

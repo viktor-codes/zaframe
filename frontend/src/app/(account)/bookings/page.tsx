@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Card, Button, Skeleton } from "@shared/ui";
-import { fetchMyBookings } from "@/lib/api";
+import { fetchMyBookings } from "@shared/api";
 import type { BookingSelfListItem } from "@entities/booking";
 
 function formatPrice(cents: number): string {

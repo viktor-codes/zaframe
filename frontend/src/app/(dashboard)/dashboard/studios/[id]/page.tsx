@@ -7,13 +7,13 @@ import { useParams } from "next/navigation";
 import { useAuth } from "@shared/auth";
 import { Card, Button, Input, Textarea, Skeleton } from "@shared/ui";
 import {
-  fetchStudio,
-  fetchStudioOccurrences,
-  updateStudio,
   createOccurrence,
   deleteOccurrence,
   fetchOccurrenceBookings,
-} from "@/lib/api";
+  fetchStudio,
+  fetchStudioOccurrences,
+  updateStudio,
+} from "@shared/api";
 
 function formatPrice(cents: number): string {
   return new Intl.NumberFormat("en-US", {

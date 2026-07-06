@@ -2,7 +2,7 @@
  * Occurrence API (bookable time instances).
  */
 
-import { api } from "@shared/api";
+import { api } from "./client";
 import type { BookingOwnerResponse } from "@entities/booking";
 import type {
   OccurrenceCreate,

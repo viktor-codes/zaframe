@@ -8,8 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { useInView } from "framer-motion";
-import { useUIStore, type HeaderVariant } from "@/store/useUIStore";
-import { cn } from "@/lib/utils";
+import { cn, useUIStore, type HeaderVariant } from "@shared/lib";
 
 /** Состояние видимости контента секции для CSS-анимаций (Intersection Observer). */
 interface SectionViewContextValue {

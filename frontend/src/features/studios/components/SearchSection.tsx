@@ -4,9 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, ArrowRight, MapPin, Navigation } from "lucide-react";
-import { useSectionInView } from "@/components/Section";
-import { SectionHeading } from "@/components/SectionHeading";
-import { cn } from "@/lib/utils";
+import { SectionHeading, useSectionInView } from "@shared/ui";
+import { cn } from "@shared/lib";
 
 const SUGGESTION_TO_CATEGORY: Record<string, string> = {
   yoga: "yoga",

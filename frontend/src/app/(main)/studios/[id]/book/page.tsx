@@ -5,8 +5,8 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { Card, Button, Input, Skeleton } from "@shared/ui";
-import { fetchStudio, fetchStudioOccurrences, createBooking } from "@/lib/api";
-import { storeGuestBookingAccess } from "@/lib/booking-guest-token";
+import { createBooking, fetchStudio, fetchStudioOccurrences } from "@shared/api";
+import { storeGuestBookingAccess } from "@shared/lib";
 
 function formatPrice(cents: number): string {
   return new Intl.NumberFormat("en-US", {

@@ -2,7 +2,7 @@
  * Studio API.
  */
 
-import { api } from "@shared/api";
+import { api } from "./client";
 import type { OccurrenceResponse } from "@entities/occurrence";
 import type {
   SearchResult,
