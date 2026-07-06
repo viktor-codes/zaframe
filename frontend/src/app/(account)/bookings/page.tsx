@@ -3,7 +3,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { RequireAuth } from "@features/auth";
 import { Card, Button, Skeleton } from "@shared/ui";
 import { fetchMyBookings } from "@/lib/api";
 import type { BookingSelfListItem } from "@/types/booking";
@@ -137,16 +136,14 @@ function BookingsSkeleton() {
 
 export default function BookingsPage() {
   return (
-    <RequireAuth>
-      <div className="mx-auto max-w-4xl px-6 py-12">
-        <h1 className="text-secondary mb-2 font-display text-3xl font-bold">
-          My bookings
-        </h1>
-        <p className="mb-8 text-neutral-600">
-          View and manage your studio reservations.
-        </p>
-        <BookingsList />
-      </div>
-    </RequireAuth>
+    <div className="mx-auto max-w-4xl px-6 py-12">
+      <h1 className="text-secondary mb-2 font-display text-3xl font-bold">
+        My bookings
+      </h1>
+      <p className="mb-8 text-neutral-600">
+        View and manage your studio reservations.
+      </p>
+      <BookingsList />
+    </div>
   );
 }
