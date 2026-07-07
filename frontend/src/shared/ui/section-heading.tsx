@@ -39,7 +39,7 @@ export interface SectionHeadingProps {
   as?: "h1" | "h2" | "h3" | "span";
   children: React.ReactNode;
   className?: string;
-  /** Отключить анимацию появления (по умолчанию включена внутри Section). */
+  /** Disable the reveal animation (enabled by default inside Section). */
   animate?: boolean;
 }
 

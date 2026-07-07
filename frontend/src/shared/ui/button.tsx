@@ -15,7 +15,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   size?: ButtonSize;
   isLoading?: boolean;
   fullWidth?: boolean;
-  /** Рендерить как дочерний элемент (например Link), передавая стили и пропсы */
+  /** Render as the child element (e.g. Link), passing styles and props through. */
   asChild?: boolean;
 }
 

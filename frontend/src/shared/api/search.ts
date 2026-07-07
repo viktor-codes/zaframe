@@ -1,5 +1,5 @@
 /**
- * API поиска студий и услуг.
+ * Studio and service search API.
  */
 
 import { api } from "./client";

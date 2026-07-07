@@ -17,9 +17,7 @@ export {
   createBooking,
   fetchBooking,
   fetchBookings,
-  fetchBookingsCount,
   fetchMyBookings,
-  type BookingsCountParams,
   type BookingsListParams,
 } from "./bookings";
 export {
@@ -38,9 +36,7 @@ export {
   fetchStudioOccurrences,
   fetchStudioServices,
   fetchStudios,
-  fetchStudiosCount,
   updateStudio,
   type StudioOccurrencesParams,
-  type StudiosCountParams,
   type StudiosListParams,
 } from "./studios";

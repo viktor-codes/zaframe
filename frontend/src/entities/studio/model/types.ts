@@ -10,7 +10,8 @@ export type StudioCreate = Schema<"StudioCreate">;
 export type StudioUpdate = Schema<"StudioUpdate">;
 export type StudioPublicResponse = Schema<"StudioPublicResponse">;
 export type StudioWithRoleResponse = Schema<"StudioWithRoleResponse">;
-export type StudioRoleResponse = Schema<"StudioRoleResponse">;
 export type PaginatedStudioList = Schema<"PaginatedResponse_StudioResponse_">;
 export type PaginatedStudioWithRoleList =
   Schema<"PaginatedResponse_StudioWithRoleResponse_">;
+export type PaginatedSearchResultList =
+  Schema<"PaginatedResponse_SearchResult_">;

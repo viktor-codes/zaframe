@@ -12,7 +12,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -24,11 +23,46 @@ import {
   getStoredAccessToken,
   setStoredTokens,
 } from "./storage";
-import type { AuthActions, AuthState, AuthUser, LoginUser } from "./types";
+import type { AuthActions, AuthState, AuthUser } from "./types";
 
 type AuthContextValue = AuthState & AuthActions;
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+
+let isAuthClientBootstrapped = false;
+
+/**
+ * Wire the shared API client to auth storage and token refresh.
+ *
+ * Runs once, synchronously, before the first `/auth/me` query so a returning
+ * user (whose access token is memory-only and lost on reload) gets a
+ * refresh-driven retry on the initial 401 instead of appearing logged out.
+ */
+function bootstrapAuthClient(): void {
+  if (isAuthClientBootstrapped) {
+    return;
+  }
+  isAuthClientBootstrapped = true;
+
+  // Migration: access token is memory-only now, drop any persisted token.
+  try {
+    window.localStorage.removeItem("zeeframe_access_token");
+  } catch {
+    // ignore storage errors (private mode, denied, etc.)
+  }
+
+  setAuthTokenProvider(getStoredAccessToken);
+  setRefreshTokensFn(async () => {
+    try {
+      const res = await refreshAccessToken();
+      setStoredTokens(res.access_token);
+      return { access_token: res.access_token };
+    } catch {
+      clearStoredTokens();
+      return null;
+    }
+  });
+}
 
 function useAuthQuery(loginTrigger: number, isReady: boolean) {
   return useQuery({
@@ -41,50 +75,28 @@ function useAuthQuery(loginTrigger: number, isReady: boolean) {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [isBootstrapped, setIsBootstrapped] = useState(false);
   const [loginTrigger, setLoginTrigger] = useState(0);
+  const [isBootstrapped] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+    bootstrapAuthClient();
+    return true;
+  });
 
   const { data: user, isLoading } = useAuthQuery(loginTrigger, isBootstrapped);
 
-  const login = useCallback((accessToken: string, _user: LoginUser) => {
+  const login = useCallback((accessToken: string) => {
     setStoredTokens(accessToken);
     setAuthTokenProvider(getStoredAccessToken);
     setLoginTrigger((prev) => prev + 1);
-    setIsBootstrapped(true);
   }, []);
 
   const logout = useCallback(() => {
     void logoutSession().finally(() => {
       clearStoredTokens();
       setLoginTrigger((prev) => prev + 1);
-      setIsBootstrapped(true);
     });
-  }, []);
-
-  useEffect(() => {
-    // Migration: remove legacy token left from previous implementation.
-    // Access token is memory-only now.
-    try {
-      if (typeof window !== "undefined") {
-        window.localStorage.removeItem("zeeframe_access_token");
-      }
-    } catch {
-      // ignore storage errors (private mode, denied, etc.)
-    }
-
-    setAuthTokenProvider(getStoredAccessToken);
-    setRefreshTokensFn(async () => {
-      try {
-        const res = await refreshAccessToken();
-        setStoredTokens(res.access_token);
-        return { access_token: res.access_token };
-      } catch {
-        clearStoredTokens();
-        return null;
-      }
-    });
-
-    setTimeout(() => setIsBootstrapped(true), 0);
   }, []);
 
   const value = useMemo<AuthContextValue>(

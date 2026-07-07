@@ -33,7 +33,9 @@ export class StripeCheckoutPage {
    * Click Pay and capture checkout session JSON before Stripe redirect runs.
    */
   async clickPayAndCaptureCheckoutSession(): Promise<CheckoutSessionPayload> {
-    let captured: CheckoutSessionPayload | null = null;
+    const captured: { payload: CheckoutSessionPayload | null } = {
+      payload: null,
+    };
 
     await this.page.route("**/api/v1/payments/checkout-session", async (route) => {
       if (route.request().method() !== "POST") {
@@ -42,7 +44,7 @@ export class StripeCheckoutPage {
       }
       const response = await route.fetch();
       const body = (await response.json()) as CheckoutSessionPayload;
-      captured = body;
+      captured.payload = body;
       await route.fulfill({
         status: response.status(),
         headers: response.headers(),
@@ -54,10 +56,16 @@ export class StripeCheckoutPage {
     await this.page.getByTestId("pay-booking-button").click();
 
     await expect
-      .poll(() => captured, { timeout: 15_000 })
+      .poll(() => captured.payload, { timeout: 15_000 })
       .not.toBeNull();
 
-    return captured as CheckoutSessionPayload;
+    if (captured.payload === null) {
+      throw new Error(
+        "Checkout session payload was not captured before timeout.",
+      );
+    }
+
+    return captured.payload;
   }
 
   static isStripeCheckoutUrl(url: string): boolean {

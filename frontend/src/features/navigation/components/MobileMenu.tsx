@@ -37,7 +37,6 @@ export const MobileMenu = ({
   ) => {
     e.preventDefault();
     const isAnchor = href.includes("#");
-    const isInternal = href.startsWith("/");
 
     // 1. Сначала инициируем закрытие меню
     onClose();
@@ -95,7 +94,7 @@ export const MobileMenu = ({
             </div>
             <div className="flex flex-1 flex-col px-8 py-10">
               <nav className="flex flex-col gap-2">
-                {links.map((link, i) => (
+                {links.map((link) => (
                   <a
                     key={link.name}
                     href={link.href}

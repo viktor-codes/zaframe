@@ -4,12 +4,6 @@ export { logoutSession, refreshAccessToken } from "./api";
 export {
   clearStoredTokens,
   getStoredAccessToken,
-  getStoredRefreshToken,
   setStoredTokens,
 } from "./storage";
-export type {
-  AuthActions,
-  AuthState,
-  AuthUser,
-  LoginUser,
-} from "./types";
+export type { AuthActions, AuthState, AuthUser } from "./types";

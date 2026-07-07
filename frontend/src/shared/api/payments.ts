@@ -1,5 +1,5 @@
 /**
- * API для платежей (Stripe Checkout).
+ * Payments API (Stripe Checkout).
  */
 
 import { api } from "./client";

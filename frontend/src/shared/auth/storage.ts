@@ -9,10 +9,6 @@ export function getStoredAccessToken(): string | null {
   return accessToken;
 }
 
-export function getStoredRefreshToken(): string | null {
-  return null;
-}
-
 export function setStoredTokens(access: string): void {
   accessToken = access;
 }

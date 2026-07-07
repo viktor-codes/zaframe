@@ -1,6 +1,6 @@
 /**
- * Утилита для объединения имён классов (cn — classnames).
- * Поддерживает строки, объекты и условные классы.
+ * Class name helper (cn — classnames).
+ * Supports strings, objects, and conditional classes.
  */
 export function cn(
   ...inputs: (string | undefined | null | false | Record<string, boolean>)[]

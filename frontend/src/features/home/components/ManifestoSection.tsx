@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import Image from "next/image";
 import { Search, Zap, Star } from "lucide-react";
 import { SectionHeading } from "@shared/ui";

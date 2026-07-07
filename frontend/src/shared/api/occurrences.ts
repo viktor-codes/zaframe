@@ -3,7 +3,10 @@
  */
 
 import { api } from "./client";
-import type { BookingOwnerResponse } from "@entities/booking";
+import type {
+  BookingOwnerResponse,
+  PaginatedBookingOwnerList,
+} from "@entities/booking";
 import type {
   OccurrenceCreate,
   OccurrenceResponse,
@@ -43,10 +46,11 @@ export async function fetchOccurrenceBookings(
     limit,
   };
   if (status) searchParams.status = status;
-  return api.get<BookingOwnerResponse[]>(
+  const response = await api.get<PaginatedBookingOwnerList>(
     `api/v1/occurrences/${occurrenceId}/bookings`,
     {
       params: searchParams,
     },
   );
+  return response.items;
 }

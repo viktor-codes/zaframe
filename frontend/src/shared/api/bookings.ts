@@ -9,18 +9,13 @@ import type {
   BookingDetailResponse,
   BookingOwnerResponse,
   BookingSelfListItem,
+  PaginatedBookingOwnerList,
+  PaginatedBookingSelfList,
 } from "@entities/booking";
 
 export interface BookingsListParams {
   skip?: number;
   limit?: number;
-  occurrence_id?: number;
-  user_id?: number;
-  guest_email?: string;
-  status?: string;
-}
-
-export interface BookingsCountParams {
   occurrence_id?: number;
   user_id?: number;
   guest_email?: string;
@@ -47,9 +42,10 @@ export async function fetchBookings(
   if (guest_email) searchParams.guest_email = guest_email;
   if (status) searchParams.status = status;
 
-  return api.get<BookingOwnerResponse[]>("api/v1/bookings", {
+  const response = await api.get<PaginatedBookingOwnerList>("api/v1/bookings", {
     params: searchParams,
   });
+  return response.items;
 }
 
 export async function fetchMyBookings(params?: {
@@ -63,24 +59,10 @@ export async function fetchMyBookings(params?: {
   if (params?.include_guest_email !== undefined)
     searchParams.include_guest_email = params.include_guest_email;
 
-  return api.get<BookingSelfListItem[]>("api/v1/bookings/my", {
+  const response = await api.get<PaginatedBookingSelfList>("api/v1/bookings/my", {
     params: searchParams,
   });
-}
-
-export async function fetchBookingsCount(
-  params: BookingsCountParams = {},
-): Promise<{ count: number }> {
-  const { occurrence_id, user_id, guest_email, status } = params;
-  const searchParams: Record<string, string | number | undefined> = {};
-  if (occurrence_id !== undefined) searchParams.occurrence_id = occurrence_id;
-  if (user_id !== undefined) searchParams.user_id = user_id;
-  if (guest_email) searchParams.guest_email = guest_email;
-  if (status) searchParams.status = status;
-
-  return api.get<{ count: number }>("api/v1/bookings/count", {
-    params: searchParams,
-  });
+  return response.items;
 }
 
 export async function fetchBooking(

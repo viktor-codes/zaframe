@@ -1,31 +1,30 @@
 /**
- * Magic-link auth API (login flow).
+ * Email OTP auth API (passwordless login flow).
  *
  * Session refresh/logout live in `@shared/auth/api`.
  */
 import { api } from "@shared/api";
 import type { components } from "@shared/api";
 
-type MagicLinkVerifyResponse = components["schemas"]["TokenResponse"] & {
-  user: components["schemas"]["UserResponse"];
-};
+type OtpRequestPayload = components["schemas"]["OTPRequest"];
+type OtpSentResponse = components["schemas"]["OTPSentResponse"];
+type OtpVerifyPayload = components["schemas"]["OTPVerify"];
+type OtpVerifyResponse = components["schemas"]["OTPVerifyResponse"];
 
-export async function requestMagicLink(params: {
-  email: string;
-  name: string;
-}): Promise<void> {
-  await api.post<{ message?: string }>(
-    "api/v1/auth/magic-link/request",
-    params,
-    { skipAuth: true },
-  );
+/** Ask the backend to email a 6-digit sign-in code. */
+export async function requestOtp(
+  payload: OtpRequestPayload,
+): Promise<OtpSentResponse> {
+  return api.post<OtpSentResponse>("api/v1/auth/otp/request", payload, {
+    skipAuth: true,
+  });
 }
 
-export async function verifyMagicLink(
-  token: string,
-): Promise<MagicLinkVerifyResponse> {
-  return api.get<MagicLinkVerifyResponse>("api/v1/auth/magic-link/verify", {
-    params: { token },
+/** Verify the emailed code and start a session (returns the access token). */
+export async function verifyOtp(
+  payload: OtpVerifyPayload,
+): Promise<OtpVerifyResponse> {
+  return api.post<OtpVerifyResponse>("api/v1/auth/otp/verify", payload, {
     skipAuth: true,
   });
 }

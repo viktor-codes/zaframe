@@ -10,7 +10,7 @@ import {
 import { useInView } from "framer-motion";
 import { cn, useUIStore, type HeaderVariant } from "@shared/lib";
 
-/** Состояние видимости контента секции для CSS-анимаций (Intersection Observer). */
+/** Section content visibility state for CSS animations (Intersection Observer). */
 interface SectionViewContextValue {
   inView: boolean;
 }
@@ -26,9 +26,9 @@ export interface SectionProps {
   variant: HeaderVariant;
   children: ReactNode;
   className?: string;
-  /** Отступ сверху при скролле по якорю. По умолчанию — высота хедера. */
+  /** Top offset when scrolling to the anchor. Defaults to the header height. */
   scrollMarginTop?: string | number;
-  /** Роль для a11y */
+  /** Accessible label for the section landmark. */
   ariaLabel?: string;
 }
 

@@ -3,12 +3,18 @@
  */
 
 import { api } from "./client";
-import type { OccurrenceResponse } from "@entities/occurrence";
+import type {
+  OccurrenceResponse,
+  PaginatedOccurrenceList,
+} from "@entities/occurrence";
 import type { PaginatedServiceList, ServiceResponse } from "@entities/service";
 import type {
+  PaginatedSearchResultList,
+  PaginatedStudioList,
   SearchResult,
   StudioCreate,
   StudioResponse,
+  StudioUpdate,
 } from "@entities/studio";
 
 export interface StudiosListParams {
@@ -21,15 +27,6 @@ export interface StudiosListParams {
   query?: string;
   amenities?: string[];
   include_services?: boolean;
-}
-
-export interface StudiosCountParams {
-  owner_id?: number;
-  is_active?: boolean;
-  city?: string;
-  category?: string;
-  query?: string;
-  amenities?: string[];
 }
 
 export interface StudioOccurrencesParams {
@@ -71,31 +68,13 @@ export async function fetchStudios(
   if (amenities?.length) searchParams.amenities = amenities;
   if (include_services === true) searchParams.include_services = true;
 
-  return api.get<StudioResponse[] | SearchResult[]>("api/v1/studios", {
+  const response = await api.get<
+    PaginatedStudioList | PaginatedSearchResultList
+  >("api/v1/studios", {
     params: searchParams,
     skipAuth: !owner_id,
   });
-}
-
-export async function fetchStudiosCount(
-  params: StudiosCountParams = {},
-): Promise<{ count: number }> {
-  const { owner_id, is_active, city, category, query, amenities } = params;
-  const searchParams: Record<
-    string,
-    string | number | boolean | string[] | undefined
-  > = {};
-  if (owner_id !== undefined) searchParams.owner_id = owner_id;
-  if (is_active !== undefined) searchParams.is_active = is_active;
-  if (city) searchParams.city = city;
-  if (category) searchParams.category = category;
-  if (query) searchParams.query = query;
-  if (amenities?.length) searchParams.amenities = amenities;
-
-  return api.get<{ count: number }>("api/v1/studios/count", {
-    params: searchParams,
-    skipAuth: !owner_id,
-  });
+  return response.items;
 }
 
 export async function createStudio(
@@ -106,14 +85,7 @@ export async function createStudio(
 
 export async function updateStudio(
   id: number,
-  data: Partial<{
-    name: string;
-    description: string | null;
-    email: string | null;
-    phone: string | null;
-    address: string | null;
-    is_active: boolean;
-  }>,
+  data: StudioUpdate,
 ): Promise<StudioResponse> {
   return api.patch<StudioResponse>(`api/v1/studios/${id}`, data);
 }
@@ -150,11 +122,12 @@ export async function fetchStudioOccurrences(
   if (start_to) searchParams.start_to = start_to;
   if (status !== undefined) searchParams.status = status;
 
-  return api.get<OccurrenceResponse[]>(
+  const response = await api.get<PaginatedOccurrenceList>(
     `api/v1/studios/${studioId}/occurrences`,
     {
       params: searchParams,
       skipAuth: true,
     },
   );
+  return response.items;
 }

@@ -13,8 +13,6 @@ interface Moment {
   username: string;
 }
 
-type MomentsProps = Record<string, never>;
-
 // Данные (оставляем те же)
 const moments: Moment[] = [
   {
