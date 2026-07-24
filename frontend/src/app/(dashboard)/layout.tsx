@@ -1,4 +1,4 @@
-import { RequireAuth } from "@features/auth";
+import { RequireAuth } from "@shared/auth";
 import { DashboardShell } from "./dashboard-shell";
 
 export default function DashboardLayout({

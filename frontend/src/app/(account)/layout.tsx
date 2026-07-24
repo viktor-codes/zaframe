@@ -1,4 +1,4 @@
-import { RequireAuth } from "@features/auth";
+import { RequireAuth } from "@shared/auth";
 import { AccountShell } from "./account-shell";
 
 export default function AccountLayout({
