@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -8,6 +8,7 @@ import { Card, Button, Skeleton } from "@shared/ui";
 import {
   cancelBooking,
   createCheckoutSession,
+  createIdempotencyKey,
   fetchBooking,
   fetchOccurrence,
   fetchStudio,
@@ -18,7 +19,10 @@ import {
   getGuestBookingSnapshot,
   type GuestBookingSnapshot,
 } from "@shared/lib";
-import type { BookingDetailResponse } from "@entities/booking";
+import type {
+  BookingDetailResponse,
+  CheckoutSessionCreate,
+} from "@entities/booking";
 
 function formatPrice(cents: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -45,6 +49,8 @@ export default function BookingConfirmPage() {
 
   const [error, setError] = useState<string | null>(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  // WHY: one key per page mount — retries / double-submit hit the same Stripe session.
+  const checkoutIdempotencyKeyRef = useRef(createIdempotencyKey());
 
   const {
     data: booking,
@@ -77,7 +83,10 @@ export default function BookingConfirmPage() {
   });
 
   const checkoutMutation = useMutation({
-    mutationFn: createCheckoutSession,
+    mutationFn: (data: CheckoutSessionCreate) =>
+      createCheckoutSession(data, {
+        idempotencyKey: checkoutIdempotencyKeyRef.current,
+      }),
     onSuccess: (data) => {
       if (data.checkout_url) {
         window.location.href = data.checkout_url;

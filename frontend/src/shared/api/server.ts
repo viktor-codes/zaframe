@@ -4,20 +4,17 @@
  * WHY: access tokens live in client memory; the Next.js server cannot authenticate.
  * Import from `@shared/api/server` — never from the `@shared/api` barrel (that pulls
  * `client-only` code and breaks RSC).
- *
- * Do not call from Client Components.
  */
 
-import { config } from "@shared/lib/config";
+import "server-only";
+
 import type { StudioPublicResponse } from "@entities/studio";
+import { config } from "@shared/lib/config";
 
 import { ApiError } from "./api-error";
 import { buildApiUrl, type QueryParams } from "./build-url";
-import {
-  createRequestId,
-  REQUEST_ID_HEADER,
-  resolveRequestIdFromResponse,
-} from "./request-headers";
+import { safeParseJson, throwApiError } from "./http-error";
+import { createRequestId, REQUEST_ID_HEADER } from "./request-headers";
 
 /** Default ISR window for storefront data (ARCHITECTURE §3). */
 export const STOREFRONT_REVALIDATE_SECONDS = 60;
@@ -50,30 +47,6 @@ function resolveServerUrl(
   return buildApiUrl(config.apiUrl, path, params);
 }
 
-function throwApiError(response: Response, body: unknown): never {
-  const requestId = resolveRequestIdFromResponse(response, body);
-  const detail =
-    body && typeof body === "object" && "detail" in body
-      ? (body as { detail?: unknown }).detail
-      : undefined;
-  const message =
-    typeof detail === "string" && detail.trim()
-      ? detail
-      : response.statusText || "Request failed";
-
-  throw new ApiError(message, response.status, body, requestId);
-}
-
-async function safeParseJson(response: Response): Promise<unknown> {
-  const text = await response.text();
-  if (!text) return undefined;
-  try {
-    return JSON.parse(text);
-  } catch {
-    return text;
-  }
-}
-
 /**
  * GET a public API path from a Server Component (no cookies, no Bearer).
  */
@@ -96,7 +69,7 @@ export async function serverGet<T>(
   });
 
   if (!response.ok) {
-    throwApiError(response, await safeParseJson(response));
+    throwApiError(response, await safeParseJson(response), requestId);
   }
 
   if (response.status === 204) {

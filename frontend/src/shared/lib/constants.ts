@@ -4,6 +4,8 @@
  * WHY: never compare raw status/permission strings in components. Keep this matrix in
  * sync with `backend/app/modules/catalog/studio/service.py` (`STUDIO_PERMISSIONS_BY_ROLE`)
  * and entity status classes under `backend/app/models/`. See CONTRACTS.md §2–3.
+ *
+ * Arrays (not Set) so values survive JSON / RSC→client serialization.
  */
 
 // ── Global user roles ───────────────────────────────────────────────────────
@@ -50,9 +52,9 @@ export type StudioPermission =
  */
 export const STUDIO_PERMISSIONS_BY_ROLE: Record<
   StudioMemberRole,
-  ReadonlySet<StudioPermission>
+  readonly StudioPermission[]
 > = {
-  [StudioMemberRole.OWNER]: new Set([
+  [StudioMemberRole.OWNER]: [
     StudioPermission.VIEW_DASHBOARD,
     StudioPermission.MANAGE_STUDIO,
     StudioPermission.MANAGE_SERVICES,
@@ -62,8 +64,8 @@ export const STUDIO_PERMISSIONS_BY_ROLE: Record<
     StudioPermission.CHECK_IN_BOOKING,
     StudioPermission.MANAGE_PAYOUTS,
     StudioPermission.MANAGE_MEMBERS,
-  ]),
-  [StudioMemberRole.MANAGER]: new Set([
+  ],
+  [StudioMemberRole.MANAGER]: [
     StudioPermission.VIEW_DASHBOARD,
     StudioPermission.MANAGE_SERVICES,
     StudioPermission.MANAGE_SCHEDULE,
@@ -71,12 +73,12 @@ export const STUDIO_PERMISSIONS_BY_ROLE: Record<
     StudioPermission.MANAGE_BOOKINGS,
     StudioPermission.CHECK_IN_BOOKING,
     StudioPermission.MANAGE_PAYOUTS,
-  ]),
-  [StudioMemberRole.INSTRUCTOR]: new Set([
+  ],
+  [StudioMemberRole.INSTRUCTOR]: [
     StudioPermission.VIEW_DASHBOARD,
     StudioPermission.VIEW_BOOKINGS,
     StudioPermission.CHECK_IN_BOOKING,
-  ]),
+  ],
 };
 
 export function isStudioMemberRole(value: string): value is StudioMemberRole {
@@ -92,7 +94,7 @@ export function roleHasPermission(
   permission: StudioPermission,
 ): boolean {
   if (!role || !isStudioMemberRole(role)) return false;
-  return STUDIO_PERMISSIONS_BY_ROLE[role].has(permission);
+  return STUDIO_PERMISSIONS_BY_ROLE[role].includes(permission);
 }
 
 // ── Booking ─────────────────────────────────────────────────────────────────
@@ -109,10 +111,10 @@ export const BookingStatus = {
 export type BookingStatus = (typeof BookingStatus)[keyof typeof BookingStatus];
 
 /** Statuses that still hold a seat on an occurrence (backend ACTIVE_STATUSES). */
-export const BOOKING_ACTIVE_STATUSES: ReadonlySet<BookingStatus> = new Set([
+export const BOOKING_ACTIVE_STATUSES: readonly BookingStatus[] = [
   BookingStatus.PENDING,
   BookingStatus.CONFIRMED,
-]);
+];
 
 export const BookingType = {
   SINGLE: "single",

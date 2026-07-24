@@ -13,11 +13,11 @@ import { config } from "@shared/lib/config";
 
 import { ApiError } from "./api-error";
 import { buildApiUrl, type QueryParams } from "./build-url";
+import { safeParseJson, throwApiError } from "./http-error";
 import {
   createRequestId,
   IDEMPOTENCY_KEY_HEADER,
   REQUEST_ID_HEADER,
-  resolveRequestIdFromResponse,
 } from "./request-headers";
 
 export { ApiError };
@@ -100,20 +100,6 @@ function applyClientHeaders(
   }
 }
 
-function throwApiError(response: Response, body: unknown): never {
-  const requestId = resolveRequestIdFromResponse(response, body);
-  const detail =
-    body && typeof body === "object" && "detail" in body
-      ? (body as { detail?: unknown }).detail
-      : undefined;
-  const message =
-    typeof detail === "string" && detail.trim()
-      ? detail
-      : response.statusText || "Request failed";
-
-  throw new ApiError(message, response.status, body, requestId);
-}
-
 async function request<T>(
   path: string,
   options: RequestConfig = {},
@@ -156,14 +142,18 @@ async function request<T>(
         credentials: "include",
       });
       if (!retryResponse.ok) {
-        throwApiError(retryResponse, await safeParseJson(retryResponse));
+        throwApiError(
+          retryResponse,
+          await safeParseJson(retryResponse),
+          requestId,
+        );
       }
       return parseSuccessBody<T>(retryResponse);
     }
   }
 
   if (!response.ok) {
-    throwApiError(response, await safeParseJson(response));
+    throwApiError(response, await safeParseJson(response), requestId);
   }
 
   return parseSuccessBody<T>(response);
@@ -174,16 +164,6 @@ async function parseSuccessBody<T>(response: Response): Promise<T> {
     return undefined as T;
   }
   return response.json() as Promise<T>;
-}
-
-async function safeParseJson(response: Response): Promise<unknown> {
-  const text = await response.text();
-  if (!text) return undefined;
-  try {
-    return JSON.parse(text);
-  } catch {
-    return text;
-  }
 }
 
 export const api = {

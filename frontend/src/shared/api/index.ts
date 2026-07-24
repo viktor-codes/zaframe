@@ -37,7 +37,10 @@ export {
   fetchOccurrenceBookings,
   updateOccurrence,
 } from "./occurrences";
-export { createCheckoutSession } from "./payments";
+export {
+  createCheckoutSession,
+  type CreateCheckoutSessionOptions,
+} from "./payments";
 export { fetchSearch } from "./search";
 export {
   createStudio,

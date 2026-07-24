@@ -1,5 +1,7 @@
 /**
  * Payments API (Stripe Checkout).
+ *
+ * Idempotency-Key is required from the caller so retries reuse the same key.
  */
 
 import type {
@@ -7,19 +9,27 @@ import type {
   CheckoutSessionResponse,
 } from "@entities/booking";
 
-import { api, createIdempotencyKey, type RequestConfig } from "./client";
+import { api, type RequestConfig } from "./client";
+
+export interface CreateCheckoutSessionOptions {
+  /** Stable for one logical pay attempt (reuse across retries / double-submit). */
+  idempotencyKey: string;
+  requestId?: string;
+}
 
 export async function createCheckoutSession(
   data: CheckoutSessionCreate,
-  options?: Pick<RequestConfig, "idempotencyKey" | "requestId">,
+  options: CreateCheckoutSessionOptions,
 ): Promise<CheckoutSessionResponse> {
+  const requestConfig: RequestConfig = {
+    skipAuth: true,
+    idempotencyKey: options.idempotencyKey,
+    requestId: options.requestId,
+  };
+
   return api.post<CheckoutSessionResponse>(
     "api/v1/payments/checkout-session",
     data,
-    {
-      skipAuth: true,
-      idempotencyKey: options?.idempotencyKey ?? createIdempotencyKey(),
-      requestId: options?.requestId,
-    },
+    requestConfig,
   );
 }

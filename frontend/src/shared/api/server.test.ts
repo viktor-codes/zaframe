@@ -59,6 +59,20 @@ describe("serverGet", () => {
     } satisfies Partial<ApiError>);
   });
 
+  it("falls back to outbound requestId when response omits it", async function () {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ detail: "Boom" }), { status: 500 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      serverGet("api/v1/fail", { requestId: "outbound-1" }),
+    ).rejects.toMatchObject({
+      requestId: "outbound-1",
+      status: 500,
+    });
+  });
+
   it("passes next.revalidate through to fetch", async function () {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify([]), { status: 200 }),

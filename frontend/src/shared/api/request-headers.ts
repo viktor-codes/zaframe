@@ -1,8 +1,8 @@
 /**
- * Correlation and idempotency helpers for the browser API client.
+ * Correlation and idempotency helpers (isomorphic).
  *
  * WHY: backend accepts client `X-Request-ID` (≤128 printable chars) and requires
- * `Idempotency-Key` on payment checkout mutations — generate them in one place.
+ * a caller-stable `Idempotency-Key` on payment checkout mutations.
  */
 
 export const REQUEST_ID_HEADER = "X-Request-ID";
@@ -16,7 +16,10 @@ export function createRequestId(): string {
 }
 
 /**
- * Alias for payment / create mutations that must not double-submit.
+ * Generate an idempotency key for a single logical mutation attempt.
+ *
+ * WHY: callers must keep the same key across retries (timeout / double-submit).
+ * Do not generate a fresh key inside API wrappers on every call.
  */
 export function createIdempotencyKey(): string {
   return createRequestId();

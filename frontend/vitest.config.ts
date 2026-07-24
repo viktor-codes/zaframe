@@ -12,6 +12,8 @@ export default defineConfig({
       "@shared": path.resolve(__dirname, "./src/shared"),
       "@entities": path.resolve(__dirname, "./src/entities"),
       "@features": path.resolve(__dirname, "./src/features"),
+      "server-only": path.resolve(__dirname, "./test/mocks/server-only.ts"),
     },
   },
 });
+

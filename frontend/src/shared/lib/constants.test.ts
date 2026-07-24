@@ -39,13 +39,11 @@ describe("STUDIO_PERMISSIONS_BY_ROLE", () => {
   });
 
   it("limits instructor to dashboard, view bookings, and check-in", () => {
-    expect(STUDIO_PERMISSIONS_BY_ROLE[StudioMemberRole.INSTRUCTOR]).toEqual(
-      new Set([
-        StudioPermission.VIEW_DASHBOARD,
-        StudioPermission.VIEW_BOOKINGS,
-        StudioPermission.CHECK_IN_BOOKING,
-      ]),
-    );
+    expect(STUDIO_PERMISSIONS_BY_ROLE[StudioMemberRole.INSTRUCTOR]).toEqual([
+      StudioPermission.VIEW_DASHBOARD,
+      StudioPermission.VIEW_BOOKINGS,
+      StudioPermission.CHECK_IN_BOOKING,
+    ]);
     expect(
       roleHasPermission(
         StudioMemberRole.INSTRUCTOR,
@@ -74,8 +72,10 @@ describe("status constants", () => {
       "completed",
       "no_show",
     ]);
-    expect(BOOKING_ACTIVE_STATUSES.has(BookingStatus.PENDING)).toBe(true);
-    expect(BOOKING_ACTIVE_STATUSES.has(BookingStatus.CANCELLED)).toBe(false);
+    expect(BOOKING_ACTIVE_STATUSES.includes(BookingStatus.PENDING)).toBe(true);
+    expect(BOOKING_ACTIVE_STATUSES.includes(BookingStatus.CANCELLED)).toBe(
+      false,
+    );
   });
 
   it("exposes order, occurrence, and visibility enums", () => {
