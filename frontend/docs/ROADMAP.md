@@ -63,7 +63,7 @@ One commit per step, history stays readable:
 ## Phase 2 — Shared foundation
 
 - [x] `shared/api/client.ts` (client-only): auth headers, refresh, `ApiError` (RFC 7807), `X-Request-ID`, Idempotency-Key helper
-- [ ] `shared/api/server.ts`: unauthenticated server fetch for public endpoints (RSC, see ARCHITECTURE §3)
+- [x] `shared/api/server.ts`: unauthenticated server fetch for public endpoints (RSC, see ARCHITECTURE §3)
 - [ ] `shared/lib/constants.ts`: all statuses + permissions matrix (single source of truth)
 - [ ] `shared/auth`: `useAuth`, `useRole`, `usePermission`, `RequireAuth`, `RequireStudioRole`
 - [ ] `PermissionGate` component

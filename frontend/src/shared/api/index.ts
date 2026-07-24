@@ -1,4 +1,9 @@
-/** API client, domain fetchers, error helpers, and generated OpenAPI types. */
+/** API client, domain fetchers, error helpers, and generated OpenAPI types.
+ *
+ * Client Components: import from `@shared/api`.
+ * Server Components (public only): import from `@shared/api/server` —
+ * do not re-export server helpers here (`client-only` would break RSC).
+ */
 export { ApiError } from "./api-error";
 export {
   api,
