@@ -64,7 +64,7 @@ One commit per step, history stays readable:
 
 - [x] `shared/api/client.ts` (client-only): auth headers, refresh, `ApiError` (RFC 7807), `X-Request-ID`, Idempotency-Key helper
 - [x] `shared/api/server.ts`: unauthenticated server fetch for public endpoints (RSC, see ARCHITECTURE §3)
-- [ ] `shared/lib/constants.ts`: all statuses + permissions matrix (single source of truth)
+- [x] `shared/lib/constants.ts`: all statuses + permissions matrix (single source of truth)
 - [ ] `shared/auth`: `useAuth`, `useRole`, `usePermission`, `RequireAuth`, `RequireStudioRole`
 - [ ] `PermissionGate` component
 - [ ] TanStack Query provider + query key conventions
