@@ -1,0 +1,19 @@
+---
+description: Frontend roadmap chunks end with a commit message; human commits by hand.
+alwaysApply: true
+---
+
+# Frontend git — human commits only
+
+When working on ZeeFrame frontend roadmap phases (`frontend/docs/ROADMAP.md`):
+
+1. **Never** run `git commit` or `git push` unless the user explicitly asks in that message.
+2. After **every** finished chunk (one checklist item or one agreed sub-step), end with a
+   ready-to-paste Conventional Commit message, for example:
+
+   ```text
+   feat(web): add X-Request-ID to shared API client
+   ```
+
+3. Wait for the user to commit (or confirm continue) before starting the next chunk.
+4. Prefer small, reviewable chunks — one concern per commit.

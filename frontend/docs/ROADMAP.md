@@ -7,10 +7,19 @@
 
 - The landing page is **not touched** — it ships as-is.
 - One phase = a sequence of small commits by FSD layer: entity → feature → app.
-  Conventional Commits (`feat(web): …`, `refactor(web): …`) must be added as text in chat, do not commit to github yourself.
 - A screen is done only when it passes the Definition of Done (below).
 - API-first: before building a screen, verify the endpoint exists, matches CONTRACTS.md,
   and is covered by generated types. Never build on mocks that will drift.
+
+### Git — human commits only (mandatory)
+
+After **every** finished roadmap chunk (one checklist item or one agreed sub-step):
+
+1. The agent **never** runs `git commit` / `git push` unless the human explicitly asks.
+2. The agent ends the chunk with a ready-to-paste **Conventional Commit** message
+   (`feat(web): …`, `refactor(web): …`, `chore(web): …`, `test(web): …`).
+3. The human commits locally by hand (and pushes when ready).
+4. Next chunk starts only after the human confirms the previous commit (or says to continue).
 
 ## Definition of Done (every screen)
 
@@ -53,7 +62,7 @@ One commit per step, history stays readable:
 
 ## Phase 2 — Shared foundation
 
-- [ ] `shared/api/client.ts` (client-only): auth headers, refresh, `ApiError` (RFC 7807), `X-Request-ID`, Idempotency-Key helper
+- [x] `shared/api/client.ts` (client-only): auth headers, refresh, `ApiError` (RFC 7807), `X-Request-ID`, Idempotency-Key helper
 - [ ] `shared/api/server.ts`: unauthenticated server fetch for public endpoints (RSC, see ARCHITECTURE §3)
 - [ ] `shared/lib/constants.ts`: all statuses + permissions matrix (single source of truth)
 - [ ] `shared/auth`: `useAuth`, `useRole`, `usePermission`, `RequireAuth`, `RequireStudioRole`
