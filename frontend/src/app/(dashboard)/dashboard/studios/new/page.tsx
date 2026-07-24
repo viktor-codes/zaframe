@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, Button, Input, Textarea } from "@shared/ui";
 import { createStudio, getUserFacingApiMessage } from "@shared/api";
+import { queryKeys } from "@shared/lib";
 
 export default function NewStudioPage() {
   const router = useRouter();
@@ -22,7 +23,7 @@ export default function NewStudioPage() {
   const { mutate, isPending } = useMutation({
     mutationFn: createStudio,
     onSuccess: (studio) => {
-      queryClient.invalidateQueries({ queryKey: ["studios"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.studios.all });
       router.push(`/dashboard/studios/${studio.id}`);
     },
     onError: (err) => {

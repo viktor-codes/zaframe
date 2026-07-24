@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Card, Button, Skeleton } from "@shared/ui";
 import { useAuth } from "@shared/auth";
 import { fetchStudios } from "@shared/api";
+import { queryKeys } from "@shared/lib";
 import type { StudioResponse } from "@entities/studio";
 
 export default function DashboardPage() {
@@ -25,7 +26,7 @@ function MyStudios() {
   const { user } = useAuth();
 
   const { data: studios, isLoading } = useQuery({
-    queryKey: ["studios", "owner", user?.id],
+    queryKey: queryKeys.studios.owner(user?.id),
     queryFn: () => fetchStudios({ owner_id: user!.id, limit: 50 }),
     enabled: !!user?.id,
   });

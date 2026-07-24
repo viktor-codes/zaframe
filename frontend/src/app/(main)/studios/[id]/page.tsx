@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Card, Button, Skeleton, Input } from "@shared/ui";
 import { fetchStudio, fetchStudioOccurrences, getUserFacingApiMessage } from "@shared/api";
+import { queryKeys } from "@shared/lib";
 
 function toISOStartOfDay(d: Date): string {
   const c = new Date(d);
@@ -68,7 +69,7 @@ export default function StudioDetailPage() {
     isError: errorStudio,
     error: studioError,
   } = useQuery({
-    queryKey: ["studio", id],
+    queryKey: queryKeys.studio.detail(id),
     queryFn: () => fetchStudio(id),
     enabled: !Number.isNaN(id),
   });
@@ -78,13 +79,9 @@ export default function StudioDetailPage() {
     isLoading: loadingOccurrences,
     isError: errorOccurrences,
   } = useQuery({
-    queryKey: [
-      "studio",
-      id,
-      "occurrences",
-      dateRange?.start_from,
-      dateRange?.start_to,
-    ],
+    queryKey: queryKeys.studio.occurrences(id, {
+      ...(dateRange ?? {}),
+    }),
     queryFn: () =>
       fetchStudioOccurrences(id, {
         status: "scheduled",

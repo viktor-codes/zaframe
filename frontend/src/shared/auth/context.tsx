@@ -17,6 +17,7 @@ import {
 } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api, setAuthTokenProvider, setRefreshTokensFn } from "@shared/api";
+import { queryKeys } from "@shared/lib/query-keys";
 import { logoutSession, refreshAccessToken } from "./api";
 import {
   clearStoredTokens,
@@ -66,7 +67,7 @@ function bootstrapAuthClient(): void {
 
 function useAuthQuery(loginTrigger: number, isReady: boolean) {
   return useQuery({
-    queryKey: ["auth", "me", loginTrigger],
+    queryKey: queryKeys.auth.me(loginTrigger),
     queryFn: () => api.get<AuthUser>("/api/v1/auth/me"),
     enabled: isReady,
     staleTime: 5 * 60 * 1000,

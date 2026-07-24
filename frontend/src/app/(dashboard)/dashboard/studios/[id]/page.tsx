@@ -15,6 +15,7 @@ import {
   fetchStudioServices,
   updateStudio,
 } from "@shared/api";
+import { queryKeys } from "@shared/lib";
 import type { OccurrenceResponse } from "@entities/occurrence";
 
 function formatPrice(cents: number): string {
@@ -45,13 +46,13 @@ export default function StudioManagePage() {
   const [showAddOccurrence, setShowAddOccurrence] = useState(false);
 
   const { data: studio, isLoading } = useQuery({
-    queryKey: ["studio", id],
+    queryKey: queryKeys.studio.detail(id),
     queryFn: () => fetchStudio(id),
     enabled: !Number.isNaN(id),
   });
 
   const { data: occurrences } = useQuery({
-    queryKey: ["studio", id, "occurrences"],
+    queryKey: queryKeys.studio.occurrences(id),
     queryFn: () => fetchStudioOccurrences(id, { limit: 100 }),
     enabled: !!studio,
   });
@@ -108,7 +109,7 @@ export default function StudioManagePage() {
         editMode={editMode}
         onEditModeChange={setEditMode}
         onSuccess={() =>
-          queryClient.invalidateQueries({ queryKey: ["studio", id] })
+          queryClient.invalidateQueries({ queryKey: queryKeys.studio.detail(id) })
         }
       />
 
@@ -127,7 +128,7 @@ export default function StudioManagePage() {
             studioId={id}
             onSuccess={() => {
               queryClient.invalidateQueries({
-                queryKey: ["studio", id, "occurrences"],
+                queryKey: queryKeys.studio.occurrences(id),
               });
               setShowAddOccurrence(false);
             }}
@@ -147,7 +148,7 @@ export default function StudioManagePage() {
                 occurrence={occurrence}
                 onDeleted={() =>
                   queryClient.invalidateQueries({
-                    queryKey: ["studio", id, "occurrences"],
+                    queryKey: queryKeys.studio.occurrences(id),
                   })
                 }
               />
@@ -312,7 +313,7 @@ function OccurrenceCreateForm({
   endTime.setHours(11, 0, 0, 0);
 
   const { data: services, isLoading: loadingServices } = useQuery({
-    queryKey: ["studio", studioId, "services"],
+    queryKey: queryKeys.studio.services(studioId),
     queryFn: () => fetchStudioServices(studioId),
   });
 
@@ -473,7 +474,7 @@ function OccurrenceCard({
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const { data: bookings } = useQuery({
-    queryKey: ["occurrence", occurrence.id, "bookings"],
+    queryKey: queryKeys.occurrence.bookings(occurrence.id),
     queryFn: () => fetchOccurrenceBookings(occurrence.id),
     enabled: showBookings,
   });

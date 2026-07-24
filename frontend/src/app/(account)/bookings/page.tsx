@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Card, Button, Skeleton } from "@shared/ui";
 import { fetchMyBookings } from "@shared/api";
+import { queryKeys } from "@shared/lib";
 import type { BookingSelfListItem } from "@entities/booking";
 
 function formatPrice(cents: number): string {
@@ -48,7 +49,7 @@ function getStatusBadge(status: string, paymentStatus: string | null | undefined
 
 function BookingsList() {
   const { data: bookings, isLoading } = useQuery({
-    queryKey: ["bookings", "my"],
+    queryKey: queryKeys.bookings.my(),
     queryFn: () => fetchMyBookings({ limit: 50, include_guest_email: true }),
   });
 

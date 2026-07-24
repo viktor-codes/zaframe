@@ -17,6 +17,7 @@ import {
 import {
   getGuestBookingAccessToken,
   getGuestBookingSnapshot,
+  queryKeys,
   type GuestBookingSnapshot,
 } from "@shared/lib";
 import type {
@@ -57,7 +58,7 @@ export default function BookingConfirmPage() {
     isLoading: loadingBooking,
     isError: errorBooking,
   } = useQuery({
-    queryKey: ["booking", id],
+    queryKey: queryKeys.booking.detail(id),
     queryFn: () => fetchBooking(id),
     retry: false,
   });
@@ -71,13 +72,13 @@ export default function BookingConfirmPage() {
     | undefined = booking ?? guestSnapshot;
 
   const { data: occurrence } = useQuery({
-    queryKey: ["occurrence", resolvedBooking?.occurrence_id],
+    queryKey: queryKeys.occurrence.detail(resolvedBooking?.occurrence_id),
     queryFn: () => fetchOccurrence(resolvedBooking!.occurrence_id),
     enabled: !!resolvedBooking?.occurrence_id,
   });
 
   const { data: studio } = useQuery({
-    queryKey: ["studio", occurrence?.studio_id],
+    queryKey: queryKeys.studio.detail(occurrence?.studio_id),
     queryFn: () => fetchStudio(occurrence!.studio_id),
     enabled: !!occurrence?.studio_id,
   });
@@ -100,8 +101,8 @@ export default function BookingConfirmPage() {
   const cancelMutation = useMutation({
     mutationFn: cancelBooking,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["booking", id] });
-      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.booking.detail(id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.bookings.all });
       setShowCancelConfirm(false);
     },
     onError: (err) => {

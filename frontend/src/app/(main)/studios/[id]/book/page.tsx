@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { Card, Button, Input, Skeleton } from "@shared/ui";
 import { createBooking, fetchStudio, fetchStudioOccurrences } from "@shared/api";
-import { storeGuestBookingAccess } from "@shared/lib";
+import { queryKeys, storeGuestBookingAccess } from "@shared/lib";
 
 function formatPrice(cents: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -40,13 +40,13 @@ function BookPageContent() {
   });
 
   const { data: studio } = useQuery({
-    queryKey: ["studio", studioId],
+    queryKey: queryKeys.studio.detail(studioId),
     queryFn: () => fetchStudio(studioId),
     enabled: !!studioId && !Number.isNaN(studioId),
   });
 
   const { data: occurrences } = useQuery({
-    queryKey: ["studio", studioId, "occurrences"],
+    queryKey: queryKeys.studio.occurrences(studioId, { status: "scheduled" }),
     queryFn: () => fetchStudioOccurrences(studioId, { status: "scheduled" }),
     enabled: !!studio,
   });

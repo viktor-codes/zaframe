@@ -8,13 +8,13 @@ import {
   useRef,
   useState,
 } from "react";
-import { useUIStore } from "@shared/lib";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { X, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { fetchStudios, getUserFacingApiMessage } from "@shared/api";
+import { queryKeys, useUIStore } from "@shared/lib";
 import type { SearchResult } from "@entities/studio";
 import type { ServiceCategory } from "@entities/service";
 import { Header } from "@/features/navigation/components";
@@ -83,7 +83,7 @@ function StudiosPageContent() {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ["studios", "explore", listParams],
+    queryKey: queryKeys.studios.explore(listParams),
     queryFn: ({ pageParam }) =>
       fetchStudios({ ...listParams, skip: pageParam }),
     initialPageParam: 0,
