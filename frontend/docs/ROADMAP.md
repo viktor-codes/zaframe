@@ -66,7 +66,7 @@ One commit per step, history stays readable:
 - [x] `shared/api/server.ts`: unauthenticated server fetch for public endpoints (RSC, see ARCHITECTURE §3)
 - [x] `shared/lib/constants.ts`: all statuses + permissions matrix (single source of truth)
 - [x] `shared/auth`: `useAuth`, `useRole`, `usePermission`, `RequireAuth`, `RequireStudioRole`
-- [ ] `PermissionGate` component
+- [x] `PermissionGate` component
 - [ ] TanStack Query provider + query key conventions
 - [ ] Global toast for transient errors; error boundary per route group
 
