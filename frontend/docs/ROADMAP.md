@@ -68,7 +68,7 @@ One commit per step, history stays readable:
 - [x] `shared/auth`: `useAuth`, `useRole`, `usePermission`, `RequireAuth`, `RequireStudioRole`
 - [x] `PermissionGate` component
 - [x] TanStack Query provider + query key conventions
-- [ ] Global toast for transient errors; error boundary per route group
+- [x] Global toast for transient errors; error boundary per route group
 
 ## Phase 3 — Storefront + booking + payment (P0 stories 1, 2)
 
