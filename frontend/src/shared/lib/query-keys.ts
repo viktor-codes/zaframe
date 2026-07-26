@@ -11,12 +11,18 @@
  */
 
 import type { MyBookingsParams } from "../api/bookings";
+import type { MyOrdersParams } from "../api/orders";
 import type {
   StudioOccurrencesParams,
   StudiosListParams,
 } from "../api/studios";
 
-export type { MyBookingsParams, StudioOccurrencesParams, StudiosListParams };
+export type {
+  MyBookingsParams,
+  MyOrdersParams,
+  StudioOccurrencesParams,
+  StudiosListParams,
+};
 
 export const queryKeys = {
   auth: {
@@ -56,6 +62,15 @@ export const queryKeys = {
 
   booking: {
     detail: (id: number) => ["booking", id] as const,
+  },
+
+  orders: {
+    all: ["orders"] as const,
+    /**
+     * @param params - Exact list filters passed to `fetchMyOrders` (no `page`).
+     */
+    my: (params: Omit<MyOrdersParams, "page"> = {}) =>
+      ["orders", "my", params] as const,
   },
 
   occurrence: {

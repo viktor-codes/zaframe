@@ -43,4 +43,10 @@ describe("queryKeys", () => {
     const params = { size: 20, include_guest_email: true };
     expect(queryKeys.bookings.my(params)).toEqual(["bookings", "my", params]);
   });
+
+  it("includes my-orders list filters in the key", () => {
+    const params = { size: 20 };
+    expect(queryKeys.orders.my(params)).toEqual(["orders", "my", params]);
+  });
 });
+

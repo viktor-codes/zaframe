@@ -89,7 +89,7 @@ Public zone first: simplest auth-wise, demoable to studios, closes the money loo
 - [x] `app/(account)/bookings`: upcoming / past / cancelled (paginated via envelope)
 - [x] `features/cancel-booking` with `cancel_before_hours` cutoff logic
 - [x] `features/manage-account`: profile (PATCH /auth/me)
-- [ ] `app/(account)/orders`: course orders list
+- [x] `app/(account)/orders`: course orders list
 - [ ] Edge cases: cancelled-by-studio, expired booking
 - [ ] Migrate old `/bookings` pages, set up redirects
 
