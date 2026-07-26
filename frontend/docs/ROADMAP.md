@@ -78,7 +78,7 @@ Public zone first: simplest auth-wise, demoable to studios, closes the money loo
 - [x] `entities/occurrence`: OccurrenceRow, CapacityIndicator
 - [x] `app/(main)/s/[slug]` on `GET /studios/slug/{slug}/public` (mobile-first)
 - [x] `features/book-occurrence`: wizard (slot → guest form or sign-in → summary → Stripe)
-- [ ] Success page with webhook polling ("Payment processing…")
+- [x] Success page with webhook polling ("Payment processing…")
 - [ ] Guest confirm page `/bookings/{id}/confirm` via `access_token`
 - [ ] Edge cases: occurrence full, pending timer, webhook delayed
 - [ ] Playwright: guest checkout flow (update existing spec to slug routes)

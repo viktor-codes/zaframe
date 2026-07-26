@@ -123,6 +123,24 @@ export const BookingType = {
 
 export type BookingType = (typeof BookingType)[keyof typeof BookingType];
 
+/**
+ * Values written to `booking.payment_status` by the payment / webhook pipeline.
+ * Distinct from ledger `PaymentStatus` filters and from `OrderStatus`.
+ */
+export const BookingPaymentStatus = {
+  PENDING: "pending",
+  UNPAID: "unpaid",
+  SUCCEEDED: "succeeded",
+  FAILED: "failed",
+  REFUNDED: "refunded",
+  PARTIALLY_REFUNDED: "partially_refunded",
+  MANUAL_REVIEW: "manual_review",
+  OVERBOOKED_MANUAL_REVIEW: "overbooked_manual_review",
+} as const;
+
+export type BookingPaymentStatus =
+  (typeof BookingPaymentStatus)[keyof typeof BookingPaymentStatus];
+
 // ── Order ───────────────────────────────────────────────────────────────────
 
 export const OrderStatus = {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  BookingPaymentStatus,
   BookingStatus,
   BOOKING_ACTIVE_STATUSES,
   OrderStatus,
@@ -83,5 +84,12 @@ describe("status constants", () => {
     expect(OccurrenceStatus.SCHEDULED).toBe("scheduled");
     expect(ServiceVisibility.PUBLISHED).toBe("published");
     expect(UserRole.STUDIO_OWNER).toBe("studio_owner");
+  });
+
+  it("exposes booking payment statuses used by the webhook pipeline", () => {
+    expect(BookingPaymentStatus.SUCCEEDED).toBe("succeeded");
+    expect(BookingPaymentStatus.OVERBOOKED_MANUAL_REVIEW).toBe(
+      "overbooked_manual_review",
+    );
   });
 });

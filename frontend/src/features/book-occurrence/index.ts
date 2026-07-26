@@ -2,4 +2,6 @@
 export {
   BookOccurrenceWizard,
   type BookOccurrenceWizardProps,
+  PaymentSuccessPanel,
+  type PaymentSuccessPanelProps,
 } from "./ui";
