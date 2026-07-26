@@ -5,6 +5,8 @@ export type BookingCreatedResponse = Schema<"BookingCreatedResponse">;
 export type BookingSelfResponse = Schema<"BookingSelfResponse">;
 export type BookingSelfListItem = Schema<"BookingSelfListItem">;
 export type BookingOwnerResponse = Schema<"BookingOwnerResponse">;
+/** Studio dashboard list item (`GET /bookings`) with nested occurrence. */
+export type BookingWithOccurrence = Schema<"BookingWithOccurrence">;
 export type BookingDetailResponse =
   | BookingSelfResponse
   | BookingOwnerResponse;
@@ -16,9 +18,12 @@ export type PaginatedBookingSelfList =
   Schema<"PaginatedResponse_BookingSelfListItem_">;
 export type PaginatedBookingOwnerList =
   Schema<"PaginatedResponse_BookingOwnerResponse_">;
+export type PaginatedBookingWithOccurrenceList =
+  Schema<"PaginatedResponse_BookingWithOccurrence_">;
 
 export type BookingLike =
   | BookingSelfResponse
   | BookingSelfListItem
   | BookingCreatedResponse
-  | BookingOwnerResponse;
+  | BookingOwnerResponse
+  | BookingWithOccurrence;

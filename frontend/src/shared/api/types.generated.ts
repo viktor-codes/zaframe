@@ -150,6 +150,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/studios/slug/{slug}/services/{service_id}/occurrences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Public Service Occurrences
+         * @description Public bookable occurrence list for a storefront service.
+         *
+         *     Includes confirmed/pending seat counts so the booking wizard can disable full slots.
+         */
+        get: operations["list_public_service_occurrences_api_v1_studios_slug__slug__services__service_id__occurrences_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/studios": {
         parameters: {
             query?: never;
@@ -495,7 +517,7 @@ export interface paths {
         };
         /**
          * List Bookings
-         * @description List bookings for studios owned by the current user.
+         * @description List bookings for studios where the user is a member, with nested occurrence.
          */
         get: operations["list_bookings_api_v1_bookings_get"];
         put?: never;
@@ -1347,6 +1369,79 @@ export interface components {
             readonly is_guest_booking: boolean;
         };
         /**
+         * BookingWithOccurrence
+         * @description Owner list item for GET /bookings.
+         *
+         *     Nested occurrence avoids N+1 on the studio dashboard bookings screen.
+         */
+        BookingWithOccurrence: {
+            /**
+             * Occurrence Id
+             * @description Occurrence ID to book
+             */
+            occurrence_id: number;
+            /** Id */
+            id: number;
+            /** User Id */
+            user_id: number | null;
+            /** Status */
+            status: string;
+            /**
+             * Reserved Until
+             * @description UTC timestamp until which a pending booking reserves occurrence capacity
+             */
+            reserved_until?: string | null;
+            /**
+             * Payment Status
+             * @description Payment status (no internal Stripe IDs)
+             */
+            payment_status?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Cancelled At */
+            cancelled_at: string | null;
+            /**
+             * Checked In At
+             * @description UTC timestamp when studio staff checked the attendee in
+             */
+            checked_in_at?: string | null;
+            /**
+             * No Show At
+             * @description UTC timestamp when studio staff marked the attendee as no-show
+             */
+            no_show_at?: string | null;
+            /**
+             * Guest Name
+             * @description Guest name
+             */
+            guest_name?: string | null;
+            /**
+             * Guest Email
+             * @description Guest email for contact
+             */
+            guest_email?: string | null;
+            /**
+             * Guest Phone
+             * @description Guest phone for contact
+             */
+            guest_phone?: string | null;
+            /** @description Occurrence details */
+            occurrence: components["schemas"]["OccurrenceResponse"];
+            /**
+             * Is Guest Booking
+             * @description True when booking was created without a linked user account.
+             */
+            readonly is_guest_booking: boolean;
+        };
+        /**
          * CheckoutSessionCreate
          * @description Schema for creating a Checkout Session for a single booking.
          *
@@ -1727,16 +1822,6 @@ export interface components {
          */
         OccurrenceResponse: {
             /**
-             * Confirmed Count
-             * @description Confirmed seats when capacity is included (public bookable lists)
-             */
-            confirmed_count?: number | null;
-            /**
-             * Pending Count
-             * @description Active pending holds when capacity is included (public bookable lists)
-             */
-            pending_count?: number | null;
-            /**
              * Start Time
              * Format: date-time
              * @description Occurrence start instant (timezone-aware ISO 8601)
@@ -1813,6 +1898,16 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /**
+             * Confirmed Count
+             * @description Confirmed seats when capacity is included (public bookable lists and studio schedule)
+             */
+            confirmed_count?: number | null;
+            /**
+             * Pending Count
+             * @description Active pending holds when capacity is included (public bookable lists and studio schedule)
+             */
+            pending_count?: number | null;
         };
         /**
          * OccurrenceUpdate
@@ -2026,6 +2121,26 @@ export interface components {
         PaginatedResponse_BookingSelfListItem_: {
             /** Items */
             items: components["schemas"]["BookingSelfListItem"][];
+            /**
+             * Total
+             * @description Total matching records across all pages
+             */
+            total: number;
+            /**
+             * Page
+             * @description Current page number (1-based)
+             */
+            page: number;
+            /**
+             * Size
+             * @description Number of records per page
+             */
+            size: number;
+        };
+        /** PaginatedResponse[BookingWithOccurrence] */
+        PaginatedResponse_BookingWithOccurrence_: {
+            /** Items */
+            items: components["schemas"]["BookingWithOccurrence"][];
             /**
              * Total
              * @description Total matching records across all pages
@@ -3616,6 +3731,38 @@ export interface operations {
             };
         };
     };
+    list_public_service_occurrences_api_v1_studios_slug__slug__services__service_id__occurrences_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+                service_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OccurrenceResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_studios_api_v1_studios_get: {
         parameters: {
             query?: {
@@ -4442,6 +4589,8 @@ export interface operations {
                 page?: number;
                 /** @description Records per page */
                 size?: number;
+                /** @description Filter by studio (recommended for dashboard); requires view_bookings */
+                studio_id?: number | null;
                 /** @description Filter by occurrence */
                 occurrence_id?: number | null;
                 /** @description Filter by status */
@@ -4459,7 +4608,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PaginatedResponse_BookingOwnerResponse_"];
+                    "application/json": components["schemas"]["PaginatedResponse_BookingWithOccurrence_"];
                 };
             };
             /** @description Validation Error */

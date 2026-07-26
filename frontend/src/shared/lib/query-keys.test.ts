@@ -49,6 +49,16 @@ describe("queryKeys", () => {
     expect(queryKeys.bookings.my(params)).toEqual(["bookings", "my", params]);
   });
 
+  it("includes studio bookings filters in the key", () => {
+    const filters = { studio_id: 9, status: "pending" as const, size: 20 };
+    expect(queryKeys.studio.bookings(9, filters)).toEqual([
+      "studio",
+      9,
+      "bookings",
+      filters,
+    ]);
+  });
+
   it("includes my-orders list filters in the key", () => {
     const params = { size: 20 };
     expect(queryKeys.orders.my(params)).toEqual(["orders", "my", params]);

@@ -10,7 +10,7 @@
  * fetch function — otherwise cache hits can serve the wrong payload.
  */
 
-import type { MyBookingsParams } from "../api/bookings";
+import type { BookingsListParams, MyBookingsParams } from "../api/bookings";
 import type { MyOrdersParams } from "../api/orders";
 import type {
   StudioOccurrencesParams,
@@ -18,6 +18,7 @@ import type {
 } from "../api/studios";
 
 export type {
+  BookingsListParams,
   MyBookingsParams,
   MyOrdersParams,
   StudioOccurrencesParams,
@@ -47,6 +48,12 @@ export const queryKeys = {
      */
     occurrences: (id: number, filters: StudioOccurrencesParams) =>
       ["studio", id, "occurrences", filters] as const,
+    /**
+     * Studio dashboard bookings (`GET /bookings?studio_id=…`).
+     * @param filters - Exact params passed to `fetchBookings` (must include `studio_id`).
+     */
+    bookings: (id: number, filters: BookingsListParams) =>
+      ["studio", id, "bookings", filters] as const,
     publicServiceOccurrences: (slug: string, serviceId: number) =>
       ["studio", "slug", slug, "service", serviceId, "occurrences"] as const,
     services: (id: number) => ["studio", id, "services"] as const,
