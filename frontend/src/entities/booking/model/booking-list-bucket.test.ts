@@ -20,6 +20,19 @@ describe("getBookingListBucket", () => {
     ).toBe("cancelled");
   });
 
+  it("puts expired bookings in the cancelled tab", () => {
+    expect(
+      getBookingListBucket(
+        {
+          status: "expired",
+          cancelled_at: null,
+          occurrence: { start_time: "2026-07-20T18:00:00.000Z" },
+        },
+        now,
+      ),
+    ).toBe("cancelled");
+  });
+
   it("splits active bookings by session start", () => {
     expect(
       getBookingListBucket(

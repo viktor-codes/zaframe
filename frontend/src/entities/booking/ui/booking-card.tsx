@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { formatMoneyFromCents } from "@shared/lib";
+import { getBookingAccountEdge } from "../model/booking-account-edge";
 import type { BookingSelfListItem } from "../model/types";
 import { BookingStatusBadge } from "./booking-status-badge";
 
@@ -42,6 +43,7 @@ export function BookingCard({
   now,
 }: BookingCardProps) {
   const { occurrence, studio } = booking;
+  const edge = getBookingAccountEdge(booking, now);
   const priceLabel =
     occurrence.price_cents === 0
       ? "Free"
@@ -58,6 +60,7 @@ export function BookingCard({
             status={booking.status}
             paymentStatus={booking.payment_status}
             reservedUntil={booking.reserved_until}
+            occurrenceStatus={occurrence.status}
             now={now}
           />
         </div>
@@ -96,9 +99,51 @@ export function BookingCard({
       ) : (
         body
       )}
+
+      {edge ? <BookingCardEdgeNotice edge={edge} /> : null}
+
       {actions ? (
         <div className="mt-3 border-t border-neutral-100 pt-3">{actions}</div>
       ) : null}
     </article>
+  );
+}
+
+function BookingCardEdgeNotice({
+  edge,
+}: {
+  edge: NonNullable<ReturnType<typeof getBookingAccountEdge>>;
+}) {
+  if (edge.kind === "studio_cancelled") {
+    return (
+      <div
+        className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2"
+        data-testid="booking-edge-studio-cancelled"
+      >
+        <p className="text-sm font-medium text-red-800">{edge.title}</p>
+        {edge.reason ? (
+          <p className="mt-0.5 text-sm text-red-700/90">{edge.reason}</p>
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="mt-3 flex flex-col gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
+      data-testid="booking-edge-expired"
+    >
+      <div>
+        <p className="text-sm font-medium text-amber-900">{edge.title}</p>
+        <p className="mt-0.5 text-sm text-amber-800/90">{edge.description}</p>
+      </div>
+      <Link
+        href={edge.rebookHref}
+        className="inline-flex shrink-0 items-center justify-center rounded-xl bg-neutral-900 px-3 py-2 text-sm font-semibold text-white hover:bg-neutral-800"
+        data-testid="booking-rebook-button"
+      >
+        {edge.rebookLabel}
+      </Link>
+    </div>
   );
 }

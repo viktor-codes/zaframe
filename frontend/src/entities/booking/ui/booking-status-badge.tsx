@@ -7,6 +7,8 @@ export interface BookingStatusBadgeProps {
   status: string;
   paymentStatus?: string | null;
   reservedUntil?: string | null;
+  /** When set, studio-cancelled sessions get a distinct badge label. */
+  occurrenceStatus?: string | null;
   /** Injected clock for hold-expiry labels (tests / SSR-stable UI). */
   now?: Date;
   className?: string;
@@ -24,6 +26,7 @@ export function BookingStatusBadge({
   status,
   paymentStatus,
   reservedUntil,
+  occurrenceStatus,
   now,
   className = "",
 }: BookingStatusBadgeProps) {
@@ -32,6 +35,7 @@ export function BookingStatusBadge({
       status,
       payment_status: paymentStatus,
       reserved_until: reservedUntil,
+      occurrenceStatus,
     },
     now,
   );

@@ -38,4 +38,13 @@ describe("getBookingStatusPresentation", () => {
       tone: "red",
     });
   });
+
+  it("labels studio-cancelled sessions distinctly", () => {
+    expect(
+      getBookingStatusPresentation({
+        status: "cancelled",
+        occurrenceStatus: "cancelled",
+      }),
+    ).toEqual({ label: "Cancelled by studio", tone: "red" });
+  });
 });

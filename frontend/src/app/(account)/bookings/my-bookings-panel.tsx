@@ -19,12 +19,7 @@ import {
   BookingsTabEmptyState,
 } from "./my-bookings-states";
 
-const PAGE_SIZE = 20;
-
-const LIST_PARAMS = {
-  size: PAGE_SIZE,
-  include_guest_email: true,
-} as const;
+const LIST_PARAMS = { size: 20, include_guest_email: true } as const;
 
 const TABS: { id: BookingListBucket; label: string }[] = [
   { id: "upcoming", label: "Upcoming" },

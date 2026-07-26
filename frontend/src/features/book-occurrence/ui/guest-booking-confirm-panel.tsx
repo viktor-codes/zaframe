@@ -4,8 +4,10 @@ import { useState } from "react";
 import {
   bookingNeedsCheckoutPayment,
   canCustomerCancelBooking,
+  getStudioRebookHref,
   isBookingPaymentSucceeded,
   isConfirmedBooking,
+  isSessionCancelledByStudio,
 } from "@entities/booking";
 import { BookingStatus } from "@shared/lib";
 
@@ -28,6 +30,7 @@ export function GuestBookingConfirmPanel({
   accessTokenFromQuery,
 }: GuestBookingConfirmPanelProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [now] = useState(() => new Date());
   const {
     bookingId,
     booking,
@@ -60,12 +63,25 @@ export function GuestBookingConfirmPanel({
 
   const isCancelled = booking.status === BookingStatus.CANCELLED;
   const isExpired = booking.status === BookingStatus.EXPIRED;
-  if (isCancelled || isExpired) {
+  const isStudioCancelled =
+    occurrence != null && isSessionCancelledByStudio(occurrence);
+  if (isCancelled || isExpired || isStudioCancelled) {
+    const inactiveKind = isExpired
+      ? "expired"
+      : isStudioCancelled
+        ? "studio_cancelled"
+        : "cancelled";
     return (
       <GuestConfirmInactive
-        kind={isExpired ? "expired" : "cancelled"}
+        kind={inactiveKind}
         backHref={backHref}
         backLabel={backLabel}
+        rebookHref={
+          studio != null ? getStudioRebookHref(studio) : "/studios"
+        }
+        studioCancelReason={
+          occurrence?.cancellation_reason?.trim() || null
+        }
       />
     );
   }
@@ -76,7 +92,7 @@ export function GuestBookingConfirmPanel({
     occurrence != null && bookingNeedsCheckoutPayment(booking, occurrence);
   const canPay = needsPayment && !holdClock.isExpired;
   const isPast = occurrence
-    ? new Date(occurrence.start_time).getTime() < Date.now()
+    ? new Date(occurrence.start_time).getTime() < now.getTime()
     : false;
   const cancelledAt =
     "cancelled_at" in booking ? (booking.cancelled_at ?? null) : null;

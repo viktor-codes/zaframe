@@ -33,16 +33,35 @@ export function GuestConfirmInactive({
   kind,
   backHref,
   backLabel,
+  rebookHref = "/studios",
+  studioCancelReason = null,
 }: {
-  kind: "cancelled" | "expired";
+  kind: "cancelled" | "expired" | "studio_cancelled";
   backHref: string;
   backLabel: string;
+  rebookHref?: string;
+  studioCancelReason?: string | null;
 }) {
-  const isExpired = kind === "expired";
+  const title =
+    kind === "expired"
+      ? "Payment window expired"
+      : kind === "studio_cancelled"
+        ? "Session cancelled by the studio"
+        : "Booking cancelled";
+  const description =
+    kind === "expired"
+      ? "This hold timed out before payment. Book another slot to try again."
+      : kind === "studio_cancelled"
+        ? studioCancelReason?.trim() ||
+          "The studio cancelled this session. Book another time if you still want a seat."
+        : "This booking is no longer active.";
+  const ctaLabel = kind === "expired" ? "Book again" : "Browse studios";
+
   return (
     <div
       className="mx-auto max-w-2xl px-6 py-12"
       data-testid="guest-confirm-inactive"
+      data-inactive-kind={kind}
     >
       <Link
         href={backHref}
@@ -51,17 +70,11 @@ export function GuestConfirmInactive({
         {backLabel}
       </Link>
       <Card className="p-8 text-center">
-        <p className="font-semibold text-neutral-700">
-          {isExpired ? "Payment window expired" : "Booking cancelled"}
-        </p>
-        <p className="mt-1 text-sm text-neutral-600">
-          {isExpired
-            ? "This hold timed out before payment. Book another slot to try again."
-            : "This booking is no longer active."}
-        </p>
+        <p className="font-semibold text-neutral-700">{title}</p>
+        <p className="mt-1 text-sm text-neutral-600">{description}</p>
         <div className="mt-4">
           <Button asChild>
-            <Link href="/studios">Browse studios</Link>
+            <Link href={rebookHref}>{ctaLabel}</Link>
           </Button>
         </div>
       </Card>

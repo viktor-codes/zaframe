@@ -3,6 +3,7 @@ import {
   BookingStatus,
 } from "@shared/lib/constants";
 import { isBookingReservationExpired, isPendingBooking } from "./booking";
+import { isSessionCancelledByStudio } from "./booking-account-edge";
 
 export type BookingStatusTone =
   | "neutral"
@@ -20,6 +21,7 @@ type BookingStatusInput = {
   status: string;
   payment_status?: string | null;
   reserved_until?: string | null;
+  occurrenceStatus?: string | null;
 };
 
 /**
@@ -30,6 +32,13 @@ export function getBookingStatusPresentation(
   booking: BookingStatusInput,
   now: Date = new Date(),
 ): BookingStatusPresentation {
+  if (
+    booking.occurrenceStatus != null &&
+    isSessionCancelledByStudio({ status: booking.occurrenceStatus })
+  ) {
+    return { label: "Cancelled by studio", tone: "red" };
+  }
+
   if (booking.status === BookingStatus.CANCELLED) {
     return { label: "Cancelled", tone: "neutral" };
   }

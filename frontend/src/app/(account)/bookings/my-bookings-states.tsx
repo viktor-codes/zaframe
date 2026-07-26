@@ -65,7 +65,7 @@ export function BookingsTabEmptyState({
   return (
     <EmptyState
       title="No cancelled bookings"
-      description="Cancellations — yours or the studio's — will show up here."
+      description="Cancellations — yours or the studio's — and expired holds will show up here."
       testId="bookings-empty-cancelled"
     />
   );

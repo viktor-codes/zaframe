@@ -1,3 +1,4 @@
+import { BookingStatus } from "@shared/lib/constants";
 import { isCancelledBooking } from "./booking";
 
 export type BookingListBucket = "upcoming" | "past" | "cancelled";
@@ -16,7 +17,11 @@ export function getBookingListBucket(
   booking: BookingBucketInput,
   now: Date = new Date(),
 ): BookingListBucket {
-  if (isCancelledBooking(booking)) {
+  // Expired holds belong with inactive bookings (rebook CTA on the card).
+  if (
+    isCancelledBooking(booking) ||
+    booking.status === BookingStatus.EXPIRED
+  ) {
     return "cancelled";
   }
 

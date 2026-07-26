@@ -1,6 +1,9 @@
 "use client";
 
-import type { BookingSelfListItem } from "@entities/booking";
+import {
+  getBookingAccountEdge,
+  type BookingSelfListItem,
+} from "@entities/booking";
 import { CancelBookingControls } from "@features/cancel-booking";
 
 export function BookingCancelAction({
@@ -10,6 +13,11 @@ export function BookingCancelAction({
   booking: BookingSelfListItem;
   now: Date;
 }) {
+  // WHY: expired holds already show a rebook CTA on the card.
+  if (getBookingAccountEdge(booking, now)?.kind === "expired") {
+    return null;
+  }
+
   return (
     <CancelBookingControls
       bookingId={booking.id}
