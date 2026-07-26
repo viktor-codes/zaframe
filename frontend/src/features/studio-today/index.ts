@@ -4,3 +4,7 @@ export {
   buildTodayParams,
   formatTodayHeading,
 } from "./model/today-range";
+export {
+  StudioTodayPanel,
+  type StudioTodayPanelProps,
+} from "./ui";
