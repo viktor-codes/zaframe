@@ -1,4 +1,5 @@
 import type { StudioOccurrencesParams } from "@entities/occurrence";
+import { OccurrenceStatus } from "@shared/lib";
 
 /**
  * First-page size for Today. Remaining pages auto-fetch via infinite query
@@ -23,7 +24,7 @@ export function buildTodayParams(
   return {
     start_from: start.toISOString(),
     start_to: end.toISOString(),
-    status: "scheduled",
+    status: OccurrenceStatus.SCHEDULED,
     size: TODAY_PAGE_SIZE,
   };
 }

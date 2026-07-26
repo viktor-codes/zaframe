@@ -4,13 +4,12 @@ import Link from "next/link";
 
 import {
   CapacityIndicator,
+  formatOccurrenceTimeRange,
   getOccurrenceInstructorName,
   type OccurrenceResponse,
 } from "@entities/occurrence";
 import { PermissionGate } from "@entities/user";
 import { StudioPermission } from "@shared/lib";
-
-import { formatSessionTimeRange } from "../model/format-session-time";
 
 export interface TodaySessionCardProps {
   studioId: number;
@@ -36,7 +35,7 @@ export function TodaySessionCard({
             {occurrence.title}
           </h3>
           <p className="text-sm text-neutral-600">
-            {formatSessionTimeRange(
+            {formatOccurrenceTimeRange(
               occurrence.start_time,
               occurrence.end_time,
             )}

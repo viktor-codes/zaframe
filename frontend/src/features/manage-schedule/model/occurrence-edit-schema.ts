@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { OccurrenceUpdate } from "@entities/occurrence";
+import { OccurrenceStatus } from "@shared/lib";
 
 import { fromDatetimeLocalValue } from "./datetime-local";
 
@@ -120,7 +121,7 @@ export function parseOccurrenceCancel(
   }
   return {
     data: {
-      status: "cancelled",
+      status: OccurrenceStatus.CANCELLED,
       cancellation_reason: result.data.cancellation_reason,
     },
     errors: {},

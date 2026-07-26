@@ -1,5 +1,8 @@
-/** Local time range for a Today session card (browser local). */
-export function formatSessionTimeRange(
+/**
+ * Local wall-clock time range for occurrence cards (browser timezone).
+ * Shared by Today and Calendar — keep one formatter to avoid en-IE drift.
+ */
+export function formatOccurrenceTimeRange(
   startIso: string,
   endIso: string,
   locale = "en-IE",

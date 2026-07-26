@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { OccurrenceStatus } from "@shared/lib";
+
 import {
   parseOccurrenceCancel,
   parseOccurrenceEdit,
@@ -51,7 +53,7 @@ describe("parseOccurrenceCancel", () => {
 
     expect(errors).toEqual({});
     expect(data).toEqual({
-      status: "cancelled",
+      status: OccurrenceStatus.CANCELLED,
       cancellation_reason: "Instructor sick",
     });
   });

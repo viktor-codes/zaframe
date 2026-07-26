@@ -3,13 +3,14 @@
 import { useState } from "react";
 
 import {
+  formatOccurrenceTimeRange,
   isOccurrenceCancelled,
   isOccurrenceScheduled,
+  OCCURRENCE_STATUS,
   type OccurrenceResponse,
 } from "@entities/occurrence";
 import { Button, Chip } from "@shared/ui";
 
-import { formatOccurrenceTimeRange } from "../model/datetime-local";
 import { CancelOccurrenceForm } from "./cancel-occurrence-form";
 import { EditOccurrenceForm } from "./edit-occurrence-form";
 
@@ -23,8 +24,8 @@ type PanelMode = "idle" | "edit" | "cancel";
 function statusTone(
   status: OccurrenceResponse["status"],
 ): "neutral" | "success" | "warning" {
-  if (status === "scheduled") return "success";
-  if (status === "cancelled") return "warning";
+  if (status === OCCURRENCE_STATUS.SCHEDULED) return "success";
+  if (status === OCCURRENCE_STATUS.CANCELLED) return "warning";
   return "neutral";
 }
 

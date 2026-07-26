@@ -1,11 +1,12 @@
 import type { StudioOccurrencesParams } from "@entities/occurrence";
+import { OccurrenceStatus } from "@shared/lib";
 
 /** Default window: local today → +8 weeks (matches generate default horizon). */
 export const CALENDAR_DEFAULT_WEEKS = 8;
 /** Page size for calendar infinite list (envelope `total` drives Load more). */
 export const CALENDAR_PAGE_SIZE = 20;
 
-export type CalendarStatusFilter = "all" | "scheduled" | "cancelled" | "completed";
+export type CalendarStatusFilter = "all" | OccurrenceStatus;
 
 export function buildCalendarParams(
   statusFilter: CalendarStatusFilter,

@@ -6,11 +6,13 @@ import { StudioCalendarPanel } from "@features/manage-schedule";
 import { RequireStudioPermission } from "@shared/auth";
 import { StudioPermission } from "@shared/lib";
 
+import { parsePositiveRouteId } from "@/app/(dashboard)/parse-route-id";
+
 export default function StudioCalendarPage() {
   const params = useParams();
-  const studioId = Number(params.id);
+  const studioId = parsePositiveRouteId(params.id);
 
-  if (!Number.isFinite(studioId) || studioId <= 0) {
+  if (studioId == null) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-12 text-red-800">
         Invalid studio

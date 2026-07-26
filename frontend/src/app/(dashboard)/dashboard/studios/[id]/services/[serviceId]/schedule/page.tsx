@@ -6,17 +6,14 @@ import { ScheduleTemplatesPanel } from "@features/manage-schedule";
 import { RequireStudioPermission } from "@shared/auth";
 import { StudioPermission } from "@shared/lib";
 
+import { parsePositiveRouteId } from "@/app/(dashboard)/parse-route-id";
+
 export default function ServiceSchedulePage() {
   const params = useParams();
-  const studioId = Number(params.id);
-  const serviceId = Number(params.serviceId);
+  const studioId = parsePositiveRouteId(params.id);
+  const serviceId = parsePositiveRouteId(params.serviceId);
 
-  if (
-    !Number.isFinite(studioId) ||
-    studioId <= 0 ||
-    !Number.isFinite(serviceId) ||
-    serviceId <= 0
-  ) {
+  if (studioId == null || serviceId == null) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-12 text-red-800">
         Invalid schedule route

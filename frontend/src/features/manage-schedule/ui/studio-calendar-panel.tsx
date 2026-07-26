@@ -4,7 +4,7 @@ import Link from "next/link";
 
 import { PermissionGate } from "@entities/user";
 import { getUserFacingApiMessage } from "@shared/api";
-import { StudioPermission } from "@shared/lib";
+import { OccurrenceStatus, StudioPermission } from "@shared/lib";
 import {
   Button,
   ResourceEmptyState,
@@ -25,9 +25,9 @@ export interface StudioCalendarPanelProps {
 }
 
 const STATUS_TABS: { id: CalendarStatusFilter; label: string }[] = [
-  { id: "scheduled", label: "Scheduled" },
-  { id: "cancelled", label: "Cancelled" },
-  { id: "completed", label: "Completed" },
+  { id: OccurrenceStatus.SCHEDULED, label: "Scheduled" },
+  { id: OccurrenceStatus.CANCELLED, label: "Cancelled" },
+  { id: OccurrenceStatus.COMPLETED, label: "Completed" },
   { id: "all", label: "All" },
 ];
 
@@ -98,7 +98,7 @@ export function StudioCalendarPanel({ studioId }: StudioCalendarPanelProps) {
       {totalCount === 0 ? (
         <ResourceEmptyState
           title={
-            statusFilter === "scheduled"
+            statusFilter === OccurrenceStatus.SCHEDULED
               ? "No scheduled sessions"
               : "No sessions in this view"
           }

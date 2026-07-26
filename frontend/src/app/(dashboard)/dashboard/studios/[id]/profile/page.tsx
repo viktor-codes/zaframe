@@ -6,11 +6,13 @@ import { EditStudioPanel } from "@features/manage-studio";
 import { RequireStudioPermission } from "@shared/auth";
 import { StudioPermission } from "@shared/lib";
 
+import { parsePositiveRouteId } from "@/app/(dashboard)/parse-route-id";
+
 export default function StudioProfilePage() {
   const params = useParams();
-  const studioId = Number(params.id);
+  const studioId = parsePositiveRouteId(params.id);
 
-  if (!Number.isFinite(studioId) || studioId <= 0) {
+  if (studioId == null) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-12">
         <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-red-800">

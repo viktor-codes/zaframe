@@ -7,14 +7,17 @@ import {
   useStudioOccurrencesPages,
 } from "@entities/occurrence";
 
+import { OccurrenceStatus } from "@shared/lib";
+
 import {
   buildCalendarParams,
   type CalendarStatusFilter,
 } from "./calendar-range";
 
 export function useStudioCalendar(studioId: number) {
-  const [statusFilter, setStatusFilter] =
-    useState<CalendarStatusFilter>("scheduled");
+  const [statusFilter, setStatusFilter] = useState<CalendarStatusFilter>(
+    OccurrenceStatus.SCHEDULED,
+  );
 
   const params = useMemo(
     () => buildCalendarParams(statusFilter),
