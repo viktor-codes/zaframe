@@ -1,4 +1,4 @@
-import { MyBookingsPanel } from "./my-bookings-panel";
+import { AccountBookingsPanel } from "./account-bookings-panel";
 
 export default function BookingsPage() {
   return (
@@ -9,7 +9,7 @@ export default function BookingsPage() {
       <p className="mb-8 text-neutral-600">
         Upcoming sessions, past visits, and cancellations — in one place.
       </p>
-      <MyBookingsPanel />
+      <AccountBookingsPanel />
     </div>
   );
 }
