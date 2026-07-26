@@ -8,7 +8,6 @@ import type {
   BookingCreatedResponse,
   BookingDetailResponse,
   BookingOwnerResponse,
-  BookingSelfListItem,
   PaginatedBookingOwnerList,
   PaginatedBookingSelfList,
 } from "@entities/booking";
@@ -20,6 +19,13 @@ export interface BookingsListParams {
   user_id?: number;
   guest_email?: string;
   status?: string;
+}
+
+/** Query params for GET /bookings/my (page is supplied by infinite-query pageParam). */
+export interface MyBookingsParams {
+  page?: number;
+  size?: number;
+  include_guest_email?: boolean;
 }
 
 export interface BookingAccessOptions {
@@ -71,22 +77,24 @@ export async function fetchBookings(
   return response.items;
 }
 
-export async function fetchMyBookings(params?: {
-  page?: number;
-  size?: number;
-  include_guest_email?: boolean;
-}): Promise<BookingSelfListItem[]> {
+/**
+ * List current-user bookings (paginated envelope).
+ * WHY: callers need `total` / `page` / `size` for account infinite scroll.
+ */
+export async function fetchMyBookings(
+  params: MyBookingsParams = {},
+): Promise<PaginatedBookingSelfList> {
   const searchParams: Record<string, string | number | boolean | undefined> = {
-    page: params?.page ?? DEFAULT_PAGE,
-    size: params?.size ?? DEFAULT_SIZE,
+    page: params.page ?? DEFAULT_PAGE,
+    size: params.size ?? DEFAULT_SIZE,
   };
-  if (params?.include_guest_email !== undefined)
+  if (params.include_guest_email !== undefined) {
     searchParams.include_guest_email = params.include_guest_email;
+  }
 
-  const response = await api.get<PaginatedBookingSelfList>("api/v1/bookings/my", {
+  return api.get<PaginatedBookingSelfList>("api/v1/bookings/my", {
     params: searchParams,
   });
-  return response.items;
 }
 
 export async function fetchBooking(

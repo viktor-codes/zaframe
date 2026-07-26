@@ -30,6 +30,7 @@ export {
   fetchMyBookings,
   type BookingAccessOptions,
   type BookingsListParams,
+  type MyBookingsParams,
 } from "./bookings";
 export {
   createOccurrence,

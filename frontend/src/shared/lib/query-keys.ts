@@ -10,12 +10,13 @@
  * fetch function — otherwise cache hits can serve the wrong payload.
  */
 
+import type { MyBookingsParams } from "../api/bookings";
 import type {
   StudioOccurrencesParams,
   StudiosListParams,
 } from "../api/studios";
 
-export type { StudioOccurrencesParams, StudiosListParams };
+export type { MyBookingsParams, StudioOccurrencesParams, StudiosListParams };
 
 export const queryKeys = {
   auth: {
@@ -45,7 +46,12 @@ export const queryKeys = {
 
   bookings: {
     all: ["bookings"] as const,
-    my: () => ["bookings", "my"] as const,
+    /**
+     * @param params - Exact list filters passed to `fetchMyBookings` (no `page`;
+     *   infinite query supplies page via pageParam).
+     */
+    my: (params: Omit<MyBookingsParams, "page"> = {}) =>
+      ["bookings", "my", params] as const,
   },
 
   booking: {

@@ -38,4 +38,9 @@ describe("queryKeys", () => {
     expect(queryKeys.studios.all).toEqual(["studios"]);
     expect(queryKeys.bookings.my()[0]).toBe("bookings");
   });
+
+  it("includes my-bookings list filters in the key", () => {
+    const params = { size: 20, include_guest_email: true };
+    expect(queryKeys.bookings.my(params)).toEqual(["bookings", "my", params]);
+  });
 });
