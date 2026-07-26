@@ -107,7 +107,9 @@ Full mode switch → P1/polish when real cross-over demand appears.
 - [x] `/dashboard`: my studios list + onboarding funnel state (what's the next step)
 - [x] `features/manage-studio`: create/edit profile, slug, timezone, cancel policy
 - [x] `features/manage-services`: CRUD + VisibilityBadge (draft/published/archived tabs)
-- [ ] `features/manage-schedule`: **two separate sections** — Templates (+ generate + warning) and Calendar (list by date, edit/cancel with reason)
+- [x] `features/manage-schedule` — **two separate sections**
+  - [x] Templates (+ generate + warning) — `/dashboard/studios/{id}/services/{sid}/schedule`
+  - [x] Calendar (list by date, edit/cancel with reason) — `/dashboard/studios/{id}/calendar`
 - [ ] Studio "Today" screen: sessions, booked/capacity/pending counters, quick actions
 - [ ] `/dashboard/studios/{id}/bookings` with filters
 - [ ] Permission-driven navigation (instructor sees reduced menu)
