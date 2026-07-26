@@ -1,6 +1,7 @@
 /**
- * Guest checkout token from POST /bookings (one-time, not returned on GET).
+ * Guest checkout token from POST /bookings (not returned on later GETs).
  * Stored in sessionStorage for the confirm page and Stripe checkout.
+ * May also arrive once via `?access_token=` on `/bookings/{id}/confirm`.
  */
 
 const TOKEN_PREFIX = "zeeframe_booking_access_token_";
@@ -13,6 +14,7 @@ export interface GuestBookingSnapshot {
   guest_email: string | null;
   status: string;
   payment_status: string | null;
+  reserved_until?: string | null;
 }
 
 export function storeGuestBookingAccess(
@@ -26,6 +28,17 @@ export function storeGuestBookingAccess(
     `${SNAPSHOT_PREFIX}${bookingId}`,
     JSON.stringify(snapshot),
   );
+}
+
+/** Persist token from email / deep-link query without overwriting an existing snapshot. */
+export function persistGuestBookingAccessToken(
+  bookingId: number,
+  accessToken: string,
+): void {
+  if (typeof window === "undefined") return;
+  const trimmed = accessToken.trim();
+  if (!trimmed) return;
+  sessionStorage.setItem(`${TOKEN_PREFIX}${bookingId}`, trimmed);
 }
 
 export function getGuestBookingAccessToken(bookingId: number): string | null {
@@ -44,4 +57,17 @@ export function getGuestBookingSnapshot(
   } catch {
     return null;
   }
+}
+
+export function updateGuestBookingSnapshot(
+  bookingId: number,
+  patch: Partial<GuestBookingSnapshot>,
+): void {
+  if (typeof window === "undefined") return;
+  const current = getGuestBookingSnapshot(bookingId);
+  if (!current) return;
+  sessionStorage.setItem(
+    `${SNAPSHOT_PREFIX}${bookingId}`,
+    JSON.stringify({ ...current, ...patch, id: bookingId }),
+  );
 }

@@ -5,7 +5,9 @@ export { useUIStore, type HeaderVariant } from "./ui-store";
 export {
   getGuestBookingAccessToken,
   getGuestBookingSnapshot,
+  persistGuestBookingAccessToken,
   storeGuestBookingAccess,
+  updateGuestBookingSnapshot,
   type GuestBookingSnapshot,
 } from "./booking-guest-token";
 export * from "./constants";

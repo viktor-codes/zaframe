@@ -1,10 +1,18 @@
 import type { BookingLike } from "./types";
-import { BookingStatus } from "@shared/lib/constants";
+import {
+  BookingPaymentStatus,
+  BookingStatus,
+} from "@shared/lib/constants";
 
 type BookingState = Pick<
   BookingLike,
   "status" | "reserved_until" | "is_guest_booking" | "cancelled_at"
 >;
+
+type BookingPaymentState = {
+  status: string;
+  payment_status?: string | null;
+};
 
 export function isPendingBooking(booking: Pick<BookingState, "status">): boolean {
   return booking.status === BookingStatus.PENDING;
@@ -14,6 +22,27 @@ export function isConfirmedBooking(
   booking: Pick<BookingState, "status">,
 ): boolean {
   return booking.status === BookingStatus.CONFIRMED;
+}
+
+/** True when webhook (or free confirm) marked payment complete on the booking. */
+export function isBookingPaymentSucceeded(
+  booking: Pick<BookingPaymentState, "payment_status">,
+): boolean {
+  return booking.payment_status === BookingPaymentStatus.SUCCEEDED;
+}
+
+/**
+ * Pending unpaid hold that still needs Stripe Checkout.
+ * Free sessions (`price_cents === 0`) never need checkout.
+ */
+export function bookingNeedsCheckoutPayment(
+  booking: BookingPaymentState,
+  occurrence: { price_cents: number },
+): boolean {
+  if (occurrence.price_cents <= 0) return false;
+  if (isConfirmedBooking(booking)) return false;
+  if (isBookingPaymentSucceeded(booking)) return false;
+  return isPendingBooking(booking);
 }
 
 export function isCancelledBooking(

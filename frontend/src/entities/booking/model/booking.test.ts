@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  bookingNeedsCheckoutPayment,
   canCustomerCancelBooking,
   getBookingReservationRemainingMs,
+  isBookingPaymentSucceeded,
   isPendingBooking,
 } from "./booking";
 
@@ -9,6 +11,34 @@ describe("booking model", () => {
   it("detects pending bookings", () => {
     expect(isPendingBooking({ status: "pending" })).toBe(true);
     expect(isPendingBooking({ status: "confirmed" })).toBe(false);
+  });
+
+  it("treats payment_status succeeded as paid (not order paid)", () => {
+    expect(
+      isBookingPaymentSucceeded({ payment_status: "succeeded" }),
+    ).toBe(true);
+    expect(isBookingPaymentSucceeded({ payment_status: "paid" })).toBe(false);
+  });
+
+  it("requires checkout only for pending paid sessions", () => {
+    expect(
+      bookingNeedsCheckoutPayment(
+        { status: "pending", payment_status: "pending" },
+        { price_cents: 2500 },
+      ),
+    ).toBe(true);
+    expect(
+      bookingNeedsCheckoutPayment(
+        { status: "confirmed", payment_status: "succeeded" },
+        { price_cents: 2500 },
+      ),
+    ).toBe(false);
+    expect(
+      bookingNeedsCheckoutPayment(
+        { status: "pending", payment_status: null },
+        { price_cents: 0 },
+      ),
+    ).toBe(false);
   });
 
   it("returns remaining reservation time for pending bookings", () => {

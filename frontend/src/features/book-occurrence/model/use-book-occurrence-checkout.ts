@@ -42,6 +42,7 @@ export function useBookOccurrenceCheckout() {
         guest_email: booking.guest_email ?? null,
         status: booking.status,
         payment_status: booking.payment_status ?? null,
+        reserved_until: booking.reserved_until ?? null,
       });
 
       const origin = window.location.origin;

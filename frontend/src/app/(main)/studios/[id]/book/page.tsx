@@ -72,6 +72,7 @@ function BookPageContent() {
         guest_email: booking.guest_email ?? null,
         status: booking.status,
         payment_status: booking.payment_status ?? null,
+        reserved_until: booking.reserved_until ?? null,
       });
       window.location.href = `/bookings/${booking.id}/confirm`;
     },
