@@ -11,6 +11,7 @@ import {
 import { fetchMyBookings, getUserFacingApiMessage } from "@shared/api";
 import { queryKeys } from "@shared/lib";
 import { Button, Tabs } from "@shared/ui";
+import { BookingCancelAction } from "./booking-cancel-action";
 import {
   BookingsAllEmptyState,
   BookingsErrorState,
@@ -62,16 +63,15 @@ export function MyBookingsPanel() {
 
   const totalCount = data?.pages[0]?.total ?? 0;
 
-  const tabBookings = useMemo(() => {
-    return allBookings
-      .filter((booking) => getBookingListBucket(booking, now) === activeTab)
-      .sort((left, right) =>
-        compareBookingsForBucket(activeTab, left, right),
-      );
-  }, [activeTab, allBookings, now]);
+  const tabBookings = useMemo(
+    () =>
+      allBookings
+        .filter((booking) => getBookingListBucket(booking, now) === activeTab)
+        .sort((a, b) => compareBookingsForBucket(activeTab, a, b)),
+    [activeTab, allBookings, now],
+  );
 
-  // WHY: API has no tab filters — keep loading pages until the active tab
-  // has rows or the envelope is exhausted (avoids false empty Cancelled).
+  // WHY: API has no tab filters — load until tab has rows or envelope ends.
   useEffect(() => {
     if (isLoading || isFetchingNextPage || !hasNextPage) return;
     if (tabBookings.length === 0 && allBookings.length < totalCount) {
@@ -122,6 +122,11 @@ export function MyBookingsPanel() {
               booking={booking}
               href={`/bookings/${booking.id}/confirm`}
               now={now}
+              actions={
+                activeTab === "upcoming" ? (
+                  <BookingCancelAction booking={booking} now={now} />
+                ) : null
+              }
             />
           ))}
         </div>
