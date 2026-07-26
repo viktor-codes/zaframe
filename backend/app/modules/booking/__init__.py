@@ -9,6 +9,7 @@ from app.modules.booking.schemas import (
     BookingOwnerResponse,
     BookingSelfListItem,
     BookingSelfResponse,
+    BookingWithOccurrence,
 )
 
 __all__ = [
@@ -18,6 +19,7 @@ __all__ = [
     "BookingRepository",
     "BookingSelfListItem",
     "BookingSelfResponse",
+    "BookingWithOccurrence",
     "DUPLICATE_BOOKING_MESSAGE",
     "attach_guest_bookings",
     "attach_guest_resources",

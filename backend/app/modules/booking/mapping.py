@@ -10,7 +10,9 @@ from app.modules.booking.schemas import (
     BookingCreatedResponse,
     BookingOwnerResponse,
     BookingSelfResponse,
+    BookingWithOccurrence,
 )
+from app.modules.catalog.occurrence import OccurrenceResponse
 
 
 def map_booking_for_user(
@@ -24,6 +26,14 @@ def map_booking_for_user(
     if is_own_booking(booking, user):
         return BookingSelfResponse.model_validate(booking)
     return BookingOwnerResponse.model_validate(booking)
+
+
+def map_owner_booking_with_occurrence(booking: Booking) -> BookingWithOccurrence:
+    """Map studio-staff booking list item with nested occurrence (no N+1)."""
+    return BookingWithOccurrence(
+        **BookingOwnerResponse.model_validate(booking).model_dump(),
+        occurrence=OccurrenceResponse.model_validate(booking.occurrence),
+    )
 
 
 def map_booking_created_response(booking: Booking) -> BookingCreatedResponse:

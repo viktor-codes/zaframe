@@ -143,7 +143,7 @@ sign-in, guest bookings merge by email (`include_guest_email=true` on `/bookings
 | `GET /studios/{id}/occurrences` | member | filters: date range, status; includes `confirmed_count` / `pending_count` |
 | `POST /occurrences` / `PATCH /occurrences/{id}` / `DELETE /occurrences/{id}` | `manage_schedule` | calendar mode |
 | `GET /occurrences/mine` | instructor | "my sessions" |
-| `GET /bookings` (+ `/count`) | `view_bookings` | studio bookings, filter by occurrence/status |
+| `GET /bookings` | `view_bookings` | filter: `studio_id` (recommended), occurrence, status; nested `occurrence` |
 | `PATCH /bookings/{id}/check-in` | `check_in_booking` | |
 | `PATCH /bookings/{id}/mark-no-show` | `check_in_booking` | |
 | `GET /orders` | owner | studio orders |

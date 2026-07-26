@@ -53,6 +53,7 @@ async def get_owner_bookings(
     *,
     skip: int = 0,
     limit: int = 20,
+    studio_id: int | None = None,
     occurrence_id: int | None = None,
     status: str | None = None,
 ) -> list[Booking]:
@@ -61,6 +62,7 @@ async def get_owner_bookings(
         user_id=user.id,
         skip=skip,
         limit=limit,
+        studio_id=studio_id,
         occurrence_id=occurrence_id,
         status=status,
     )
@@ -70,12 +72,14 @@ async def get_owner_bookings_count(
     uow: UnitOfWork,
     user: User,
     *,
+    studio_id: int | None = None,
     occurrence_id: int | None = None,
     status: str | None = None,
 ) -> int:
     """Count bookings for studios visible to this studio member."""
     return await uow.bookings.count_for_studio_member(
         user_id=user.id,
+        studio_id=studio_id,
         occurrence_id=occurrence_id,
         status=status,
     )

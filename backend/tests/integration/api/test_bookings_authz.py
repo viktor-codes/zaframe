@@ -202,6 +202,51 @@ async def test_owner_list_excludes_foreign_studio_bookings(client: AsyncClient):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+async def test_owner_list_supports_studio_filter_and_nested_occurrence(
+    client: AsyncClient,
+):
+    """Dashboard bookings list scopes by studio_id and embeds occurrence."""
+    owner_access, _ = await _authenticate_user(client, "owner-authz-filter@example.com")
+    owner_headers = {"Authorization": f"Bearer {owner_access}"}
+    studio_a, occurrence_a, booking_a = await _create_studio_slot_and_booking(
+        client,
+        owner_headers,
+        guest_email="filter-guest-a@example.com",
+    )
+    studio_b, _, booking_b = await _create_studio_slot_and_booking(
+        client,
+        owner_headers,
+        guest_email="filter-guest-b@example.com",
+    )
+
+    r_filtered = await client.get(
+        "/api/v1/bookings",
+        params={"studio_id": studio_a},
+        headers=owner_headers,
+    )
+    assert r_filtered.status_code == 200
+    body = r_filtered.json()
+    ids = [item["id"] for item in body["items"]]
+    assert booking_a in ids
+    assert booking_b not in ids
+    match = next(item for item in body["items"] if item["id"] == booking_a)
+    assert match["occurrence"]["id"] == occurrence_a
+    assert match["occurrence"]["title"] == "Authz Class"
+
+    stranger_access, _ = await _authenticate_user(
+        client, "stranger-authz-filter@example.com"
+    )
+    stranger_headers = {"Authorization": f"Bearer {stranger_access}"}
+    r_forbidden = await client.get(
+        "/api/v1/bookings",
+        params={"studio_id": studio_b},
+        headers=stranger_headers,
+    )
+    assert r_forbidden.status_code == 403
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_guest_booking_visible_in_my_after_otp_login(client: AsyncClient):
     owner_access, _ = await _authenticate_user(client, "owner-authz-my@example.com")
     owner_headers = {"Authorization": f"Bearer {owner_access}"}

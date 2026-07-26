@@ -27,11 +27,13 @@ class BookingListQueriesMixin(BookingGetMixin):
         user_id: int,
         skip: int = 0,
         limit: int = 20,
+        studio_id: int | None = None,
         occurrence_id: int | None = None,
         status: str | None = None,
     ) -> list[Booking]:
         query = (
             select(Booking)
+            .options(selectinload(Booking.occurrence))
             .join(Booking.occurrence)
             .join(Occurrence.studio)
             .outerjoin(
@@ -41,6 +43,8 @@ class BookingListQueriesMixin(BookingGetMixin):
             .where(self._studio_member_clause(user_id=user_id))
             .distinct()
         )
+        if studio_id is not None:
+            query = query.where(Occurrence.studio_id == studio_id)
         if occurrence_id is not None:
             query = query.where(Booking.occurrence_id == occurrence_id)
         if status is not None:
@@ -53,6 +57,7 @@ class BookingListQueriesMixin(BookingGetMixin):
         self,
         *,
         user_id: int,
+        studio_id: int | None = None,
         occurrence_id: int | None = None,
         status: str | None = None,
     ) -> int:
@@ -67,6 +72,8 @@ class BookingListQueriesMixin(BookingGetMixin):
             )
             .where(self._studio_member_clause(user_id=user_id))
         )
+        if studio_id is not None:
+            query = query.where(Occurrence.studio_id == studio_id)
         if occurrence_id is not None:
             query = query.where(Booking.occurrence_id == occurrence_id)
         if status is not None:

@@ -111,7 +111,11 @@ class BookingOwnerResponse(BookingResponseBase):
 
 
 class BookingWithOccurrence(BookingOwnerResponse):
-    """Owner perspective with nested occurrence."""
+    """
+    Owner list item for GET /bookings.
+
+    Nested occurrence avoids N+1 on the studio dashboard bookings screen.
+    """
 
     occurrence: OccurrenceResponse = Field(
         ...,
