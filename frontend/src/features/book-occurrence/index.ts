@@ -1,2 +1,5 @@
-/** Book occurrence wizard — Phase 3. */
-export {};
+/** Guest/single booking wizard: slot → details → summary → Stripe. */
+export {
+  BookOccurrenceWizard,
+  type BookOccurrenceWizardProps,
+} from "./ui";
