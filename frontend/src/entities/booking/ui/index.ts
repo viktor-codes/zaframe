@@ -8,3 +8,7 @@ export {
   type BookingTimelineBooking,
   type BookingTimelineProps,
 } from "./booking-timeline";
+export {
+  StudioBookingCard,
+  type StudioBookingCardProps,
+} from "./studio-booking-card";
