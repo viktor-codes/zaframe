@@ -11,7 +11,7 @@ import {
 import { fetchMyBookings, getUserFacingApiMessage } from "@shared/api";
 import { queryKeys } from "@shared/lib";
 import { Button, Tabs } from "@shared/ui";
-import { BookingCancelAction } from "./booking-cancel-action";
+import { BookingCardActions } from "./booking-card-actions";
 import {
   BookingsAllEmptyState,
   BookingsErrorState,
@@ -119,7 +119,7 @@ export function MyBookingsPanel() {
               now={now}
               actions={
                 activeTab === "upcoming" ? (
-                  <BookingCancelAction booking={booking} now={now} />
+                  <BookingCardActions booking={booking} now={now} />
                 ) : null
               }
             />
