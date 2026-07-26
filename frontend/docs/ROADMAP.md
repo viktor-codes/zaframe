@@ -91,7 +91,7 @@ Public zone first: simplest auth-wise, demoable to studios, closes the money loo
 - [x] `features/manage-account`: profile (PATCH /auth/me)
 - [x] `app/(account)/orders`: course orders list
 - [x] Edge cases: cancelled-by-studio, expired booking
-- [ ] Migrate old `/bookings` pages, set up redirects
+- [x] Migrate old `/bookings` pages, set up redirects
 
 ## Phase 5 — Studio dashboard (P0 stories 3, 4)
 

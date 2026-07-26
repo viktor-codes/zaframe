@@ -108,7 +108,7 @@ Domain components that appear on multiple surfaces live in `entities/`, not in a
 | `src/features/home`, `navigation` | stay as features (landing untouched) |
 | `src/features/studios` | split: cards → `entities/studio`, search → `features/search-studios` |
 | `src/app/(main)/studios/[id]` (public) | `app/(main)/s/[slug]` on public API |
-| `src/app/(main)/bookings/*` (account pages) | `app/(account)/bookings` |
+| `src/app/(main)/bookings/*` (account list) | `app/(account)/account/bookings` (`/account/bookings`; exact `/bookings` redirects) |
 | `src/app/(main)/dashboard/*` | `app/(dashboard)/…` sidebar + sub-routes |
 | `src/store/useUIStore.ts` | keep only if actually used; prefer local state |
 

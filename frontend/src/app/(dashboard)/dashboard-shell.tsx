@@ -24,7 +24,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
           </div>
           <div className="flex items-center gap-4 text-sm">
             <Link
-              href="/bookings"
+              href="/account/bookings"
               className="text-neutral-600 hover:text-neutral-900"
             >
               My bookings

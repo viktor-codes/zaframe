@@ -32,6 +32,19 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  /**
+   * Account list used to live at exact `/bookings`. Guest checkout keeps
+   * `/bookings/success`, `/bookings/cancel`, `/bookings/:id/confirm`.
+   */
+  async redirects() {
+    return [
+      {
+        source: "/bookings",
+        destination: "/account/bookings",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {
@@ -40,6 +53,7 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+
   /**
    * Dev-only: proxy /api/* to FastAPI so the browser stays same-origin with the Next app.
    * Then Set-Cookie from the backend is stored for localhost:3000 (refresh token works).

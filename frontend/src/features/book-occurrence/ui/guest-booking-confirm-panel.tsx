@@ -55,7 +55,7 @@ export function GuestBookingConfirmPanel({
     reservedUntil,
   );
 
-  const backHref = isGuestSession ? "/studios" : "/bookings";
+  const backHref = isGuestSession ? "/studios" : "/account/bookings";
   const backLabel = isGuestSession ? "← Browse studios" : "← My bookings";
 
   if (isNotFound || bookingId == null) return <GuestConfirmNotFound />;
