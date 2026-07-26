@@ -13,6 +13,12 @@ export {
   type GuestBookingSnapshot,
 } from "./booking-guest-token";
 export * from "./constants";
+export {
+  buildStudioDashboardNav,
+  filterStudioDashboardNav,
+  type StudioDashboardNavId,
+  type StudioDashboardNavItem,
+} from "./studio-dashboard-nav";
 export { queryKeys } from "./query-keys";
 export type {
   StudioOccurrencesParams,

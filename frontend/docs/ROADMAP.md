@@ -112,7 +112,7 @@ Full mode switch → P1/polish when real cross-over demand appears.
   - [x] Calendar (list by date, edit/cancel with reason) — `/dashboard/studios/{id}/calendar`
 - [x] Studio "Today" screen: sessions, booked/capacity/pending counters, quick actions
 - [x] `/dashboard/studios/{id}/bookings` with filters
-- [ ] Permission-driven navigation (instructor sees reduced menu)
+- [x] Permission-driven navigation (instructor sees reduced menu)
 
 ## Phase 6 — P1 stories
 

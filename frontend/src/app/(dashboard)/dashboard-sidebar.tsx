@@ -2,26 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useMemo } from "react";
 
 import { StudioSwitcher } from "@entities/studio";
-
-interface StudioNavItem {
-  label: string;
-  href: string;
-  /** Exact match only (Today overview). */
-  isExact?: boolean;
-}
-
-function buildStudioNav(studioId: number): StudioNavItem[] {
-  const base = `/dashboard/studios/${studioId}`;
-  return [
-    { label: "Today", href: base, isExact: true },
-    { label: "Profile", href: `${base}/profile` },
-    { label: "Services", href: `${base}/services` },
-    { label: "Calendar", href: `${base}/calendar` },
-    { label: "Bookings", href: `${base}/bookings` },
-  ];
-}
+import { usePermission } from "@shared/auth";
+import {
+  buildStudioDashboardNav,
+  filterStudioDashboardNav,
+} from "@shared/lib";
 
 export interface DashboardSidebarProps {
   studios: ReadonlyArray<{ id: number; name: string }>;
@@ -37,8 +25,15 @@ export function DashboardSidebar({
   onStudioSelect,
 }: DashboardSidebarProps) {
   const pathname = usePathname();
-  const studioNav =
-    selectedStudioId != null ? buildStudioNav(selectedStudioId) : [];
+  const { can } = usePermission(selectedStudioId);
+
+  const studioNav = useMemo(() => {
+    if (selectedStudioId == null) return [];
+    return filterStudioDashboardNav(
+      buildStudioDashboardNav(selectedStudioId),
+      can,
+    );
+  }, [can, selectedStudioId]);
 
   return (
     <aside
@@ -78,6 +73,7 @@ export function DashboardSidebar({
                 href={item.href}
                 label={item.label}
                 isActive={isActive}
+                testId={`dashboard-nav-${item.id}`}
               />
             );
           })}
@@ -100,12 +96,14 @@ interface SidebarLinkProps {
   href: string;
   label: string;
   isActive: boolean;
+  testId?: string;
 }
 
-function SidebarLink({ href, label, isActive }: SidebarLinkProps) {
+function SidebarLink({ href, label, isActive, testId }: SidebarLinkProps) {
   return (
     <Link
       href={href}
+      data-testid={testId}
       className={`block rounded-lg px-3 py-2 text-sm font-medium ${
         isActive
           ? "bg-teal-50 text-teal-900"

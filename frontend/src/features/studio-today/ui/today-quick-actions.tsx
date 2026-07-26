@@ -1,39 +1,32 @@
+"use client";
+
 import Link from "next/link";
+import { useMemo } from "react";
+
+import { usePermission } from "@shared/auth";
+import {
+  buildStudioDashboardNav,
+  filterStudioDashboardNav,
+} from "@shared/lib";
 
 export interface TodayQuickActionsProps {
   studioId: number;
 }
 
-interface QuickAction {
-  label: string;
-  href: string;
-  testId: string;
-}
-
 export function TodayQuickActions({ studioId }: TodayQuickActionsProps) {
-  const base = `/dashboard/studios/${studioId}`;
-  const actions: QuickAction[] = [
-    {
-      label: "Calendar",
-      href: `${base}/calendar`,
-      testId: "today-action-calendar",
-    },
-    {
-      label: "Services",
-      href: `${base}/services`,
-      testId: "today-action-services",
-    },
-    {
-      label: "Bookings",
-      href: `${base}/bookings`,
-      testId: "today-action-bookings",
-    },
-    {
-      label: "Profile",
-      href: `${base}/profile`,
-      testId: "today-action-profile",
-    },
-  ];
+  const { can } = usePermission(studioId);
+
+  const actions = useMemo(
+    () =>
+      filterStudioDashboardNav(buildStudioDashboardNav(studioId), can).filter(
+        (item) => item.id !== "today",
+      ),
+    [can, studioId],
+  );
+
+  if (actions.length === 0) {
+    return null;
+  }
 
   return (
     <nav aria-label="Quick actions" data-testid="today-quick-actions">
@@ -45,7 +38,7 @@ export function TodayQuickActions({ studioId }: TodayQuickActionsProps) {
           <li key={action.href}>
             <Link
               href={action.href}
-              data-testid={action.testId}
+              data-testid={`today-action-${action.id}`}
               className="inline-flex rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-800 hover:border-neutral-300 hover:bg-neutral-50"
             >
               {action.label}
