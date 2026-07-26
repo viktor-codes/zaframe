@@ -130,12 +130,18 @@ class OccurrenceResponse(OccurrenceBase):
     confirmed_count: int | None = Field(
         None,
         ge=0,
-        description="Confirmed seats when capacity is included (public bookable lists)",
+        description=(
+            "Confirmed seats when capacity is included "
+            "(public bookable lists and studio schedule)"
+        ),
     )
     pending_count: int | None = Field(
         None,
         ge=0,
-        description="Active pending holds when capacity is included (public bookable lists)",
+        description=(
+            "Active pending holds when capacity is included "
+            "(public bookable lists and studio schedule)"
+        ),
     )
 
     model_config = ConfigDict(from_attributes=True)

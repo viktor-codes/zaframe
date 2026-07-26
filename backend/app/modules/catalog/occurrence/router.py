@@ -34,7 +34,10 @@ from app.modules.catalog.occurrence import (
     get_occurrences_count,
     update_occurrence,
 )
-from app.modules.catalog.occurrence.service import get_my_instructor_occurrences_count
+from app.modules.catalog.occurrence.service import (
+    get_my_instructor_occurrences_count,
+    to_occurrence_responses_with_capacity,
+)
 from app.modules.catalog.studio import get_studio_or_raise, require_studio_permission
 
 router = APIRouter(prefix="/occurrences", tags=["occurrences"])
@@ -234,5 +237,5 @@ async def list_studio_occurrences(
         start_to=start_to,
         status=status,
     )
-    items = [OccurrenceResponse.model_validate(occurrence) for occurrence in occurrences]
+    items = await to_occurrence_responses_with_capacity(uow, occurrences)
     return build_paginated_response(items, total=total, page=page, size=size)

@@ -265,3 +265,68 @@ async def test_public_bookable_occurrences_include_capacity(client: AsyncClient)
     assert items[0]["pending_count"] == 1
     assert items[0]["max_capacity"] == 2
 
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_studio_occurrences_include_capacity(client: AsyncClient):
+    """Dashboard schedule list returns seat counts for Today/Calendar UI."""
+    access, _ = await _authenticate_user(client, email="studio-occ-owner@example.com")
+    headers = {"Authorization": f"Bearer {access}"}
+
+    r_studio = await client.post(
+        "/api/v1/studios",
+        json={
+            "name": "Dashboard Capacity Studio",
+            "slug": "dashboard-capacity-studio",
+            "description": "Studio list capacity",
+            "email": "studio-occ@example.com",
+            "timezone": "Europe/Dublin",
+        },
+        headers=headers,
+    )
+    assert r_studio.status_code == 201
+    studio_id = r_studio.json()["id"]
+    service_id = await create_test_service(client, studio_id, headers)
+
+    start = datetime.now(UTC) + timedelta(days=2)
+    end = start + timedelta(hours=1)
+    r_occurrence = await client.post(
+        "/api/v1/occurrences",
+        json={
+            "start_time": start.isoformat(),
+            "end_time": end.isoformat(),
+            "title": "Dashboard Class",
+            "max_capacity": 3,
+            "price_cents": 2000,
+            "studio_id": studio_id,
+            "service_id": service_id,
+        },
+        headers=headers,
+    )
+    assert r_occurrence.status_code == 201
+    occurrence_id = r_occurrence.json()["id"]
+
+    r_booking = await client.post(
+        "/api/v1/bookings",
+        json={
+            "occurrence_id": occurrence_id,
+            "guest_name": "Hold Guest",
+            "guest_email": "studio-hold-guest@example.com",
+        },
+    )
+    assert r_booking.status_code == 201
+
+    studio_list = await client.get(
+        f"/api/v1/studios/{studio_id}/occurrences",
+        headers=headers,
+    )
+    assert studio_list.status_code == 200
+    body = studio_list.json()
+    assert body["total"] == 1
+    assert len(body["items"]) == 1
+    item = body["items"][0]
+    assert item["id"] == occurrence_id
+    assert item["confirmed_count"] == 0
+    assert item["pending_count"] == 1
+    assert item["max_capacity"] == 3
+

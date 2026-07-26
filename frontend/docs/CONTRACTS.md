@@ -140,7 +140,7 @@ sign-in, guest bookings merge by email (`include_guest_email=true` on `/bookings
 | `POST /services` / `PATCH /services/{id}` / `DELETE /services/{id}` | `manage_services` | `visibility` field drives draft/publish/archive |
 | `GET /services/{id}/schedule-templates` + POST/PATCH/DELETE `/services/schedule-templates/{id}` | `manage_schedule` | template edits never touch existing occurrences |
 | `POST /studios/{id}/generate-occurrences` | `manage_schedule` | days + start_time + weeks_count |
-| `GET /studios/{id}/occurrences` | member | filters: date range, status |
+| `GET /studios/{id}/occurrences` | member | filters: date range, status; includes `confirmed_count` / `pending_count` |
 | `POST /occurrences` / `PATCH /occurrences/{id}` / `DELETE /occurrences/{id}` | `manage_schedule` | calendar mode |
 | `GET /occurrences/mine` | instructor | "my sessions" |
 | `GET /bookings` (+ `/count`) | `view_bookings` | studio bookings, filter by occurrence/status |
