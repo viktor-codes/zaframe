@@ -7,6 +7,9 @@ services:
     plan: free
     rootDir: backend
     buildCommand: pip install -r requirements.txt
+    # proxy-headers: trust X-Forwarded-* from Render's edge for ASGI URL scheme/host.
+    # App rate limits only honor XFF when TRUSTED_PROXY_IPS matches the peer
+    # (set after inspecting the Render edge peer; empty = peer IP only).
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips="*"
     envVars:
       - key: ENVIRONMENT
@@ -22,6 +25,9 @@ services:
       # Single free web instance: in-memory SlowAPI is acceptable until Redis is provisioned.
       - key: ALLOW_INMEMORY_RATE_LIMIT
         value: "true"
+      # Comma-separated proxy IPs/CIDRs for SlowAPI client IP (optional).
+      - key: TRUSTED_PROXY_IPS
+        sync: false
       # Required for GET /metrics in production (Authorization: Bearer <token>).
       - key: METRICS_TOKEN
         sync: false

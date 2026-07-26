@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   fetchBooking,
@@ -19,7 +19,8 @@ import type { BookingDetailResponse } from "@entities/booking";
 
 import {
   parseBookingRouteId,
-  syncGuestAccessTokenFromQuery,
+  readGuestAccessTokenFromLocation,
+  syncGuestAccessTokenFromLocation,
 } from "./sync-guest-access-token";
 import { useGuestBookingActions } from "./use-guest-booking-actions";
 
@@ -35,7 +36,7 @@ export interface UseGuestBookingConfirmResult {
   isLoading: boolean;
   isNotFound: boolean;
   isGuestSession: boolean;
-  /** Guest JWT when present; null for session-authenticated customers. */
+  /** Guest resource token when present; null for session-authenticated customers. */
   accessToken: string | null;
   error: string | null;
   clearError: () => void;
@@ -43,32 +44,41 @@ export interface UseGuestBookingConfirmResult {
   pay: () => void;
 }
 
+function peekUrlAccessToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return readGuestAccessTokenFromLocation(
+    window.location.href,
+    window.location.hash,
+  );
+}
+
 /**
- * Load guest/self booking for `/bookings/{id}/confirm` using session token
- * and optional `?access_token=` deep link.
+ * Load guest/self booking for `/bookings/{id}/confirm` using sessionStorage
+ * and optional deep link (`#access_token=` preferred; `?access_token=` legacy).
  */
 export function useGuestBookingConfirm(
   routeId: unknown,
-  accessTokenFromQuery: string | null,
 ): UseGuestBookingConfirmResult {
   const bookingId = parseBookingRouteId(routeId);
   const actions = useGuestBookingActions(bookingId);
+  const [urlTokenPeek, setUrlTokenPeek] = useState<string | null>(null);
 
   useEffect(() => {
     if (bookingId == null) return;
-    syncGuestAccessTokenFromQuery(
+    const synced = syncGuestAccessTokenFromLocation(
       bookingId,
-      accessTokenFromQuery,
       persistGuestBookingAccessToken,
     );
-  }, [bookingId, accessTokenFromQuery]);
+    setUrlTokenPeek(synced ?? peekUrlAccessToken());
+  }, [bookingId]);
 
   const guestSnapshot =
     bookingId != null ? getGuestBookingSnapshot(bookingId) : null;
-  // WHY: first paint may run before the effect persists `?access_token=` — prefer query.
+  // WHY: first paint may run before the effect persists the deep-link token.
   const accessToken =
     (bookingId != null ? getGuestBookingAccessToken(bookingId) : null) ??
-    accessTokenFromQuery;
+    urlTokenPeek ??
+    peekUrlAccessToken();
   const isGuestSession = accessToken != null;
 
   const {
@@ -78,11 +88,12 @@ export function useGuestBookingConfirm(
   } = useQuery({
     queryKey: queryKeys.booking.detail(bookingId ?? 0),
     queryFn: () => {
+      syncGuestAccessTokenFromLocation(
+        bookingId!,
+        persistGuestBookingAccessToken,
+      );
       const token =
-        getGuestBookingAccessToken(bookingId!) ?? accessTokenFromQuery;
-      if (accessTokenFromQuery) {
-        persistGuestBookingAccessToken(bookingId!, accessTokenFromQuery);
-      }
+        getGuestBookingAccessToken(bookingId!) ?? peekUrlAccessToken();
       return fetchBooking(bookingId!, { accessToken: token });
     },
     enabled: bookingId != null,

@@ -1,5 +1,24 @@
 import type { NextConfig } from "next";
 
+const isDev = process.env.NODE_ENV !== "production";
+
+/** Checkout redirect (not Stripe Elements) — keep connect/frame surface small. */
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  // WHY: Next needs unsafe-inline; unsafe-eval only in dev for HMR/React Refresh.
+  isDev
+    ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+    : "script-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: https://images.unsplash.com",
+  "font-src 'self' data:",
+  "connect-src 'self'",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "form-action 'self' https://checkout.stripe.com https://*.stripe.com",
+].join("; ");
+
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
@@ -11,9 +30,13 @@ const securityHeaders = [
     key: "Permissions-Policy",
     value: "camera=(), microphone=(), geolocation=()",
   },
+  {
+    key: "Content-Security-Policy",
+    value: contentSecurityPolicy,
+  },
 ];
 
-if (process.env.NODE_ENV === "production") {
+if (!isDev) {
   securityHeaders.push({
     key: "Strict-Transport-Security",
     value: "max-age=63072000; includeSubDomains; preload",

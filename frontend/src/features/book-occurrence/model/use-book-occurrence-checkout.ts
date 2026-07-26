@@ -10,7 +10,7 @@ import {
   createIdempotencyKey,
   getUserFacingApiMessage,
 } from "@shared/api";
-import { storeGuestBookingAccess } from "@shared/lib";
+import { getSafeStripeCheckoutUrl, storeGuestBookingAccess } from "@shared/lib";
 
 import {
   getBookingCheckoutErrorMessage,
@@ -80,8 +80,9 @@ export function useBookOccurrenceCheckout() {
           { idempotencyKey: checkoutIdempotencyKeyRef.current },
         );
 
-        if (session.checkout_url) {
-          window.location.href = session.checkout_url;
+        const checkoutUrl = getSafeStripeCheckoutUrl(session.checkout_url);
+        if (checkoutUrl) {
+          window.location.href = checkoutUrl;
           return { kind: "stripe", bookingId: booking.id };
         }
 

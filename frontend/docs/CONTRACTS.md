@@ -118,8 +118,10 @@ Legacy `/count` endpoints and `skip` / `limit` query params are removed.
 | `POST /payments/checkout-session` | Stripe Checkout for single booking; supports `Idempotency-Key` header |
 | `POST /payments/order-checkout-session` | Stripe Checkout for course order; `Idempotency-Key` |
 
-Guest flow: `access_token` from booking/order → `/bookings/{id}/confirm` page; after OTP
-sign-in, guest bookings merge by email (`include_guest_email=true` on `/bookings/my`).
+Guest flow: `access_token` from booking/order is kept in `sessionStorage` after create.
+Deep links use `/bookings/{id}/confirm#access_token=…` (hash is not sent to servers;
+legacy `?access_token=` is still accepted once and stripped). After OTP sign-in, guest
+bookings merge by email (`include_guest_email=true` on `/bookings/my`).
 
 ### Account (customer, auth required)
 

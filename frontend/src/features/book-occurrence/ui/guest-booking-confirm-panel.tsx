@@ -16,7 +16,6 @@ export type { GuestConfirmCancelContext };
 
 export interface GuestBookingConfirmPanelProps {
   routeId: unknown;
-  accessTokenFromQuery: string | null;
   /**
    * App-layer composition slot (e.g. CancelBookingControls).
    * WHY: features must not import other features.
@@ -26,7 +25,6 @@ export interface GuestBookingConfirmPanelProps {
 
 export function GuestBookingConfirmPanel({
   routeId,
-  accessTokenFromQuery,
   renderCancel,
 }: GuestBookingConfirmPanelProps) {
   const now = useNow();
@@ -42,7 +40,7 @@ export function GuestBookingConfirmPanel({
     error,
     isPaying,
     pay,
-  } = useGuestBookingConfirm(routeId, accessTokenFromQuery);
+  } = useGuestBookingConfirm(routeId);
 
   const reservedUntil =
     booking && "reserved_until" in booking

@@ -178,6 +178,13 @@ class Settings(BaseSettings):
             "Unsafe with more than one API instance — prefer REDIS_URL."
         ),
     )
+    TRUSTED_PROXY_IPS: str = Field(
+        default="",
+        description=(
+            "Comma-separated proxy IPs/CIDRs allowed to supply X-Forwarded-For "
+            "for rate-limit keys (e.g. 10.0.0.0/8,127.0.0.1). Empty = never trust XFF."
+        ),
+    )
 
     # === Observability ===
     METRICS_TOKEN: str | None = Field(

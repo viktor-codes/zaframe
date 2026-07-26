@@ -1,7 +1,9 @@
 /**
  * Guest checkout token from POST /bookings (not returned on later GETs).
  * Stored in sessionStorage for the confirm page and Stripe checkout.
- * May also arrive once via `?access_token=` on `/bookings/{id}/confirm`.
+ *
+ * Deep link canon: `/bookings/{id}/confirm#access_token=…` (hash not sent to
+ * servers). Legacy `?access_token=` is still accepted once, then stripped.
  */
 
 import { z } from "zod";
