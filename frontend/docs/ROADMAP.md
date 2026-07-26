@@ -75,7 +75,7 @@ One commit per step, history stays readable:
 Public zone first: simplest auth-wise, demoable to studios, closes the money loop.
 
 - [x] `entities/studio` ui: StudioHeader, StudioGallery; `entities/service`: ServicePolaroidCard
-- [ ] `entities/occurrence`: OccurrenceRow, CapacityIndicator
+- [x] `entities/occurrence`: OccurrenceRow, CapacityIndicator
 - [ ] `app/(main)/s/[slug]` on `GET /studios/slug/{slug}/public` (mobile-first)
 - [ ] `features/book-occurrence`: wizard (slot → guest form or sign-in → summary → Stripe)
 - [ ] Success page with webhook polling ("Payment processing…")
