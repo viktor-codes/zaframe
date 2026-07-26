@@ -9,4 +9,6 @@ RUN pip install uv && uv sync --frozen --no-dev
 # Copy application code
 COPY . .
 
-CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Migrate before serving so the container never starts against a stale schema.
+# Override CMD for one-off jobs; keep the same image for API and workers.
+CMD ["sh", "-c", "uv run alembic upgrade head && uv run uvicorn app.main:app --host 0.0.0.0 --port 8000"]

@@ -1,4 +1,4 @@
-.PHONY: lint test e2e e2e-critical booking-lifecycle
+.PHONY: lint test e2e e2e-critical booking-lifecycle migrate
 
 lint:
 	cd backend && uv run ruff check .
@@ -16,3 +16,6 @@ e2e-critical:
 
 booking-lifecycle:
 	cd backend && uv run python -m scripts.run_booking_lifecycle
+
+migrate:
+	cd backend && uv run alembic upgrade head

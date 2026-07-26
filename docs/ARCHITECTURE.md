@@ -170,6 +170,10 @@ See [TD-11](./tech-debt/td-11-booking-lifecycle-cron.md) (done).
 
 ## Production Readiness Notes
 
+- **Migrations on deploy:** Render web service runs `python -m alembic upgrade head` via
+  `preDeployCommand` in root `render.yaml` (deploy fails if migrate fails). Docker image CMD
+  migrates then starts uvicorn. Heroku-style platforms use `release` in `backend/Procfile`.
+  Cron jobs do not migrate — only the web/release path owns schema upgrades.
 - `DATABASE_URL` has a local-development default only. Every deployed API and cron process must
   override it with the managed production Postgres URL.
 - `REDIS_URL` is required when `ENVIRONMENT=production` (startup fails otherwise). Override only

@@ -7,6 +7,8 @@ services:
     plan: free
     rootDir: backend
     buildCommand: pip install -r requirements.txt
+    # Fail the deploy if schema is behind — do not serve traffic on a stale DB.
+    preDeployCommand: python -m alembic upgrade head
     # proxy-headers: trust X-Forwarded-* from Render's edge for ASGI URL scheme/host.
     # App rate limits only honor XFF when TRUSTED_PROXY_IPS matches the peer
     # (set after inspecting the Render edge peer; empty = peer IP only).
