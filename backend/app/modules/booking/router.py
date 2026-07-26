@@ -200,7 +200,7 @@ async def cancel_booking_endpoint(
     uow: Annotated[UnitOfWork, Depends(get_uow)],
     user: Annotated[User, Depends(get_current_user_required)],
 ) -> BookingSelfResponse | BookingOwnerResponse:
-    """Cancel a booking when owned by the user or allowed by studio permission."""
+    """Cancel own booking, or a studio booking when the user has manage_bookings."""
     booking = await get_booking_for_user_or_raise(uow, booking_id, user)
     cancelled = await cancel_booking(uow, booking, user=user)
     return map_booking_for_user(cancelled, user)

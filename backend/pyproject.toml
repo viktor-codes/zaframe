@@ -19,6 +19,7 @@ dependencies = [
     "structlog>=25.5.0",
     "pyjwt>=2.13.0",
     "prometheus-client>=0.25.0",
+    "redis>=8.0.1",
 ]
 
 [dependency-groups]

@@ -101,7 +101,7 @@ with the managed Postgres URL from the deployment environment.
 | `DATABASE_URL` | Yes | Async PostgreSQL URL. Production must provide a managed database URL; the local `postgres:postgres` default is never acceptable for deployed environments. |
 | `SECRET_KEY` | Yes | JWT signing secret. Generate a strong environment-specific value and never commit it. |
 | `EMAIL_FROM` | Production email | Verified sender identity for transactional OTP email, for example `ZeeFrame <login@your-domain.com>`. |
-| `REDIS_URL` | No | Redis URL for **distributed rate limiting** when running multiple API instances (e.g. `redis://localhost:6379/0`). When unset, slowapi uses in-memory storage — fine for local single-instance dev, but counters are not shared across replicas. Requires `limits[redis]` and `redis` packages (see below). |
+| `REDIS_URL` | No | Redis URL for **distributed rate limiting** when running multiple API instances (e.g. `redis://localhost:6379/0`). When unset, slowapi uses in-memory storage — fine for local single-instance dev, but counters are not shared across replicas. The `redis` package is a declared project dependency. |
 
 ### Rate limiting and Redis
 

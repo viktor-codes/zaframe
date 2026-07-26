@@ -90,6 +90,8 @@ async def cancel_booking(uow: UnitOfWork, booking: Booking, *, user: User | None
     Cancel a booking.
 
     Only pending or confirmed bookings can be cancelled.
+    Caller must own the booking (subject to cancel_before_hours) or hold
+    manage_bookings on the studio. view_bookings alone is not enough.
     """
     if booking.status == BookingStatus.CANCELLED:
         raise ValidationError("Booking is already cancelled")
@@ -97,17 +99,29 @@ async def cancel_booking(uow: UnitOfWork, booking: Booking, *, user: User | None
         raise ValidationError(f"Cannot cancel a {booking.status} booking")
 
     now_utc = utc_now()
-    if user is not None and is_own_booking(booking, user):
-        occurrence_start = ensure_utc(booking.occurrence.start_time)
-        cutoff = occurrence_start - timedelta(hours=booking.occurrence.studio.cancel_before_hours)
-        can_bypass_cutoff = await has_studio_permission(
-            uow,
-            studio=booking.occurrence.studio,
-            user=user,
-            permission="manage_bookings",
-        )
-        if not can_bypass_cutoff and now_utc >= cutoff:
-            raise ForbiddenError("Cancellation cutoff has passed")
+    if user is not None:
+        if is_own_booking(booking, user):
+            occurrence_start = ensure_utc(booking.occurrence.start_time)
+            cutoff = occurrence_start - timedelta(
+                hours=booking.occurrence.studio.cancel_before_hours
+            )
+            can_bypass_cutoff = await has_studio_permission(
+                uow,
+                studio=booking.occurrence.studio,
+                user=user,
+                permission="manage_bookings",
+            )
+            if not can_bypass_cutoff and now_utc >= cutoff:
+                raise ForbiddenError("Cancellation cutoff has passed")
+        else:
+            can_manage = await has_studio_permission(
+                uow,
+                studio=booking.occurrence.studio,
+                user=user,
+                permission="manage_bookings",
+            )
+            if not can_manage:
+                raise ForbiddenError("Access denied for this studio")
 
     booking.status = BookingStatus.CANCELLED
     booking.cancelled_at = now_utc

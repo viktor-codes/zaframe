@@ -261,6 +261,74 @@ async def test_instructor_can_view_bookings_but_cannot_manage_studio_or_schedule
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+async def test_instructor_can_view_booking_but_cannot_cancel(
+    client: AsyncClient,
+    app_with_rollback_uow,
+) -> None:
+    """view_bookings must not imply cancel; manage_bookings is required for staff."""
+    owner_headers, _owner = await _authenticate(
+        client,
+        email="fr02-cancel-owner@example.com",
+        name="Cancel Owner",
+    )
+    instructor_headers, instructor = await _authenticate(
+        client,
+        email="fr02-cancel-instructor@example.com",
+        name="Cancel Instructor",
+    )
+    manager_headers, manager = await _authenticate(
+        client,
+        email="fr02-cancel-manager@example.com",
+        name="Cancel Manager",
+    )
+    studio_id = await _create_studio(client, owner_headers, name="Cancel RBAC Studio")
+    service_id = await _create_service(client, owner_headers, studio_id=studio_id)
+    occurrence_id = await _create_occurrence(
+        client,
+        owner_headers,
+        studio_id=studio_id,
+        service_id=service_id,
+    )
+    booking_id = await _create_booking(
+        client,
+        occurrence_id=occurrence_id,
+        email="cancel-rbac-guest@example.com",
+    )
+    await _add_studio_member(
+        app_with_rollback_uow,
+        studio_id=studio_id,
+        user_id=instructor["id"],
+        role=StudioMemberRole.INSTRUCTOR,
+    )
+    await _add_studio_member(
+        app_with_rollback_uow,
+        studio_id=studio_id,
+        user_id=manager["id"],
+        role=StudioMemberRole.MANAGER,
+    )
+
+    view_response = await client.get(
+        f"/api/v1/bookings/{booking_id}",
+        headers=instructor_headers,
+    )
+    assert view_response.status_code == 200, view_response.text
+
+    instructor_cancel = await client.patch(
+        f"/api/v1/bookings/{booking_id}/cancel",
+        headers=instructor_headers,
+    )
+    assert instructor_cancel.status_code == 403
+
+    manager_cancel = await client.patch(
+        f"/api/v1/bookings/{booking_id}/cancel",
+        headers=manager_headers,
+    )
+    assert manager_cancel.status_code == 200, manager_cancel.text
+    assert manager_cancel.json()["status"] == "cancelled"
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_non_member_cannot_access_studio_dashboard_endpoints(
     client: AsyncClient,
 ) -> None:
