@@ -2,7 +2,7 @@
  * Bookings API.
  */
 
-import { api } from "./client";
+import { api, type RequestConfig } from "./client";
 import type {
   BookingCreate,
   BookingCreatedResponse,
@@ -20,6 +20,26 @@ export interface BookingsListParams {
   user_id?: number;
   guest_email?: string;
   status?: string;
+}
+
+export interface BookingAccessOptions {
+  /**
+   * Guest JWT from POST /bookings (sessionStorage on confirm page).
+   * When set, sent as Bearer and session refresh is skipped.
+   */
+  accessToken?: string | null;
+}
+
+function bookingAuthConfig(options?: BookingAccessOptions): RequestConfig {
+  const accessToken = options?.accessToken;
+  if (accessToken) {
+    return {
+      skipAuth: true,
+      skipRefresh: true,
+      headers: { Authorization: `Bearer ${accessToken}` },
+    };
+  }
+  return {};
 }
 
 export async function fetchBookings(
@@ -67,10 +87,12 @@ export async function fetchMyBookings(params?: {
 
 export async function fetchBooking(
   id: number,
+  options?: BookingAccessOptions,
 ): Promise<BookingDetailResponse> {
-  return api.get<BookingDetailResponse>(`api/v1/bookings/${id}`, {
-    skipAuth: true,
-  });
+  return api.get<BookingDetailResponse>(
+    `api/v1/bookings/${id}`,
+    bookingAuthConfig(options),
+  );
 }
 
 export async function createBooking(
@@ -83,12 +105,11 @@ export async function createBooking(
 
 export async function cancelBooking(
   id: number,
+  options?: BookingAccessOptions,
 ): Promise<BookingDetailResponse> {
   return api.patch<BookingDetailResponse>(
     `api/v1/bookings/${id}/cancel`,
     undefined,
-    {
-      skipAuth: true,
-    },
+    bookingAuthConfig(options),
   );
 }

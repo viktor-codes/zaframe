@@ -3,7 +3,7 @@
  *
  * - Base URL from shared config
  * - Bearer token via setAuthTokenProvider
- * - On 401: refresh token → retry when setRefreshTokensFn is configured
+ * - On 401: single coalesced refresh → retry (unless skipAuth / skipRefresh)
  * - Sends `X-Request-ID` on every request; optional `Idempotency-Key`
  */
 
@@ -33,6 +33,8 @@ export type RefreshTokensFn = () => Promise<{ access_token: string } | null>;
 
 let getAccessToken: AuthTokenProvider | null = null;
 let refreshTokens: RefreshTokensFn | null = null;
+/** In-flight refresh shared by parallel 401s (refresh-token rotation is single-use). */
+let refreshInFlight: Promise<{ access_token: string } | null> | null = null;
 
 export function setAuthTokenProvider(provider: AuthTokenProvider): void {
   getAccessToken = provider;
@@ -45,6 +47,11 @@ export function setRefreshTokensFn(fn: RefreshTokensFn): void {
 export interface RequestConfig extends RequestInit {
   params?: QueryParams;
   skipAuth?: boolean;
+  /**
+   * Do not attempt token refresh on 401.
+   * Required for `/auth/refresh` itself to avoid recursive refresh loops.
+   */
+  skipRefresh?: boolean;
   /** Override auto-generated `X-Request-ID` (e.g. reuse across a 401 retry). */
   requestId?: string;
   /** When set, sent as `Idempotency-Key` (checkout / create booking). */
@@ -100,14 +107,26 @@ function applyClientHeaders(
   }
 }
 
+async function coalesceRefresh(): Promise<{ access_token: string } | null> {
+  if (!refreshTokens) {
+    return null;
+  }
+  if (!refreshInFlight) {
+    refreshInFlight = refreshTokens().finally(() => {
+      refreshInFlight = null;
+    });
+  }
+  return refreshInFlight;
+}
+
 async function request<T>(
   path: string,
   options: RequestConfig = {},
-  retryOn401 = true,
 ): Promise<T> {
   const {
     params,
     skipAuth = false,
+    skipRefresh = false,
     requestId: requestIdOption,
     idempotencyKey,
     ...init
@@ -130,8 +149,14 @@ async function request<T>(
     credentials: "include",
   });
 
-  if (response.status === 401 && retryOn401 && refreshTokens) {
-    const newTokens = await refreshTokens();
+  const canRefresh =
+    response.status === 401 &&
+    !skipAuth &&
+    !skipRefresh &&
+    refreshTokens !== null;
+
+  if (canRefresh) {
+    const newTokens = await coalesceRefresh();
     if (newTokens) {
       headers.set("Authorization", `Bearer ${newTokens.access_token}`);
       // WHY: same request id on retry keeps logs correlatable across refresh.

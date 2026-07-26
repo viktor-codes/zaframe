@@ -28,6 +28,7 @@ export {
   fetchBooking,
   fetchBookings,
   fetchMyBookings,
+  type BookingAccessOptions,
   type BookingsListParams,
 } from "./bookings";
 export {

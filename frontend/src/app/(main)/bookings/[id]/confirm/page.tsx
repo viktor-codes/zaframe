@@ -59,7 +59,10 @@ export default function BookingConfirmPage() {
     isError: errorBooking,
   } = useQuery({
     queryKey: queryKeys.booking.detail(id),
-    queryFn: () => fetchBooking(id),
+    queryFn: () =>
+      fetchBooking(id, {
+        accessToken: getGuestBookingAccessToken(id),
+      }),
     retry: false,
   });
 
@@ -99,7 +102,10 @@ export default function BookingConfirmPage() {
   });
 
   const cancelMutation = useMutation({
-    mutationFn: cancelBooking,
+    mutationFn: (bookingId: number) =>
+      cancelBooking(bookingId, {
+        accessToken: getGuestBookingAccessToken(bookingId),
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.booking.detail(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.bookings.all });
