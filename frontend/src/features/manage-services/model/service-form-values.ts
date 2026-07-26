@@ -1,22 +1,14 @@
-import { SERVICE_TYPE } from "@entities/service";
-
-export const SERVICE_CATEGORIES = [
-  "yoga",
-  "boxing",
-  "dance",
-  "hiit",
-  "pilates",
-  "martial_arts",
-  "strength",
-] as const;
-
-export type ServiceCategoryValue = (typeof SERVICE_CATEGORIES)[number];
+import {
+  SERVICE_CATEGORIES,
+  SERVICE_TYPE,
+  type ServiceCategory,
+} from "@entities/service";
 
 export type ServiceFormValues = {
   name: string;
   description: string;
   type: string;
-  category: ServiceCategoryValue;
+  category: ServiceCategory;
   duration_minutes: string;
   max_capacity: string;
   price_euros: string;
@@ -30,7 +22,7 @@ export function emptyServiceForm(
     name: "",
     description: "",
     type: SERVICE_TYPE.SINGLE,
-    category: "yoga",
+    category: SERVICE_CATEGORIES[0],
     duration_minutes: "60",
     max_capacity: "10",
     price_euros: "25.00",

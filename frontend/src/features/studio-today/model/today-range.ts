@@ -1,4 +1,4 @@
-import type { StudioOccurrencesParams } from "@shared/api";
+import type { StudioOccurrencesParams } from "@entities/occurrence";
 
 /**
  * First-page size for Today. Remaining pages auto-fetch via infinite query
@@ -12,7 +12,9 @@ export const TODAY_PAGE_SIZE = 20;
  * WHY: matches `buildCalendarParams` local-day semantics so Calendar and Today
  * agree on which sessions belong to "today". Studio-timezone day bounds → later.
  */
-export function buildTodayParams(now: Date = new Date()): StudioOccurrencesParams {
+export function buildTodayParams(
+  now: Date = new Date(),
+): Omit<StudioOccurrencesParams, "page"> {
   const start = new Date(now);
   start.setHours(0, 0, 0, 0);
   const end = new Date(start);

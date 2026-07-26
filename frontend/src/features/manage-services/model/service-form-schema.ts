@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import {
+  SERVICE_CATEGORIES,
   SERVICE_TYPE,
   type ServiceCreate,
   type ServiceUpdate,
@@ -9,7 +10,6 @@ import { ServiceVisibility } from "@shared/lib";
 import {
   emptyServiceForm,
   eurosToCents,
-  SERVICE_CATEGORIES,
   type ServiceFormValues,
 } from "./service-form-values";
 

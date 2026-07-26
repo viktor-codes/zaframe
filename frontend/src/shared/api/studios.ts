@@ -6,42 +6,28 @@ import { api } from "./client";
 import type {
   OccurrenceResponse,
   PaginatedOccurrenceList,
+  StudioOccurrencesParams,
 } from "@entities/occurrence";
 import type { ScheduleGenerateRequest } from "@entities/schedule-template";
-import type { PaginatedServiceList } from "@entities/service";
+import type {
+  PaginatedServiceList,
+  StudioServicesParams,
+} from "@entities/service";
 import type {
   PaginatedSearchResultList,
   PaginatedStudioList,
   PaginatedStudioWithRoleList,
   StudioCreate,
   StudioResponse,
+  StudiosListParams,
   StudioUpdate,
 } from "@entities/studio";
 
-export interface StudiosListParams {
-  page?: number;
-  size?: number;
-  owner_id?: number;
-  is_active?: boolean;
-  city?: string;
-  category?: string;
-  query?: string;
-  amenities?: string[];
-  include_services?: boolean;
-}
-
-export interface StudioServicesParams {
-  page?: number;
-  size?: number;
-}
-
-export interface StudioOccurrencesParams {
-  page?: number;
-  size?: number;
-  start_from?: string;
-  start_to?: string;
-  status?: "scheduled" | "cancelled" | "completed";
-}
+export type {
+  StudioOccurrencesParams,
+  StudioServicesParams,
+  StudiosListParams,
+};
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_STUDIO_PAGE_SIZE = 12;
@@ -69,8 +55,8 @@ export async function fetchStudios(
     page,
     size,
   };
-  if (owner_id !== undefined) searchParams.owner_id = owner_id;
-  if (is_active !== undefined) searchParams.is_active = is_active;
+  if (owner_id != null) searchParams.owner_id = owner_id;
+  if (is_active != null) searchParams.is_active = is_active;
   if (city) searchParams.city = city;
   if (category) searchParams.category = category;
   if (query) searchParams.query = query;
@@ -125,13 +111,18 @@ export async function fetchStudioServices(
   studioId: number,
   params: StudioServicesParams = {},
 ): Promise<PaginatedServiceList> {
+  const searchParams: Record<string, string | number | boolean | undefined> = {
+    page: params.page ?? DEFAULT_PAGE,
+    size: params.size ?? DEFAULT_SERVICE_PAGE_SIZE,
+  };
+  if (params.is_active != null) {
+    searchParams.is_active = params.is_active;
+  }
+
   return api.get<PaginatedServiceList>(
     `api/v1/studios/${studioId}/services`,
     {
-      params: {
-        page: params.page ?? DEFAULT_PAGE,
-        size: params.size ?? DEFAULT_SERVICE_PAGE_SIZE,
-      },
+      params: searchParams,
     },
   );
 }
@@ -157,7 +148,7 @@ export async function fetchStudioOccurrences(
   };
   if (start_from) searchParams.start_from = start_from;
   if (start_to) searchParams.start_to = start_to;
-  if (status !== undefined) searchParams.status = status;
+  if (status) searchParams.status = status;
 
   return api.get<PaginatedOccurrenceList>(
     `api/v1/studios/${studioId}/occurrences`,

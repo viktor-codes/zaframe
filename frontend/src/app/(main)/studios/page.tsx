@@ -16,7 +16,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { fetchStudios, getUserFacingApiMessage } from "@shared/api";
 import { queryKeys, useUIStore } from "@shared/lib";
 import type { SearchResult } from "@entities/studio";
-import type { ServiceCategory } from "@entities/service";
+import {
+  isServiceCategory,
+  SERVICE_CATEGORIES,
+  type ServiceCategory,
+} from "@entities/service";
 import { Header } from "@/features/navigation/components";
 import {
   StudioSearchCard,
@@ -28,15 +32,21 @@ import { Button } from "@shared/ui";
 
 const PAGE_SIZE = 12;
 
-const CATEGORIES: { value: ServiceCategory; label: string }[] = [
-  { value: "yoga", label: "Yoga" },
-  { value: "boxing", label: "Boxing" },
-  { value: "dance", label: "Dance" },
-  { value: "hiit", label: "HIIT" },
-  { value: "pilates", label: "Pilates" },
-  { value: "martial_arts", label: "Martial Arts" },
-  { value: "strength", label: "Strength" },
-];
+const CATEGORY_LABELS: Record<ServiceCategory, string> = {
+  yoga: "Yoga",
+  boxing: "Boxing",
+  dance: "Dance",
+  hiit: "HIIT",
+  pilates: "Pilates",
+  martial_arts: "Martial Arts",
+  strength: "Strength",
+};
+
+const CATEGORIES: { value: ServiceCategory; label: string }[] =
+  SERVICE_CATEGORIES.map((value) => ({
+    value,
+    label: CATEGORY_LABELS[value],
+  }));
 
 const AMENITIES_OPTIONS = [
   "parking",
@@ -50,7 +60,8 @@ const AMENITIES_OPTIONS = [
 function StudiosPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const category = searchParams.get("category") ?? "";
+  const categoryParam = searchParams.get("category") ?? "";
+  const category = isServiceCategory(categoryParam) ? categoryParam : "";
   const city = searchParams.get("city") ?? "";
   const query = searchParams.get("query") ?? "";
   const amenitiesParam = searchParams.get("amenities");
@@ -65,7 +76,7 @@ function StudiosPageContent() {
       is_active: true,
       size: PAGE_SIZE,
       include_services: true,
-      ...(category && { category }),
+      ...(category ? { category } : {}),
       ...(city && { city }),
       ...(query && { query }),
       ...(amenities.length > 0 && { amenities }),

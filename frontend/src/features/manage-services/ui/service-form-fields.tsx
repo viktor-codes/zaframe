@@ -1,12 +1,13 @@
 "use client";
 
-import { SERVICE_TYPE } from "@entities/service";
+import {
+  isServiceCategory,
+  SERVICE_CATEGORIES,
+  SERVICE_TYPE,
+} from "@entities/service";
 import { Input, Textarea } from "@shared/ui";
 
-import {
-  SERVICE_CATEGORIES,
-  type ServiceFormValues,
-} from "../model/service-form-values";
+import type { ServiceFormValues } from "../model/service-form-values";
 
 export interface ServiceFormFieldsProps {
   values: ServiceFormValues;
@@ -72,12 +73,12 @@ export function ServiceFormFields({
           <select
             id="service-category"
             value={values.category}
-            onChange={(event) =>
-              onChange(
-                "category",
-                event.target.value as ServiceFormValues["category"],
-              )
-            }
+            onChange={(event) => {
+              const next = event.target.value;
+              if (isServiceCategory(next)) {
+                onChange("category", next);
+              }
+            }}
             className="w-full rounded-lg border-2 border-neutral-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
           >
             {SERVICE_CATEGORIES.map((category) => (

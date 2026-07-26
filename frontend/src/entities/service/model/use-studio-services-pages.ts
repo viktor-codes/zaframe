@@ -2,11 +2,10 @@
 
 import { useInfiniteQuery } from "@tanstack/react-query";
 
-import {
-  fetchStudioServices,
-  type StudioServicesParams,
-} from "@shared/api";
+import { fetchStudioServices } from "@shared/api";
 import { queryKeys } from "@shared/lib";
+
+import type { StudioServicesParams } from "./types";
 
 /**
  * Paginated studio services envelope (`useInfiniteQuery`).

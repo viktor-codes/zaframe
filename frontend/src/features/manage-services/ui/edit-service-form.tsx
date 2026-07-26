@@ -11,7 +11,6 @@ import { parseUpdateService } from "../model/service-form-schema";
 import {
   centsToEurosInput,
   emptyServiceForm,
-  type ServiceCategoryValue,
   type ServiceFormValues,
 } from "../model/service-form-values";
 import {
@@ -30,7 +29,7 @@ function toFormValues(service: ServiceResponse): ServiceFormValues {
     name: service.name,
     description: service.description ?? "",
     type: service.type,
-    category: service.category as ServiceCategoryValue,
+    category: service.category,
     duration_minutes: String(service.duration_minutes),
     max_capacity: String(service.max_capacity),
     price_euros: centsToEurosInput(service.price_single_cents),

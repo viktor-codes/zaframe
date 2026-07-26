@@ -1,4 +1,4 @@
-import type { StudioOccurrencesParams } from "@shared/api";
+import type { StudioOccurrencesParams } from "@entities/occurrence";
 
 /** Default window: local today → +8 weeks (matches generate default horizon). */
 export const CALENDAR_DEFAULT_WEEKS = 8;
@@ -10,13 +10,13 @@ export type CalendarStatusFilter = "all" | "scheduled" | "cancelled" | "complete
 export function buildCalendarParams(
   statusFilter: CalendarStatusFilter,
   now: Date = new Date(),
-): StudioOccurrencesParams {
+): Omit<StudioOccurrencesParams, "page"> {
   const start = new Date(now);
   start.setHours(0, 0, 0, 0);
   const end = new Date(start);
   end.setDate(end.getDate() + CALENDAR_DEFAULT_WEEKS * 7);
 
-  const params: StudioOccurrencesParams = {
+  const params: Omit<StudioOccurrencesParams, "page"> = {
     start_from: start.toISOString(),
     start_to: end.toISOString(),
     size: CALENDAR_PAGE_SIZE,

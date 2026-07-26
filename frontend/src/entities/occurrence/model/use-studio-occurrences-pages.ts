@@ -2,11 +2,10 @@
 
 import { useInfiniteQuery } from "@tanstack/react-query";
 
-import {
-  fetchStudioOccurrences,
-  type StudioOccurrencesParams,
-} from "@shared/api";
+import { fetchStudioOccurrences } from "@shared/api";
 import { queryKeys } from "@shared/lib";
+
+import type { StudioOccurrencesParams } from "./types";
 
 /**
  * Paginated studio occurrences envelope (`useInfiniteQuery`).
