@@ -104,7 +104,7 @@ Full mode switch → P1/polish when real cross-over demand appears.
 
 - [x] `app/(dashboard)`: sidebar layout + StudioSwitcher + Account cross-link
 - [x] `(account)` header: Dashboard cross-link when the user has a studio role
-- [ ] `/dashboard`: my studios list + onboarding funnel state (what's the next step)
+- [x] `/dashboard`: my studios list + onboarding funnel state (what's the next step)
 - [ ] `features/manage-studio`: create/edit profile, slug, timezone, cancel policy
 - [ ] `features/manage-services`: CRUD + VisibilityBadge (draft/published/archived tabs)
 - [ ] `features/manage-schedule`: **two separate sections** — Templates (+ generate + warning) and Calendar (list by date, edit/cancel with reason)
