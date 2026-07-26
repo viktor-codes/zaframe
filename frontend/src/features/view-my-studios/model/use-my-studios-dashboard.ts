@@ -79,14 +79,9 @@ export function useMyStudiosDashboard(): UseMyStudiosDashboardResult {
       }
 
       const query = serviceQueries[index];
-      if (!query || query.isLoading || query.isPending) {
+      if (!query || query.isLoading || query.isPending || query.isError) {
+        // WHY: leave undefined on error — panel surfaces isError, never fake empty.
         map.set(studio.id, undefined);
-        return;
-      }
-
-      if (query.isError) {
-        // Fail soft: treat as empty so the owner still gets a create-service CTA.
-        map.set(studio.id, []);
         return;
       }
 
@@ -125,14 +120,23 @@ export function useMyStudiosDashboard(): UseMyStudiosDashboardResult {
       (query.isLoading || query.isPending),
   );
 
+  const failedServicesQuery = serviceQueries.find(
+    (query, index) =>
+      roleHasPermission(studios[index]?.role, StudioPermission.MANAGE_SERVICES) &&
+      query.isError,
+  );
+
   return {
     rows,
     spotlight,
     isLoading: myStudiosQuery.isLoading || isServicesLoading,
-    isError: myStudiosQuery.isError,
-    error: myStudiosQuery.error,
+    isError: myStudiosQuery.isError || Boolean(failedServicesQuery),
+    error: myStudiosQuery.error ?? failedServicesQuery?.error,
     refetch: () => {
       void myStudiosQuery.refetch();
+      for (const query of serviceQueries) {
+        void query.refetch();
+      }
     },
   };
 }
