@@ -1,114 +1,27 @@
 "use client";
 
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Card, Button, Input, Textarea } from "@shared/ui";
-import { createStudio, getUserFacingApiMessage } from "@shared/api";
-import { queryKeys } from "@shared/lib";
+
+import { CreateStudioForm } from "@features/manage-studio";
+import { Card } from "@shared/ui";
 
 export default function NewStudioPage() {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const [form, setForm] = useState({
-    name: "",
-    description: "",
-    email: "",
-    phone: "",
-    address: "",
-  });
-  const [error, setError] = useState<string | null>(null);
-
-  const { mutate, isPending } = useMutation({
-    mutationFn: createStudio,
-    onSuccess: (studio) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.studios.all });
-      router.push(`/dashboard/studios/${studio.id}`);
-    },
-    onError: (err) => {
-      setError(getUserFacingApiMessage(err));
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    mutate({
-      name: form.name.trim(),
-      description: form.description.trim() || undefined,
-      email: form.email.trim() || undefined,
-      phone: form.phone.trim() || undefined,
-      address: form.address.trim() || undefined,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
-      cancel_before_hours: 24,
-    });
-  };
-
   return (
-    <div className="mx-auto max-w-2xl px-6 py-12">
+    <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6 sm:py-12">
       <Link
         href="/dashboard"
         className="mb-6 inline-block text-sm font-medium text-primary hover:text-primary-dark"
       >
         ← Back to dashboard
       </Link>
-      <h1 className="text-secondary mb-6 font-display text-2xl font-bold">
+      <h1 className="text-secondary mb-2 font-display text-2xl font-bold">
         Create studio
       </h1>
-      <Card>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            label="Name"
-            required
-            placeholder="Studio name"
-            value={form.name}
-            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-          />
-          <Textarea
-            label="Description"
-            placeholder="Description of your studio"
-            value={form.description}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, description: e.target.value }))
-            }
-          />
-          <Input
-            label="Email"
-            type="email"
-            placeholder="studio@example.com"
-            value={form.email}
-            onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-          />
-          <Input
-            label="Phone"
-            type="tel"
-            placeholder="+1 234 567 8900"
-            value={form.phone}
-            onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-          />
-          <Input
-            label="Address"
-            placeholder="123 Main St, City"
-            value={form.address}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, address: e.target.value }))
-            }
-          />
-          {error && (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-red-800">
-              {error}
-            </div>
-          )}
-          <div className="flex justify-end gap-4">
-            <Button variant="outline" asChild type="button">
-              <Link href="/dashboard">Cancel</Link>
-            </Button>
-            <Button type="submit" isLoading={isPending}>
-              Create studio
-            </Button>
-          </div>
-        </form>
+      <p className="mb-6 text-sm text-neutral-600">
+        Start with a name and timezone. You can finish slug and city next.
+      </p>
+      <Card className="p-6">
+        <CreateStudioForm />
       </Card>
     </div>
   );
