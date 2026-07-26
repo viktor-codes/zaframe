@@ -1,11 +1,9 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { isBookingPaymentSucceeded } from "@entities/booking";
 import { formatMoneyFromCents } from "@shared/lib";
 import { Alert, Button, Card } from "@shared/ui";
 
-import {
-  GuestConfirmCancelControls,
-} from "./guest-booking-confirm-states";
 import { ReservationHoldTimer } from "./reservation-hold-timer";
 
 export interface GuestBookingConfirmDetailsProps {
@@ -26,15 +24,11 @@ export interface GuestBookingConfirmDetailsProps {
   isHoldExpired: boolean;
   isPaid: boolean;
   isFreeUnpaid: boolean;
-  canCancel: boolean;
   error: string | null;
   isPaying: boolean;
-  isCancelling: boolean;
-  showCancelConfirm: boolean;
   onPay: () => void;
-  onAskCancel: () => void;
-  onKeepBooking: () => void;
-  onConfirmCancel: () => void;
+  /** Composed by app/ (e.g. CancelBookingControls) — never import features here. */
+  cancelSlot?: ReactNode;
 }
 
 function formatDateTime(iso: string): string {
@@ -65,15 +59,10 @@ export function GuestBookingConfirmDetails({
   isHoldExpired,
   isPaid,
   isFreeUnpaid,
-  canCancel,
   error,
   isPaying,
-  isCancelling,
-  showCancelConfirm,
   onPay,
-  onAskCancel,
-  onKeepBooking,
-  onConfirmCancel,
+  cancelSlot,
 }: GuestBookingConfirmDetailsProps) {
   return (
     <div
@@ -177,17 +166,7 @@ export function GuestBookingConfirmDetails({
         </Alert>
       ) : null}
 
-      {canCancel ? (
-        <div className="mb-6">
-          <GuestConfirmCancelControls
-            showConfirm={showCancelConfirm}
-            isCancelling={isCancelling}
-            onAskConfirm={onAskCancel}
-            onKeep={onKeepBooking}
-            onConfirmCancel={onConfirmCancel}
-          />
-        </div>
-      ) : null}
+      {cancelSlot ? <div className="mb-6">{cancelSlot}</div> : null}
     </div>
   );
 }

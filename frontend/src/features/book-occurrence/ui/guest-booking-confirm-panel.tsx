@@ -1,9 +1,9 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useState } from "react";
 import {
   bookingNeedsCheckoutPayment,
-  canCustomerCancelBooking,
   getStudioRebookHref,
   isBookingPaymentSucceeded,
   isConfirmedBooking,
@@ -20,16 +20,30 @@ import {
   GuestConfirmNotFound,
 } from "./guest-booking-confirm-states";
 
+export interface GuestConfirmCancelContext {
+  bookingId: number;
+  booking: { status: string; cancelled_at: string | null };
+  occurrence: { start_time: string };
+  studio: { cancel_before_hours: number };
+  accessToken: string | null;
+  now: Date;
+}
+
 export interface GuestBookingConfirmPanelProps {
   routeId: unknown;
   accessTokenFromQuery: string | null;
+  /**
+   * App-layer composition slot (e.g. CancelBookingControls).
+   * WHY: features must not import other features.
+   */
+  renderCancel?: (ctx: GuestConfirmCancelContext) => ReactNode;
 }
 
 export function GuestBookingConfirmPanel({
   routeId,
   accessTokenFromQuery,
+  renderCancel,
 }: GuestBookingConfirmPanelProps) {
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [now] = useState(() => new Date());
   const {
     bookingId,
@@ -39,11 +53,10 @@ export function GuestBookingConfirmPanel({
     isLoading,
     isNotFound,
     isGuestSession,
+    accessToken,
     error,
     isPaying,
-    isCancelling,
     pay,
-    cancel,
   } = useGuestBookingConfirm(routeId, accessTokenFromQuery);
 
   const reservedUntil =
@@ -91,20 +104,23 @@ export function GuestBookingConfirmPanel({
   const needsPayment =
     occurrence != null && bookingNeedsCheckoutPayment(booking, occurrence);
   const canPay = needsPayment && !holdClock.isExpired;
-  const isPast = occurrence
-    ? new Date(occurrence.start_time).getTime() < now.getTime()
-    : false;
   const cancelledAt =
     "cancelled_at" in booking ? (booking.cancelled_at ?? null) : null;
-  const canCancel =
-    !isPast &&
-    occurrence != null &&
-    studio != null &&
-    canCustomerCancelBooking(
-      { status: booking.status, cancelled_at: cancelledAt },
-      occurrence,
-      studio,
-    );
+
+  const cancelSlot =
+    renderCancel != null && occurrence != null && studio != null
+      ? renderCancel({
+          bookingId: booking.id,
+          booking: {
+            status: booking.status,
+            cancelled_at: cancelledAt,
+          },
+          occurrence,
+          studio,
+          accessToken,
+          now,
+        })
+      : null;
 
   return (
     <GuestBookingConfirmDetails
@@ -127,18 +143,10 @@ export function GuestBookingConfirmPanel({
       isFreeUnpaid={
         occurrence != null && occurrence.price_cents === 0 && !isPaid
       }
-      canCancel={canCancel}
       error={error}
       isPaying={isPaying}
-      isCancelling={isCancelling}
-      showCancelConfirm={showCancelConfirm}
       onPay={pay}
-      onAskCancel={() => setShowCancelConfirm(true)}
-      onKeepBooking={() => setShowCancelConfirm(false)}
-      onConfirmCancel={() => {
-        cancel();
-        setShowCancelConfirm(false);
-      }}
+      cancelSlot={cancelSlot}
     />
   );
 }

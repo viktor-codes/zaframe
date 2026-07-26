@@ -4,6 +4,7 @@ export {
   type BookOccurrenceWizardProps,
   GuestBookingConfirmPanel,
   type GuestBookingConfirmPanelProps,
+  type GuestConfirmCancelContext,
   PaymentSuccessPanel,
   type PaymentSuccessPanelProps,
 } from "./ui";

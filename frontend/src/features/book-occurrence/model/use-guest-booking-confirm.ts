@@ -35,12 +35,12 @@ export interface UseGuestBookingConfirmResult {
   isLoading: boolean;
   isNotFound: boolean;
   isGuestSession: boolean;
+  /** Guest JWT when present; null for session-authenticated customers. */
+  accessToken: string | null;
   error: string | null;
   clearError: () => void;
   isPaying: boolean;
-  isCancelling: boolean;
   pay: () => void;
-  cancel: () => void;
 }
 
 /**
@@ -128,11 +128,10 @@ export function useGuestBookingConfirm(
       !isMissingId && loadingBooking && !booking && !guestSnapshot,
     isNotFound: isMissingId || Boolean(errorBooking && !booking),
     isGuestSession: !isMissingId && isGuestSession,
+    accessToken: isMissingId ? null : accessToken,
     error: isMissingId ? null : actions.error,
     clearError: actions.clearError,
     isPaying: !isMissingId && actions.isPaying,
-    isCancelling: !isMissingId && actions.isCancelling,
     pay: actions.pay,
-    cancel: actions.cancel,
   };
 }

@@ -5,6 +5,7 @@ export {
 export {
   GuestBookingConfirmPanel,
   type GuestBookingConfirmPanelProps,
+  type GuestConfirmCancelContext,
 } from "./guest-booking-confirm-panel";
 export {
   PaymentSuccessPanel,

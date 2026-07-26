@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { GuestBookingConfirmPanel } from "@features/book-occurrence";
+import { CancelBookingControls } from "@features/cancel-booking";
 import { Skeleton } from "@shared/ui";
 
 function ConfirmContent() {
@@ -13,6 +14,23 @@ function ConfirmContent() {
     <GuestBookingConfirmPanel
       routeId={params.id}
       accessTokenFromQuery={searchParams.get("access_token")}
+      renderCancel={({
+        bookingId,
+        booking,
+        occurrence,
+        studio,
+        accessToken,
+        now,
+      }) => (
+        <CancelBookingControls
+          bookingId={bookingId}
+          booking={booking}
+          occurrence={occurrence}
+          studio={studio}
+          accessToken={accessToken}
+          now={now}
+        />
+      )}
     />
   );
 }
