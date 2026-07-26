@@ -28,6 +28,7 @@ from app.core.middleware.logging_middleware import (
     REQUEST_ID_STATE_KEY,
     RequestLoggingMiddleware,
 )
+from app.core.production_guards import validate_production_rate_limit_config
 from app.core.rate_limit import limiter
 
 API_CONTENT_SECURITY_POLICY = (
@@ -76,6 +77,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     On shutdown: close all DB connections.
     """
     setup_logging()
+    validate_production_rate_limit_config()
     yield
     await engine.dispose()
 

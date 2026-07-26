@@ -19,6 +19,12 @@ services:
         sync: false
       - key: CORS_ORIGINS
         sync: false
+      # Single free web instance: in-memory SlowAPI is acceptable until Redis is provisioned.
+      - key: ALLOW_INMEMORY_RATE_LIMIT
+        value: "true"
+      # Required for GET /metrics in production (Authorization: Bearer <token>).
+      - key: METRICS_TOKEN
+        sync: false
 
   # Expire stale pending holds and complete past confirmed bookings (TD-11).
   # Schedule is UTC; */5 = every 5 minutes.

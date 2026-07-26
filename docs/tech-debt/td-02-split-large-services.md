@@ -1,4 +1,8 @@
-# TD-02 — Split oversized service modules (P1)
+# TD-02 — Split oversized service modules (P1) — MOSTLY DONE
+
+> **Status (Jul 2026):** payment service already split earlier; this pass also split
+> `webhook_processor`, `payment/router`→`studio_router`, `auth`→`otp`/`sessions`,
+> and `studio/permissions`. Remaining: booking service/repo if still oversized.
 
 > Read [README.md](./README.md). Do **td-01** first if touching `catalog/service/service.py`.
 

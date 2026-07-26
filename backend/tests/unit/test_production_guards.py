@@ -1,0 +1,37 @@
+"""Unit tests for production startup guards."""
+
+import pytest
+
+from app.core.config import settings
+from app.core.production_guards import validate_production_rate_limit_config
+
+
+def test_validate_rate_limit_allows_dev_without_redis(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "ENVIRONMENT", "dev")
+    monkeypatch.setattr(settings, "REDIS_URL", None)
+    monkeypatch.setattr(settings, "ALLOW_INMEMORY_RATE_LIMIT", False)
+    validate_production_rate_limit_config()
+
+
+def test_validate_rate_limit_requires_redis_in_production(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "ENVIRONMENT", "production")
+    monkeypatch.setattr(settings, "REDIS_URL", None)
+    monkeypatch.setattr(settings, "ALLOW_INMEMORY_RATE_LIMIT", False)
+    with pytest.raises(RuntimeError, match="REDIS_URL"):
+        validate_production_rate_limit_config()
+
+
+def test_validate_rate_limit_allows_explicit_inmemory_escape(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "ENVIRONMENT", "production")
+    monkeypatch.setattr(settings, "REDIS_URL", None)
+    monkeypatch.setattr(settings, "ALLOW_INMEMORY_RATE_LIMIT", True)
+    validate_production_rate_limit_config()
+
+
+def test_validate_rate_limit_ok_with_redis(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "ENVIRONMENT", "production")
+    monkeypatch.setattr(settings, "REDIS_URL", "redis://localhost:6379/0")
+    monkeypatch.setattr(settings, "ALLOW_INMEMORY_RATE_LIMIT", False)
+    validate_production_rate_limit_config()

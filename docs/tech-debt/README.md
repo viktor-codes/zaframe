@@ -30,7 +30,7 @@ Currently: **172 tests**, **7 import-linter contracts KEPT**.
 | Priority | Step | Topic | Effort |
 |----------|------|-------|--------|
 | 🔴 P1 | [td-01](./td-01-catalog-capacity-dry.md) | DRY overbooking logic → `catalog/capacity.py` | ~3h |
-| 🔴 P1 | [td-02](./td-02-split-large-services.md) | Split `payment`, `booking`, `catalog/service` services | ~4h |
+| 🟡 P2 | [td-02](./td-02-split-large-services.md) | Split oversized services (payment/auth/studio done; booking TBD) | partial |
 | 🔴 P1 | [td-03](./td-03-identity-ownership-policies.md) | Unify `is_own_booking` / `is_own_order` | ~2h |
 | 🟡 P2 | [td-04](./td-04-split-studio-router.md) | Decompose `studio/router.py` god-router | ~3h |
 | 🟡 P2 | [td-05](./td-05-booking-persistence-internal.md) | `booking/persistence.py` for intra-domain helpers | ~1.5h |
@@ -39,7 +39,7 @@ Currently: **172 tests**, **7 import-linter contracts KEPT**.
 | 🟢 P3 | [td-08](./td-08-merge-prep.md) | PR checklist + optional history fix | ~30m |
 | 🟢 P3 | [td-09](./td-09-pyright-ci.md) | Pyright strict in dev + CI/Makefile | ~4h |
 | 🟢 P3 | [td-10](./td-10-e2e-book-pay-flow.md) | Playwright: guest book → pay → confirm | ~1d |
-| 🟢 P3 | [td-11](./td-11-booking-lifecycle-cron.md) | Production cron for booking lifecycle | ~2h |
+| ✅ Done | [td-11](./td-11-booking-lifecycle-cron.md) | Production cron for booking lifecycle | done |
 
 ## Suggested execution order
 

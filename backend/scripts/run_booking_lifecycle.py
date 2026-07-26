@@ -1,7 +1,12 @@
 """
 Expire stale pending bookings/orders and complete past confirmed bookings.
 
-Production: Render cron job `zeeframe-booking-lifecycle` in root render.yaml (every 5 min UTC).
+Production (preferred): Render cron `zeeframe-booking-lifecycle` in root render.yaml
+(every 5 min UTC) — one-shot invocation of this module.
+
+Fallback (platforms without cron): Procfile `worker` runs
+`python -m scripts.run_booking_lifecycle_loop`.
+
 Manual / other hosts:
 
     */5 * * * * cd /app/backend && python -m scripts.run_booking_lifecycle
@@ -9,6 +14,7 @@ Manual / other hosts:
 Local/staging:
 
     uv run python -m scripts.run_booking_lifecycle
+    # or: make booking-lifecycle
 """
 
 from __future__ import annotations

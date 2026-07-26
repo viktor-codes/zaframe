@@ -2,7 +2,8 @@
 Rate limiting for sensitive endpoints such as OTP and refresh.
 
 Uses SlowAPI; limits are bound to IP via get_remote_address.
-The default backend is in-memory; REDIS_URL enables shared storage across instances.
+REDIS_URL enables shared storage across instances and is required in production
+unless ALLOW_INMEMORY_RATE_LIMIT=true (see production_guards).
 """
 
 from typing import Any

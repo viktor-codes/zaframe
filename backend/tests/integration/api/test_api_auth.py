@@ -64,10 +64,10 @@ async def test_security_headers_hsts_only_in_production(monkeypatch):
         base_url="http://test",
     ) as ac:
         monkeypatch.setattr(settings, "ENVIRONMENT", "dev")
-        dev_response = await ac.get("/metrics")
+        dev_response = await ac.get("/health")
 
         monkeypatch.setattr(settings, "ENVIRONMENT", "production")
-        prod_response = await ac.get("/metrics")
+        prod_response = await ac.get("/health")
 
     assert "strict-transport-security" not in dev_response.headers
     assert (
@@ -93,8 +93,8 @@ async def test_docs_open_without_api_csp(monkeypatch):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_metrics_returns_200():
-    """Prometheus metrics endpoint is available without auth."""
+async def test_metrics_returns_200_in_dev():
+    """Prometheus metrics endpoint is open in development."""
     async with AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://test",
@@ -107,9 +107,43 @@ async def test_metrics_returns_200():
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+async def test_metrics_requires_bearer_token_outside_dev(monkeypatch):
+    """Staging/production require a configured bearer token for /metrics."""
+    monkeypatch.setattr(settings, "ENVIRONMENT", "production")
+    monkeypatch.setattr(settings, "METRICS_TOKEN", "ci-metrics-token")
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as ac:
+        missing = await ac.get("/metrics")
+        wrong = await ac.get("/metrics", headers={"Authorization": "Bearer wrong"})
+        ok = await ac.get("/metrics", headers={"Authorization": "Bearer ci-metrics-token"})
+
+    assert missing.status_code == 401
+    assert wrong.status_code == 401
+    assert ok.status_code == 200
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_metrics_unavailable_when_token_unset_outside_dev(monkeypatch):
+    """Misconfigured production metrics fail closed with 503."""
+    monkeypatch.setattr(settings, "ENVIRONMENT", "production")
+    monkeypatch.setattr(settings, "METRICS_TOKEN", None)
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as ac:
+        response = await ac.get("/metrics")
+
+    assert response.status_code == 503
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_otp_request_returns_200(client):
     """POST /auth/otp/request returns 200."""
-    with patch("app.modules.auth.service.send_otp_email", new_callable=AsyncMock):
+    with patch("app.modules.auth.otp.send_otp_email", new_callable=AsyncMock):
         r = await client.post(
             "/api/v1/auth/otp/request",
             json={"email": "test-auth@example.com", "name": "Test User"},
@@ -123,7 +157,7 @@ async def test_otp_request_returns_200(client):
 @pytest.mark.asyncio
 async def test_otp_request_delivery_failure_returns_503(client):
     """POST /auth/otp/request fails honestly when email delivery is unavailable."""
-    with patch("app.modules.auth.service.send_otp_email", AsyncMock(return_value=False)):
+    with patch("app.modules.auth.otp.send_otp_email", AsyncMock(return_value=False)):
         response = await client.post(
             "/api/v1/auth/otp/request",
             json={"email": "delivery-failed@example.com", "name": "Delivery Failed"},
@@ -139,7 +173,7 @@ async def test_otp_request_delivery_failure_returns_503(client):
 @pytest.mark.asyncio
 async def test_otp_verify_invalid_code_returns_400(client):
     """POST /auth/otp/verify with invalid code returns 400."""
-    with patch("app.modules.auth.service.send_otp_email", new_callable=AsyncMock):
+    with patch("app.modules.auth.otp.send_otp_email", new_callable=AsyncMock):
         await client.post(
             "/api/v1/auth/otp/request",
             json={"email": "invalid-otp@example.com", "name": "Test User"},
@@ -392,7 +426,7 @@ async def test_delete_account_soft_deletes_user_and_revokes_sessions(client, app
         pre_delete_codes.append(code)
         return True
 
-    with patch("app.modules.auth.service.send_otp_email", side_effect=capture_pre_delete_otp):
+    with patch("app.modules.auth.otp.send_otp_email", side_effect=capture_pre_delete_otp):
         pre_delete_otp_response = await client.post(
             "/api/v1/auth/otp/request",
             json={"email": email, "name": "Deleted User"},
@@ -451,7 +485,7 @@ async def test_delete_account_soft_deletes_user_and_revokes_sessions(client, app
         captured_codes.append(code)
         return True
 
-    with patch("app.modules.auth.service.send_otp_email", side_effect=capture_otp):
+    with patch("app.modules.auth.otp.send_otp_email", side_effect=capture_otp):
         otp_response = await client.post(
             "/api/v1/auth/otp/request",
             json={"email": email, "name": "Deleted User"},

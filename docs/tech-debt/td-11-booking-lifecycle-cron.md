@@ -1,118 +1,54 @@
-# TD-11 — Production cron for booking lifecycle (P3)
+# TD-11 — Production cron for booking lifecycle (P3) — DONE
 
 > Read [README.md](./README.md).
+>
+> **Status:** Done (Jul 2026). Primary path is Render cron; Procfile worker is the fallback.
 
-## Problem
+## Problem (resolved)
 
 `scripts/run_booking_lifecycle.py` expires stale `pending` bookings and completes past
-`confirmed` ones — but **nothing runs it in production** today (`Procfile` only starts
-uvicorn). Without this, capacity leaks on abandoned checkouts and dashboards show stale
-pending counts.
+`confirmed` ones. Without a scheduler, capacity leaks on abandoned checkouts.
 
-## Goal
+## Chosen approach
 
-Reliable scheduled execution every **5 minutes** in deployment environment, with logging
-and idempotent behaviour (script already idempotent).
+### Primary — Option A (Render cron)
 
-## Existing script
+Root `render.yaml` defines:
+
+- Service: `zeeframe-booking-lifecycle`
+- Schedule: `*/5 * * * *` (UTC)
+- Command: `python -m scripts.run_booking_lifecycle`
+
+### Fallback — Option B (Procfile worker)
+
+For hosts that support a second process but not cron:
+
+```
+web: uvicorn ...
+worker: python -m scripts.run_booking_lifecycle_loop
+```
+
+Loop script: `backend/scripts/run_booking_lifecycle_loop.py`  
+Interval: `BOOKING_LIFECYCLE_INTERVAL_SECONDS` (default `300`).
+
+## Ops
 
 ```bash
-cd backend && uv run python -m scripts.run_booking_lifecycle
+make booking-lifecycle
+# or: cd backend && uv run python -m scripts.run_booking_lifecycle
 ```
 
-Calls `expire_stale_pending` + `complete_past_confirmed` in one `uow_scope()` transaction.
-
-## Implementation options (pick based on host — agent documents choice)
-
-### Option A — Railway / Render cron job (recommended for solo)
-
-**Railway:** add Cron service:
-
-```json
-// railway.json or dashboard
-{
-  "cron": "*/5 * * * *",
-  "command": "cd backend && uv run python -m scripts.run_booking_lifecycle"
-}
-```
-
-**Render:** Background Worker with cron trigger in dashboard.
-
-### Option B — Second Procfile process (if platform supports worker dyno)
-
-```
-web: uvicorn app.main:app --host 0.0.0.0 --port $PORT
-release: cd backend && uv run alembic upgrade head
-worker: cd backend && uv run python -m scripts.run_booking_lifecycle_loop
-```
-
-Add `scripts/run_booking_lifecycle_loop.py`:
-
-```python
-"""Run lifecycle every 5 minutes — for worker dyno only."""
-import asyncio
-import time
-
-async def loop_forever():
-    while True:
-        await run_booking_lifecycle()
-        await asyncio.sleep(300)
-```
-
-Use only if cron not available (less ideal — burns always-on worker).
-
-### Option C — pg_cron (if DB hosted on Neon/Supabase with pg_cron)
-
-SQL function calling HTTP health endpoint is **not** applicable — needs app context.
-Skip unless using external scheduler hitting an internal endpoint.
-
-### Option D — Protected HTTP endpoint (alternative)
-
-Add `POST /internal/jobs/booking-lifecycle` secured by `INTERNAL_JOB_SECRET` header.
-Cron hits endpoint via curl. **Only if** user prefers HTTP trigger — adds attack surface;
-document in ADR if chosen.
-
-**Default deliverable: Option A** + documentation.
-
-## Steps
-
-1. Document chosen approach in `docs/ARCHITECTURE.md` section **Background jobs**.
-2. Add env var to `.env.example` if Option D:
-   ```
-   # INTERNAL_JOB_SECRET=required for /internal/jobs/* when using HTTP cron
-   ```
-3. Ensure script logs `booking_lifecycle_complete` with counts (already does).
-4. Add lightweight test:
-
-```python
-# tests/unit/test_booking_lifecycle_script.py
-async def test_run_booking_lifecycle_returns_tuple(monkeypatch):
-    # mock expire_stale_pending / complete_past_confirmed
-    ...
-```
-
-5. Update root `Makefile`:
-
-```makefile
-booking-lifecycle:
-	cd backend && uv run python -m scripts.run_booking_lifecycle
-```
-
-## Monitoring
-
-Log-based alert suggestion (document only, no Datadog required):
-
-- If `expired_count` spikes > N per run → investigate payment funnel
-- If script fails 3 runs → page owner
+Documented in `docs/ARCHITECTURE.md` → **Background jobs**.
 
 ## Definition of Done
 
-- Cron documented and configured for deployment target (or `booking-lifecycle` Make target
-  for manual ops documented clearly).
-- `uv run pytest -q` green.
-- One dry-run locally prints expiry/completion counts.
+- [x] Cron configured for deployment target (`render.yaml`)
+- [x] Procfile worker fallback for non-cron hosts
+- [x] Script logs `booking_lifecycle_complete` with counts
+- [x] `make booking-lifecycle` available
+- [x] Entrypoint unit test in `tests/integration/booking/test_booking_lifecycle_script.py`
 
-## Commit
+## Commit (historical)
 
 ```
 chore(ops): schedule booking lifecycle job every 5 minutes

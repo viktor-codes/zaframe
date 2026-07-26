@@ -1,13 +1,12 @@
-FROM python:3.12-slim
+FROM python:3.13-slim
 
 WORKDIR /app
 
-# Устанавливаем зависимости отдельным слоем (кэшируется)
+# Install dependencies in a separate layer (cached when lockfile unchanged).
 COPY pyproject.toml uv.lock ./
 RUN pip install uv && uv sync --frozen --no-dev
 
-# Копируем код
+# Copy application code
 COPY . .
 
-# Запускаем
 CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

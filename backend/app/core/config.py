@@ -163,7 +163,23 @@ class Settings(BaseSettings):
         default=None,
         description=(
             "Redis connection URL for distributed rate limiting (e.g. redis://localhost:6379/0). "
-            "When unset, slowapi uses in-memory storage (single-instance dev only)."
+            "Required in production unless ALLOW_INMEMORY_RATE_LIMIT=true (single-instance only)."
+        ),
+    )
+    ALLOW_INMEMORY_RATE_LIMIT: bool = Field(
+        default=False,
+        description=(
+            "Emergency escape hatch: allow in-memory SlowAPI storage in production. "
+            "Unsafe with more than one API instance — prefer REDIS_URL."
+        ),
+    )
+
+    # === Observability ===
+    METRICS_TOKEN: str | None = Field(
+        default=None,
+        description=(
+            "Bearer token required for GET /metrics in staging/production. "
+            "When unset outside dev, /metrics returns 503."
         ),
     )
 
