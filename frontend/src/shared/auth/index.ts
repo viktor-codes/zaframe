@@ -15,6 +15,10 @@ export {
   type RequireStudioRoleProps,
 } from "./require-studio-role";
 export {
+  RequireStudioPermission,
+  type RequireStudioPermissionProps,
+} from "./require-studio-permission";
+export {
   canStudioPermission,
   hasStudioRole,
   resolveStudioRole,

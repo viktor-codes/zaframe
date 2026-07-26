@@ -3,8 +3,8 @@
 import { useParams } from "next/navigation";
 
 import { EditStudioPanel } from "@features/manage-studio";
-import { RequireStudioRole } from "@shared/auth";
-import { StudioMemberRole } from "@shared/lib";
+import { RequireStudioPermission } from "@shared/auth";
+import { StudioPermission } from "@shared/lib";
 
 export default function StudioProfilePage() {
   const params = useParams();
@@ -21,13 +21,13 @@ export default function StudioProfilePage() {
   }
 
   return (
-    <RequireStudioRole
+    <RequireStudioPermission
       studioId={studioId}
-      roles={[StudioMemberRole.OWNER]}
+      permission={StudioPermission.MANAGE_STUDIO}
     >
       <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6 sm:py-12">
         <EditStudioPanel studioId={studioId} />
       </div>
-    </RequireStudioRole>
+    </RequireStudioPermission>
   );
 }

@@ -1,41 +1,39 @@
 "use client";
 
 /**
- * Require membership (and optional role allow-list) for a studio.
- * Prefer `RequireStudioPermission` for dashboard routes so guards match the
- * shared permission matrix (nav / CTAs / pages).
- * Must sit inside RequireAuth (or after it) — unauthenticated users redirect to login.
+ * Require a studio permission for a route (ARCHITECTURE permission model).
+ * Prefer this over role allow-lists so nav, CTAs, and pages share one matrix.
+ * Must sit inside RequireAuth — unauthenticated users redirect to login.
  */
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-import type { StudioMemberRole } from "@shared/lib/constants";
+import type { StudioPermission } from "@shared/lib/constants";
 import { Skeleton } from "@shared/ui";
 
 import { useAuth } from "./context";
-import { hasStudioRole } from "./resolve-studio-access";
+import { canStudioPermission } from "./resolve-studio-access";
 
-export interface RequireStudioRoleProps {
+export interface RequireStudioPermissionProps {
   studioId: number;
-  /** If omitted, any studio membership is enough. */
-  roles?: readonly StudioMemberRole[];
+  permission: StudioPermission;
   children: React.ReactNode;
   /** Default: /dashboard */
   fallbackHref?: string;
   loginHref?: string;
 }
 
-export function RequireStudioRole({
+export function RequireStudioPermission({
   studioId,
-  roles,
+  permission,
   children,
   fallbackHref = "/dashboard",
   loginHref = "/auth/login",
-}: RequireStudioRoleProps) {
+}: RequireStudioPermissionProps) {
   const { user, isInitialized } = useAuth();
   const router = useRouter();
-  const isAllowed = hasStudioRole(user, studioId, roles);
+  const isAllowed = canStudioPermission(user, studioId, permission);
 
   useEffect(() => {
     if (!isInitialized) return;

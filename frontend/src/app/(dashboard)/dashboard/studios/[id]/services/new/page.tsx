@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 
 import { CreateServiceForm } from "@features/manage-services";
-import { RequireStudioRole } from "@shared/auth";
-import { StudioMemberRole } from "@shared/lib";
+import { RequireStudioPermission } from "@shared/auth";
+import { StudioPermission } from "@shared/lib";
 import { Card } from "@shared/ui";
 
 export default function NewServicePage() {
@@ -21,9 +21,9 @@ export default function NewServicePage() {
   }
 
   return (
-    <RequireStudioRole
+    <RequireStudioPermission
       studioId={studioId}
-      roles={[StudioMemberRole.OWNER, StudioMemberRole.MANAGER]}
+      permission={StudioPermission.MANAGE_SERVICES}
     >
       <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6 sm:py-12">
         <Link
@@ -42,6 +42,6 @@ export default function NewServicePage() {
           <CreateServiceForm studioId={studioId} />
         </Card>
       </div>
-    </RequireStudioRole>
+    </RequireStudioPermission>
   );
 }

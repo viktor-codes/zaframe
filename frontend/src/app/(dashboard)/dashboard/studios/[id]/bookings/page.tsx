@@ -3,8 +3,8 @@
 import { useParams } from "next/navigation";
 
 import { StudioBookingsPanel } from "@features/view-studio-bookings";
-import { RequireStudioRole } from "@shared/auth";
-import { StudioMemberRole } from "@shared/lib";
+import { RequireStudioPermission } from "@shared/auth";
+import { StudioPermission } from "@shared/lib";
 
 export default function StudioBookingsPage() {
   const params = useParams();
@@ -19,17 +19,13 @@ export default function StudioBookingsPage() {
   }
 
   return (
-    <RequireStudioRole
+    <RequireStudioPermission
       studioId={studioId}
-      roles={[
-        StudioMemberRole.OWNER,
-        StudioMemberRole.MANAGER,
-        StudioMemberRole.INSTRUCTOR,
-      ]}
+      permission={StudioPermission.VIEW_BOOKINGS}
     >
       <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-12">
         <StudioBookingsPanel studioId={studioId} />
       </div>
-    </RequireStudioRole>
+    </RequireStudioPermission>
   );
 }

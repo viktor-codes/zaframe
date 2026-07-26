@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 
+import { PermissionGate } from "@entities/user";
 import { getUserFacingApiMessage } from "@shared/api";
+import { StudioPermission } from "@shared/lib";
 import {
   Button,
   ResourceEmptyState,
@@ -74,12 +76,17 @@ export function StudioCalendarPanel({ studioId }: StudioCalendarPanelProps) {
             rewrite this list.
           </p>
         </div>
-        <Link
-          href={`/dashboard/studios/${studioId}/services`}
-          className="text-sm font-medium text-primary hover:text-primary-dark"
+        <PermissionGate
+          studioId={studioId}
+          permission={StudioPermission.MANAGE_SERVICES}
         >
-          Manage templates →
-        </Link>
+          <Link
+            href={`/dashboard/studios/${studioId}/services`}
+            className="text-sm font-medium text-primary hover:text-primary-dark"
+          >
+            Manage templates →
+          </Link>
+        </PermissionGate>
       </div>
 
       <Tabs

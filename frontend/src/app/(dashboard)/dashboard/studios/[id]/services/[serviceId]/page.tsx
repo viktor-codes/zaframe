@@ -3,8 +3,8 @@
 import { useParams } from "next/navigation";
 
 import { EditServicePanel } from "@features/manage-services";
-import { RequireStudioRole } from "@shared/auth";
-import { StudioMemberRole } from "@shared/lib";
+import { RequireStudioPermission } from "@shared/auth";
+import { StudioPermission } from "@shared/lib";
 
 export default function EditServicePage() {
   const params = useParams();
@@ -25,13 +25,13 @@ export default function EditServicePage() {
   }
 
   return (
-    <RequireStudioRole
+    <RequireStudioPermission
       studioId={studioId}
-      roles={[StudioMemberRole.OWNER, StudioMemberRole.MANAGER]}
+      permission={StudioPermission.MANAGE_SERVICES}
     >
       <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6 sm:py-12">
         <EditServicePanel studioId={studioId} serviceId={serviceId} />
       </div>
-    </RequireStudioRole>
+    </RequireStudioPermission>
   );
 }

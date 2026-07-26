@@ -98,7 +98,6 @@ export function StudioTodayPanel({ studioId }: StudioTodayPanelProps) {
                 key={occurrence.id}
                 studioId={studioId}
                 occurrence={occurrence}
-                canOpenCalendar={canManageSchedule}
               />
             ))}
           </div>

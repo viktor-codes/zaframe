@@ -3,8 +3,8 @@
 import { useParams } from "next/navigation";
 
 import { ScheduleTemplatesPanel } from "@features/manage-schedule";
-import { RequireStudioRole } from "@shared/auth";
-import { StudioMemberRole } from "@shared/lib";
+import { RequireStudioPermission } from "@shared/auth";
+import { StudioPermission } from "@shared/lib";
 
 export default function ServiceSchedulePage() {
   const params = useParams();
@@ -25,13 +25,13 @@ export default function ServiceSchedulePage() {
   }
 
   return (
-    <RequireStudioRole
+    <RequireStudioPermission
       studioId={studioId}
-      roles={[StudioMemberRole.OWNER, StudioMemberRole.MANAGER]}
+      permission={StudioPermission.MANAGE_SCHEDULE}
     >
       <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6 sm:py-12">
         <ScheduleTemplatesPanel studioId={studioId} serviceId={serviceId} />
       </div>
-    </RequireStudioRole>
+    </RequireStudioPermission>
   );
 }
