@@ -102,8 +102,8 @@ is **deferred**. One account can still be staff and customer in the API, but UX 
 surfaces separate — simple cross-links only (`Account` ↔ `Dashboard`), never mixed nav.
 Full mode switch → P1/polish when real cross-over demand appears.
 
-- [ ] `app/(dashboard)`: sidebar layout + StudioSwitcher + Account cross-link
-- [ ] `(account)` header: Dashboard cross-link when the user has a studio role
+- [x] `app/(dashboard)`: sidebar layout + StudioSwitcher + Account cross-link
+- [x] `(account)` header: Dashboard cross-link when the user has a studio role
 - [ ] `/dashboard`: my studios list + onboarding funnel state (what's the next step)
 - [ ] `features/manage-studio`: create/edit profile, slug, timezone, cancel policy
 - [ ] `features/manage-services`: CRUD + VisibilityBadge (draft/published/archived tabs)
