@@ -22,6 +22,7 @@ export {
 export { queryKeys } from "./query-keys";
 export type {
   StudioOccurrencesParams,
+  StudioServicesParams,
   StudiosListParams,
 } from "./query-keys";
 export { useNow, type UseNowOptions } from "./use-now";

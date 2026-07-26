@@ -1,11 +1,12 @@
 "use client";
 
-import { useInfiniteQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 
-import type { ServiceResponse } from "@entities/service";
-import { fetchStudioServices } from "@shared/api";
-import { queryKeys, ServiceVisibility } from "@shared/lib";
+import {
+  useStudioServicesPages,
+  type ServiceResponse,
+} from "@entities/service";
+import { ServiceVisibility } from "@shared/lib";
 
 export type ServiceVisibilityTab = "draft" | "published" | "archived";
 
@@ -22,16 +23,7 @@ export function useStudioServices(studioId: number) {
     [],
   );
 
-  const query = useInfiniteQuery({
-    queryKey: queryKeys.studio.services(studioId, listParams),
-    queryFn: ({ pageParam }) =>
-      fetchStudioServices(studioId, { ...listParams, page: pageParam }),
-    initialPageParam: 1,
-    getNextPageParam: (lastPage) => {
-      const loaded = lastPage.page * lastPage.size;
-      return loaded < lastPage.total ? lastPage.page + 1 : undefined;
-    },
-  });
+  const query = useStudioServicesPages(studioId, listParams);
 
   const services = useMemo(
     () => (query.data?.pages ?? []).flatMap((page) => page.items),

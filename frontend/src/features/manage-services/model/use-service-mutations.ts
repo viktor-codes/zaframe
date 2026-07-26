@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
 import type { ServiceCreate, ServiceUpdate } from "@entities/service";
+import { invalidateStudioServices } from "@entities/studio";
 import {
   createService,
   deactivateService,
@@ -12,14 +13,12 @@ import {
 import { queryKeys, ServiceVisibility } from "@shared/lib";
 import { toast } from "@shared/ui";
 
-function invalidateStudioServices(
+function invalidateServiceCaches(
   queryClient: ReturnType<typeof useQueryClient>,
   studioId: number,
   serviceId?: number,
 ) {
-  void queryClient.invalidateQueries({
-    queryKey: queryKeys.studio.servicesRoot(studioId),
-  });
+  invalidateStudioServices(queryClient, studioId);
   void queryClient.invalidateQueries({ queryKey: queryKeys.studios.my });
   if (serviceId != null) {
     void queryClient.invalidateQueries({
@@ -36,7 +35,7 @@ export function useCreateService(studioId: number) {
     meta: { toastOnError: true },
     mutationFn: (data: ServiceCreate) => createService(data),
     onSuccess: (service) => {
-      invalidateStudioServices(queryClient, studioId, service.id);
+      invalidateServiceCaches(queryClient, studioId, service.id);
       toast.success("Service created as draft");
       router.push(
         `/dashboard/studios/${studioId}/services/${service.id}`,
@@ -57,7 +56,7 @@ export function useUpdateService(studioId: number, serviceId: number) {
     meta: { toastOnError: true },
     mutationFn: (data: ServiceUpdate) => updateService(serviceId, data),
     onSuccess: () => {
-      invalidateStudioServices(queryClient, studioId, serviceId);
+      invalidateServiceCaches(queryClient, studioId, serviceId);
       toast.success("Service saved");
     },
   });
@@ -79,7 +78,7 @@ export function useServiceVisibilityActions(
     mutationFn: () =>
       updateService(serviceId, { visibility: ServiceVisibility.PUBLISHED }),
     onSuccess: () => {
-      invalidateStudioServices(queryClient, studioId, serviceId);
+      invalidateServiceCaches(queryClient, studioId, serviceId);
       toast.success("Service published");
     },
   });
@@ -89,7 +88,7 @@ export function useServiceVisibilityActions(
     mutationFn: () =>
       updateService(serviceId, { visibility: ServiceVisibility.DRAFT }),
     onSuccess: () => {
-      invalidateStudioServices(queryClient, studioId, serviceId);
+      invalidateServiceCaches(queryClient, studioId, serviceId);
       toast.success("Service moved back to draft");
     },
   });
@@ -98,7 +97,7 @@ export function useServiceVisibilityActions(
     meta: { toastOnError: true },
     mutationFn: () => deactivateService(serviceId),
     onSuccess: () => {
-      invalidateStudioServices(queryClient, studioId, serviceId);
+      invalidateServiceCaches(queryClient, studioId, serviceId);
       toast.success("Service archived");
     },
   });

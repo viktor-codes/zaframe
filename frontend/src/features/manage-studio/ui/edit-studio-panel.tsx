@@ -1,10 +1,9 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
-import { fetchStudio, getUserFacingApiMessage } from "@shared/api";
-import { queryKeys } from "@shared/lib";
+import { useStudio } from "@entities/studio";
+import { getUserFacingApiMessage } from "@shared/api";
 import {
   Button,
   Card,
@@ -25,10 +24,7 @@ export function EditStudioPanel({ studioId }: EditStudioPanelProps) {
     isError,
     error,
     refetch,
-  } = useQuery({
-    queryKey: queryKeys.studio.detail(studioId),
-    queryFn: () => fetchStudio(studioId),
-  });
+  } = useStudio(studioId);
 
   if (isLoading) {
     return <ResourceListSkeleton testId="edit-studio-skeleton" rows={2} />;

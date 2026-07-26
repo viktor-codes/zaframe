@@ -3,17 +3,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import type { OccurrenceUpdate } from "@entities/occurrence";
+import { invalidateStudioOccurrences } from "@entities/studio";
 import { updateOccurrence } from "@shared/api";
 import { toast } from "@shared/ui";
-
-function invalidateStudioOccurrences(
-  queryClient: ReturnType<typeof useQueryClient>,
-  studioId: number,
-) {
-  void queryClient.invalidateQueries({
-    queryKey: ["studio", studioId, "occurrences"],
-  });
-}
 
 export function useUpdateCalendarOccurrence(studioId: number) {
   const queryClient = useQueryClient();

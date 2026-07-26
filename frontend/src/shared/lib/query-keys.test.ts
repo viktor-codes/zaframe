@@ -9,12 +9,17 @@ describe("queryKeys", () => {
     expect(queryKeys.auth.me(3)[0]).toBe(queryKeys.auth.all[0]);
   });
 
-  it("includes the full occurrence filters object in the key", () => {
+  it("nests occurrence filters under occurrencesRoot", () => {
     const filters = {
       status: OccurrenceStatus.SCHEDULED,
       size: 100,
       start_from: "2026-01-01T00:00:00.000Z",
     };
+    expect(queryKeys.studio.occurrencesRoot(9)).toEqual([
+      "studio",
+      9,
+      "occurrences",
+    ]);
     expect(queryKeys.studio.occurrences(9, filters)).toEqual([
       "studio",
       9,

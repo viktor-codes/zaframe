@@ -3,6 +3,7 @@
 import { useQueries } from "@tanstack/react-query";
 import { useMemo } from "react";
 
+import { studioServicesQueryOptions } from "@entities/service";
 import {
   pickSpotlightStudioStep,
   resolveStudioOnboardingStep,
@@ -10,12 +11,7 @@ import {
   type StudioOnboardingStep,
   type StudioWithRoleResponse,
 } from "@entities/studio";
-import { fetchStudioServices } from "@shared/api";
-import {
-  queryKeys,
-  roleHasPermission,
-  StudioPermission,
-} from "@shared/lib";
+import { roleHasPermission, StudioPermission } from "@shared/lib";
 
 export interface StudioListRow {
   studio: StudioWithRoleResponse;
@@ -50,12 +46,7 @@ export function useMyStudiosDashboard(): UseMyStudiosDashboardResult {
       );
 
       return {
-        queryKey: queryKeys.studio.services(
-          studio.id,
-          onboardingServicesParams,
-        ),
-        queryFn: () =>
-          fetchStudioServices(studio.id, onboardingServicesParams),
+        ...studioServicesQueryOptions(studio.id, onboardingServicesParams),
         enabled: myStudiosQuery.isSuccess && canManageServices,
       };
     }),

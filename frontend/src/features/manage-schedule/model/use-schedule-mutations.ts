@@ -7,6 +7,7 @@ import type {
   ScheduleTemplateCreate,
   ScheduleTemplateUpdate,
 } from "@entities/schedule-template";
+import { invalidateStudioOccurrences } from "@entities/studio";
 import {
   createScheduleTemplate,
   deleteScheduleTemplate,
@@ -24,9 +25,7 @@ function invalidateScheduleCaches(
   void queryClient.invalidateQueries({
     queryKey: queryKeys.service.scheduleTemplates(serviceId),
   });
-  void queryClient.invalidateQueries({
-    queryKey: ["studio", studioId, "occurrences"],
-  });
+  invalidateStudioOccurrences(queryClient, studioId);
 }
 
 export function useScheduleTemplateMutations(

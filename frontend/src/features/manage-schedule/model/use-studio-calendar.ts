@@ -1,11 +1,11 @@
 "use client";
 
-import { useInfiniteQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 
-import { groupOccurrencesByDate } from "@entities/occurrence";
-import { fetchStudioOccurrences } from "@shared/api";
-import { queryKeys } from "@shared/lib";
+import {
+  groupOccurrencesByDate,
+  useStudioOccurrencesPages,
+} from "@entities/occurrence";
 
 import {
   buildCalendarParams,
@@ -21,16 +21,7 @@ export function useStudioCalendar(studioId: number) {
     [statusFilter],
   );
 
-  const query = useInfiniteQuery({
-    queryKey: queryKeys.studio.occurrences(studioId, params),
-    queryFn: ({ pageParam }) =>
-      fetchStudioOccurrences(studioId, { ...params, page: pageParam }),
-    initialPageParam: 1,
-    getNextPageParam: (lastPage) => {
-      const loaded = lastPage.page * lastPage.size;
-      return loaded < lastPage.total ? lastPage.page + 1 : undefined;
-    },
-  });
+  const query = useStudioOccurrencesPages(studioId, params);
 
   const occurrences = useMemo(
     () => (query.data?.pages ?? []).flatMap((page) => page.items),

@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import { useInfiniteQuery } from "@tanstack/react-query";
 
-import { summarizeOccurrenceCapacity } from "@entities/occurrence";
-import { fetchStudioOccurrences } from "@shared/api";
-import { queryKeys } from "@shared/lib";
+import {
+  summarizeOccurrenceCapacity,
+  useStudioOccurrencesPages,
+} from "@entities/occurrence";
 
 import { buildTodayParams, formatTodayHeading } from "./today-range";
 
@@ -13,16 +13,7 @@ export function useStudioToday(studioId: number) {
   const params = useMemo(() => buildTodayParams(), []);
   const heading = useMemo(() => formatTodayHeading(), []);
 
-  const query = useInfiniteQuery({
-    queryKey: queryKeys.studio.occurrences(studioId, params),
-    queryFn: ({ pageParam }) =>
-      fetchStudioOccurrences(studioId, { ...params, page: pageParam }),
-    initialPageParam: 1,
-    getNextPageParam: (lastPage) => {
-      const loaded = lastPage.page * lastPage.size;
-      return loaded < lastPage.total ? lastPage.page + 1 : undefined;
-    },
-  });
+  const query = useStudioOccurrencesPages(studioId, params);
 
   // WHY: Today counters must cover the full local day — auto-drain pages.
   useEffect(() => {

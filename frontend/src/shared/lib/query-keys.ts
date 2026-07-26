@@ -45,11 +45,16 @@ export const queryKeys = {
 
   studio: {
     detail: (id: number | undefined) => ["studio", id] as const,
+    /** Prefix for invalidating every occurrences list for a studio. */
+    occurrencesRoot: (id: number) => ["studio", id, "occurrences"] as const,
     /**
-     * @param filters - Exact params passed to `fetchStudioOccurrences` (no silent defaults in the key).
+     * @param filters - Exact params passed to `fetchStudioOccurrences` (no `page`;
+     *   infinite query supplies page via pageParam).
      */
-    occurrences: (id: number, filters: StudioOccurrencesParams) =>
-      ["studio", id, "occurrences", filters] as const,
+    occurrences: (
+      id: number,
+      filters: Omit<StudioOccurrencesParams, "page"> = {},
+    ) => ["studio", id, "occurrences", filters] as const,
     /**
      * Studio dashboard bookings (`GET /bookings?studio_id=…`).
      * @param filters - Exact params passed to `fetchBookings` (must include `studio_id`).
