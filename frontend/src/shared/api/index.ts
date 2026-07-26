@@ -50,6 +50,12 @@ export {
   fetchService,
   updateService,
 } from "./services";
+export {
+  createScheduleTemplate,
+  deleteScheduleTemplate,
+  fetchServiceScheduleTemplates,
+  updateScheduleTemplate,
+} from "./schedule-templates";
 export { fetchMyOrders, type MyOrdersParams } from "./orders";
 export { updateCurrentUser } from "./users";
 export {
@@ -59,6 +65,7 @@ export {
   fetchPublicServiceOccurrences,
   fetchStudio,
   fetchStudioOccurrences,
+  generateStudioOccurrences,
   fetchStudioServices,
   fetchStudios,
   updateStudio,

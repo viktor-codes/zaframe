@@ -7,6 +7,7 @@ import type {
   OccurrenceResponse,
   PaginatedOccurrenceList,
 } from "@entities/occurrence";
+import type { ScheduleGenerateRequest } from "@entities/schedule-template";
 import type { PaginatedServiceList, ServiceResponse } from "@entities/service";
 import type {
   PaginatedSearchResultList,
@@ -152,6 +153,20 @@ export async function fetchStudioOccurrences(
     },
   );
   return response.items;
+}
+
+/**
+ * Materialise occurrences from a service schedule pattern for `weeks_count` weeks.
+ * Does not mutate existing sessions — only creates new ones.
+ */
+export async function generateStudioOccurrences(
+  studioId: number,
+  data: ScheduleGenerateRequest,
+): Promise<OccurrenceResponse[]> {
+  return api.post<OccurrenceResponse[]>(
+    `api/v1/studios/${studioId}/generate-occurrences`,
+    data,
+  );
 }
 
 /**
