@@ -31,8 +31,12 @@ export class StripeCheckoutPage {
 
   /**
    * Click Pay and capture checkout session JSON before Stripe redirect runs.
+   * @param payTestId - wizard summary uses `submit-booking-button`;
+   *   confirm page uses `pay-booking-button`.
    */
-  async clickPayAndCaptureCheckoutSession(): Promise<CheckoutSessionPayload> {
+  async clickPayAndCaptureCheckoutSession(
+    payTestId: "submit-booking-button" | "pay-booking-button" = "submit-booking-button",
+  ): Promise<CheckoutSessionPayload> {
     const captured: { payload: CheckoutSessionPayload | null } = {
       payload: null,
     };
@@ -53,7 +57,7 @@ export class StripeCheckoutPage {
       });
     });
 
-    await this.page.getByTestId("pay-booking-button").click();
+    await this.page.getByTestId(payTestId).click();
 
     await expect
       .poll(() => captured.payload, { timeout: 15_000 })

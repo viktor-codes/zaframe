@@ -1,18 +1,20 @@
 /**
- * Guest book → Stripe checkout session (Option A).
+ * Guest book → Stripe checkout session (Option A) via Phase 3 slug routes.
  *
- * Mode: hybrid E2E — UI flow through Pay; asserts checkout session created and
- * booking stays pending. Webhook confirmation is covered by backend tests
- * (`backend/tests/test_webhooks.py`).
+ * Flow: `/s/{slug}` → service → wizard (slot → details → summary) → Stripe.
+ *
+ * Mode: hybrid E2E — UI through Pay; asserts checkout session created and
+ * booking stays pending. Webhook confirmation is covered by backend tests.
  *
  * Prerequisites (local):
  *   - PostgreSQL with migrations applied
  *   - Backend `.env`: SECRET_KEY, DATABASE_URL, STRIPE_SECRET_KEY (test mode)
  *   - `make e2e-critical` starts API + Next.js via Playwright webServer
  *
- * Env overrides:
+ * Env overrides (skip seed script):
+ *   E2E_STUDIO_ID, E2E_STUDIO_SLUG, E2E_SERVICE_ID,
+ *   E2E_OCCURRENCE_ID, E2E_OCCURRENCE_DATE[, E2E_OWNER_ACCESS_TOKEN]
  *   API_URL — backend origin (default http://127.0.0.1:8000)
- *   E2E_STUDIO_ID, E2E_OCCURRENCE_ID, E2E_OCCURRENCE_DATE — skip seed script
  */
 
 import { test, expect } from "@playwright/test";
@@ -36,7 +38,7 @@ const GUEST = {
 test.describe("guest checkout critical flow", () => {
   test.describe.configure({ mode: "serial" });
 
-  test("guest books occurrence and receives Stripe checkout URL", async ({
+  test("guest books via slug storefront and receives Stripe checkout URL", async ({
     page,
   }) => {
     const seed = seedBookableOccurrence();
@@ -44,42 +46,36 @@ test.describe("guest checkout critical flow", () => {
     const bookingPage = new BookingPage(page);
     const stripePage = new StripeCheckoutPage(page);
 
-    await studioPage.goto(seed.studioId);
-    await studioPage.setScheduleDate(seed.occurrenceDate);
-    await studioPage.clickBookFirstSession();
+    await studioPage.gotoBySlug(seed.studioSlug);
+    await studioPage.clickServiceById(seed.serviceId);
 
-    await bookingPage.fillGuestDetails(GUEST);
-    await bookingPage.submitBooking();
-    await bookingPage.expectConfirmPage();
-
-    const urlMatch = page.url().match(/\/bookings\/(\d+)\/confirm/);
-    expect(urlMatch).not.toBeNull();
-    const bookingId = Number(urlMatch![1]);
-    expect(bookingId).toBeGreaterThan(0);
-
-    const guestAccessToken = await page.evaluate((id) => {
-      return sessionStorage.getItem(`zeeframe_booking_access_token_${id}`);
-    }, bookingId);
-    expect(guestAccessToken).toBeTruthy();
-
-    await expect(page.getByTestId("pay-booking-button")).toBeVisible();
+    await bookingPage.completeWizardToSummary(seed.occurrenceId, GUEST);
 
     await stripePage.blockStripeRedirect();
-    const checkoutBody = await stripePage.clickPayAndCaptureCheckoutSession();
+    const checkoutBody = await stripePage.clickPayAndCaptureCheckoutSession(
+      "submit-booking-button",
+    );
 
     expect(StripeCheckoutPage.isStripeCheckoutUrl(checkoutBody.checkout_url)).toBe(
       true,
     );
     expect(checkoutBody.session_id).toMatch(/^cs_/);
 
+    const bookingId = await bookingPage.readLatestGuestBookingId();
+    expect(bookingId).not.toBeNull();
+    expect(bookingId!).toBeGreaterThan(0);
+
+    const guestAccessToken = await bookingPage.readGuestAccessToken(bookingId!);
+    expect(guestAccessToken).toBeTruthy();
+
     if (seed.ownerAccessToken) {
       const booking = await fetchBookingStatusAsOwner(
         API_URL,
-        bookingId,
+        bookingId!,
         seed.ownerAccessToken,
       );
       expect(booking.status).toBe("pending");
-      expect(booking.payment_status).not.toBe("paid");
+      expect(booking.payment_status).not.toBe("succeeded");
     }
   });
 });

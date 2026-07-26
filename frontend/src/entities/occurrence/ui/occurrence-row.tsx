@@ -81,6 +81,7 @@ export function OccurrenceRow({
     <article
       className={`flex flex-col gap-3 rounded-2xl border border-neutral-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4 ${className}`}
       data-testid="occurrence-row"
+      data-occurrence-id={occurrence.id}
     >
       <div className="min-w-0 flex-1 space-y-1">
         <div className="flex flex-wrap items-center gap-2">
