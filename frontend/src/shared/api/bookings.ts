@@ -14,8 +14,8 @@ import type {
 } from "@entities/booking";
 
 export interface BookingsListParams {
-  skip?: number;
-  limit?: number;
+  page?: number;
+  size?: number;
   occurrence_id?: number;
   user_id?: number;
   guest_email?: string;
@@ -42,20 +42,23 @@ function bookingAuthConfig(options?: BookingAccessOptions): RequestConfig {
   return {};
 }
 
+const DEFAULT_PAGE = 1;
+const DEFAULT_SIZE = 20;
+
 export async function fetchBookings(
   params: BookingsListParams = {},
 ): Promise<BookingOwnerResponse[]> {
   const {
-    skip = 0,
-    limit = 20,
+    page = DEFAULT_PAGE,
+    size = DEFAULT_SIZE,
     occurrence_id,
     user_id,
     guest_email,
     status,
   } = params;
   const searchParams: Record<string, string | number | undefined> = {
-    skip,
-    limit,
+    page,
+    size,
   };
   if (occurrence_id !== undefined) searchParams.occurrence_id = occurrence_id;
   if (user_id !== undefined) searchParams.user_id = user_id;
@@ -69,13 +72,14 @@ export async function fetchBookings(
 }
 
 export async function fetchMyBookings(params?: {
-  skip?: number;
-  limit?: number;
+  page?: number;
+  size?: number;
   include_guest_email?: boolean;
 }): Promise<BookingSelfListItem[]> {
-  const searchParams: Record<string, string | number | boolean | undefined> = {};
-  if (params?.skip !== undefined) searchParams.skip = params.skip;
-  if (params?.limit !== undefined) searchParams.limit = params.limit;
+  const searchParams: Record<string, string | number | boolean | undefined> = {
+    page: params?.page ?? DEFAULT_PAGE,
+    size: params?.size ?? DEFAULT_SIZE,
+  };
   if (params?.include_guest_email !== undefined)
     searchParams.include_guest_email = params.include_guest_email;
 

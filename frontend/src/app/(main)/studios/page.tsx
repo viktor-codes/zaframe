@@ -63,7 +63,7 @@ function StudiosPageContent() {
   const listParams = useMemo(
     () => ({
       is_active: true,
-      limit: PAGE_SIZE,
+      size: PAGE_SIZE,
       include_services: true,
       ...(category && { category }),
       ...(city && { city }),
@@ -85,12 +85,12 @@ function StudiosPageContent() {
   } = useInfiniteQuery({
     queryKey: queryKeys.studios.explore(listParams),
     queryFn: ({ pageParam }) =>
-      fetchStudios({ ...listParams, skip: pageParam }),
-    initialPageParam: 0,
-    getNextPageParam: (lastPage, _allPages, lastPageParam) =>
-      lastPage.length < PAGE_SIZE
-        ? undefined
-        : (lastPageParam as number) + PAGE_SIZE,
+      fetchStudios({ ...listParams, page: pageParam }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      const loaded = lastPage.page * lastPage.size;
+      return loaded < lastPage.total ? lastPage.page + 1 : undefined;
+    },
     staleTime: 60_000,
     retry: (failureCount, err) => {
       const msg = err instanceof Error ? err.message.toLowerCase() : "";
@@ -105,7 +105,10 @@ function StudiosPageContent() {
 
   const results = useMemo(
     () => {
-      const items = (data?.pages.flat() ?? []) as SearchResult[];
+      // Explore with include_services returns SearchResult[]; owner list is StudioResponse[].
+      const items = (data?.pages ?? []).flatMap(
+        (page) => page.items as SearchResult[],
+      );
       const byStudioId = new Map<number, SearchResult>();
 
       for (const item of items) {

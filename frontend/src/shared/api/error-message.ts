@@ -21,15 +21,22 @@ type ProblemLike = {
  */
 export function getUserFacingApiMessage(error: unknown): string {
   if (error instanceof ApiError) {
+    // WHY: 5xx / network bodies may leak internals — never show verbatim.
+    if (error.status >= 500 || error.status === 0) {
+      return defaultMessageForStatus(error.status);
+    }
+
     const fromBody = formatProblemDetail(error.body);
-    if (fromBody) return fromBody;
+    if (fromBody && isSafeToShowGenericErrorMessage(fromBody)) {
+      return fromBody;
+    }
     if (isNetworkOrNoiseErrorMessage(error.message)) {
       return defaultMessageForStatus(error.status);
     }
     if (error.status > 0) {
       return defaultMessageForStatus(error.status);
     }
-    if (error.message) {
+    if (error.message && isSafeToShowGenericErrorMessage(error.message)) {
       return error.message;
     }
     return defaultMessageForStatus(error.status);

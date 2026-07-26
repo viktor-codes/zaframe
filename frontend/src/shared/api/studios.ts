@@ -11,15 +11,14 @@ import type { PaginatedServiceList, ServiceResponse } from "@entities/service";
 import type {
   PaginatedSearchResultList,
   PaginatedStudioList,
-  SearchResult,
   StudioCreate,
   StudioResponse,
   StudioUpdate,
 } from "@entities/studio";
 
 export interface StudiosListParams {
-  skip?: number;
-  limit?: number;
+  page?: number;
+  size?: number;
   owner_id?: number;
   is_active?: boolean;
   city?: string;
@@ -30,21 +29,23 @@ export interface StudiosListParams {
 }
 
 export interface StudioOccurrencesParams {
-  skip?: number;
-  limit?: number;
+  page?: number;
+  size?: number;
   start_from?: string;
   start_to?: string;
   status?: "scheduled" | "cancelled" | "completed";
 }
 
-const PAGE_SIZE = 12;
+const DEFAULT_PAGE = 1;
+const DEFAULT_STUDIO_PAGE_SIZE = 12;
+const DEFAULT_OCCURRENCE_PAGE_SIZE = 50;
 
 export async function fetchStudios(
   params: StudiosListParams = {},
-): Promise<StudioResponse[] | SearchResult[]> {
+): Promise<PaginatedStudioList | PaginatedSearchResultList> {
   const {
-    skip = 0,
-    limit = PAGE_SIZE,
+    page = DEFAULT_PAGE,
+    size = DEFAULT_STUDIO_PAGE_SIZE,
     owner_id,
     is_active,
     city,
@@ -57,8 +58,8 @@ export async function fetchStudios(
     string,
     string | number | boolean | string[] | undefined
   > = {
-    skip,
-    limit,
+    page,
+    size,
   };
   if (owner_id !== undefined) searchParams.owner_id = owner_id;
   if (is_active !== undefined) searchParams.is_active = is_active;
@@ -68,13 +69,13 @@ export async function fetchStudios(
   if (amenities?.length) searchParams.amenities = amenities;
   if (include_services === true) searchParams.include_services = true;
 
-  const response = await api.get<
-    PaginatedStudioList | PaginatedSearchResultList
-  >("api/v1/studios", {
-    params: searchParams,
-    skipAuth: !owner_id,
-  });
-  return response.items;
+  return api.get<PaginatedStudioList | PaginatedSearchResultList>(
+    "api/v1/studios",
+    {
+      params: searchParams,
+      skipAuth: !owner_id,
+    },
+  );
 }
 
 export async function createStudio(
@@ -102,9 +103,16 @@ export async function fetchStudio(id: number): Promise<StudioResponse> {
 
 export async function fetchStudioServices(
   studioId: number,
+  params?: { page?: number; size?: number },
 ): Promise<ServiceResponse[]> {
   const response = await api.get<PaginatedServiceList>(
     `api/v1/studios/${studioId}/services`,
+    {
+      params: {
+        page: params?.page ?? DEFAULT_PAGE,
+        size: params?.size ?? 100,
+      },
+    },
   );
   return response.items;
 }
@@ -113,10 +121,16 @@ export async function fetchStudioOccurrences(
   studioId: number,
   params: StudioOccurrencesParams = {},
 ): Promise<OccurrenceResponse[]> {
-  const { skip = 0, limit = 50, start_from, start_to, status } = params;
+  const {
+    page = DEFAULT_PAGE,
+    size = DEFAULT_OCCURRENCE_PAGE_SIZE,
+    start_from,
+    start_to,
+    status,
+  } = params;
   const searchParams: Record<string, string | number | boolean | undefined> = {
-    skip,
-    limit,
+    page,
+    size,
   };
   if (start_from) searchParams.start_from = start_from;
   if (start_to) searchParams.start_to = start_to;

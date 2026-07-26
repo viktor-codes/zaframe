@@ -15,8 +15,10 @@ import {
   getUserFacingApiMessage,
 } from "@shared/api";
 import {
+  BookingStatus,
   getGuestBookingAccessToken,
   getGuestBookingSnapshot,
+  OrderStatus,
   queryKeys,
   type GuestBookingSnapshot,
 } from "@shared/lib";
@@ -170,8 +172,8 @@ export default function BookingConfirmPage() {
     );
   }
 
-  const isPaid = resolvedBooking.payment_status === "paid";
-  const isCancelled = resolvedBooking.status === "cancelled";
+  const isPaid = resolvedBooking.payment_status === OrderStatus.PAID;
+  const isCancelled = resolvedBooking.status === BookingStatus.CANCELLED;
 
   if (isCancelled) {
     return (

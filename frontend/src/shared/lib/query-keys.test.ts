@@ -12,7 +12,7 @@ describe("queryKeys", () => {
   it("includes the full occurrence filters object in the key", () => {
     const filters = {
       status: OccurrenceStatus.SCHEDULED,
-      limit: 100,
+      size: 100,
       start_from: "2026-01-01T00:00:00.000Z",
     };
     expect(queryKeys.studio.occurrences(9, filters)).toEqual([

@@ -3,8 +3,8 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Card, Button, Skeleton } from "@shared/ui";
-import { fetchMyBookings } from "@shared/api";
-import { queryKeys } from "@shared/lib";
+import { fetchMyBookings, getUserFacingApiMessage } from "@shared/api";
+import { BookingStatus, OrderStatus, queryKeys } from "@shared/lib";
 import type { BookingSelfListItem } from "@entities/booking";
 
 function formatPrice(cents: number): string {
@@ -26,14 +26,14 @@ function formatDateTime(iso: string): string {
 }
 
 function getStatusBadge(status: string, paymentStatus: string | null | undefined) {
-  if (status === "cancelled") {
+  if (status === BookingStatus.CANCELLED) {
     return (
       <span className="rounded-full bg-neutral-200 px-2 py-0.5 text-xs font-medium text-neutral-700">
         Cancelled
       </span>
     );
   }
-  if (paymentStatus === "paid") {
+  if (paymentStatus === OrderStatus.PAID) {
     return (
       <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
         Paid
@@ -48,13 +48,31 @@ function getStatusBadge(status: string, paymentStatus: string | null | undefined
 }
 
 function BookingsList() {
-  const { data: bookings, isLoading } = useQuery({
+  const {
+    data: bookings,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: queryKeys.bookings.my(),
-    queryFn: () => fetchMyBookings({ limit: 50, include_guest_email: true }),
+    queryFn: () => fetchMyBookings({ size: 50, include_guest_email: true }),
   });
 
   if (isLoading) {
     return <BookingsSkeleton />;
+  }
+
+  if (isError) {
+    return (
+      <div className="rounded-lg border border-red-200 bg-red-50 p-8 text-center text-red-800">
+        <p className="font-medium">Could not load bookings</p>
+        <p className="mt-1 text-sm">{getUserFacingApiMessage(error)}</p>
+        <Button type="button" className="mt-4" onClick={() => refetch()}>
+          Try again
+        </Button>
+      </div>
+    );
   }
 
   if (!bookings || bookings.length === 0) {
@@ -83,7 +101,7 @@ function BookingsList() {
 function BookingCard({ booking }: { booking: BookingSelfListItem }) {
   const { occurrence, studio } = booking;
   const isPast = new Date(occurrence.start_time) < new Date();
-  const isCancelled = booking.status === "cancelled";
+  const isCancelled = booking.status === BookingStatus.CANCELLED;
 
   return (
     <Link href={`/bookings/${booking.id}/confirm`}>

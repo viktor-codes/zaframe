@@ -63,7 +63,7 @@ export default function StudioManagePage() {
 function StudioManageContent({ studioId }: { studioId: number }) {
   const queryClient = useQueryClient();
   const id = studioId;
-  const occurrenceFilters = useMemo(() => ({ limit: 100 }), []);
+  const occurrenceFilters = useMemo(() => ({ size: 100 }), []);
 
   const [editMode, setEditMode] = useState(false);
   const [showAddOccurrence, setShowAddOccurrence] = useState(false);

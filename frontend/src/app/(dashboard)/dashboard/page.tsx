@@ -27,9 +27,11 @@ function MyStudios() {
 
   const { data: studios, isLoading } = useQuery({
     queryKey: queryKeys.studios.owner(user?.id),
-    queryFn: () => fetchStudios({ owner_id: user!.id, limit: 50 }),
+    queryFn: () => fetchStudios({ owner_id: user!.id, size: 50 }),
     enabled: !!user?.id,
   });
+
+  const studioItems = studios?.items ?? [];
 
   if (isLoading) {
     return (
@@ -44,7 +46,7 @@ function MyStudios() {
     );
   }
 
-  if (!studios || studios.length === 0) {
+  if (studioItems.length === 0) {
     return (
       <Card className="p-12 text-center">
         <p className="mb-2 font-medium text-neutral-700">
@@ -60,8 +62,6 @@ function MyStudios() {
     );
   }
 
-  const ownerStudios = studios as StudioResponse[];
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -71,7 +71,7 @@ function MyStudios() {
         </Button>
       </div>
       <div className="grid gap-4">
-        {ownerStudios.map((studio) => (
+        {(studioItems as StudioResponse[]).map((studio) => (
           <Link key={studio.id} href={`/dashboard/studios/${studio.id}`}>
             <Card variant="interactive">
               <div className="flex items-start justify-between">

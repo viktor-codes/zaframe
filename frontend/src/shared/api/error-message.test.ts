@@ -20,6 +20,21 @@ describe("getUserFacingApiMessage", () => {
     );
   });
 
+  it("uses safe 4xx Problem detail and hides 5xx detail", () => {
+    expect(
+      getUserFacingApiMessage(
+        new ApiError("Conflict", 409, { detail: "Occurrence is full" }),
+      ),
+    ).toBe("Occurrence is full");
+    expect(
+      getUserFacingApiMessage(
+        new ApiError("Server Error", 500, {
+          detail: "Traceback (most recent call last): Internal boom",
+        }),
+      ),
+    ).toBe("Something went wrong on our side. Please try again later.");
+  });
+
   it("maps network-style ApiError messages to network copy", () => {
     expect(getUserFacingApiMessage(new ApiError("Failed to fetch", 0))).toBe(
       "Network error. Check your connection and try again.",
