@@ -1,6 +1,10 @@
 "use client";
 
-import { OccurrenceRow, isOccurrenceBookable } from "@entities/occurrence";
+import {
+  OccurrenceRow,
+  isOccurrenceBookable,
+  isOccurrenceFull,
+} from "@entities/occurrence";
 import type { OccurrenceResponse } from "@entities/occurrence";
 import { Skeleton } from "@shared/ui";
 
@@ -11,6 +15,27 @@ export interface StepSlotProps {
   selectedId: number | null;
   onSelect: (occurrence: OccurrenceResponse) => void;
   studioSlug: string;
+}
+
+function capacityFromOccurrence(occurrence: OccurrenceResponse) {
+  if (occurrence.confirmed_count == null) {
+    return undefined;
+  }
+  return {
+    confirmed_count: occurrence.confirmed_count,
+    pending_count: occurrence.pending_count ?? 0,
+  };
+}
+
+function isSlotFull(occurrence: OccurrenceResponse): boolean {
+  const capacity = capacityFromOccurrence(occurrence);
+  if (capacity == null) {
+    return false;
+  }
+  return isOccurrenceFull({
+    max_capacity: occurrence.max_capacity,
+    ...capacity,
+  });
 }
 
 export function StepSlot({
@@ -39,11 +64,11 @@ export function StepSlot({
     );
   }
 
-  const bookable = occurrences.filter((occurrence) =>
+  const upcoming = occurrences.filter((occurrence) =>
     isOccurrenceBookable(occurrence),
   );
 
-  if (bookable.length === 0) {
+  if (upcoming.length === 0) {
     return (
       <div
         className="rounded-2xl border border-dashed border-neutral-200 bg-white px-6 py-10 text-center"
@@ -67,26 +92,36 @@ export function StepSlot({
 
   return (
     <ul className="space-y-3" data-testid="book-step-slot">
-      {bookable.map((occurrence) => (
-        <li key={occurrence.id}>
-          <button
-            type="button"
-            className={`w-full rounded-2xl text-left transition ring-offset-2 focus-visible:ring-2 focus-visible:ring-teal-400 ${
-              selectedId === occurrence.id
-                ? "ring-2 ring-teal-500"
-                : "hover:ring-1 hover:ring-neutral-300"
-            }`}
-            onClick={() => onSelect(occurrence)}
-          >
-            <OccurrenceRow
-              occurrence={occurrence}
-              className={
-                selectedId === occurrence.id ? "border-teal-300" : undefined
-              }
-            />
-          </button>
-        </li>
-      ))}
+      {upcoming.map((occurrence) => {
+        const capacity = capacityFromOccurrence(occurrence);
+        const isFull = isSlotFull(occurrence);
+        const isSelected = selectedId === occurrence.id;
+
+        return (
+          <li key={occurrence.id}>
+            <button
+              type="button"
+              disabled={isFull}
+              className={`w-full rounded-2xl text-left transition ring-offset-2 focus-visible:ring-2 focus-visible:ring-teal-400 disabled:cursor-not-allowed disabled:opacity-70 ${
+                isSelected
+                  ? "ring-2 ring-teal-500"
+                  : "hover:ring-1 hover:ring-neutral-300"
+              }`}
+              onClick={() => {
+                if (!isFull) {
+                  onSelect(occurrence);
+                }
+              }}
+            >
+              <OccurrenceRow
+                occurrence={occurrence}
+                capacity={capacity}
+                className={isSelected ? "border-teal-300" : undefined}
+              />
+            </button>
+          </li>
+        );
+      })}
     </ul>
   );
 }

@@ -8,7 +8,10 @@ from app.modules.catalog.public.schemas import (
     PublicService,
     StudioPublicResponse,
 )
-from app.modules.catalog.public.service import get_studio_public
+from app.modules.catalog.public.service import (
+    get_studio_public,
+    list_public_bookable_occurrences,
+)
 
 __all__ = [
     "PublicOccurrence",
@@ -18,4 +21,5 @@ __all__ = [
     "StudioPublicDTO",
     "StudioPublicResponse",
     "get_studio_public",
+    "list_public_bookable_occurrences",
 ]

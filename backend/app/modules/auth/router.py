@@ -7,6 +7,7 @@ Email OTP flow (strict cookie mode):
 4. POST /auth/logout -> revokes current refresh token and clears cookies
 """
 
+import secrets
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request, Response
@@ -93,7 +94,12 @@ def _clear_refresh_cookie(response: Response) -> None:
 def _require_csrf_header(request: Request) -> None:
     csrf_cookie = request.cookies.get(CSRF_COOKIE_NAME)
     csrf_header = request.headers.get(CSRF_HEADER_NAME)
-    if not csrf_cookie or not csrf_header or csrf_cookie != csrf_header:
+    # WHY: compare_digest avoids timing leaks on the double-submit CSRF check.
+    if (
+        not csrf_cookie
+        or not csrf_header
+        or not secrets.compare_digest(csrf_cookie, csrf_header)
+    ):
         raise ForbiddenError("CSRF validation failed")
 
 

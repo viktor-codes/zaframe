@@ -46,6 +46,7 @@ export { fetchSearch } from "./search";
 export {
   createStudio,
   deleteStudio,
+  fetchPublicServiceOccurrences,
   fetchStudio,
   fetchStudioOccurrences,
   fetchStudioServices,

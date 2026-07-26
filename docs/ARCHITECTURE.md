@@ -176,6 +176,7 @@ See [TD-11](./tech-debt/td-11-booking-lifecycle-cron.md) (done).
   with `ALLOW_INMEMORY_RATE_LIMIT=true` for a single-instance emergency — unsafe with replicas.
 - `GET /metrics` is open in `dev`; staging/production require `Authorization: Bearer <METRICS_TOKEN>`.
   If `METRICS_TOKEN` is unset outside dev, the endpoint returns 503.
+- OpenAPI UI (`/docs`, `/redoc`, `/openapi.json`) is enabled only when `ENVIRONMENT=dev`.
 - Paid checkout is gated behind a completed Stripe Connect account (`stripe_account_id` plus
   `stripe_charges_enabled`). Platform fee calculation remains deferred until the Connect fee model
   is implemented end-to-end.

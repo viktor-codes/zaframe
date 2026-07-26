@@ -140,8 +140,21 @@ export async function fetchStudioOccurrences(
     `api/v1/studios/${studioId}/occurrences`,
     {
       params: searchParams,
-      skipAuth: true,
     },
   );
   return response.items;
+}
+
+/**
+ * Public bookable occurrences for the storefront wizard (no auth).
+ * Includes confirmed_count / pending_count for capacity UI.
+ */
+export async function fetchPublicServiceOccurrences(
+  slug: string,
+  serviceId: number,
+): Promise<OccurrenceResponse[]> {
+  return api.get<OccurrenceResponse[]>(
+    `api/v1/studios/slug/${encodeURIComponent(slug)}/services/${serviceId}/occurrences`,
+    { skipAuth: true },
+  );
 }

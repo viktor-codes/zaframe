@@ -77,9 +77,9 @@ async def test_security_headers_hsts_only_in_production(monkeypatch):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_docs_open_without_api_csp(monkeypatch):
-    """Swagger UI keeps working because API CSP is skipped for docs paths."""
-    monkeypatch.setattr(settings, "ENVIRONMENT", "production")
+async def test_docs_open_in_dev_without_api_csp(monkeypatch):
+    """Swagger UI works in dev; API CSP is skipped for docs paths."""
+    monkeypatch.setattr(settings, "ENVIRONMENT", "dev")
     async with AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://test",

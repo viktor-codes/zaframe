@@ -23,6 +23,17 @@ describe("queryKeys", () => {
     ]);
   });
 
+  it("keys public service occurrences by slug and service id", () => {
+    expect(queryKeys.studio.publicServiceOccurrences("yoga", 42)).toEqual([
+      "studio",
+      "slug",
+      "yoga",
+      "service",
+      42,
+      "occurrences",
+    ]);
+  });
+
   it("uses plural roots for list invalidation prefixes", () => {
     expect(queryKeys.studios.all).toEqual(["studios"]);
     expect(queryKeys.bookings.my()[0]).toBe("bookings");

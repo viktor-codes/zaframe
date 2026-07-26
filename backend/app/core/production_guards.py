@@ -9,6 +9,21 @@ from app.core.config import settings
 logger = structlog.get_logger(__name__)
 
 
+def api_docs_route_kwargs(environment: str) -> dict[str, str | None]:
+    """
+    OpenAPI UI routes for FastAPI constructor kwargs.
+
+    WHY: /docs and /openapi.json are reconnaissance surfaces — only expose in dev.
+    """
+    if environment == "dev":
+        return {
+            "docs_url": "/docs",
+            "redoc_url": "/redoc",
+            "openapi_url": "/openapi.json",
+        }
+    return {"docs_url": None, "redoc_url": None, "openapi_url": None}
+
+
 def validate_production_rate_limit_config() -> None:
     """
     Require Redis-backed rate limits in production unless explicitly overridden.

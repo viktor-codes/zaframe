@@ -38,6 +38,8 @@ export const queryKeys = {
      */
     occurrences: (id: number, filters: StudioOccurrencesParams) =>
       ["studio", id, "occurrences", filters] as const,
+    publicServiceOccurrences: (slug: string, serviceId: number) =>
+      ["studio", "slug", slug, "service", serviceId, "occurrences"] as const,
     services: (id: number) => ["studio", id, "services"] as const,
   },
 

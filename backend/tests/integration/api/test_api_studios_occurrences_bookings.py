@@ -201,3 +201,67 @@ async def test_slot_and_booking_flow(client: AsyncClient):
     r_get_occurrence = await client.get(f"/api/v1/occurrences/{occurrence_id}")
     assert r_get_occurrence.status_code == 200
     assert r_get_occurrence.json()["status"] == "cancelled"
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_public_bookable_occurrences_include_capacity(client: AsyncClient):
+    """Anonymous storefront list returns seat counts for the booking wizard."""
+    access, _ = await _authenticate_user(client, email="public-occ-owner@example.com")
+    headers = {"Authorization": f"Bearer {access}"}
+
+    slug = "public-bookable-studio"
+    r_studio = await client.post(
+        "/api/v1/studios",
+        json={
+            "name": "Public Bookable Studio",
+            "slug": slug,
+            "description": "Public list capacity",
+            "email": "public-occ@example.com",
+            "timezone": "Europe/Dublin",
+        },
+        headers=headers,
+    )
+    assert r_studio.status_code == 201
+    studio_id = r_studio.json()["id"]
+    service_id = await create_test_service(client, studio_id, headers)
+
+    start = datetime.now(UTC) + timedelta(days=2)
+    end = start + timedelta(hours=1)
+    r_occurrence = await client.post(
+        "/api/v1/occurrences",
+        json={
+            "start_time": start.isoformat(),
+            "end_time": end.isoformat(),
+            "title": "Public Class",
+            "max_capacity": 2,
+            "price_cents": 1500,
+            "studio_id": studio_id,
+            "service_id": service_id,
+        },
+        headers=headers,
+    )
+    assert r_occurrence.status_code == 201
+    occurrence_id = r_occurrence.json()["id"]
+
+    r_booking = await client.post(
+        "/api/v1/bookings",
+        json={
+            "occurrence_id": occurrence_id,
+            "guest_name": "Hold Guest",
+            "guest_email": "hold-guest@example.com",
+        },
+    )
+    assert r_booking.status_code == 201
+
+    public_list = await client.get(
+        f"/api/v1/studios/slug/{slug}/services/{service_id}/occurrences",
+    )
+    assert public_list.status_code == 200
+    items = public_list.json()
+    assert len(items) == 1
+    assert items[0]["id"] == occurrence_id
+    assert items[0]["confirmed_count"] == 0
+    assert items[0]["pending_count"] == 1
+    assert items[0]["max_capacity"] == 2
+

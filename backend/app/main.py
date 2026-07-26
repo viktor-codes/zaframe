@@ -28,7 +28,10 @@ from app.core.middleware.logging_middleware import (
     REQUEST_ID_STATE_KEY,
     RequestLoggingMiddleware,
 )
-from app.core.production_guards import validate_production_rate_limit_config
+from app.core.production_guards import (
+    api_docs_route_kwargs,
+    validate_production_rate_limit_config,
+)
 from app.core.rate_limit import limiter
 
 API_CONTENT_SECURITY_POLICY = (
@@ -85,11 +88,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 # Use settings from `config.py` instead of hardcoding.
 # Centralize `title` and `version` and allow overrides via `.env`.
 # `lifespan=lifespan` wires the lifecycle management.
+# WHY: OpenAPI UI is a reconnaissance surface — only expose it in local/dev.
+_api_docs_routes = api_docs_route_kwargs(settings.ENVIRONMENT)
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
     debug=settings.DEBUG,
     lifespan=lifespan,
+    docs_url=_api_docs_routes["docs_url"],
+    redoc_url=_api_docs_routes["redoc_url"],
+    openapi_url=_api_docs_routes["openapi_url"],
 )
 
 app.state.limiter = limiter

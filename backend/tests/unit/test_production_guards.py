@@ -3,7 +3,28 @@
 import pytest
 
 from app.core.config import settings
-from app.core.production_guards import validate_production_rate_limit_config
+from app.core.production_guards import (
+    api_docs_route_kwargs,
+    validate_production_rate_limit_config,
+)
+
+
+def test_api_docs_enabled_only_in_dev() -> None:
+    assert api_docs_route_kwargs("dev") == {
+        "docs_url": "/docs",
+        "redoc_url": "/redoc",
+        "openapi_url": "/openapi.json",
+    }
+    assert api_docs_route_kwargs("staging") == {
+        "docs_url": None,
+        "redoc_url": None,
+        "openapi_url": None,
+    }
+    assert api_docs_route_kwargs("production") == {
+        "docs_url": None,
+        "redoc_url": None,
+        "openapi_url": None,
+    }
 
 
 def test_validate_rate_limit_allows_dev_without_redis(monkeypatch: pytest.MonkeyPatch) -> None:

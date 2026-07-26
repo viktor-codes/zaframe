@@ -1727,6 +1727,16 @@ export interface components {
          */
         OccurrenceResponse: {
             /**
+             * Confirmed Count
+             * @description Confirmed seats when capacity is included (public bookable lists)
+             */
+            confirmed_count?: number | null;
+            /**
+             * Pending Count
+             * @description Active pending holds when capacity is included (public bookable lists)
+             */
+            pending_count?: number | null;
+            /**
              * Start Time
              * Format: date-time
              * @description Occurrence start instant (timezone-aware ISO 8601)

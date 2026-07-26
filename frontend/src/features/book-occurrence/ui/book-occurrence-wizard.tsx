@@ -4,9 +4,9 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { OccurrenceResponse } from "@entities/occurrence";
 import type { PublicService } from "@entities/service";
-import { fetchStudioOccurrences } from "@shared/api";
+import { fetchPublicServiceOccurrences } from "@shared/api";
 import { useAuth } from "@shared/auth";
-import { OccurrenceStatus, queryKeys } from "@shared/lib";
+import { queryKeys } from "@shared/lib";
 import { Button } from "@shared/ui";
 
 import {
@@ -27,18 +27,12 @@ export interface BookOccurrenceWizardProps {
   service: PublicService;
 }
 
-const occurrenceFilters = {
-  status: OccurrenceStatus.SCHEDULED,
-  size: 100,
-} as const;
-
 function emptyGuestForm(): StepDetailsForm {
   return { guest_name: "", guest_email: "", guest_phone: "" };
 }
 
 export function BookOccurrenceWizard({
   slug,
-  studioId,
   studioName,
   service,
 }: BookOccurrenceWizardProps) {
@@ -53,8 +47,8 @@ export function BookOccurrenceWizard({
   const checkout = useBookOccurrenceCheckout();
 
   const occurrencesQuery = useQuery({
-    queryKey: queryKeys.studio.occurrences(studioId, occurrenceFilters),
-    queryFn: () => fetchStudioOccurrences(studioId, occurrenceFilters),
+    queryKey: queryKeys.studio.publicServiceOccurrences(slug, service.id),
+    queryFn: () => fetchPublicServiceOccurrences(slug, service.id),
   });
 
   const pickAnotherTime = () => {
@@ -65,11 +59,8 @@ export function BookOccurrenceWizard({
   };
 
   const serviceOccurrences = useMemo(
-    () =>
-      (occurrencesQuery.data ?? []).filter(
-        (occurrence) => occurrence.service_id === service.id,
-      ),
-    [occurrencesQuery.data, service.id],
+    () => occurrencesQuery.data ?? [],
+    [occurrencesQuery.data],
   );
 
   const goToDetails = () => {
