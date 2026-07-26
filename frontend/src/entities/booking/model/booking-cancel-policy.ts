@@ -1,5 +1,9 @@
 import { BookingStatus } from "@shared/lib/constants";
-import { canCustomerCancelBooking, isCancelledBooking } from "./booking";
+import {
+  canCustomerCancelBooking,
+  isBookingReservationExpired,
+  isCancelledBooking,
+} from "./booking";
 
 export type CancelPolicyHint =
   | { kind: "allowed"; deadlineLabel: string }
@@ -8,6 +12,7 @@ export type CancelPolicyHint =
 type CancelPolicyBooking = {
   status: string;
   cancelled_at: string | null;
+  reserved_until?: string | null;
 };
 
 type CancelPolicyOccurrence = { start_time: string };
@@ -36,7 +41,7 @@ function formatDeadline(deadline: Date): string {
 
 /**
  * Customer-facing cancel policy copy for account / confirm UI.
- * Returns null when cancel is irrelevant (cancelled, expired, completed…).
+ * Returns null when cancel is irrelevant (cancelled, expired hold, completed…).
  */
 export function getCancelPolicyHint(
   booking: CancelPolicyBooking,
@@ -45,6 +50,10 @@ export function getCancelPolicyHint(
   now: Date = new Date(),
 ): CancelPolicyHint | null {
   if (isCancelledBooking(booking)) {
+    return null;
+  }
+
+  if (isBookingReservationExpired(booking, now)) {
     return null;
   }
 

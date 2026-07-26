@@ -13,6 +13,7 @@ export interface CancelBookingControlsProps {
   booking: {
     status: string;
     cancelled_at: string | null;
+    reserved_until?: string | null;
   };
   occurrence: { start_time: string };
   studio: { cancel_before_hours: number };
@@ -38,13 +39,23 @@ export function CancelBookingControls({
     onSuccess: onCancelled,
   });
 
+  const policyBooking = {
+    status: booking.status,
+    cancelled_at: booking.cancelled_at,
+    reserved_until: booking.reserved_until,
+  };
   const canCancel = canCustomerCancelBooking(
-    booking,
+    policyBooking,
     occurrence,
     studio,
     now,
   );
-  const policyHint = getCancelPolicyHint(booking, occurrence, studio, now);
+  const policyHint = getCancelPolicyHint(
+    policyBooking,
+    occurrence,
+    studio,
+    now,
+  );
 
   if (!policyHint) {
     return null;

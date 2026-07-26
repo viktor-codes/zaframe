@@ -51,4 +51,19 @@ describe("getCancelPolicyHint", () => {
       ),
     ).toBeNull();
   });
+
+  it("returns null for expired unpaid holds", () => {
+    expect(
+      getCancelPolicyHint(
+        {
+          status: "pending",
+          cancelled_at: null,
+          reserved_until: "2026-07-08T11:00:00.000Z",
+        },
+        occurrence,
+        studio,
+        new Date("2026-07-08T12:00:00.000Z"),
+      ),
+    ).toBeNull();
+  });
 });

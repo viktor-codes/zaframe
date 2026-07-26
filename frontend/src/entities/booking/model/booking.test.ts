@@ -105,4 +105,21 @@ describe("booking model", () => {
       ),
     ).toBe(false);
   });
+
+  it("blocks customer cancellation when payment hold has expired", () => {
+    const now = new Date("2026-07-06T12:00:00.000Z");
+
+    expect(
+      canCustomerCancelBooking(
+        {
+          status: "pending",
+          cancelled_at: null,
+          reserved_until: "2026-07-06T11:00:00.000Z",
+        },
+        { start_time: "2026-07-08T10:00:00.000Z" },
+        { cancel_before_hours: 24 },
+        now,
+      ),
+    ).toBe(false);
+  });
 });

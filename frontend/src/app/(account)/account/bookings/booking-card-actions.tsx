@@ -3,7 +3,6 @@
 import Link from "next/link";
 import {
   canCompleteBookingPayment,
-  getBookingAccountEdge,
   getBookingReservationRemainingMs,
   type BookingSelfListItem,
 } from "@entities/booking";
@@ -29,11 +28,6 @@ function formatHoldRemaining(remainingMs: number): string {
  * Account-list actions: finish unpaid hold and/or cancel before cutoff.
  */
 export function BookingCardActions({ booking, now }: BookingCardActionsProps) {
-  // WHY: expired holds already show a rebook CTA on the card.
-  if (getBookingAccountEdge(booking, now)?.kind === "expired") {
-    return null;
-  }
-
   const canPay = canCompleteBookingPayment(
     booking,
     booking.occurrence,
@@ -42,7 +36,6 @@ export function BookingCardActions({ booking, now }: BookingCardActionsProps) {
   const remainingMs = canPay
     ? getBookingReservationRemainingMs(booking, now)
     : null;
-  const confirmHref = `/bookings/${booking.id}/confirm`;
 
   return (
     <div className="flex flex-col gap-3">
@@ -54,7 +47,9 @@ export function BookingCardActions({ booking, now }: BookingCardActionsProps) {
             </p>
           ) : null}
           <Button asChild size="sm" data-testid="booking-complete-payment">
-            <Link href={confirmHref}>Complete payment</Link>
+            <Link href={`/bookings/${booking.id}/confirm`}>
+              Complete payment
+            </Link>
           </Button>
         </div>
       ) : null}
@@ -64,6 +59,7 @@ export function BookingCardActions({ booking, now }: BookingCardActionsProps) {
         booking={{
           status: booking.status,
           cancelled_at: booking.cancelled_at,
+          reserved_until: booking.reserved_until,
         }}
         occurrence={booking.occurrence}
         studio={booking.studio}

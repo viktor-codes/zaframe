@@ -7,7 +7,6 @@ import {
   isSessionCancelledByStudio,
 } from "@entities/booking";
 import { BookingStatus } from "@shared/lib";
-
 import type { ResolvedGuestBooking } from "../model/use-guest-booking-confirm";
 import { GuestBookingConfirmDetails } from "./guest-booking-confirm-details";
 import { GuestConfirmInactive } from "./guest-booking-confirm-states";
@@ -109,7 +108,11 @@ export function GuestBookingConfirmReady({
     renderCancel != null && occurrence != null && studio != null
       ? renderCancel({
           bookingId: booking.id,
-          booking: { status: booking.status, cancelled_at: cancelledAt },
+          booking: {
+            status: booking.status,
+            cancelled_at: cancelledAt,
+            reserved_until: reservedUntil,
+          },
           occurrence,
           studio,
           accessToken,
@@ -135,9 +138,7 @@ export function GuestBookingConfirmReady({
       canPay={needsPayment && !isHoldExpired}
       isHoldExpired={needsPayment && isHoldExpired}
       isPaid={isPaid}
-      isFreeUnpaid={
-        occurrence != null && occurrence.price_cents === 0 && !isPaid
-      }
+      isFreeUnpaid={Boolean(occurrence && occurrence.price_cents === 0 && !isPaid)}
       error={error}
       isPaying={isPaying}
       onPay={onPay}

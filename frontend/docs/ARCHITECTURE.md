@@ -71,6 +71,7 @@ src/
 ├── app/                        # routing only
 ├── features/
 │   ├── book-occurrence/        # ui/ + model/ + api.ts + index.ts (public API of the feature)
+│   ├── view-my-bookings/       # account list tabs + envelope pagination
 │   ├── cancel-booking/
 │   ├── manage-account/
 │   ├── manage-studio/

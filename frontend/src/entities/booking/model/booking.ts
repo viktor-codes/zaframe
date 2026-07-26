@@ -115,12 +115,17 @@ export function getBookingReservationRemainingMs(
 }
 
 export function canCustomerCancelBooking(
-  booking: Pick<BookingState, "status" | "cancelled_at">,
+  booking: Pick<BookingState, "status" | "cancelled_at" | "reserved_until">,
   occurrence: { start_time: string },
   studio: { cancel_before_hours: number },
   now: Date = new Date(),
 ): boolean {
   if (isCancelledBooking(booking)) {
+    return false;
+  }
+
+  // WHY: expired unpaid holds already show a rebook CTA — cancel is noise.
+  if (isBookingReservationExpired(booking, now)) {
     return false;
   }
 
