@@ -52,6 +52,10 @@ export const queryKeys = {
     services: (id: number) => ["studio", id, "services"] as const,
   },
 
+  service: {
+    detail: (id: number | undefined) => ["service", id] as const,
+  },
+
   bookings: {
     all: ["bookings"] as const,
     /**

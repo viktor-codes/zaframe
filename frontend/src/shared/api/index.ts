@@ -44,6 +44,12 @@ export {
   type CreateCheckoutSessionOptions,
 } from "./payments";
 export { fetchSearch } from "./search";
+export {
+  createService,
+  deactivateService,
+  fetchService,
+  updateService,
+} from "./services";
 export { fetchMyOrders, type MyOrdersParams } from "./orders";
 export { updateCurrentUser } from "./users";
 export {
