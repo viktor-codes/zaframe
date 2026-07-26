@@ -11,11 +11,14 @@ import { formatSessionTimeRange } from "../model/format-session-time";
 export interface TodaySessionCardProps {
   studioId: number;
   occurrence: OccurrenceResponse;
+  /** Calendar deep-link requires MANAGE_SCHEDULE — hide for instructors. */
+  canOpenCalendar?: boolean;
 }
 
 export function TodaySessionCard({
   studioId,
   occurrence,
+  canOpenCalendar = false,
 }: TodaySessionCardProps) {
   const instructor = getOccurrenceInstructorName(occurrence);
   const confirmed = occurrence.confirmed_count ?? 0;
@@ -53,12 +56,14 @@ export function TodaySessionCard({
             confirmed_count={confirmed}
             pending_count={pending}
           />
-          <Link
-            href={`/dashboard/studios/${studioId}/calendar`}
-            className="text-sm font-medium text-primary hover:text-primary-dark"
-          >
-            Open in calendar
-          </Link>
+          {canOpenCalendar ? (
+            <Link
+              href={`/dashboard/studios/${studioId}/calendar`}
+              className="text-sm font-medium text-primary hover:text-primary-dark"
+            >
+              Open in calendar
+            </Link>
+          ) : null}
         </div>
       </div>
     </article>

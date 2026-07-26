@@ -1,6 +1,8 @@
 "use client";
 
 import { getUserFacingApiMessage } from "@shared/api";
+import { usePermission } from "@shared/auth";
+import { StudioPermission } from "@shared/lib";
 import {
   ResourceEmptyState,
   ResourceErrorState,
@@ -17,6 +19,10 @@ export interface StudioTodayPanelProps {
 }
 
 export function StudioTodayPanel({ studioId }: StudioTodayPanelProps) {
+  const { can } = usePermission(studioId);
+  const canManageSchedule = can(StudioPermission.MANAGE_SCHEDULE);
+  const canViewBookings = can(StudioPermission.VIEW_BOOKINGS);
+
   const {
     heading,
     sessions,
@@ -44,6 +50,23 @@ export function StudioTodayPanel({ studioId }: StudioTodayPanelProps) {
     );
   }
 
+  let emptyDescription =
+    "No sessions on the board today. Check back when the schedule is published.";
+  let emptyCtaHref: string | undefined;
+  let emptyCtaLabel: string | undefined;
+
+  if (canManageSchedule) {
+    emptyDescription =
+      "Generate sessions from a schedule template, or open the calendar to plan ahead.";
+    emptyCtaHref = `/dashboard/studios/${studioId}/calendar`;
+    emptyCtaLabel = "Open calendar";
+  } else if (canViewBookings) {
+    emptyDescription =
+      "No sessions on the board today. Check bookings for upcoming participants.";
+    emptyCtaHref = `/dashboard/studios/${studioId}/bookings`;
+    emptyCtaLabel = "View bookings";
+  }
+
   return (
     <div className="space-y-6" data-testid="studio-today-panel">
       <div>
@@ -59,10 +82,10 @@ export function StudioTodayPanel({ studioId }: StudioTodayPanelProps) {
       {sessions.length === 0 ? (
         <ResourceEmptyState
           title="No sessions today"
-          description="Generate sessions from a schedule template, or open the calendar to plan ahead."
+          description={emptyDescription}
           testId="today-empty"
-          ctaHref={`/dashboard/studios/${studioId}/calendar`}
-          ctaLabel="Open calendar"
+          ctaHref={emptyCtaHref}
+          ctaLabel={emptyCtaLabel}
         />
       ) : (
         <section className="space-y-3" aria-label="Today's sessions">
@@ -75,6 +98,7 @@ export function StudioTodayPanel({ studioId }: StudioTodayPanelProps) {
                 key={occurrence.id}
                 studioId={studioId}
                 occurrence={occurrence}
+                canOpenCalendar={canManageSchedule}
               />
             ))}
           </div>

@@ -25,6 +25,30 @@ describe("resolveStudioOnboardingStep", () => {
     expect(step?.href).toBe("/dashboard/studios/7/profile");
   });
 
+  it("skips incomplete profile for managers who cannot edit it", () => {
+    const step = resolveStudioOnboardingStep(
+      {
+        ...baseStudio,
+        role: StudioMemberRole.MANAGER,
+        slug: null,
+      },
+      [],
+    );
+    expect(step?.id).toBe("create_service");
+  });
+
+  it("skips incomplete profile for instructors and marks ready", () => {
+    const step = resolveStudioOnboardingStep(
+      {
+        ...baseStudio,
+        role: StudioMemberRole.INSTRUCTOR,
+        slug: null,
+      },
+      undefined,
+    );
+    expect(step?.id).toBe("ready");
+  });
+
   it("skips service steps for instructors and marks ready", () => {
     const step = resolveStudioOnboardingStep(
       { ...baseStudio, role: StudioMemberRole.INSTRUCTOR },

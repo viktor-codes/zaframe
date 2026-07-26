@@ -46,7 +46,13 @@ export function resolveStudioOnboardingStep(
 ): StudioOnboardingStep | null {
   const base = `/dashboard/studios/${studio.id}`;
 
-  if (isProfileIncomplete(studio)) {
+  const canManageStudio = roleHasPermission(
+    studio.role,
+    StudioPermission.MANAGE_STUDIO,
+  );
+
+  // WHY: only owners can edit profile — never send manager/instructor to /profile.
+  if (isProfileIncomplete(studio) && canManageStudio) {
     return {
       id: "complete_profile",
       title: "Complete studio profile",
