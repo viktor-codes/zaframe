@@ -76,7 +76,7 @@ Public zone first: simplest auth-wise, demoable to studios, closes the money loo
 
 - [x] `entities/studio` ui: StudioHeader, StudioGallery; `entities/service`: ServicePolaroidCard
 - [x] `entities/occurrence`: OccurrenceRow, CapacityIndicator
-- [ ] `app/(main)/s/[slug]` on `GET /studios/slug/{slug}/public` (mobile-first)
+- [x] `app/(main)/s/[slug]` on `GET /studios/slug/{slug}/public` (mobile-first)
 - [ ] `features/book-occurrence`: wizard (slot → guest form or sign-in → summary → Stripe)
 - [ ] Success page with webhook polling ("Payment processing…")
 - [ ] Guest confirm page `/bookings/{id}/confirm` via `access_token`
