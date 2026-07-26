@@ -9,6 +9,7 @@ import {
   PaymentLoadErrorState,
   PaymentManualReviewState,
   PaymentProcessingState,
+  PaymentWebhookTimeoutState,
 } from "./payment-success-states";
 
 export interface PaymentSuccessPanelProps {
@@ -24,6 +25,7 @@ export function PaymentSuccessPanel({
     errorMessage,
     confirmation,
     isWebhookSlow,
+    hasTimedOut,
     bookingId,
   } = usePaymentConfirmationPoll(bookingIdParam);
 
@@ -42,6 +44,13 @@ export function PaymentSuccessPanel({
         bookingId={bookingId}
       />
     );
+  }
+
+  if (
+    hasTimedOut &&
+    (confirmation == null || confirmation.phase === "processing")
+  ) {
+    return <PaymentWebhookTimeoutState bookingId={bookingId} />;
   }
 
   if (confirmation == null || confirmation.phase === "processing") {

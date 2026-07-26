@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Button, Input } from "@shared/ui";
 
 export interface StepDetailsForm {
@@ -26,6 +27,11 @@ export function StepDetails({
   onContinue,
   onBack,
 }: StepDetailsProps) {
+  const pathname = usePathname();
+  const loginHref = pathname
+    ? `/auth/login?next=${encodeURIComponent(pathname)}`
+    : "/auth/login";
+
   return (
     <form
       className="space-y-4"
@@ -42,7 +48,10 @@ export function StepDetails({
       {!isSignedIn ? (
         <p className="text-sm text-neutral-500">
           Already have an account?{" "}
-          <Link href="/auth/login" className="font-semibold text-teal-700 underline">
+          <Link
+            href={loginHref}
+            className="font-semibold text-teal-700 underline"
+          >
             Sign in
           </Link>{" "}
           (optional).

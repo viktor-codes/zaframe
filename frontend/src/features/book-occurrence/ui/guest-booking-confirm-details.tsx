@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { isBookingPaymentSucceeded } from "@entities/booking";
+import { formatMoneyFromCents } from "@shared/lib";
 import { Alert, Button, Card } from "@shared/ui";
 
 import {
@@ -36,15 +37,8 @@ export interface GuestBookingConfirmDetailsProps {
   onConfirmCancel: () => void;
 }
 
-function formatPrice(cents: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(cents / 100);
-}
-
 function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString("en-US", {
+  return new Date(iso).toLocaleString("en-IE", {
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -114,7 +108,7 @@ export function GuestBookingConfirmDetails({
                 {formatDateTime(occurrenceStart)}
               </p>
               <p className="font-semibold text-primary">
-                {formatPrice(priceCents)}
+                {priceCents === 0 ? "Free" : formatMoneyFromCents(priceCents)}
               </p>
             </>
           ) : null}
@@ -177,7 +171,9 @@ export function GuestBookingConfirmDetails({
 
       {isFreeUnpaid ? (
         <Alert variant="success" title="Free session" className="mb-6">
-          No payment required. Your booking is confirmed.
+          No payment required. Your seat is reserved
+          {bookingStatus === "confirmed" ? " and confirmed" : ""}
+          — check your email for details.
         </Alert>
       ) : null}
 

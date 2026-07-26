@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Card, Button, Skeleton, Input } from "@shared/ui";
 import { fetchStudio, fetchStudioOccurrences, getUserFacingApiMessage } from "@shared/api";
-import { OccurrenceStatus, queryKeys } from "@shared/lib";
+import { formatMoneyFromCents, OccurrenceStatus, queryKeys } from "@shared/lib";
 
 function toISOStartOfDay(d: Date): string {
   const c = new Date(d);
@@ -20,22 +20,15 @@ function toISOEndOfDay(d: Date): string {
   return c.toISOString();
 }
 
-function formatPrice(cents: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(cents / 100);
-}
-
 function formatDateTime(iso: string): { date: string; time: string } {
   const d = new Date(iso);
   return {
-    date: d.toLocaleDateString("en-US", {
+    date: d.toLocaleDateString("en-IE", {
       weekday: "short",
       month: "short",
       day: "numeric",
     }),
-    time: d.toLocaleTimeString("en-US", {
+    time: d.toLocaleTimeString("en-IE", {
       hour: "2-digit",
       minute: "2-digit",
     }),
@@ -205,9 +198,13 @@ export default function StudioDetailPage() {
             {upcomingOccurrences.map((occurrence) => {
               const { date, time } = formatDateTime(occurrence.start_time);
               const endTime = new Date(occurrence.end_time).toLocaleTimeString(
-                "en-US",
+                "en-IE",
                 { hour: "2-digit", minute: "2-digit" },
               );
+              const slug = studio.slug?.trim();
+              const bookHref = slug
+                ? `/s/${encodeURIComponent(slug)}/book/${occurrence.service_id}`
+                : `/studios/${id}/book?occurrence=${occurrence.id}`;
               return (
                 <Card key={occurrence.id} variant="interactive">
                   <div className="space-y-2">
@@ -223,11 +220,13 @@ export default function StudioDetailPage() {
                       {date} · {time} – {endTime}
                     </p>
                     <p className="font-semibold text-primary">
-                      {formatPrice(occurrence.price_cents)}
+                      {occurrence.price_cents === 0
+                        ? "Free"
+                        : formatMoneyFromCents(occurrence.price_cents)}
                     </p>
                     <Button asChild className="mt-2 px-4 py-2 text-sm">
                       <Link
-                        href={`/studios/${id}/book?occurrence=${occurrence.id}`}
+                        href={bookHref}
                         data-testid="book-occurrence-button"
                       >
                         Book this session

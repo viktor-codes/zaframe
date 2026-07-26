@@ -4,19 +4,17 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Card, Button, Skeleton } from "@shared/ui";
 import { fetchMyBookings, getUserFacingApiMessage } from "@shared/api";
-import { BookingStatus, OrderStatus, queryKeys } from "@shared/lib";
+import {
+  BookingStatus,
+  formatMoneyFromCents,
+  OrderStatus,
+  queryKeys,
+} from "@shared/lib";
 import type { BookingSelfListItem } from "@entities/booking";
-
-function formatPrice(cents: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(cents / 100);
-}
 
 function formatDateTime(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleString("en-US", {
+  return d.toLocaleString("en-IE", {
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -118,7 +116,9 @@ function BookingCard({ booking }: { booking: BookingSelfListItem }) {
               {occurrence.title} · {formatDateTime(occurrence.start_time)}
             </p>
             <p className="mt-1 font-medium text-primary">
-              {formatPrice(occurrence.price_cents)}
+              {occurrence.price_cents === 0
+                ? "Free"
+                : formatMoneyFromCents(occurrence.price_cents)}
             </p>
           </div>
           <div className="flex items-center gap-2">

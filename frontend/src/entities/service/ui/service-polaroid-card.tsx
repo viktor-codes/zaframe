@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { formatMoneyFromCents } from "@shared/lib";
 import {
   getPublicServicePriceCents,
   isCourseService,
@@ -11,15 +12,6 @@ export interface ServicePolaroidCardProps {
   /** When set, the whole card links to the booking entry point. */
   href?: string;
   className?: string;
-}
-
-function formatPrice(cents: number): string {
-  return new Intl.NumberFormat("en-EU", {
-    style: "currency",
-    currency: "EUR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(cents / 100);
 }
 
 function serviceTypeLabel(service: PublicService): string {
@@ -47,6 +39,7 @@ export function ServicePolaroidCard({
   const typeLabel = serviceTypeLabel(service);
   const meta = serviceMetaLine(service);
   const description = service.description?.trim() || null;
+  const isCourse = isCourseService(service);
 
   const body = (
     <>
@@ -71,8 +64,7 @@ export function ServicePolaroidCard({
           <span className="rounded-lg bg-white/90 px-2.5 py-1 text-[10px] font-bold tracking-widest text-neutral-600 uppercase backdrop-blur-sm">
             {typeLabel}
           </span>
-          {isCourseService(service) &&
-          service.availability?.requires_warning ? (
+          {isCourse && service.availability?.requires_warning ? (
             <span className="rounded-lg bg-amber-400 px-2.5 py-1 text-[10px] font-black tracking-wide text-neutral-900 uppercase">
               Limited spots
             </span>
@@ -92,10 +84,14 @@ export function ServicePolaroidCard({
         ) : null}
         <div className="mt-3 flex items-end justify-between border-t border-neutral-100 pt-3">
           <span className="font-mono text-lg font-bold text-teal-600">
-            {formatPrice(priceCents)}
+            {priceCents === 0 ? "Free" : formatMoneyFromCents(priceCents)}
           </span>
           <span className="font-mono text-[10px] tracking-wide text-neutral-400 uppercase">
-            {isCourseService(service) ? "Full course" : "Per session"}
+            {isCourse && !href
+              ? "Coming soon"
+              : isCourse
+                ? "Full course"
+                : "Per session"}
           </span>
         </div>
       </div>
@@ -117,7 +113,11 @@ export function ServicePolaroidCard({
   }
 
   return (
-    <article className={shellClassName} data-testid="service-polaroid-card">
+    <article
+      className={`${shellClassName} hover:translate-y-0`}
+      data-testid="service-polaroid-card"
+      data-course-gated={isCourse ? "true" : undefined}
+    >
       {body}
     </article>
   );

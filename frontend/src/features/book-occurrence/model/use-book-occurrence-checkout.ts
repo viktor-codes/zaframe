@@ -8,6 +8,7 @@ import {
   createBooking,
   createCheckoutSession,
   createIdempotencyKey,
+  getUserFacingApiMessage,
 } from "@shared/api";
 import { storeGuestBookingAccess } from "@shared/lib";
 
@@ -22,14 +23,26 @@ export interface BookOccurrenceCheckoutInput {
   guest: GuestDetails;
 }
 
+type CheckoutMutationResult =
+  | { kind: "stripe"; bookingId: number }
+  | { kind: "free"; bookingId: number }
+  | { kind: "checkout_failed"; bookingId: number; message: string };
+
+const CHECKOUT_FAILED_FALLBACK =
+  "Payment could not be started. Your seat is held — open booking details to retry.";
+
 export function useBookOccurrenceCheckout() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isOccurrenceFull, setIsOccurrenceFull] = useState(false);
+  const [heldBookingId, setHeldBookingId] = useState<number | null>(null);
   const checkoutIdempotencyKeyRef = useRef(createIdempotencyKey());
 
   const mutation = useMutation({
-    mutationFn: async ({ occurrence, guest }: BookOccurrenceCheckoutInput) => {
+    mutationFn: async ({
+      occurrence,
+      guest,
+    }: BookOccurrenceCheckoutInput): Promise<CheckoutMutationResult> => {
       const booking = await createBooking({
         occurrence_id: occurrence.id,
         guest_name: guest.guest_name,
@@ -49,6 +62,11 @@ export function useBookOccurrenceCheckout() {
         reserved_until: booking.reserved_until ?? null,
       });
 
+      // WHY: free sessions have no Stripe Checkout — confirm page is the success UI.
+      if (occurrence.price_cents === 0) {
+        return { kind: "free", bookingId: booking.id };
+      }
+
       const origin = window.location.origin;
 
       try {
@@ -64,16 +82,36 @@ export function useBookOccurrenceCheckout() {
 
         if (session.checkout_url) {
           window.location.href = session.checkout_url;
-          return { bookingId: booking.id, redirectedToStripe: true };
+          return { kind: "stripe", bookingId: booking.id };
         }
-      } catch {
-        // WHY: hold already exists — confirm page can retry Pay.
+
+        return {
+          kind: "checkout_failed",
+          bookingId: booking.id,
+          message: CHECKOUT_FAILED_FALLBACK,
+        };
+      } catch (err) {
+        return {
+          kind: "checkout_failed",
+          bookingId: booking.id,
+          message: getUserFacingApiMessage(err) || CHECKOUT_FAILED_FALLBACK,
+        };
+      }
+    },
+    onSuccess: (result) => {
+      if (result.kind === "stripe") return;
+
+      if (result.kind === "free") {
+        router.push(`/bookings/${result.bookingId}/confirm`);
+        return;
       }
 
-      router.push(`/bookings/${booking.id}/confirm`);
-      return { bookingId: booking.id, redirectedToStripe: false };
+      setHeldBookingId(result.bookingId);
+      setIsOccurrenceFull(false);
+      setError(result.message);
     },
     onError: (err) => {
+      setHeldBookingId(null);
       setIsOccurrenceFull(isOccurrenceFullCheckoutError(err));
       setError(getBookingCheckoutErrorMessage(err));
     },
@@ -82,14 +120,17 @@ export function useBookOccurrenceCheckout() {
   return {
     error,
     isOccurrenceFull,
+    heldBookingId,
     clearError: () => {
       setError(null);
       setIsOccurrenceFull(false);
+      setHeldBookingId(null);
     },
     isPaying: mutation.isPending,
     pay: (input: BookOccurrenceCheckoutInput) => {
       setError(null);
       setIsOccurrenceFull(false);
+      setHeldBookingId(null);
       mutation.mutate(input);
     },
   };

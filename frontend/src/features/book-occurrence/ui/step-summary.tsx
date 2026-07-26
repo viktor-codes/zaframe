@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import type { OccurrenceResponse } from "@entities/occurrence";
+import { formatMoneyFromCents } from "@shared/lib";
 import { Button } from "@shared/ui";
 
 import type { GuestDetails } from "../model/guest-details-schema";
@@ -12,23 +14,15 @@ export interface StepSummaryProps {
   guest: GuestDetails;
   error: string | null;
   isOccurrenceFull?: boolean;
+  heldBookingId?: number | null;
   isPaying: boolean;
   onBack: () => void;
   onPay: () => void;
   onPickAnotherTime?: () => void;
 }
 
-function formatPrice(cents: number): string {
-  return new Intl.NumberFormat("en-EU", {
-    style: "currency",
-    currency: "EUR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(cents / 100);
-}
-
 function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString("en-US", {
+  return new Date(iso).toLocaleString("en-IE", {
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -44,11 +38,14 @@ export function StepSummary({
   guest,
   error,
   isOccurrenceFull = false,
+  heldBookingId = null,
   isPaying,
   onBack,
   onPay,
   onPickAnotherTime,
 }: StepSummaryProps) {
+  const isFree = occurrence.price_cents === 0;
+
   return (
     <div className="space-y-6" data-testid="book-step-summary">
       <div className="rounded-2xl border border-neutral-200 bg-white p-5">
@@ -91,7 +88,7 @@ export function StepSummary({
           <div className="flex justify-between gap-4 border-t border-neutral-100 pt-3">
             <dt className="font-semibold text-neutral-700">Total</dt>
             <dd className="font-mono text-lg font-bold text-teal-600">
-              {formatPrice(occurrence.price_cents)}
+              {isFree ? "Free" : formatMoneyFromCents(occurrence.price_cents)}
             </dd>
           </div>
         </dl>
@@ -105,17 +102,28 @@ export function StepSummary({
           }
         >
           <p>{error}</p>
-          {isOccurrenceFull && onPickAnotherTime ? (
-            <Button
-              type="button"
-              variant="outline"
-              className="mt-3"
-              onClick={onPickAnotherTime}
-              data-testid="book-pick-another-time"
-            >
-              Pick another time
-            </Button>
-          ) : null}
+          <div className="mt-3 flex flex-wrap gap-2">
+            {isOccurrenceFull && onPickAnotherTime ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onPickAnotherTime}
+                data-testid="book-pick-another-time"
+              >
+                Pick another time
+              </Button>
+            ) : null}
+            {heldBookingId != null ? (
+              <Button type="button" variant="outline" asChild>
+                <Link
+                  href={`/bookings/${heldBookingId}/confirm`}
+                  data-testid="book-open-held-booking"
+                >
+                  Open booking details
+                </Link>
+              </Button>
+            ) : null}
+          </div>
         </div>
       ) : null}
 
@@ -130,7 +138,7 @@ export function StepSummary({
           disabled={isOccurrenceFull}
           data-testid="submit-booking-button"
         >
-          Pay with Stripe
+          {isFree ? "Confirm free booking" : "Pay with Stripe"}
         </Button>
       </div>
     </div>

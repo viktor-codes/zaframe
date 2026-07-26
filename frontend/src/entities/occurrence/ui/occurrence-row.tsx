@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatMoneyFromCents } from "@shared/lib";
 import { getOccurrenceBookActionLabel } from "../model/occurrence-action-label";
 import {
   getOccurrenceDurationMinutes,
@@ -23,15 +24,6 @@ export interface OccurrenceRowProps {
   actionLabel?: string;
 }
 
-function formatPrice(cents: number): string {
-  return new Intl.NumberFormat("en-EU", {
-    style: "currency",
-    currency: "EUR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(cents / 100);
-}
-
 function formatSlot(startIso: string, endIso: string): {
   date: string;
   time: string;
@@ -40,15 +32,15 @@ function formatSlot(startIso: string, endIso: string): {
   const end = new Date(endIso);
 
   return {
-    date: start.toLocaleDateString("en-US", {
+    date: start.toLocaleDateString("en-IE", {
       weekday: "short",
       month: "short",
       day: "numeric",
     }),
-    time: `${start.toLocaleTimeString("en-US", {
+    time: `${start.toLocaleTimeString("en-IE", {
       hour: "2-digit",
       minute: "2-digit",
-    })} – ${end.toLocaleTimeString("en-US", {
+    })} – ${end.toLocaleTimeString("en-IE", {
       hour: "2-digit",
       minute: "2-digit",
     })}`,
@@ -101,7 +93,9 @@ export function OccurrenceRow({
 
       <div className="flex shrink-0 items-center justify-between gap-3 sm:flex-col sm:items-end sm:justify-center">
         <p className="font-mono text-base font-bold text-teal-600">
-          {formatPrice(occurrence.price_cents)}
+          {occurrence.price_cents === 0
+            ? "Free"
+            : formatMoneyFromCents(occurrence.price_cents)}
         </p>
         {showAction ? (
           canBook ? (

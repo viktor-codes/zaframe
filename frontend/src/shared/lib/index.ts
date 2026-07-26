@@ -1,6 +1,8 @@
 /** Utils, config, constants, and cross-cutting client helpers. */
 export { config } from "./config";
 export { cn } from "./utils";
+export { formatMoneyFromCents } from "./format-money";
+export { getSafeNextPath } from "./safe-next-path";
 export { useUIStore, type HeaderVariant } from "./ui-store";
 export {
   getGuestBookingAccessToken,

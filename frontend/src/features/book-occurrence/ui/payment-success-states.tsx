@@ -33,6 +33,40 @@ export function PaymentProcessingState({
   );
 }
 
+export function PaymentWebhookTimeoutState({
+  bookingId,
+}: {
+  bookingId: number | null;
+}) {
+  return (
+    <Card
+      className="py-12 text-center"
+      data-testid="payment-success-webhook-timeout"
+    >
+      <h1 className="text-secondary mb-2 font-display text-2xl font-bold">
+        Still confirming your payment
+      </h1>
+      <p className="mb-6 text-neutral-600">
+        Confirmation is taking longer than expected. Check your email for the
+        booking receipt, or open your booking details — the status updates when
+        the payment clears.
+      </p>
+      <div className="flex flex-col justify-center gap-4 sm:flex-row">
+        {bookingId != null ? (
+          <Button asChild>
+            <Link href={`/bookings/${bookingId}/confirm`}>
+              Open booking details
+            </Link>
+          </Button>
+        ) : null}
+        <Button variant="outline" asChild>
+          <Link href="/studios">Browse studios</Link>
+        </Button>
+      </div>
+    </Card>
+  );
+}
+
 export function PaymentConfirmedState({ bookingId }: { bookingId: number }) {
   return (
     <Card className="py-12 text-center" data-testid="payment-success-confirmed">

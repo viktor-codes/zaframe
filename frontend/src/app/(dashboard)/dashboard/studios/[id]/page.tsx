@@ -5,7 +5,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { RequireStudioRole } from "@shared/auth";
-import { queryKeys, StudioMemberRole } from "@shared/lib";
+import {
+  formatMoneyFromCents,
+  queryKeys,
+  StudioMemberRole,
+} from "@shared/lib";
 import { Card, Button, Input, Textarea, Skeleton } from "@shared/ui";
 import {
   createOccurrence,
@@ -18,16 +22,9 @@ import {
 } from "@shared/api";
 import type { OccurrenceResponse } from "@entities/occurrence";
 
-function formatPrice(cents: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(cents / 100);
-}
-
 function formatDateTime(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleString("en-US", {
+  return d.toLocaleString("en-IE", {
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -483,7 +480,10 @@ function OccurrenceCard({
         <div>
           <h3 className="text-secondary font-semibold">{occurrence.title}</h3>
           <p className="text-sm text-neutral-600">
-            {formatDateTime(occurrence.start_time)} · {formatPrice(occurrence.price_cents)}
+            {formatDateTime(occurrence.start_time)} ·{" "}
+            {occurrence.price_cents === 0
+              ? "Free"
+              : formatMoneyFromCents(occurrence.price_cents)}
           </p>
           <p className="text-xs text-neutral-500">
             {occurrence.status === "scheduled"

@@ -55,7 +55,12 @@ export async function generateMetadata({
   }
 }
 
-function serviceBookHref(slug: string, service: PublicService): string {
+function serviceBookHref(
+  slug: string,
+  service: PublicService,
+): string | undefined {
+  // WHY: course checkout is Phase 6 — do not open the single-occurrence wizard.
+  if (isCourseService(service)) return undefined;
   return `/s/${encodeURIComponent(slug)}/book/${service.id}`;
 }
 

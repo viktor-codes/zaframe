@@ -6,18 +6,10 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Heart, Check } from "lucide-react";
 import type { SearchResult } from "@entities/studio";
+import { formatMoneyFromCents } from "@shared/lib";
 
 const PLACEHOLDER_IMAGE =
   "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?auto=format&fit=crop&q=80&w=800";
-
-function formatPrice(cents: number): string {
-  return new Intl.NumberFormat("en-EU", {
-    style: "currency",
-    currency: "EUR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(cents / 100);
-}
 
 function categoryLabel(category: string): string {
   const labels: Record<string, string> = {
@@ -135,7 +127,7 @@ export function StudioSearchCard({ result, index = 0 }: StudioSearchCardProps) {
           </div>
           <div className="flex items-center justify-between border-t border-zinc-100 pt-3">
             <div className="font-mono text-lg font-bold text-teal-600">
-              {minPrice != null ? formatPrice(minPrice) : "—"}
+              {minPrice != null ? formatMoneyFromCents(minPrice) : "—"}
             </div>
             <div className="font-mono text-[10px] text-zinc-400 uppercase">
               From session

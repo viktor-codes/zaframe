@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { isCourseService } from "@entities/service";
 import { getStudioDisplayName } from "@entities/studio";
 import { BookOccurrenceWizard } from "@features/book-occurrence";
 import { Header } from "@features/navigation/components";
 import { ApiError } from "@shared/api/api-error";
 import { fetchStudioPublicBySlug } from "@shared/api/server";
+import { Button } from "@shared/ui";
 
 interface BookServicePageProps {
   params: Promise<{ slug: string; serviceId: string }>;
@@ -39,6 +42,36 @@ export async function generateMetadata({
   }
 }
 
+function CourseCheckoutUnavailable({
+  slug,
+  studioName,
+  serviceName,
+}: {
+  slug: string;
+  studioName: string;
+  serviceName: string;
+}) {
+  return (
+    <div
+      className="mx-auto max-w-lg px-4 pt-28 pb-16 text-center sm:px-6"
+      data-testid="course-checkout-unavailable"
+    >
+      <h1 className="font-display text-2xl font-bold text-neutral-900">
+        Course booking is coming soon
+      </h1>
+      <p className="mt-3 text-sm text-neutral-600">
+        {serviceName} at {studioName} is a full course. Drop-in checkout is not
+        available for courses yet — browse other classes on the studio page.
+      </p>
+      <div className="mt-8">
+        <Button asChild>
+          <Link href={`/s/${encodeURIComponent(slug)}`}>Back to studio</Link>
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default async function BookServicePage({ params }: BookServicePageProps) {
   const { slug: rawSlug, serviceId: rawServiceId } = await params;
   const slug = rawSlug?.trim();
@@ -62,12 +95,20 @@ export default async function BookServicePage({ params }: BookServicePageProps) 
           placeholder: "Search studios…",
         }}
       />
-      <BookOccurrenceWizard
-        slug={slug}
-        studioId={studio.id}
-        studioName={getStudioDisplayName(studio)}
-        service={service}
-      />
+      {isCourseService(service) ? (
+        <CourseCheckoutUnavailable
+          slug={slug}
+          studioName={getStudioDisplayName(studio)}
+          serviceName={service.name}
+        />
+      ) : (
+        <BookOccurrenceWizard
+          slug={slug}
+          studioId={studio.id}
+          studioName={getStudioDisplayName(studio)}
+          service={service}
+        />
+      )}
     </>
   );
 }

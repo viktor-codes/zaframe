@@ -137,6 +137,7 @@ export function BookOccurrenceWizard({
           guest={guest}
           error={checkout.error}
           isOccurrenceFull={checkout.isOccurrenceFull}
+          heldBookingId={checkout.heldBookingId}
           isPaying={checkout.isPaying}
           onBack={() => setStep("details")}
           onPay={() => checkout.pay({ occurrence: selected, guest })}

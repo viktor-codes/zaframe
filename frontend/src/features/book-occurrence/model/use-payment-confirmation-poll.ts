@@ -15,8 +15,10 @@ import {
 } from "./resolve-payment-confirmation";
 
 const POLL_INTERVAL_MS = 2_000;
-/** Soft UX hint only — polling continues until a terminal phase. */
+/** Soft UX hint only — polling continues until terminal phase or hard timeout. */
 const SLOW_WEBHOOK_HINT_AFTER_MS = 60_000;
+/** Stop polling after this wall-clock window (battery / runaway requests). */
+const POLL_HARD_TIMEOUT_MS = 5 * 60_000;
 
 export interface UsePaymentConfirmationPollResult {
   isLoading: boolean;
@@ -24,6 +26,7 @@ export interface UsePaymentConfirmationPollResult {
   errorMessage: string | null;
   confirmation: PaymentConfirmationResult | null;
   isWebhookSlow: boolean;
+  hasTimedOut: boolean;
   bookingId: number | null;
 }
 
@@ -43,6 +46,7 @@ export function usePaymentConfirmationPoll(
   const bookingId = parseBookingId(bookingIdParam);
   const [pollStartedAt] = useState(() => Date.now());
   const [isWebhookSlow, setIsWebhookSlow] = useState(false);
+  const [hasTimedOut, setHasTimedOut] = useState(false);
 
   const query = useQuery({
     queryKey: queryKeys.booking.detail(bookingId ?? 0),
@@ -54,6 +58,9 @@ export function usePaymentConfirmationPoll(
     enabled: bookingId != null,
     retry: false,
     refetchInterval: (q) => {
+      if (Date.now() - pollStartedAt >= POLL_HARD_TIMEOUT_MS) {
+        return false;
+      }
       const data = q.state.data;
       if (!data) return POLL_INTERVAL_MS;
       const result = resolvePaymentConfirmation(data);
@@ -69,20 +76,33 @@ export function usePaymentConfirmationPoll(
   useEffect(() => {
     if (confirmation?.phase !== "processing") {
       setIsWebhookSlow(false);
+      setHasTimedOut(false);
       return;
     }
 
     const elapsed = Date.now() - pollStartedAt;
-    if (elapsed >= SLOW_WEBHOOK_HINT_AFTER_MS) {
+    if (elapsed >= POLL_HARD_TIMEOUT_MS) {
+      setHasTimedOut(true);
       setIsWebhookSlow(true);
       return;
     }
 
-    const timer = window.setTimeout(() => {
+    if (elapsed >= SLOW_WEBHOOK_HINT_AFTER_MS) {
       setIsWebhookSlow(true);
-    }, SLOW_WEBHOOK_HINT_AFTER_MS - elapsed);
+    }
 
-    return () => window.clearTimeout(timer);
+    const slowTimer = window.setTimeout(() => {
+      setIsWebhookSlow(true);
+    }, Math.max(SLOW_WEBHOOK_HINT_AFTER_MS - elapsed, 0));
+
+    const hardTimer = window.setTimeout(() => {
+      setHasTimedOut(true);
+    }, POLL_HARD_TIMEOUT_MS - elapsed);
+
+    return () => {
+      window.clearTimeout(slowTimer);
+      window.clearTimeout(hardTimer);
+    };
   }, [confirmation?.phase, pollStartedAt]);
 
   if (bookingId == null) {
@@ -93,6 +113,7 @@ export function usePaymentConfirmationPoll(
         "Missing booking reference. Return from checkout and try again.",
       confirmation: null,
       isWebhookSlow: false,
+      hasTimedOut: false,
       bookingId: null,
     };
   }
@@ -105,6 +126,10 @@ export function usePaymentConfirmationPoll(
       : null,
     confirmation,
     isWebhookSlow,
+    hasTimedOut:
+      hasTimedOut ||
+      (confirmation?.phase === "processing" &&
+        Date.now() - pollStartedAt >= POLL_HARD_TIMEOUT_MS),
     bookingId,
   };
 }

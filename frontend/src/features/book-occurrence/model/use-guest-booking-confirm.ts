@@ -101,8 +101,9 @@ export function useGuestBookingConfirm(
     });
   }, [booking, bookingId]);
 
+  // WHY: snapshot is optimistic paint only while loading — never mask a failed GET.
   const resolvedBooking: ResolvedGuestBooking | null =
-    booking ?? guestSnapshot ?? null;
+    booking ?? (loadingBooking ? guestSnapshot : null);
 
   const { data: occurrence } = useQuery({
     queryKey: queryKeys.occurrence.detail(resolvedBooking?.occurrence_id),
@@ -124,8 +125,8 @@ export function useGuestBookingConfirm(
     occurrence: isMissingId ? undefined : occurrence,
     studio: isMissingId ? undefined : studio,
     isLoading:
-      !isMissingId && loadingBooking && !guestSnapshot && !resolvedBooking,
-    isNotFound: isMissingId || Boolean(errorBooking && !guestSnapshot),
+      !isMissingId && loadingBooking && !booking && !guestSnapshot,
+    isNotFound: isMissingId || Boolean(errorBooking && !booking),
     isGuestSession: !isMissingId && isGuestSession,
     error: isMissingId ? null : actions.error,
     clearError: actions.clearError,
