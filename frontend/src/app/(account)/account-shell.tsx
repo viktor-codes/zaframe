@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
   { href: "/bookings", label: "My bookings" },
+  { href: "/account/profile", label: "Profile" },
 ] as const;
 
 interface AccountShellProps {

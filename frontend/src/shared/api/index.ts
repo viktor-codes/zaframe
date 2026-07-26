@@ -44,6 +44,7 @@ export {
   type CreateCheckoutSessionOptions,
 } from "./payments";
 export { fetchSearch } from "./search";
+export { updateCurrentUser } from "./users";
 export {
   createStudio,
   deleteStudio,
