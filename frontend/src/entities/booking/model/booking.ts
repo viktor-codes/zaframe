@@ -1,13 +1,5 @@
 import type { BookingLike } from "./types";
-
-export const BOOKING_STATUS = {
-  PENDING: "pending",
-  CONFIRMED: "confirmed",
-  COMPLETED: "completed",
-  CANCELLED: "cancelled",
-  EXPIRED: "expired",
-  NO_SHOW: "no_show",
-} as const;
+import { BookingStatus } from "@shared/lib/constants";
 
 type BookingState = Pick<
   BookingLike,
@@ -15,20 +7,20 @@ type BookingState = Pick<
 >;
 
 export function isPendingBooking(booking: Pick<BookingState, "status">): boolean {
-  return booking.status === BOOKING_STATUS.PENDING;
+  return booking.status === BookingStatus.PENDING;
 }
 
 export function isConfirmedBooking(
   booking: Pick<BookingState, "status">,
 ): boolean {
-  return booking.status === BOOKING_STATUS.CONFIRMED;
+  return booking.status === BookingStatus.CONFIRMED;
 }
 
 export function isCancelledBooking(
   booking: Pick<BookingState, "status" | "cancelled_at">,
 ): boolean {
   return (
-    booking.status === BOOKING_STATUS.CANCELLED || booking.cancelled_at != null
+    booking.status === BookingStatus.CANCELLED || booking.cancelled_at != null
   );
 }
 
@@ -91,8 +83,8 @@ export function canCustomerCancelBooking(
   }
 
   if (
-    booking.status !== BOOKING_STATUS.CONFIRMED &&
-    booking.status !== BOOKING_STATUS.PENDING
+    booking.status !== BookingStatus.CONFIRMED &&
+    booking.status !== BookingStatus.PENDING
   ) {
     return false;
   }

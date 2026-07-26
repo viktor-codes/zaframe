@@ -6,8 +6,16 @@
  * - detail roots are singular: `studio`, `booking`, `occurrence`
  * - invalidate with the shortest prefix (`queryKeys.studios.all`)
  *
- * Prefer these helpers over inline string arrays.
+ * WHY: `filters` / list `params` in the key must match the object passed to the
+ * fetch function — otherwise cache hits can serve the wrong payload.
  */
+
+import type {
+  StudioOccurrencesParams,
+  StudiosListParams,
+} from "../api/studios";
+
+export type { StudioOccurrencesParams, StudiosListParams };
 
 export const queryKeys = {
   auth: {
@@ -17,17 +25,19 @@ export const queryKeys = {
 
   studios: {
     all: ["studios"] as const,
-    explore: (params: object) => ["studios", "explore", params] as const,
+    explore: (params: StudiosListParams) =>
+      ["studios", "explore", params] as const,
     owner: (userId: number | undefined) =>
       ["studios", "owner", userId] as const,
   },
 
   studio: {
     detail: (id: number | undefined) => ["studio", id] as const,
-    occurrences: (
-      id: number,
-      filters: object = {},
-    ) => ["studio", id, "occurrences", filters] as const,
+    /**
+     * @param filters - Exact params passed to `fetchStudioOccurrences` (no silent defaults in the key).
+     */
+    occurrences: (id: number, filters: StudioOccurrencesParams) =>
+      ["studio", id, "occurrences", filters] as const,
     services: (id: number) => ["studio", id, "services"] as const,
   },
 

@@ -1,12 +1,16 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { Card, Button, Input, Skeleton } from "@shared/ui";
 import { createBooking, fetchStudio, fetchStudioOccurrences } from "@shared/api";
-import { queryKeys, storeGuestBookingAccess } from "@shared/lib";
+import {
+  OccurrenceStatus,
+  queryKeys,
+  storeGuestBookingAccess,
+} from "@shared/lib";
 
 function formatPrice(cents: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -39,6 +43,11 @@ function BookPageContent() {
     guest_phone: "",
   });
 
+  const occurrenceFilters = useMemo(
+    () => ({ status: OccurrenceStatus.SCHEDULED }),
+    [],
+  );
+
   const { data: studio } = useQuery({
     queryKey: queryKeys.studio.detail(studioId),
     queryFn: () => fetchStudio(studioId),
@@ -46,8 +55,8 @@ function BookPageContent() {
   });
 
   const { data: occurrences } = useQuery({
-    queryKey: queryKeys.studio.occurrences(studioId, { status: "scheduled" }),
-    queryFn: () => fetchStudioOccurrences(studioId, { status: "scheduled" }),
+    queryKey: queryKeys.studio.occurrences(studioId, occurrenceFilters),
+    queryFn: () => fetchStudioOccurrences(studioId, occurrenceFilters),
     enabled: !!studio,
   });
 

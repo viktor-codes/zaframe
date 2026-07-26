@@ -1,16 +1,10 @@
+import {
+  isStudioMemberRole,
+  StudioMemberRole,
+  UserRole,
+} from "@shared/lib/constants";
+
 import type { StudioRoleResponse, UserProfile } from "./types";
-
-export const GLOBAL_USER_ROLE = {
-  USER: "user",
-  STUDIO_OWNER: "studio_owner",
-  ADMIN: "admin",
-} as const;
-
-export const STUDIO_MEMBER_ROLE = {
-  OWNER: "owner",
-  MANAGER: "manager",
-  INSTRUCTOR: "instructor",
-} as const;
 
 export function getUserDisplayName(user: Pick<UserProfile, "name" | "email">): string {
   const name = user.name.trim();
@@ -18,25 +12,32 @@ export function getUserDisplayName(user: Pick<UserProfile, "name" | "email">): s
 }
 
 export function isGlobalStudioOwner(user: Pick<UserProfile, "role">): boolean {
-  return user.role === GLOBAL_USER_ROLE.STUDIO_OWNER;
+  return user.role === UserRole.STUDIO_OWNER;
 }
 
 export function isGlobalAdmin(user: Pick<UserProfile, "role">): boolean {
-  return user.role === GLOBAL_USER_ROLE.ADMIN;
+  return user.role === UserRole.ADMIN;
 }
 
 export function getStudioRole(
   user: Pick<UserProfile, "roles">,
   studioId: number,
-): string | null {
+): StudioMemberRole | null {
   const membership = user.roles?.find((role) => role.studio_id === studioId);
-  return membership?.role ?? null;
+  if (!membership || !isStudioMemberRole(membership.role)) {
+    return null;
+  }
+  return membership.role;
 }
 
-export function hasStudioRole(
+/**
+ * Check membership against an allow-list.
+ * Prefer `@shared/auth` `hasStudioRole` / `usePermission` in UI gates.
+ */
+export function userHasStudioRole(
   user: Pick<UserProfile, "roles">,
   studioId: number,
-  allowedRoles: readonly string[],
+  allowedRoles: readonly StudioMemberRole[],
 ): boolean {
   const role = getStudioRole(user, studioId);
   return role != null && allowedRoles.includes(role);
@@ -47,3 +48,5 @@ export function listStudioMemberships(
 ): StudioRoleResponse[] {
   return user.roles ?? [];
 }
+
+export { StudioMemberRole, UserRole };

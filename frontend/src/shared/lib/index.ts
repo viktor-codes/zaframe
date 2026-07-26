@@ -10,4 +10,9 @@ export {
 } from "./booking-guest-token";
 export * from "./constants";
 export { queryKeys } from "./query-keys";
-export { createAppQueryClient } from "./query-client";
+export type {
+  StudioOccurrencesParams,
+  StudiosListParams,
+} from "./query-keys";
+// WHY: createAppQueryClient stays a deep import (`@shared/lib/query-client`)
+// so isomorphic barrels do not pull TanStack Query + module augmentation.

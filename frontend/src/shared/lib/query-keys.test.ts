@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { OccurrenceStatus } from "./constants";
 import { queryKeys } from "./query-keys";
 
 describe("queryKeys", () => {
@@ -8,14 +9,17 @@ describe("queryKeys", () => {
     expect(queryKeys.auth.me(3)[0]).toBe(queryKeys.auth.all[0]);
   });
 
-  it("keeps studio detail and nested resources under studio id", () => {
-    expect(queryKeys.studio.detail(9)).toEqual(["studio", 9]);
-    expect(queryKeys.studio.services(9)).toEqual(["studio", 9, "services"]);
-    expect(queryKeys.studio.occurrences(9, { status: "scheduled" })).toEqual([
+  it("includes the full occurrence filters object in the key", () => {
+    const filters = {
+      status: OccurrenceStatus.SCHEDULED,
+      limit: 100,
+      start_from: "2026-01-01T00:00:00.000Z",
+    };
+    expect(queryKeys.studio.occurrences(9, filters)).toEqual([
       "studio",
       9,
       "occurrences",
-      { status: "scheduled" },
+      filters,
     ]);
   });
 

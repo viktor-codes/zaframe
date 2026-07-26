@@ -9,13 +9,15 @@ export default function AccountLayout({
   children: React.ReactNode;
 }) {
   return (
-    <RouteErrorBoundary
-      title="Account unavailable"
-      description="Your account section could not be displayed. Try again or reload the page."
-    >
-      <RequireAuth>
-        <AccountShell>{children}</AccountShell>
-      </RequireAuth>
-    </RouteErrorBoundary>
+    <RequireAuth>
+      <AccountShell>
+        <RouteErrorBoundary
+          title="Account unavailable"
+          description="Your account section could not be displayed. Try again or reload the page."
+        >
+          {children}
+        </RouteErrorBoundary>
+      </AccountShell>
+    </RequireAuth>
   );
 }

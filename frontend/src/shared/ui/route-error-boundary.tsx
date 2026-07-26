@@ -2,7 +2,10 @@
 
 /**
  * Client ErrorBoundary wrapper for Server Component route layouts.
+ * Remounts on pathname change so a failed page does not block the next route.
  */
+
+import { usePathname } from "next/navigation";
 
 import { ErrorBoundary } from "./error-boundary";
 
@@ -17,8 +20,10 @@ export function RouteErrorBoundary({
   title,
   description,
 }: RouteErrorBoundaryProps) {
+  const pathname = usePathname();
+
   return (
-    <ErrorBoundary title={title} description={description}>
+    <ErrorBoundary key={pathname} title={title} description={description}>
       {children}
     </ErrorBoundary>
   );

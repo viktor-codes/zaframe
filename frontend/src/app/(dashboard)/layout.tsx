@@ -9,13 +9,15 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <RouteErrorBoundary
-      title="Dashboard unavailable"
-      description="The studio dashboard could not be displayed. Try again or reload the page."
-    >
-      <RequireAuth>
-        <DashboardShell>{children}</DashboardShell>
-      </RequireAuth>
-    </RouteErrorBoundary>
+    <RequireAuth>
+      <DashboardShell>
+        <RouteErrorBoundary
+          title="Dashboard unavailable"
+          description="The studio dashboard could not be displayed. Try again or reload the page."
+        >
+          {children}
+        </RouteErrorBoundary>
+      </DashboardShell>
+    </RequireAuth>
   );
 }

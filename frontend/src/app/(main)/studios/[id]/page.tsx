@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Card, Button, Skeleton, Input } from "@shared/ui";
 import { fetchStudio, fetchStudioOccurrences, getUserFacingApiMessage } from "@shared/api";
-import { queryKeys } from "@shared/lib";
+import { OccurrenceStatus, queryKeys } from "@shared/lib";
 
 function toISOStartOfDay(d: Date): string {
   const c = new Date(d);
@@ -63,6 +63,14 @@ export default function StudioDetailPage() {
     };
   }, [dateFilter]);
 
+  const occurrenceFilters = useMemo(
+    () => ({
+      status: OccurrenceStatus.SCHEDULED,
+      ...(dateRange ?? {}),
+    }),
+    [dateRange],
+  );
+
   const {
     data: studio,
     isLoading: loadingStudio,
@@ -79,14 +87,8 @@ export default function StudioDetailPage() {
     isLoading: loadingOccurrences,
     isError: errorOccurrences,
   } = useQuery({
-    queryKey: queryKeys.studio.occurrences(id, {
-      ...(dateRange ?? {}),
-    }),
-    queryFn: () =>
-      fetchStudioOccurrences(id, {
-        status: "scheduled",
-        ...(dateRange ?? {}),
-      }),
+    queryKey: queryKeys.studio.occurrences(id, occurrenceFilters),
+    queryFn: () => fetchStudioOccurrences(id, occurrenceFilters),
     enabled: !Number.isNaN(id) && !!studio,
   });
 

@@ -1,5 +1,9 @@
 /**
  * App-wide TanStack QueryClient defaults (browser providers).
+ *
+ * Mutation toast contract:
+ * - Set `meta: { toastOnError: true }` for transient toasts, OR
+ * - Handle errors locally (inline Alert / setError) — do not do both.
  */
 
 import {
@@ -11,7 +15,7 @@ import {
 import { ApiError } from "../api/api-error";
 
 export type AppMutationMeta = {
-  /** When true, providers toast the user-facing API error. */
+  /** When true, providers toast the user-facing API error. XOR with local error UI. */
   toastOnError?: boolean;
 };
 

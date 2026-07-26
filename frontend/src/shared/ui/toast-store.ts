@@ -24,21 +24,43 @@ interface ToastState {
 
 const MAX_TOASTS = 3;
 const DEFAULT_DURATION_MS = 5_000;
+const dismissTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-export const useToastStore = create<ToastState>((set) => ({
+function clearDismissTimer(id: string): void {
+  const timer = dismissTimers.get(id);
+  if (timer !== undefined) {
+    globalThis.clearTimeout(timer);
+    dismissTimers.delete(id);
+  }
+}
+
+export const useToastStore = create<ToastState>((set, get) => ({
   toasts: [],
   push: (toast) => {
     const id = toast.id ?? crypto.randomUUID();
-    set((state) => ({
-      toasts: [...state.toasts, { ...toast, id }].slice(-MAX_TOASTS),
-    }));
+    const previous = get().toasts;
+    const next = [...previous, { ...toast, id }];
+    const sliced = next.slice(-MAX_TOASTS);
+    for (const item of previous) {
+      if (!sliced.some((kept) => kept.id === item.id)) {
+        clearDismissTimer(item.id);
+      }
+    }
+    set({ toasts: sliced });
     return id;
   },
-  dismiss: (id) =>
+  dismiss: (id) => {
+    clearDismissTimer(id);
     set((state) => ({
       toasts: state.toasts.filter((item) => item.id !== id),
-    })),
-  clear: () => set({ toasts: [] }),
+    }));
+  },
+  clear: () => {
+    for (const id of [...dismissTimers.keys()]) {
+      clearDismissTimer(id);
+    }
+    set({ toasts: [] });
+  },
 }));
 
 function show(
@@ -53,9 +75,11 @@ function show(
   });
   const duration = options?.durationMs ?? DEFAULT_DURATION_MS;
   if (duration > 0) {
-    globalThis.setTimeout(() => {
+    clearDismissTimer(id);
+    const timer = globalThis.setTimeout(() => {
       useToastStore.getState().dismiss(id);
     }, duration);
+    dismissTimers.set(id, timer);
   }
   return id;
 }

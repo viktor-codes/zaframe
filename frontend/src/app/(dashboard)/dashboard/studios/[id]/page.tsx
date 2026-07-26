@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useAuth } from "@shared/auth";
+import { RequireStudioRole } from "@shared/auth";
+import { queryKeys, StudioMemberRole } from "@shared/lib";
 import { Card, Button, Input, Textarea, Skeleton } from "@shared/ui";
 import {
   createOccurrence,
@@ -15,7 +16,6 @@ import {
   fetchStudioServices,
   updateStudio,
 } from "@shared/api";
-import { queryKeys } from "@shared/lib";
 import type { OccurrenceResponse } from "@entities/occurrence";
 
 function formatPrice(cents: number): string {
@@ -38,24 +38,7 @@ function formatDateTime(iso: string): string {
 
 export default function StudioManagePage() {
   const params = useParams();
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
   const id = Number(params.id);
-
-  const [editMode, setEditMode] = useState(false);
-  const [showAddOccurrence, setShowAddOccurrence] = useState(false);
-
-  const { data: studio, isLoading } = useQuery({
-    queryKey: queryKeys.studio.detail(id),
-    queryFn: () => fetchStudio(id),
-    enabled: !Number.isNaN(id),
-  });
-
-  const { data: occurrences } = useQuery({
-    queryKey: queryKeys.studio.occurrences(id),
-    queryFn: () => fetchStudioOccurrences(id, { limit: 100 }),
-    enabled: !!studio,
-  });
 
   if (Number.isNaN(id)) {
     return (
@@ -67,30 +50,40 @@ export default function StudioManagePage() {
     );
   }
 
+  return (
+    <RequireStudioRole
+      studioId={id}
+      roles={[StudioMemberRole.OWNER, StudioMemberRole.MANAGER]}
+    >
+      <StudioManageContent studioId={id} />
+    </RequireStudioRole>
+  );
+}
+
+function StudioManageContent({ studioId }: { studioId: number }) {
+  const queryClient = useQueryClient();
+  const id = studioId;
+  const occurrenceFilters = useMemo(() => ({ limit: 100 }), []);
+
+  const [editMode, setEditMode] = useState(false);
+  const [showAddOccurrence, setShowAddOccurrence] = useState(false);
+
+  const { data: studio, isLoading } = useQuery({
+    queryKey: queryKeys.studio.detail(id),
+    queryFn: () => fetchStudio(id),
+  });
+
+  const { data: occurrences } = useQuery({
+    queryKey: queryKeys.studio.occurrences(id, occurrenceFilters),
+    queryFn: () => fetchStudioOccurrences(id, occurrenceFilters),
+    enabled: !!studio,
+  });
+
   if (isLoading || !studio) {
     return (
       <div className="mx-auto max-w-4xl px-6 py-12">
         <Skeleton className="mb-6 h-8 w-48" />
         <Skeleton className="h-32 w-full" />
-      </div>
-    );
-  }
-
-  if (user && studio.owner_id !== user.id) {
-    return (
-      <div className="mx-auto max-w-4xl px-6 py-12">
-        <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-red-800">
-          <p className="font-semibold">Access denied</p>
-          <p className="mt-1 text-sm">
-            You don&apos;t have permission to manage this studio.
-          </p>
-          <Link
-            href="/dashboard"
-            className="mt-2 inline-block text-primary underline"
-          >
-            Back to dashboard
-          </Link>
-        </div>
       </div>
     );
   }
@@ -128,7 +121,7 @@ export default function StudioManagePage() {
             studioId={id}
             onSuccess={() => {
               queryClient.invalidateQueries({
-                queryKey: queryKeys.studio.occurrences(id),
+                queryKey: queryKeys.studio.occurrences(id, occurrenceFilters),
               });
               setShowAddOccurrence(false);
             }}
@@ -148,7 +141,7 @@ export default function StudioManagePage() {
                 occurrence={occurrence}
                 onDeleted={() =>
                   queryClient.invalidateQueries({
-                    queryKey: queryKeys.studio.occurrences(id),
+                    queryKey: queryKeys.studio.occurrences(id, occurrenceFilters),
                   })
                 }
               />

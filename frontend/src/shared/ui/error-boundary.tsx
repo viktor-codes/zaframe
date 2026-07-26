@@ -31,10 +31,11 @@ export class ErrorBoundary extends Component<
     return { hasError: true };
   }
 
-  componentDidCatch(_error: Error, _info: ErrorInfo): void {
-    void _error;
-    void _info;
+  componentDidCatch(error: Error, info: ErrorInfo): void {
     // Hook for client-side error reporting (e.g. Sentry) when added.
+    if (process.env.NODE_ENV !== "production") {
+      console.error("[ErrorBoundary]", error, info.componentStack);
+    }
   }
 
   private handleReset = (): void => {
