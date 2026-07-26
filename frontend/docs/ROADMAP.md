@@ -97,7 +97,13 @@ Public zone first: simplest auth-wise, demoable to studios, closes the money loo
 
 Hardest zone — last, when the FSD pattern is routine.
 
-- [ ] `app/(dashboard)`: sidebar layout + StudioSwitcher + header mode switch (Customer ↔ Studio)
+**MVP decision (2026-07-26):** dual-persona mode switch ("Customer ↔ Studio {name}")
+is **deferred**. One account can still be staff and customer in the API, but UX keeps
+surfaces separate — simple cross-links only (`Account` ↔ `Dashboard`), never mixed nav.
+Full mode switch → P1/polish when real cross-over demand appears.
+
+- [ ] `app/(dashboard)`: sidebar layout + StudioSwitcher + Account cross-link
+- [ ] `(account)` header: Dashboard cross-link when the user has a studio role
 - [ ] `/dashboard`: my studios list + onboarding funnel state (what's the next step)
 - [ ] `features/manage-studio`: create/edit profile, slug, timezone, cancel policy
 - [ ] `features/manage-services`: CRUD + VisibilityBadge (draft/published/archived tabs)

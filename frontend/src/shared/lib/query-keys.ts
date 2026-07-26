@@ -34,6 +34,8 @@ export const queryKeys = {
     all: ["studios"] as const,
     explore: (params: StudiosListParams) =>
       ["studios", "explore", params] as const,
+    /** Membership list for the authenticated user (`GET /studios/my`). */
+    my: ["studios", "my"] as const,
     owner: (userId: number | undefined) =>
       ["studios", "owner", userId] as const,
   },

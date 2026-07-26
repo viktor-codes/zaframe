@@ -11,6 +11,7 @@ import type { PaginatedServiceList, ServiceResponse } from "@entities/service";
 import type {
   PaginatedSearchResultList,
   PaginatedStudioList,
+  PaginatedStudioWithRoleList,
   StudioCreate,
   StudioResponse,
   StudioUpdate,
@@ -76,6 +77,14 @@ export async function fetchStudios(
       skipAuth: !owner_id,
     },
   );
+}
+
+/**
+ * Studios where the current user has a membership (owner / manager / instructor).
+ * Envelope is always returned; backend currently loads the full membership set.
+ */
+export async function fetchMyStudios(): Promise<PaginatedStudioWithRoleList> {
+  return api.get<PaginatedStudioWithRoleList>("api/v1/studios/my");
 }
 
 export async function createStudio(

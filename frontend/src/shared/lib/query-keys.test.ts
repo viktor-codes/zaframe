@@ -39,6 +39,11 @@ describe("queryKeys", () => {
     expect(queryKeys.bookings.my()[0]).toBe("bookings");
   });
 
+  it("keys my-studios membership list under the studios prefix", () => {
+    expect(queryKeys.studios.my).toEqual(["studios", "my"]);
+    expect(queryKeys.studios.my[0]).toBe(queryKeys.studios.all[0]);
+  });
+
   it("includes my-bookings list filters in the key", () => {
     const params = { size: 20, include_guest_email: true };
     expect(queryKeys.bookings.my(params)).toEqual(["bookings", "my", params]);

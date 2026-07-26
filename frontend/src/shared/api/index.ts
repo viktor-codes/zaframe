@@ -49,6 +49,7 @@ export { updateCurrentUser } from "./users";
 export {
   createStudio,
   deleteStudio,
+  fetchMyStudios,
   fetchPublicServiceOccurrences,
   fetchStudio,
   fetchStudioOccurrences,
