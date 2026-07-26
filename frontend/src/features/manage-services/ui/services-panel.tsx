@@ -33,6 +33,9 @@ export function ServicesPanel({ studioId }: ServicesPanelProps) {
     isError,
     error,
     refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
   } = useStudioServices(studioId);
 
   if (isLoading) {
@@ -118,6 +121,22 @@ export function ServicesPanel({ studioId }: ServicesPanelProps) {
               ))}
             </div>
           )}
+
+          {hasNextPage ? (
+            <div className="flex justify-center">
+              <Button
+                type="button"
+                variant="secondary"
+                isLoading={isFetchingNextPage}
+                onClick={() => {
+                  void fetchNextPage();
+                }}
+                data-testid="services-load-more"
+              >
+                Load more
+              </Button>
+            </div>
+          ) : null}
         </>
       )}
     </div>

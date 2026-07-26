@@ -38,6 +38,10 @@ export function useMyStudiosDashboard(): UseMyStudiosDashboardResult {
   const myStudiosQuery = useMyStudios();
   const studios = myStudiosQuery.data?.items ?? [];
 
+  // WHY: onboarding only needs visibility presence; one larger page is enough
+  // for funnel steps. Full CRUD lists use infinite query elsewhere.
+  const onboardingServicesParams = { size: 100 } as const;
+
   const serviceQueries = useQueries({
     queries: studios.map((studio) => {
       const canManageServices = roleHasPermission(
@@ -46,8 +50,12 @@ export function useMyStudiosDashboard(): UseMyStudiosDashboardResult {
       );
 
       return {
-        queryKey: queryKeys.studio.services(studio.id),
-        queryFn: () => fetchStudioServices(studio.id),
+        queryKey: queryKeys.studio.services(
+          studio.id,
+          onboardingServicesParams,
+        ),
+        queryFn: () =>
+          fetchStudioServices(studio.id, onboardingServicesParams),
         enabled: myStudiosQuery.isSuccess && canManageServices,
       };
     }),
@@ -82,7 +90,7 @@ export function useMyStudiosDashboard(): UseMyStudiosDashboardResult {
         return;
       }
 
-      map.set(studio.id, query.data ?? []);
+      map.set(studio.id, query.data?.items ?? []);
     });
 
     return map;

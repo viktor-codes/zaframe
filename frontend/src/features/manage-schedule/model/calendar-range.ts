@@ -2,7 +2,8 @@ import type { StudioOccurrencesParams } from "@shared/api";
 
 /** Default window: local today → +8 weeks (matches generate default horizon). */
 export const CALENDAR_DEFAULT_WEEKS = 8;
-export const CALENDAR_PAGE_SIZE = 100;
+/** Page size for calendar infinite list (envelope `total` drives Load more). */
+export const CALENDAR_PAGE_SIZE = 20;
 
 export type CalendarStatusFilter = "all" | "scheduled" | "cancelled" | "completed";
 

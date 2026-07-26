@@ -70,5 +70,6 @@ export {
   fetchStudios,
   updateStudio,
   type StudioOccurrencesParams,
+  type StudioServicesParams,
   type StudiosListParams,
 } from "./studios";

@@ -18,7 +18,7 @@ function invalidateStudioServices(
   serviceId?: number,
 ) {
   void queryClient.invalidateQueries({
-    queryKey: queryKeys.studio.services(studioId),
+    queryKey: queryKeys.studio.servicesRoot(studioId),
   });
   void queryClient.invalidateQueries({ queryKey: queryKeys.studios.my });
   if (serviceId != null) {

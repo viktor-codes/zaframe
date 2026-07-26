@@ -29,17 +29,18 @@ function LegacyBookRedirect() {
     retry: false,
   });
 
-  const { data: occurrences, isFetched: occurrencesFetched } = useQuery({
-    queryKey: queryKeys.studio.occurrences(studioId, {
-      status: OccurrenceStatus.SCHEDULED,
-    }),
+  const occurrenceListParams = {
+    status: OccurrenceStatus.SCHEDULED,
+  } as const;
+
+  const { data: occurrencePage, isFetched: occurrencesFetched } = useQuery({
+    queryKey: queryKeys.studio.occurrences(studioId, occurrenceListParams),
     queryFn: () =>
-      fetchStudioOccurrences(studioId, {
-        status: OccurrenceStatus.SCHEDULED,
-      }),
+      fetchStudioOccurrences(studioId, occurrenceListParams),
     enabled: isValidStudio && Boolean(studio),
     retry: false,
   });
+  const occurrences = occurrencePage?.items;
 
   useEffect(() => {
     if (!isValidStudio) return;

@@ -1,7 +1,10 @@
 import type { StudioOccurrencesParams } from "@shared/api";
 
-/** Enough for a busy studio day without a second page in MVP. */
-export const TODAY_PAGE_SIZE = 100;
+/**
+ * First-page size for Today. Remaining pages auto-fetch via infinite query
+ * so capacity counters always match envelope `total`.
+ */
+export const TODAY_PAGE_SIZE = 20;
 
 /**
  * API params for the studio "Today" window: local midnight → next midnight.

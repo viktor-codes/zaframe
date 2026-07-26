@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { getUserFacingApiMessage } from "@shared/api";
 import {
+  Button,
   ResourceEmptyState,
   ResourceErrorState,
   ResourceListSkeleton,
@@ -38,6 +39,9 @@ export function StudioCalendarPanel({ studioId }: StudioCalendarPanelProps) {
     isError,
     error,
     refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
   } = useStudioCalendar(studioId);
 
   if (isLoading) {
@@ -107,6 +111,22 @@ export function StudioCalendarPanel({ studioId }: StudioCalendarPanelProps) {
           ))}
         </div>
       )}
+
+      {hasNextPage ? (
+        <div className="flex justify-center">
+          <Button
+            type="button"
+            variant="secondary"
+            isLoading={isFetchingNextPage}
+            onClick={() => {
+              void fetchNextPage();
+            }}
+            data-testid="calendar-load-more"
+          >
+            Load more
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }

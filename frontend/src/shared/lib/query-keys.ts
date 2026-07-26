@@ -14,6 +14,7 @@ import type { BookingsListParams, MyBookingsParams } from "../api/bookings";
 import type { MyOrdersParams } from "../api/orders";
 import type {
   StudioOccurrencesParams,
+  StudioServicesParams,
   StudiosListParams,
 } from "../api/studios";
 
@@ -22,6 +23,7 @@ export type {
   MyBookingsParams,
   MyOrdersParams,
   StudioOccurrencesParams,
+  StudioServicesParams,
   StudiosListParams,
 };
 
@@ -56,7 +58,16 @@ export const queryKeys = {
       ["studio", id, "bookings", filters] as const,
     publicServiceOccurrences: (slug: string, serviceId: number) =>
       ["studio", "slug", slug, "service", serviceId, "occurrences"] as const,
-    services: (id: number) => ["studio", id, "services"] as const,
+    /** Prefix for invalidating every services list for a studio. */
+    servicesRoot: (id: number) => ["studio", id, "services"] as const,
+    /**
+     * @param filters - Exact params passed to `fetchStudioServices` (no `page`;
+     *   infinite query supplies page via pageParam).
+     */
+    services: (
+      id: number,
+      filters: Omit<StudioServicesParams, "page"> = {},
+    ) => ["studio", id, "services", filters] as const,
   },
 
   service: {

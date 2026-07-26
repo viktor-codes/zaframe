@@ -8,7 +8,7 @@ import type {
   PaginatedOccurrenceList,
 } from "@entities/occurrence";
 import type { ScheduleGenerateRequest } from "@entities/schedule-template";
-import type { PaginatedServiceList, ServiceResponse } from "@entities/service";
+import type { PaginatedServiceList } from "@entities/service";
 import type {
   PaginatedSearchResultList,
   PaginatedStudioList,
@@ -30,6 +30,11 @@ export interface StudiosListParams {
   include_services?: boolean;
 }
 
+export interface StudioServicesParams {
+  page?: number;
+  size?: number;
+}
+
 export interface StudioOccurrencesParams {
   page?: number;
   size?: number;
@@ -40,7 +45,8 @@ export interface StudioOccurrencesParams {
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_STUDIO_PAGE_SIZE = 12;
-const DEFAULT_OCCURRENCE_PAGE_SIZE = 50;
+const DEFAULT_SERVICE_PAGE_SIZE = 20;
+const DEFAULT_OCCURRENCE_PAGE_SIZE = 20;
 
 export async function fetchStudios(
   params: StudiosListParams = {},
@@ -111,26 +117,33 @@ export async function fetchStudio(id: number): Promise<StudioResponse> {
   });
 }
 
+/**
+ * Studio services list envelope (`{ items, total, page, size }`).
+ * Callers must use `total` — never treat `items.length` as the full count.
+ */
 export async function fetchStudioServices(
   studioId: number,
-  params?: { page?: number; size?: number },
-): Promise<ServiceResponse[]> {
-  const response = await api.get<PaginatedServiceList>(
+  params: StudioServicesParams = {},
+): Promise<PaginatedServiceList> {
+  return api.get<PaginatedServiceList>(
     `api/v1/studios/${studioId}/services`,
     {
       params: {
-        page: params?.page ?? DEFAULT_PAGE,
-        size: params?.size ?? 100,
+        page: params.page ?? DEFAULT_PAGE,
+        size: params.size ?? DEFAULT_SERVICE_PAGE_SIZE,
       },
     },
   );
-  return response.items;
 }
 
+/**
+ * Studio occurrences list envelope (`{ items, total, page, size }`).
+ * Callers must use `total` — never treat `items.length` as the full count.
+ */
 export async function fetchStudioOccurrences(
   studioId: number,
   params: StudioOccurrencesParams = {},
-): Promise<OccurrenceResponse[]> {
+): Promise<PaginatedOccurrenceList> {
   const {
     page = DEFAULT_PAGE,
     size = DEFAULT_OCCURRENCE_PAGE_SIZE,
@@ -146,13 +159,12 @@ export async function fetchStudioOccurrences(
   if (start_to) searchParams.start_to = start_to;
   if (status !== undefined) searchParams.status = status;
 
-  const response = await api.get<PaginatedOccurrenceList>(
+  return api.get<PaginatedOccurrenceList>(
     `api/v1/studios/${studioId}/occurrences`,
     {
       params: searchParams,
     },
   );
-  return response.items;
 }
 
 /**
