@@ -110,7 +110,7 @@ Full mode switch → P1/polish when real cross-over demand appears.
 - [x] `features/manage-schedule` — **two separate sections**
   - [x] Templates (+ generate + warning) — `/dashboard/studios/{id}/services/{sid}/schedule`
   - [x] Calendar (list by date, edit/cancel with reason) — `/dashboard/studios/{id}/calendar`
-- [ ] Studio "Today" screen: sessions, booked/capacity/pending counters, quick actions
+- [x] Studio "Today" screen: sessions, booked/capacity/pending counters, quick actions
 - [ ] `/dashboard/studios/{id}/bookings` with filters
 - [ ] Permission-driven navigation (instructor sees reduced menu)
 
