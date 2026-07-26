@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { Alert, Button, Card, Skeleton } from "@shared/ui";
 
@@ -35,12 +36,14 @@ export function GuestConfirmInactive({
   backLabel,
   rebookHref = "/studios",
   studioCancelReason = null,
+  timelineSlot = null,
 }: {
   kind: "cancelled" | "expired" | "studio_cancelled";
   backHref: string;
   backLabel: string;
   rebookHref?: string;
   studioCancelReason?: string | null;
+  timelineSlot?: ReactNode;
 }) {
   const title =
     kind === "expired"
@@ -69,7 +72,7 @@ export function GuestConfirmInactive({
       >
         {backLabel}
       </Link>
-      <Card className="p-8 text-center">
+      <Card className="mb-6 p-8 text-center">
         <p className="font-semibold text-neutral-700">{title}</p>
         <p className="mt-1 text-sm text-neutral-600">{description}</p>
         <div className="mt-4">
@@ -78,6 +81,7 @@ export function GuestConfirmInactive({
           </Button>
         </div>
       </Card>
+      {timelineSlot}
     </div>
   );
 }

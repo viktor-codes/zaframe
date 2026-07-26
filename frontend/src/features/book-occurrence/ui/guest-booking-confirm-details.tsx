@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { isBookingPaymentSucceeded } from "@entities/booking";
 import { formatMoneyFromCents } from "@shared/lib";
-import { Alert, Button, Card } from "@shared/ui";
+import { Alert, Card } from "@shared/ui";
 
+import { GuestBookingConfirmOutcome } from "./guest-booking-confirm-outcome";
 import { ReservationHoldTimer } from "./reservation-hold-timer";
 
 export interface GuestBookingConfirmDetailsProps {
@@ -27,6 +27,8 @@ export interface GuestBookingConfirmDetailsProps {
   error: string | null;
   isPaying: boolean;
   onPay: () => void;
+  /** Entity BookingTimeline — composed by the panel when API data is ready. */
+  timelineSlot?: ReactNode;
   /** Composed by app/ (e.g. CancelBookingControls) — never import features here. */
   cancelSlot?: ReactNode;
 }
@@ -62,6 +64,7 @@ export function GuestBookingConfirmDetails({
   error,
   isPaying,
   onPay,
+  timelineSlot,
   cancelSlot,
 }: GuestBookingConfirmDetailsProps) {
   return (
@@ -110,6 +113,8 @@ export function GuestBookingConfirmDetails({
         </div>
       </Card>
 
+      {timelineSlot}
+
       {needsPayment ? (
         <div className="mb-6">
           <ReservationHoldTimer
@@ -125,46 +130,17 @@ export function GuestBookingConfirmDetails({
         </Alert>
       ) : null}
 
-      {needsPayment && canPay ? (
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row">
-          <Button
-            onClick={onPay}
-            isLoading={isPaying}
-            data-testid="pay-booking-button"
-          >
-            Complete payment
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/studios">Browse studios</Link>
-          </Button>
-        </div>
-      ) : null}
-
-      {needsPayment && isHoldExpired ? (
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row">
-          <Button asChild data-testid="rebook-after-hold-expired">
-            <Link href="/studios">Book another class</Link>
-          </Button>
-        </div>
-      ) : null}
-
-      {isPaid ? (
-        <Alert variant="success" title="Confirmed" className="mb-6">
-          Your booking is confirmed
-          {isBookingPaymentSucceeded({ payment_status: paymentStatus })
-            ? " and paid"
-            : ""}
-          .
-        </Alert>
-      ) : null}
-
-      {isFreeUnpaid ? (
-        <Alert variant="success" title="Free session" className="mb-6">
-          No payment required. Your seat is reserved
-          {bookingStatus === "confirmed" ? " and confirmed" : ""}
-          — check your email for details.
-        </Alert>
-      ) : null}
+      <GuestBookingConfirmOutcome
+        bookingStatus={bookingStatus}
+        paymentStatus={paymentStatus}
+        needsPayment={needsPayment}
+        canPay={canPay}
+        isHoldExpired={isHoldExpired}
+        isPaid={isPaid}
+        isFreeUnpaid={isFreeUnpaid}
+        isPaying={isPaying}
+        onPay={onPay}
+      />
 
       {cancelSlot ? <div className="mb-6">{cancelSlot}</div> : null}
     </div>
