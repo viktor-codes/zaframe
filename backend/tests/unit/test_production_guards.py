@@ -56,3 +56,8 @@ def test_validate_rate_limit_ok_with_redis(monkeypatch: pytest.MonkeyPatch) -> N
     monkeypatch.setattr(settings, "REDIS_URL", "redis://localhost:6379/0")
     monkeypatch.setattr(settings, "ALLOW_INMEMORY_RATE_LIMIT", False)
     validate_production_rate_limit_config()
+
+
+def test_cookie_samesite_is_lax_for_same_origin_proxy() -> None:
+    """Auth cookies land on the Next origin via /api rewrite — Lax, not None."""
+    assert settings.cookie_samesite == "lax"

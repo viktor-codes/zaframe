@@ -40,9 +40,12 @@ sidebar + StudioSwitcher for `(dashboard)`.
 The token model dictates the strategy — this is a constraint, not a preference:
 
 - Access token lives **in client memory** (`shared/auth/storage`), never in cookies.
-- Refresh token is an httpOnly cookie on the **API origin**, not the Next.js origin.
-- Therefore the Next.js server (RSC, middleware, route handlers) **cannot authenticate
-  a user**. Server-side data fetching is possible only for public endpoints.
+- Refresh + CSRF cookies are set by FastAPI but stored on the **Next.js (web) origin**
+  via same-origin `/api` rewrites (`API_UPSTREAM_URL`). The browser never talks to the
+  API host for cookie auth — that keeps CSRF double-submit readable in JS.
+- RSC still **cannot authenticate a user** (access token is memory-only; refresh is
+  httpOnly). Server-side data fetching is possible only for public endpoints
+  (direct to `API_UPSTREAM_URL`, not through the rewrite loop).
 
 | Zone | Rendering | Data fetching |
 |------|-----------|---------------|

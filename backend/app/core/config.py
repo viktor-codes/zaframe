@@ -117,9 +117,14 @@ class Settings(BaseSettings):
     @computed_field
     @property
     def cookie_samesite(self) -> Literal["lax", "strict", "none"]:
-        """SameSite policy for browser auth cookies."""
-        if self.is_production:
-            return "none"
+        """
+        SameSite policy for browser auth cookies.
+
+        WHY: the browser talks to the Next.js origin; Next rewrites /api to FastAPI.
+        Cookies are stored on the web origin (same-site), so Lax is correct.
+        SameSite=None was for split-host SPA→API and broke CSRF double-submit
+        (JS cannot read a csrf cookie set on another host).
+        """
         return "lax"
 
     @computed_field

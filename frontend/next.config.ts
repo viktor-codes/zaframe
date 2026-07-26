@@ -55,21 +55,23 @@ const nextConfig: NextConfig = {
   },
 
   /**
-   * Dev-only: proxy /api/* to FastAPI so the browser stays same-origin with the Next app.
-   * Then Set-Cookie from the backend is stored for localhost:3000 (refresh token works).
-   * Pair with NEXT_PUBLIC_API_URL=http://localhost:3000 in .env.development.
+   * Same-origin API proxy (dev + prod).
    *
-   * Production: no rewrites — the browser calls the API origin from NEXT_PUBLIC_API_URL.
-   * Configure CORS and cookie attributes on the API for that origin.
+   * Browser → NEXT_PUBLIC_API_URL (Next origin) → rewrite → API_UPSTREAM_URL.
+   * Set-Cookie lands on the web origin so CSRF double-submit can read csrf_token.
+   * Stripe webhooks stay on the API host (/webhooks/* is outside this rewrite).
    */
   async rewrites() {
-    if (process.env.NODE_ENV !== "development") {
+    const upstream = (process.env.API_UPSTREAM_URL ?? "")
+      .trim()
+      .replace(/\/$/, "");
+    if (!upstream) {
       return [];
     }
     return [
       {
         source: "/api/:path*",
-        destination: "http://127.0.0.1:8000/api/:path*",
+        destination: `${upstream}/api/:path*`,
       },
     ];
   },

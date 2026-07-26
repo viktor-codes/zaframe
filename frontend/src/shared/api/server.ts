@@ -35,16 +35,17 @@ function resolveServerUrl(
   path: string,
   params?: ServerRequestConfig["params"],
 ): string {
-  if (!config.apiUrl) {
+  // WHY: hit FastAPI directly — do not loop through the Next /api rewrite.
+  if (!config.apiUpstreamUrl) {
     throw new ApiError(
-      "Backend URL is not configured (set NEXT_PUBLIC_API_URL)",
+      "Backend URL is not configured (set API_UPSTREAM_URL or NEXT_PUBLIC_API_URL)",
       0,
       {
         code: "BACKEND_NOT_CONFIGURED",
       },
     );
   }
-  return buildApiUrl(config.apiUrl, path, params);
+  return buildApiUrl(config.apiUpstreamUrl, path, params);
 }
 
 /**

@@ -5,7 +5,8 @@ import { REQUEST_ID_HEADER } from "./request-headers";
 
 vi.mock("@shared/lib/config", () => ({
   config: {
-    apiUrl: "https://api.example.com",
+    apiUrl: "https://app.example.com",
+    apiUpstreamUrl: "https://api.example.com",
     hasBackend: true,
   },
 }));
