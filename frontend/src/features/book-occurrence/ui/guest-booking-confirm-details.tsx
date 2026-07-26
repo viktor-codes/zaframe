@@ -21,6 +21,8 @@ export interface GuestBookingConfirmDetailsProps {
   backHref: string;
   backLabel: string;
   needsPayment: boolean;
+  canPay: boolean;
+  isHoldExpired: boolean;
   isPaid: boolean;
   isFreeUnpaid: boolean;
   canCancel: boolean;
@@ -65,6 +67,8 @@ export function GuestBookingConfirmDetails({
   backHref,
   backLabel,
   needsPayment,
+  canPay,
+  isHoldExpired,
   isPaid,
   isFreeUnpaid,
   canCancel,
@@ -138,7 +142,7 @@ export function GuestBookingConfirmDetails({
         </Alert>
       ) : null}
 
-      {needsPayment ? (
+      {needsPayment && canPay ? (
         <div className="mb-6 flex flex-col gap-4 sm:flex-row">
           <Button
             onClick={onPay}
@@ -149,6 +153,14 @@ export function GuestBookingConfirmDetails({
           </Button>
           <Button variant="outline" asChild>
             <Link href="/studios">Browse studios</Link>
+          </Button>
+        </div>
+      ) : null}
+
+      {needsPayment && isHoldExpired ? (
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row">
+          <Button asChild data-testid="rebook-after-hold-expired">
+            <Link href="/studios">Book another class</Link>
           </Button>
         </div>
       ) : null}

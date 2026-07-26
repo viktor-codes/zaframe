@@ -10,6 +10,7 @@ import {
 import { BookingStatus } from "@shared/lib";
 
 import { useGuestBookingConfirm } from "../model/use-guest-booking-confirm";
+import { useReservationHoldClock } from "../model/use-reservation-hold-clock";
 import { GuestBookingConfirmDetails } from "./guest-booking-confirm-details";
 import {
   GuestConfirmInactive,
@@ -42,6 +43,15 @@ export function GuestBookingConfirmPanel({
     cancel,
   } = useGuestBookingConfirm(routeId, accessTokenFromQuery);
 
+  const reservedUntil =
+    booking && "reserved_until" in booking
+      ? (booking.reserved_until ?? null)
+      : null;
+  const holdClock = useReservationHoldClock(
+    booking?.status ?? BookingStatus.PENDING,
+    reservedUntil,
+  );
+
   const backHref = isGuestSession ? "/studios" : "/bookings";
   const backLabel = isGuestSession ? "← Browse studios" : "← My bookings";
 
@@ -64,6 +74,7 @@ export function GuestBookingConfirmPanel({
     isConfirmedBooking(booking) || isBookingPaymentSucceeded(booking);
   const needsPayment =
     occurrence != null && bookingNeedsCheckoutPayment(booking, occurrence);
+  const canPay = needsPayment && !holdClock.isExpired;
   const isPast = occurrence
     ? new Date(occurrence.start_time).getTime() < Date.now()
     : false;
@@ -86,9 +97,7 @@ export function GuestBookingConfirmPanel({
       guestEmail={booking.guest_email}
       bookingStatus={booking.status}
       paymentStatus={booking.payment_status}
-      reservedUntil={
-        "reserved_until" in booking ? (booking.reserved_until ?? null) : null
-      }
+      reservedUntil={reservedUntil}
       studioName={studio?.name}
       occurrenceTitle={occurrence?.title}
       occurrenceStart={occurrence?.start_time}
@@ -96,6 +105,8 @@ export function GuestBookingConfirmPanel({
       backHref={backHref}
       backLabel={backLabel}
       needsPayment={needsPayment}
+      canPay={canPay}
+      isHoldExpired={needsPayment && holdClock.isExpired}
       isPaid={isPaid}
       isFreeUnpaid={
         occurrence != null && occurrence.price_cents === 0 && !isPaid

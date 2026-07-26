@@ -71,7 +71,7 @@ describe("resolvePaymentConfirmation", () => {
 });
 
 describe("shouldContinuePaymentConfirmationPoll", () => {
-  it("continues only while processing", () => {
+  it("continues only while processing (delayed webhook)", () => {
     expect(
       shouldContinuePaymentConfirmationPoll({ phase: "processing" }),
     ).toBe(true);

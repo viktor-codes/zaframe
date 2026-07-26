@@ -57,6 +57,13 @@ export function BookOccurrenceWizard({
     queryFn: () => fetchStudioOccurrences(studioId, occurrenceFilters),
   });
 
+  const pickAnotherTime = () => {
+    checkout.clearError();
+    setSelected(null);
+    setStep("slot");
+    void occurrencesQuery.refetch();
+  };
+
   const serviceOccurrences = useMemo(
     () =>
       (occurrencesQuery.data ?? []).filter(
@@ -129,9 +136,11 @@ export function BookOccurrenceWizard({
           occurrence={selected}
           guest={guest}
           error={checkout.error}
+          isOccurrenceFull={checkout.isOccurrenceFull}
           isPaying={checkout.isPaying}
           onBack={() => setStep("details")}
           onPay={() => checkout.pay({ occurrence: selected, guest })}
+          onPickAnotherTime={pickAnotherTime}
         />
       ) : null}
     </WizardChrome>

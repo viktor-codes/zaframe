@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getOccurrenceBookActionLabel } from "../model/occurrence-action-label";
 import {
   getOccurrenceDurationMinutes,
   getOccurrenceInstructorName,
@@ -116,7 +117,7 @@ export function OccurrenceRow({
               data-testid="occurrence-row-book-disabled"
               aria-disabled
             >
-              {isFull ? "No seats left" : "Unavailable"}
+              {getOccurrenceBookActionLabel({ isFull, canBook })}
             </span>
           )
         ) : null}

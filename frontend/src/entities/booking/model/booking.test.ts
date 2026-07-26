@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   bookingNeedsCheckoutPayment,
+  canCompleteBookingPayment,
   canCustomerCancelBooking,
   getBookingReservationRemainingMs,
   isBookingPaymentSucceeded,
@@ -39,6 +40,32 @@ describe("booking model", () => {
         { price_cents: 0 },
       ),
     ).toBe(false);
+  });
+
+  it("blocks Stripe checkout after the pending hold expires", () => {
+    const now = new Date("2026-07-06T10:00:00.000Z");
+    expect(
+      canCompleteBookingPayment(
+        {
+          status: "pending",
+          payment_status: "pending",
+          reserved_until: "2026-07-06T09:59:00.000Z",
+        },
+        { price_cents: 2500 },
+        now,
+      ),
+    ).toBe(false);
+    expect(
+      canCompleteBookingPayment(
+        {
+          status: "pending",
+          payment_status: "pending",
+          reserved_until: "2026-07-06T10:15:00.000Z",
+        },
+        { price_cents: 2500 },
+        now,
+      ),
+    ).toBe(true);
   });
 
   it("returns remaining reservation time for pending bookings", () => {

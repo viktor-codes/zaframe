@@ -45,6 +45,19 @@ export function bookingNeedsCheckoutPayment(
   return isPendingBooking(booking);
 }
 
+/**
+ * True when the guest can still open Stripe Checkout for this hold.
+ * Expired `reserved_until` means the seat was released — Pay must be disabled.
+ */
+export function canCompleteBookingPayment(
+  booking: BookingPaymentState & { reserved_until?: string | null },
+  occurrence: { price_cents: number },
+  now: Date = new Date(),
+): boolean {
+  if (!bookingNeedsCheckoutPayment(booking, occurrence)) return false;
+  return !isBookingReservationExpired(booking, now);
+}
+
 export function isCancelledBooking(
   booking: Pick<BookingState, "status" | "cancelled_at">,
 ): boolean {

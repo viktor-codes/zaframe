@@ -8,10 +8,13 @@ import {
   createBooking,
   createCheckoutSession,
   createIdempotencyKey,
-  getUserFacingApiMessage,
 } from "@shared/api";
 import { storeGuestBookingAccess } from "@shared/lib";
 
+import {
+  getBookingCheckoutErrorMessage,
+  isOccurrenceFullCheckoutError,
+} from "./booking-edge-messages";
 import type { GuestDetails } from "./guest-details-schema";
 
 export interface BookOccurrenceCheckoutInput {
@@ -22,6 +25,7 @@ export interface BookOccurrenceCheckoutInput {
 export function useBookOccurrenceCheckout() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [isOccurrenceFull, setIsOccurrenceFull] = useState(false);
   const checkoutIdempotencyKeyRef = useRef(createIdempotencyKey());
 
   const mutation = useMutation({
@@ -70,16 +74,22 @@ export function useBookOccurrenceCheckout() {
       return { bookingId: booking.id, redirectedToStripe: false };
     },
     onError: (err) => {
-      setError(getUserFacingApiMessage(err));
+      setIsOccurrenceFull(isOccurrenceFullCheckoutError(err));
+      setError(getBookingCheckoutErrorMessage(err));
     },
   });
 
   return {
     error,
-    clearError: () => setError(null),
+    isOccurrenceFull,
+    clearError: () => {
+      setError(null);
+      setIsOccurrenceFull(false);
+    },
     isPaying: mutation.isPending,
     pay: (input: BookOccurrenceCheckoutInput) => {
       setError(null);
+      setIsOccurrenceFull(false);
       mutation.mutate(input);
     },
   };

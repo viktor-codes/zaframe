@@ -1,11 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  getBookingReservationRemainingMs,
-  isPendingBooking,
-} from "@entities/booking";
 import { Alert } from "@shared/ui";
+
+import { useReservationHoldClock } from "../model/use-reservation-hold-clock";
 
 export interface ReservationHoldTimerProps {
   status: string;
@@ -26,24 +23,14 @@ export function ReservationHoldTimer({
   status,
   reservedUntil,
 }: ReservationHoldTimerProps) {
-  const [now, setNow] = useState(() => new Date());
-
-  useEffect(() => {
-    if (!isPendingBooking({ status }) || !reservedUntil) return;
-    const id = window.setInterval(() => setNow(new Date()), 1000);
-    return () => window.clearInterval(id);
-  }, [status, reservedUntil]);
-
-  if (!isPendingBooking({ status })) return null;
-
-  const remainingMs = getBookingReservationRemainingMs(
-    { status, reserved_until: reservedUntil ?? null },
-    now,
+  const { remainingMs, isExpired } = useReservationHoldClock(
+    status,
+    reservedUntil,
   );
 
-  if (remainingMs == null) return null;
+  if (remainingMs == null && !isExpired) return null;
 
-  if (remainingMs <= 0) {
+  if (isExpired || (remainingMs != null && remainingMs <= 0)) {
     return (
       <Alert
         variant="error"
@@ -54,6 +41,8 @@ export function ReservationHoldTimer({
       </Alert>
     );
   }
+
+  if (remainingMs == null) return null;
 
   return (
     <Alert

@@ -80,7 +80,7 @@ Public zone first: simplest auth-wise, demoable to studios, closes the money loo
 - [x] `features/book-occurrence`: wizard (slot → guest form or sign-in → summary → Stripe)
 - [x] Success page with webhook polling ("Payment processing…")
 - [x] Guest confirm page `/bookings/{id}/confirm` via `access_token`
-- [ ] Edge cases: occurrence full, pending timer, webhook delayed
+- [x] Edge cases: occurrence full, pending timer, webhook delayed
 - [ ] Playwright: guest checkout flow (update existing spec to slug routes)
 
 ## Phase 4 — Customer account (P0 stories 2, 5)

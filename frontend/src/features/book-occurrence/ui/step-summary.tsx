@@ -11,9 +11,11 @@ export interface StepSummaryProps {
   occurrence: OccurrenceResponse;
   guest: GuestDetails;
   error: string | null;
+  isOccurrenceFull?: boolean;
   isPaying: boolean;
   onBack: () => void;
   onPay: () => void;
+  onPickAnotherTime?: () => void;
 }
 
 function formatPrice(cents: number): string {
@@ -41,9 +43,11 @@ export function StepSummary({
   occurrence,
   guest,
   error,
+  isOccurrenceFull = false,
   isPaying,
   onBack,
   onPay,
+  onPickAnotherTime,
 }: StepSummaryProps) {
   return (
     <div className="space-y-6" data-testid="book-step-summary">
@@ -94,8 +98,24 @@ export function StepSummary({
       </div>
 
       {error ? (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          {error}
+        <div
+          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+          data-testid={
+            isOccurrenceFull ? "book-occurrence-full-error" : "book-checkout-error"
+          }
+        >
+          <p>{error}</p>
+          {isOccurrenceFull && onPickAnotherTime ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-3"
+              onClick={onPickAnotherTime}
+              data-testid="book-pick-another-time"
+            >
+              Pick another time
+            </Button>
+          ) : null}
         </div>
       ) : null}
 
@@ -107,6 +127,7 @@ export function StepSummary({
           type="button"
           isLoading={isPaying}
           onClick={onPay}
+          disabled={isOccurrenceFull}
           data-testid="submit-booking-button"
         >
           Pay with Stripe
