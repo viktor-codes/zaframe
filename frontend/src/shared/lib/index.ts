@@ -18,5 +18,6 @@ export type {
   StudioOccurrencesParams,
   StudiosListParams,
 } from "./query-keys";
+export { useNow, type UseNowOptions } from "./use-now";
 // WHY: createAppQueryClient stays a deep import (`@shared/lib/query-client`)
 // so isomorphic barrels do not pull TanStack Query + module augmentation.

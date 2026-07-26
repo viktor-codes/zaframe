@@ -9,7 +9,7 @@ import {
   type BookingListBucket,
 } from "@entities/booking";
 import { fetchMyBookings, getUserFacingApiMessage } from "@shared/api";
-import { queryKeys } from "@shared/lib";
+import { queryKeys, useNow } from "@shared/lib";
 import { Button, Tabs } from "@shared/ui";
 import { BookingCardActions } from "./booking-card-actions";
 import {
@@ -29,7 +29,8 @@ const TABS: { id: BookingListBucket; label: string }[] = [
 
 export function MyBookingsPanel() {
   const [activeTab, setActiveTab] = useState<BookingListBucket>("upcoming");
-  const [now] = useState(() => new Date());
+  // WHY: hold countdown, cancel cutoff, and upcoming→past moves need a live clock.
+  const now = useNow();
 
   const {
     data,

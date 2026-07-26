@@ -1,7 +1,6 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useState } from "react";
 import {
   bookingNeedsCheckoutPayment,
   getStudioRebookHref,
@@ -9,7 +8,7 @@ import {
   isConfirmedBooking,
   isSessionCancelledByStudio,
 } from "@entities/booking";
-import { BookingStatus } from "@shared/lib";
+import { BookingStatus, useNow } from "@shared/lib";
 
 import { useGuestBookingConfirm } from "../model/use-guest-booking-confirm";
 import { useReservationHoldClock } from "../model/use-reservation-hold-clock";
@@ -44,7 +43,7 @@ export function GuestBookingConfirmPanel({
   accessTokenFromQuery,
   renderCancel,
 }: GuestBookingConfirmPanelProps) {
-  const [now] = useState(() => new Date());
+  const now = useNow();
   const {
     bookingId,
     booking,
@@ -66,6 +65,7 @@ export function GuestBookingConfirmPanel({
   const holdClock = useReservationHoldClock(
     booking?.status ?? BookingStatus.PENDING,
     reservedUntil,
+    now,
   );
 
   const backHref = isGuestSession ? "/studios" : "/account/bookings";

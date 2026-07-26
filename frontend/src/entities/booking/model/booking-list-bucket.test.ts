@@ -75,4 +75,23 @@ describe("compareBookingsForBucket", () => {
     );
     expect(compareBookingsForBucket("past", earlier, later)).toBeGreaterThan(0);
   });
+
+  it("sorts cancelled by cancelled_at, falling back to updated_at for expired", () => {
+    const customerCancelled = {
+      status: "cancelled",
+      cancelled_at: "2026-07-09T12:00:00.000Z",
+      updated_at: "2026-07-09T12:00:00.000Z",
+      occurrence: { start_time: "2026-07-20T18:00:00.000Z" },
+    };
+    const expiredHold = {
+      status: "expired",
+      cancelled_at: null,
+      updated_at: "2026-07-10T11:00:00.000Z",
+      occurrence: { start_time: "2026-07-20T18:00:00.000Z" },
+    };
+
+    expect(
+      compareBookingsForBucket("cancelled", customerCancelled, expiredHold),
+    ).toBeGreaterThan(0);
+  });
 });

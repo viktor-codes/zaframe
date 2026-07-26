@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import {
   getBookingReservationRemainingMs,
   isBookingReservationExpired,
   isPendingBooking,
 } from "@entities/booking";
+import { useNow } from "@shared/lib";
 
 export interface UseReservationHoldClockResult {
   remainingMs: number | null;
@@ -14,19 +14,19 @@ export interface UseReservationHoldClockResult {
 
 /**
  * 1s clock for pending `reserved_until` holds (timer UI + disable Pay).
+ * Pass `now` from a parent clock to avoid a second interval.
  */
 export function useReservationHoldClock(
   status: string,
   reservedUntil: string | null | undefined,
+  nowOverride?: Date,
 ): UseReservationHoldClockResult {
-  const [now, setNow] = useState(() => new Date());
   const isPending = isPendingBooking({ status });
-
-  useEffect(() => {
-    if (!isPending || !reservedUntil) return;
-    const id = window.setInterval(() => setNow(new Date()), 1000);
-    return () => window.clearInterval(id);
-  }, [isPending, reservedUntil]);
+  const tickingNow = useNow({
+    enabled:
+      nowOverride == null && isPending && Boolean(reservedUntil),
+  });
+  const now = nowOverride ?? tickingNow;
 
   const booking = {
     status,
