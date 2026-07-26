@@ -36,7 +36,7 @@ After **every** finished roadmap chunk (one checklist item or one agreed sub-ste
 
 ## Phase 0 — Fixation (done 2026-07-05)
 
-- [x] STRATEGY.md — decisions resolved, stories prioritised, URL tree agreed
+- [x] STRATEGY.md — decisions resolved, stories prioritised, URL   tree agreed
 - [x] ARCHITECTURE.md — FSD layers, stack, migration map
 - [x] CONTRACTS.md — roles, permissions, statuses, errors, endpoints
 - [x] ROADMAP.md — this file
@@ -85,7 +85,7 @@ Public zone first: simplest auth-wise, demoable to studios, closes the money loo
 
 ## Phase 4 — Customer account (P0 stories 2, 5)
 
-- [ ] `entities/booking` ui: BookingCard, BookingStatusBadge, timeline
+- [x] `entities/booking` ui: BookingCard, BookingStatusBadge, timeline
 - [ ] `app/(account)/bookings`: upcoming / past / cancelled (paginated via envelope)
 - [ ] `features/cancel-booking` with `cancel_before_hours` cutoff logic
 - [ ] `features/manage-account`: profile (PATCH /auth/me)
