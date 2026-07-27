@@ -4,7 +4,6 @@
 `/health/ready` is a readiness check (DB + optional Stripe/Resend).
 """
 
-import asyncio
 from typing import Any
 
 import structlog
@@ -45,25 +44,20 @@ async def _check_database() -> bool:
         return False
 
 
-def _check_stripe_sync() -> bool:
-    """Check Stripe availability (lightweight request). Runs in a thread (SDK is sync)."""
+async def _check_stripe() -> bool:
+    """Check Stripe availability via a lightweight request off the event loop."""
     logger = structlog.get_logger(__name__)
     if not settings.STRIPE_SECRET_KEY:
         return True  # not configured, skip the check
     try:
-        import stripe
+        from app.modules.payment.stripe_client import get_stripe_client, run_stripe
 
-        stripe.StripeClient(api_key=settings.STRIPE_SECRET_KEY).v1.balance.retrieve()
+        client = get_stripe_client()
+        await run_stripe(lambda: client.v1.balance.retrieve())
         return True
     except Exception as e:
         logger.warning("readiness_stripe_check_failed", error_type=type(e).__name__)
         return False
-
-
-async def _check_stripe() -> bool:
-    """Async wrapper for the synchronous Stripe SDK."""
-    loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, _check_stripe_sync)
 
 
 def _check_resend_configured() -> bool:

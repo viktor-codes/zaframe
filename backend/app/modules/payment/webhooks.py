@@ -17,6 +17,7 @@ from fastapi import APIRouter, Request, Response
 from app.core.config import settings
 from app.core.middleware.logging_middleware import REQUEST_ID_STATE_KEY
 from app.core.uow_factory import uow_scope
+from app.modules.payment.stripe_client import run_stripe
 from app.modules.payment.webhook_processor import process_stripe_webhook_event
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
@@ -38,12 +39,16 @@ async def stripe_webhook(request: Request) -> Response:
 
     payload = await request.body()
     sig_header = request.headers.get("Stripe-Signature", "")
+    webhook_secret = settings.STRIPE_WEBHOOK_SECRET
 
     try:
-        event: Any = stripe.Webhook.construct_event(  # pyright: ignore[reportUnknownMemberType]  # WHY: stripe SDK has no type stubs
-            payload,
-            sig_header,
-            settings.STRIPE_WEBHOOK_SECRET,
+        # WHY: construct_event does sync crypto/IO helpers; keep the event loop free.
+        event: Any = await run_stripe(
+            lambda: stripe.Webhook.construct_event(  # pyright: ignore[reportUnknownMemberType]
+                payload,
+                sig_header,
+                webhook_secret,
+            )
         )
     except ValueError as e:
         logger.warning(

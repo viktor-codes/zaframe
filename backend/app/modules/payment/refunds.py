@@ -17,7 +17,7 @@ from app.models.booking import BookingStatus
 from app.models.order import OrderStatus
 from app.models.payment import Payment, PaymentStatus, Refund, RefundStatus
 from app.models.studio import Studio
-from app.modules.payment.stripe_client import get_stripe_client, raise_stripe_app_error
+from app.modules.payment.stripe_client import get_stripe_client, raise_stripe_app_error, run_stripe
 
 StripeRefundReason = Literal["duplicate", "fraudulent", "requested_by_customer"]
 logger = structlog.get_logger(__name__)
@@ -146,9 +146,11 @@ async def create_refund_for_payment(
 
     client = get_stripe_client()
     try:
-        stripe_refund = client.v1.refunds.create(
-            params=params,
-            options={"idempotency_key": idempotency_key},
+        stripe_refund = await run_stripe(
+            lambda: client.v1.refunds.create(
+                params=params,
+                options={"idempotency_key": idempotency_key},
+            )
         )
     except stripe.StripeError as e:
         raise_stripe_app_error(e, action="refund creation")

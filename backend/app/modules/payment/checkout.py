@@ -28,6 +28,7 @@ from app.modules.payment.stripe_client import (
     checkout_session_expires_at,
     get_stripe_client,
     raise_stripe_app_error,
+    run_stripe,
     settings,
 )
 
@@ -91,22 +92,24 @@ async def create_checkout_session(
     studio = occurrence.studio
     stripe_account_id = _require_connect_account_for_checkout(studio)
     client = get_stripe_client()
+    checkout_params = build_booking_checkout_params(
+        booking_id=booking_id,
+        currency=settings.STRIPE_CURRENCY,
+        unit_amount_cents=occurrence.price_cents,
+        product_name=occurrence.title,
+        product_description=occurrence.description or f"Booking occurrence #{occurrence.id}",
+        success_url=success_url,
+        cancel_url=cancel_url,
+        guest_email=booking.guest_email,
+        expires_at=checkout_session_expires_at(now_utc),
+        stripe_account_id=stripe_account_id,
+    )
     try:
-        session = client.v1.checkout.sessions.create(
-            params=build_booking_checkout_params(
-                booking_id=booking_id,
-                currency=settings.STRIPE_CURRENCY,
-                unit_amount_cents=occurrence.price_cents,
-                product_name=occurrence.title,
-                product_description=occurrence.description
-                or f"Booking occurrence #{occurrence.id}",
-                success_url=success_url,
-                cancel_url=cancel_url,
-                guest_email=booking.guest_email,
-                expires_at=checkout_session_expires_at(now_utc),
-                stripe_account_id=stripe_account_id,
-            ),
-            options={"idempotency_key": idempotency_key} if idempotency_key else None,
+        session = await run_stripe(
+            lambda: client.v1.checkout.sessions.create(
+                params=checkout_params,
+                options={"idempotency_key": idempotency_key} if idempotency_key else None,
+            )
         )
     except stripe.StripeError as e:
         raise_stripe_app_error(e, action="checkout session creation")
@@ -178,22 +181,25 @@ async def create_order_checkout_session(
     stripe_account_id = _require_connect_account_for_checkout(order.studio)
 
     client = get_stripe_client()
+    order_checkout_params = build_order_checkout_params(
+        order_id=order_id,
+        currency=settings.STRIPE_CURRENCY,
+        unit_amount_cents=order.total_amount_cents,
+        product_name=product_name,
+        product_description=f"Payment for order #{order.id}",
+        success_url=success_url,
+        cancel_url=cancel_url,
+        guest_email=order.guest_email,
+        expires_at=checkout_session_expires_at(now_utc),
+        stripe_account_id=stripe_account_id,
+        application_fee_cents=order.application_fee_cents,
+    )
     try:
-        session = client.v1.checkout.sessions.create(
-            params=build_order_checkout_params(
-                order_id=order_id,
-                currency=settings.STRIPE_CURRENCY,
-                unit_amount_cents=order.total_amount_cents,
-                product_name=product_name,
-                product_description=f"Payment for order #{order.id}",
-                success_url=success_url,
-                cancel_url=cancel_url,
-                guest_email=order.guest_email,
-                expires_at=checkout_session_expires_at(now_utc),
-                stripe_account_id=stripe_account_id,
-                application_fee_cents=order.application_fee_cents,
-            ),
-            options={"idempotency_key": idempotency_key} if idempotency_key else None,
+        session = await run_stripe(
+            lambda: client.v1.checkout.sessions.create(
+                params=order_checkout_params,
+                options={"idempotency_key": idempotency_key} if idempotency_key else None,
+            )
         )
     except stripe.StripeError as e:
         raise_stripe_app_error(e, action="checkout session creation")
