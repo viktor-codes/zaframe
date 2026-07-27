@@ -35,12 +35,16 @@ class OrderResponse(OrderBase):
 
 
 class OrderBookingSummary(BaseModel):
-    """Booking summary nested in order list responses."""
+    """Booking summary nested in order list / detail responses."""
 
     id: int
     occurrence_id: int
     status: str = Field(..., description="Booking lifecycle status")
     payment_status: str | None = Field(None, description="Payment status when available")
+    reserved_until: AwareDatetime | None = Field(
+        None,
+        description="Hold expiry for pending bookings (null after confirm/expire)",
+    )
 
     model_config = ConfigDict(from_attributes=True)
 

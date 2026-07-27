@@ -131,6 +131,7 @@ bookings merge by email (`include_guest_email=true` on `/bookings/my`).
 | `GET /bookings/{id}` | self or owner perspective |
 | `PATCH /bookings/{id}/cancel` | respects `cancel_before_hours` cutoff |
 | `GET /orders/my` | orders + service + booking summaries |
+| `GET /orders/{id}` | session owner **or** guest `access_token` as Bearer (same gate as order checkout); nested bookings include `reserved_until`; no secrets / Stripe ids |
 
 ### Dashboard (studio staff, auth + studio permission)
 
@@ -154,7 +155,9 @@ bookings merge by email (`include_guest_email=true` on `/bookings/my`).
 ### Webhooks (backend-internal, listed for awareness)
 
 `POST /webhooks/stripe` — payment confirmation is asynchronous; the success page must poll
-booking/order status instead of assuming instant confirmation.
+booking status (`GET /bookings/{id}`) or order status (`GET /orders/{id}`) instead of
+assuming instant confirmation. Guest order poll uses the create `access_token` until
+webhook clears it; after clear, session owner / email match still works.
 
 ## 7. Known contract gaps (tracked, do not build around silently)
 
@@ -163,3 +166,4 @@ booking/order status instead of assuming instant confirmation.
 | Pagination envelope `{items, total, page, size}` | backend | **done** — all paginated list endpoints |
 | Machine-readable error `code` | backend | backlog (post-MVP) |
 | FR-12 stabilization (failing tests, auth/payment prod blockers) | backend | **done** — see `docs/frontend-readiness/fr-12-stabilization.md` |
+| `GET /orders/{id}` for course success-page poll | backend | **done** — guest Bearer token or session owner; see Account table |

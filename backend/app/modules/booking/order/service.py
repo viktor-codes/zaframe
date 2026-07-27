@@ -26,6 +26,7 @@ from app.modules.booking.persistence import (
     persist_bookings,
 )
 from app.modules.catalog.service import check_course_availability_for_update
+from app.modules.payment.access import assert_order_checkout_access
 
 logger = structlog.get_logger(__name__)
 
@@ -167,6 +168,29 @@ async def create_course_booking(
         bookings=bookings,
         availability=availability,
     )
+
+
+async def get_order_for_access_or_raise(
+    uow: UnitOfWork,
+    order_id: int,
+    *,
+    current_user: User | None,
+    access_token: str | None,
+) -> Order:
+    """
+    Load order for success-page poll when caller owns it or has a valid guest token.
+
+    Missing order or failed access → NotFoundError (no IDOR enumeration).
+    """
+    order = await uow.orders.get_by_id_with_service_and_bookings(order_id)
+    if order is None:
+        raise NotFoundError("Order not found")
+    assert_order_checkout_access(
+        order,
+        current_user=current_user,
+        access_token=access_token,
+    )
+    return order
 
 
 async def get_my_orders(

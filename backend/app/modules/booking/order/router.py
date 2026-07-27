@@ -1,9 +1,10 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
+from fastapi.security import HTTPAuthorizationCredentials
 
-from app.core.deps import get_current_user_required, get_uow
-from app.core.exceptions import ValidationError
+from app.core.deps import get_current_user, get_current_user_required, get_uow, security
+from app.core.exceptions import UnauthorizedError, ValidationError
 from app.core.pagination import PaginatedResponse, build_paginated_response, pagination_offset
 from app.core.uow import UnitOfWork
 from app.models.user import User
@@ -11,6 +12,7 @@ from app.modules.booking.order.schemas import OrderListItem
 from app.modules.booking.order.service import (
     get_my_orders,
     get_my_orders_count,
+    get_order_for_access_or_raise,
     get_owner_orders,
     get_owner_orders_count,
 )
@@ -77,3 +79,33 @@ async def list_owner_orders_endpoint(
     )
     items = [OrderListItem.model_validate(order) for order in orders]
     return build_paginated_response(items, total=total, page=page, size=size)
+
+
+@router.get("/{order_id}", response_model=OrderListItem)
+async def get_order_by_id(
+    order_id: int,
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
+    credentials: Annotated[
+        HTTPAuthorizationCredentials | None,
+        Depends(security),
+    ],
+    user: Annotated[User | None, Depends(get_current_user)],
+) -> OrderListItem:
+    """
+    Read a single order for success-page status poll.
+
+    Auth: session JWT owner (user_id or guest_email match) **or**
+    opaque guest ``access_token`` from course create, sent as ``Authorization: Bearer``.
+    """
+    if credentials is None:
+        raise UnauthorizedError("Authentication required")
+    # WHY: guest opaque tokens are not JWTs — when session user is unresolved,
+    # treat the same Bearer value as resource access token (checkout gate mirror).
+    access_token = None if user is not None else credentials.credentials
+    order = await get_order_for_access_or_raise(
+        uow,
+        order_id,
+        current_user=user,
+        access_token=access_token,
+    )
+    return OrderListItem.model_validate(order)

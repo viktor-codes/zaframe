@@ -57,4 +57,4 @@ async def get_current_user_required(
     return user
 
 
-__all__ = ["get_current_user", "get_current_user_required", "get_uow"]
+__all__ = ["get_current_user", "get_current_user_required", "get_uow", "security"]

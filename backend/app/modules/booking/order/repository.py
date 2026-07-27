@@ -45,6 +45,24 @@ class OrderRepository(WriteRepositoryMixin):
         )
         return result.scalar_one_or_none()
 
+    async def get_by_id_with_service_and_bookings(self, order_id: int) -> Order | None:
+        """Load order with service and booking summaries for GET-by-id / list shape."""
+        result = await self._session.execute(
+            select(Order)
+            .options(
+                selectinload(Order.service),
+                selectinload(Order.bookings).load_only(
+                    Booking.id,
+                    Booking.occurrence_id,
+                    Booking.status,
+                    Booking.payment_status,
+                    Booking.reserved_until,
+                ),
+            )
+            .where(Order.id == order_id)
+        )
+        return result.scalar_one_or_none()
+
     async def list_for_user(
         self,
         *,
@@ -63,6 +81,7 @@ class OrderRepository(WriteRepositoryMixin):
                     Booking.occurrence_id,
                     Booking.status,
                     Booking.payment_status,
+                    Booking.reserved_until,
                 ),
             )
             .where(
@@ -99,6 +118,7 @@ class OrderRepository(WriteRepositoryMixin):
                     Booking.occurrence_id,
                     Booking.status,
                     Booking.payment_status,
+                    Booking.reserved_until,
                 ),
             )
             .where(or_(Studio.owner_id == user_id, StudioMember.user_id == user_id))
