@@ -1,46 +1,25 @@
-"use client";
-
-import { Suspense, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { fetchStudio } from "@shared/api";
-import { queryKeys } from "@shared/lib";
-import { Skeleton } from "@shared/ui";
+import { redirect } from "next/navigation";
+
+import { ApiError } from "@shared/api/api-error";
+import { fetchStudioById } from "@shared/api/server";
+import { parsePositiveIdString } from "@shared/lib/parse-positive-id";
+
+interface LegacyStudioPageProps {
+  params: Promise<{ id: string }>;
+}
 
 /**
  * Legacy `/studios/[id]` → Phase 3 slug storefront.
  * Kept so old explore links and bookmarks land on `/s/{slug}`.
  */
-function LegacyStudioRedirect() {
-  const router = useRouter();
-  const params = useParams();
-  const studioId = Number(params.id);
-  const isValidStudio = Number.isInteger(studioId) && studioId > 0;
+export default async function StudioDetailPage({
+  params,
+}: LegacyStudioPageProps) {
+  const { id } = await params;
+  const studioId = parsePositiveIdString(id);
 
-  const { data: studio, isError: studioError } = useQuery({
-    queryKey: queryKeys.studio.detail(studioId),
-    queryFn: () => fetchStudio(studioId),
-    enabled: isValidStudio,
-    retry: false,
-  });
-
-  useEffect(() => {
-    if (!isValidStudio) return;
-    if (studioError) {
-      router.replace("/studios");
-      return;
-    }
-    if (!studio) return;
-
-    const slug = studio.slug?.trim();
-    if (!slug) {
-      return;
-    }
-    router.replace(`/s/${encodeURIComponent(slug)}`);
-  }, [isValidStudio, router, studio, studioError]);
-
-  if (!isValidStudio) {
+  if (studioId == null) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-12">
         <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-red-800">
@@ -56,23 +35,18 @@ function LegacyStudioRedirect() {
     );
   }
 
-  if (studioError) {
-    return (
-      <div className="mx-auto max-w-2xl px-6 py-12">
-        <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-red-800">
-          <p className="font-semibold">Studio not found</p>
-          <Link
-            href="/studios"
-            className="mt-2 inline-block text-primary underline"
-          >
-            Back to studios
-          </Link>
-        </div>
-      </div>
-    );
+  let studio;
+  try {
+    studio = await fetchStudioById(studioId);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      redirect("/studios");
+    }
+    throw error;
   }
 
-  if (studio && !studio.slug?.trim()) {
+  const slug = studio.slug?.trim();
+  if (!slug) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-12">
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-900">
@@ -92,26 +66,5 @@ function LegacyStudioRedirect() {
     );
   }
 
-  return (
-    <div className="mx-auto max-w-2xl space-y-3 px-6 py-12">
-      <Skeleton className="h-8 w-48" />
-      <Skeleton className="h-40 w-full" />
-      <p className="text-sm text-neutral-500">Opening studio page…</p>
-    </div>
-  );
-}
-
-export default function StudioDetailPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="mx-auto max-w-2xl space-y-3 px-6 py-12">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-40 w-full" />
-        </div>
-      }
-    >
-      <LegacyStudioRedirect />
-    </Suspense>
-  );
+  redirect(`/s/${encodeURIComponent(slug)}`);
 }

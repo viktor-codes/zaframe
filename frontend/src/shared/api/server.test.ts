@@ -11,7 +11,7 @@ vi.mock("@shared/lib/config", () => ({
   },
 }));
 
-import { fetchStudioPublicBySlug, serverGet } from "./server";
+import { fetchStudioById, fetchStudioPublicBySlug, serverGet } from "./server";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -109,6 +109,26 @@ describe("fetchStudioPublicBySlug", () => {
     expect(url).toBe(
       "https://api.example.com/api/v1/studios/slug/yoga-lab/public",
     );
+    expect(init.next?.revalidate).toBe(60);
+  });
+});
+
+describe("fetchStudioById", () => {
+  it("calls the public studio-by-id endpoint with default revalidate", async function () {
+    const payload = { id: 7, name: "Studio", slug: "yoga-lab", timezone: "UTC" };
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(payload), { status: 200 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await fetchStudioById(7);
+
+    expect(result).toEqual(payload);
+    const [url, init] = fetchMock.mock.calls[0] as [
+      string,
+      RequestInit & { next?: { revalidate?: number } },
+    ];
+    expect(url).toBe("https://api.example.com/api/v1/studios/7");
     expect(init.next?.revalidate).toBe(60);
   });
 });

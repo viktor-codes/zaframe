@@ -1,85 +1,55 @@
-"use client";
-
-import { Suspense, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { fetchStudio, fetchStudioOccurrences } from "@shared/api";
-import { OccurrenceStatus, queryKeys } from "@shared/lib";
-import { Skeleton } from "@shared/ui";
+import { redirect } from "next/navigation";
+
+import { ApiError } from "@shared/api/api-error";
+import {
+  fetchPublicServiceOccurrences,
+  fetchStudioById,
+  fetchStudioPublicBySlug,
+} from "@shared/api/server";
+import { parsePositiveIdString } from "@shared/lib/parse-positive-id";
+
+interface LegacyBookPageProps {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ occurrence?: string }>;
+}
+
+/**
+ * Resolve bookable service id for a legacy `?occurrence=` deep link via public APIs.
+ */
+async function findServiceIdForOccurrence(
+  slug: string,
+  occurrenceId: number,
+): Promise<number | null> {
+  const publicStudio = await fetchStudioPublicBySlug(slug);
+  const services = publicStudio.services ?? [];
+
+  const matches = await Promise.all(
+    services.map(async (service) => {
+      const occurrences = await fetchPublicServiceOccurrences(slug, service.id);
+      return occurrences.some((item) => item.id === occurrenceId)
+        ? service.id
+        : null;
+    }),
+  );
+
+  return matches.find((serviceId): serviceId is number => serviceId != null) ?? null;
+}
 
 /**
  * Legacy `/studios/[id]/book` → Phase 3 slug storefront wizard.
  * Kept as a redirect so old links and emails do not create holds without Stripe.
  */
-function LegacyBookRedirect() {
-  const router = useRouter();
-  const params = useParams();
-  const searchParams = useSearchParams();
-  const studioId = Number(params.id);
-  const occurrenceIdParam = searchParams.get("occurrence");
-  const occurrenceId = occurrenceIdParam ? Number(occurrenceIdParam) : null;
+export default async function BookPage({
+  params,
+  searchParams,
+}: LegacyBookPageProps) {
+  const { id } = await params;
+  const { occurrence: occurrenceParam } = await searchParams;
+  const studioId = parsePositiveIdString(id);
+  const occurrenceId = parsePositiveIdString(occurrenceParam ?? null);
 
-  const isValidStudio = Number.isInteger(studioId) && studioId > 0;
-
-  const { data: studio, isError: studioError } = useQuery({
-    queryKey: queryKeys.studio.detail(studioId),
-    queryFn: () => fetchStudio(studioId),
-    enabled: isValidStudio,
-    retry: false,
-  });
-
-  const occurrenceListParams = {
-    status: OccurrenceStatus.SCHEDULED,
-  } as const;
-
-  const { data: occurrencePage, isFetched: occurrencesFetched } = useQuery({
-    queryKey: queryKeys.studio.occurrences(studioId, occurrenceListParams),
-    queryFn: () =>
-      fetchStudioOccurrences(studioId, occurrenceListParams),
-    enabled: isValidStudio && Boolean(studio),
-    retry: false,
-  });
-  const occurrences = occurrencePage?.items;
-
-  useEffect(() => {
-    if (!isValidStudio) return;
-    if (studioError) {
-      router.replace("/studios");
-      return;
-    }
-    if (!studio) return;
-
-    const slug = studio.slug?.trim();
-    if (!slug) {
-      router.replace(`/studios/${studioId}`);
-      return;
-    }
-
-    if (occurrenceId != null && Number.isInteger(occurrenceId)) {
-      if (!occurrencesFetched) return;
-      const occurrence = occurrences?.find((item) => item.id === occurrenceId);
-      if (occurrence) {
-        router.replace(
-          `/s/${encodeURIComponent(slug)}/book/${occurrence.service_id}`,
-        );
-        return;
-      }
-    }
-
-    router.replace(`/s/${encodeURIComponent(slug)}`);
-  }, [
-    isValidStudio,
-    studio,
-    studioError,
-    studioId,
-    occurrenceId,
-    occurrences,
-    occurrencesFetched,
-    router,
-  ]);
-
-  if (!isValidStudio) {
+  if (studioId == null) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-12">
         <p className="text-sm text-neutral-600">Invalid studio link.</p>
@@ -90,29 +60,27 @@ function LegacyBookRedirect() {
     );
   }
 
-  return (
-    <div
-      className="mx-auto max-w-2xl px-6 py-12"
-      data-testid="legacy-book-redirect"
-    >
-      <Skeleton className="h-48 w-full" />
-      <p className="mt-4 text-center text-sm text-neutral-500">
-        Taking you to the booking page…
-      </p>
-    </div>
-  );
-}
+  let studio;
+  try {
+    studio = await fetchStudioById(studioId);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      redirect("/studios");
+    }
+    throw error;
+  }
 
-export default function BookPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="mx-auto max-w-2xl px-6 py-12">
-          <Skeleton className="h-64 w-full" />
-        </div>
-      }
-    >
-      <LegacyBookRedirect />
-    </Suspense>
-  );
+  const slug = studio.slug?.trim();
+  if (!slug) {
+    redirect(`/studios/${studioId}`);
+  }
+
+  if (occurrenceId != null) {
+    const serviceId = await findServiceIdForOccurrence(slug, occurrenceId);
+    if (serviceId != null) {
+      redirect(`/s/${encodeURIComponent(slug)}/book/${serviceId}`);
+    }
+  }
+
+  redirect(`/s/${encodeURIComponent(slug)}`);
 }

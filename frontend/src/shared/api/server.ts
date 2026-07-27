@@ -8,7 +8,8 @@
 
 import "server-only";
 
-import type { StudioPublicResponse } from "@entities/studio";
+import type { OccurrenceResponse } from "@entities/occurrence";
+import type { StudioPublicResponse, StudioResponse } from "@entities/studio";
 import { config } from "@shared/lib/config";
 
 import { ApiError } from "./api-error";
@@ -90,6 +91,43 @@ export async function fetchStudioPublicBySlug(
   const encoded = encodeURIComponent(slug);
   return serverGet<StudioPublicResponse>(
     `api/v1/studios/slug/${encoded}/public`,
+    {
+      ...options,
+      next: {
+        revalidate: STOREFRONT_REVALIDATE_SECONDS,
+        ...options.next,
+      },
+    },
+  );
+}
+
+/**
+ * Public studio-by-id lookup (no auth). Used for legacy `/studios/[id]` redirects.
+ */
+export async function fetchStudioById(
+  studioId: number,
+  options: Omit<ServerRequestConfig, "params"> = {},
+): Promise<StudioResponse> {
+  return serverGet<StudioResponse>(`api/v1/studios/${studioId}`, {
+    ...options,
+    next: {
+      revalidate: STOREFRONT_REVALIDATE_SECONDS,
+      ...options.next,
+    },
+  });
+}
+
+/**
+ * Public bookable occurrences for a service on a slug storefront.
+ */
+export async function fetchPublicServiceOccurrences(
+  slug: string,
+  serviceId: number,
+  options: Omit<ServerRequestConfig, "params"> = {},
+): Promise<OccurrenceResponse[]> {
+  const encoded = encodeURIComponent(slug);
+  return serverGet<OccurrenceResponse[]>(
+    `api/v1/studios/slug/${encoded}/services/${serviceId}/occurrences`,
     {
       ...options,
       next: {
