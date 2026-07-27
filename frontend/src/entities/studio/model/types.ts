@@ -19,3 +19,14 @@ export type PaginatedStudioWithRoleList =
   Schema<"PaginatedResponse_StudioWithRoleResponse_">;
 export type PaginatedSearchResultList =
   Schema<"PaginatedResponse_SearchResult_">;
+
+export type StudioMemberResponse = Schema<"StudioMemberResponse">;
+export type StudioMemberCreate = Schema<"StudioMemberCreate">;
+export type StudioMemberUpdate = Schema<"StudioMemberUpdate">;
+export type PaginatedStudioMemberList =
+  Schema<"PaginatedResponse_StudioMemberResponse_">;
+/** Query params for `GET /studios/{id}/members` — from OpenAPI operation. */
+export type StudioMembersParams = NonNullable<
+  operations["list_studio_members_endpoint_api_v1_studios__studio_id__members_get"]["parameters"]["query"]
+>;
+

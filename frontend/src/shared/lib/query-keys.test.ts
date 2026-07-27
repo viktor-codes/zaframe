@@ -113,5 +113,15 @@ describe("queryKeys", () => {
       "stripe-status",
     ]);
   });
+
+  it("keys studio members list by id and filters", () => {
+    expect(queryKeys.studio.membersRoot(9)).toEqual(["studio", 9, "members"]);
+    expect(queryKeys.studio.members(9, { page: 1, size: 20 })).toEqual([
+      "studio",
+      9,
+      "members",
+      { page: 1, size: 20 },
+    ]);
+  });
 });
 

@@ -92,3 +92,10 @@ export {
   type StudioServicesParams,
   type StudiosListParams,
 } from "./studios";
+export {
+  addStudioMember,
+  fetchStudioMembers,
+  removeStudioMember,
+  updateStudioMember,
+  type StudioMembersParams,
+} from "./studio-members";

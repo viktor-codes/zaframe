@@ -12,6 +12,7 @@
 
 import type { BookingsListParams, MyBookingsParams } from "../api/bookings";
 import type { MyOrdersParams } from "../api/orders";
+import type { StudioMembersParams } from "../api/studio-members";
 import type {
   StudioOccurrencesParams,
   StudioServicesParams,
@@ -22,6 +23,7 @@ export type {
   BookingsListParams,
   MyBookingsParams,
   MyOrdersParams,
+  StudioMembersParams,
   StudioOccurrencesParams,
   StudioServicesParams,
   StudiosListParams,
@@ -75,6 +77,13 @@ export const queryKeys = {
     ) => ["studio", id, "services", filters] as const,
     /** Stripe Connect / payout status (`GET …/stripe/status`). */
     stripeStatus: (id: number) => ["studio", id, "stripe-status"] as const,
+    /** Prefix for invalidating the studio members list. */
+    membersRoot: (id: number) => ["studio", id, "members"] as const,
+    /**
+     * @param filters - Exact params passed to `fetchStudioMembers`.
+     */
+    members: (id: number, filters: StudioMembersParams = {}) =>
+      ["studio", id, "members", filters] as const,
   },
 
   service: {

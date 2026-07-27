@@ -151,6 +151,10 @@ bookings merge by email (`include_guest_email=true` on `/bookings/my`).
 | `PATCH /bookings/{id}/mark-no-show` | `check_in_booking` | |
 | `GET /orders` | owner | studio orders |
 | `GET /studios/{id}/payments` | `manage_payouts` | payment list (P1) |
+| `GET /studios/{id}/members` | `manage_members` | paginated team list |
+| `POST /studios/{id}/members` | `manage_members` | add existing user by email (`manager` \| `instructor`; no pending invite) |
+| `PATCH /studios/{id}/members/{member_id}` | `manage_members` | change role; cannot demote last owner |
+| `DELETE /studios/{id}/members/{member_id}` | `manage_members` | remove; cannot remove last owner |
 
 ### Webhooks (backend-internal, listed for awareness)
 

@@ -269,6 +269,57 @@ export interface paths {
         patch: operations["update_studio_endpoint_api_v1_studios__studio_id__patch"];
         trace?: never;
     };
+    "/api/v1/studios/{studio_id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List studio members
+         * @description List members when the caller has manage_members (owner-only in the matrix).
+         */
+        get: operations["list_studio_members_endpoint_api_v1_studios__studio_id__members_get"];
+        put?: never;
+        /**
+         * Add studio member
+         * @description Add an existing user by email as manager or instructor.
+         *
+         *     Owner role is only created with the studio. Unknown emails return 404
+         *     (no pending-invite infrastructure in MVP).
+         */
+        post: operations["add_studio_member_endpoint_api_v1_studios__studio_id__members_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/studios/{studio_id}/members/{member_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove studio member
+         * @description Remove a member; cannot remove the last owner.
+         */
+        delete: operations["remove_studio_member_endpoint_api_v1_studios__studio_id__members__member_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update studio member role
+         * @description Change a member to manager or instructor; cannot demote the last owner.
+         */
+        patch: operations["update_studio_member_endpoint_api_v1_studios__studio_id__members__member_id__patch"];
+        trace?: never;
+    };
     "/api/v1/studios/{studio_id}/occurrences": {
         parameters: {
             query?: never;
@@ -2405,6 +2456,26 @@ export interface components {
              */
             size: number;
         };
+        /** PaginatedResponse[StudioMemberResponse] */
+        PaginatedResponse_StudioMemberResponse_: {
+            /** Items */
+            items: components["schemas"]["StudioMemberResponse"][];
+            /**
+             * Total
+             * @description Total matching records across all pages
+             */
+            total: number;
+            /**
+             * Page
+             * @description Current page number (1-based)
+             */
+            page: number;
+            /**
+             * Size
+             * @description Number of records per page
+             */
+            size: number;
+        };
         /** PaginatedResponse[StudioResponse] */
         PaginatedResponse_StudioResponse_: {
             /** Items */
@@ -3377,6 +3448,86 @@ export interface components {
             timezone: string;
         };
         /**
+         * StudioMemberCreate
+         * @description Add an existing user to a studio by email (no pending-invite flow in MVP).
+         */
+        StudioMemberCreate: {
+            /**
+             * Email
+             * Format: email
+             * @description Email of an existing ZeeFrame user
+             * @example instructor@example.com
+             */
+            email: string;
+            /**
+             * Role
+             * @description Assignable role; owner is created only with the studio
+             * @example instructor
+             * @enum {string}
+             */
+            role: "manager" | "instructor";
+        };
+        /**
+         * StudioMemberResponse
+         * @description Studio membership with nested user summary for the team UI.
+         */
+        StudioMemberResponse: {
+            /**
+             * Id
+             * @description Studio member ID
+             */
+            id: number;
+            /**
+             * Studio Id
+             * @description Studio ID
+             */
+            studio_id: number;
+            /**
+             * User Id
+             * @description User ID
+             */
+            user_id: number;
+            /**
+             * Role
+             * @description Membership role: owner | manager | instructor
+             */
+            role: string;
+            /**
+             * Email
+             * Format: email
+             * @description Member email
+             */
+            email: string;
+            /**
+             * Name
+             * @description Member display name
+             */
+            name?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * StudioMemberUpdate
+         * @description Change a member's role (owner demotion blocked when they are the last owner).
+         */
+        StudioMemberUpdate: {
+            /**
+             * Role
+             * @description New role; owner cannot be assigned via this endpoint
+             * @example manager
+             * @enum {string}
+             */
+            role: "manager" | "instructor";
+        };
+        /**
          * StudioPublicResponse
          * @description Public studio page: profile + service catalog.
          */
@@ -4218,6 +4369,143 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StudioResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_studio_members_endpoint_api_v1_studios__studio_id__members_get: {
+        parameters: {
+            query?: {
+                /** @description Page number (1-based) */
+                page?: number;
+                /** @description Records per page */
+                size?: number;
+            };
+            header?: never;
+            path: {
+                studio_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedResponse_StudioMemberResponse_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_studio_member_endpoint_api_v1_studios__studio_id__members_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                studio_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StudioMemberCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudioMemberResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_studio_member_endpoint_api_v1_studios__studio_id__members__member_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                studio_id: number;
+                member_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_studio_member_endpoint_api_v1_studios__studio_id__members__member_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                studio_id: number;
+                member_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StudioMemberUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudioMemberResponse"];
                 };
             };
             /** @description Validation Error */

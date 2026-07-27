@@ -25,3 +25,15 @@ export function invalidateStudioServices(
     queryKey: queryKeys.studio.servicesRoot(studioId),
   });
 }
+
+/**
+ * Invalidate the studio members list (`GET /studios/{id}/members`).
+ */
+export function invalidateStudioMembers(
+  queryClient: QueryClient,
+  studioId: number,
+): void {
+  void queryClient.invalidateQueries({
+    queryKey: queryKeys.studio.membersRoot(studioId),
+  });
+}
