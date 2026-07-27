@@ -11,7 +11,14 @@ import {
   type StudioOnboardingStep,
   type StudioWithRoleResponse,
 } from "@entities/studio";
-import { roleHasPermission, StudioPermission } from "@shared/lib";
+import { fetchStudioStripeStatus } from "@shared/api";
+import { queryKeys, roleHasPermission, StudioPermission } from "@shared/lib";
+
+import {
+  buildConnectByStudioId,
+  buildServicesByStudioId,
+  findRoleScopedQueryIssue,
+} from "./onboarding-query-maps";
 
 export interface StudioListRow {
   studio: StudioWithRoleResponse;
@@ -39,48 +46,33 @@ export function useMyStudiosDashboard(): UseMyStudiosDashboardResult {
   const onboardingServicesParams = { size: 100 } as const;
 
   const serviceQueries = useQueries({
-    queries: studios.map((studio) => {
-      const canManageServices = roleHasPermission(
-        studio.role,
-        StudioPermission.MANAGE_SERVICES,
-      );
-
-      return {
-        ...studioServicesQueryOptions(studio.id, onboardingServicesParams),
-        enabled: myStudiosQuery.isSuccess && canManageServices,
-      };
-    }),
+    queries: studios.map((studio) => ({
+      ...studioServicesQueryOptions(studio.id, onboardingServicesParams),
+      enabled:
+        myStudiosQuery.isSuccess &&
+        roleHasPermission(studio.role, StudioPermission.MANAGE_SERVICES),
+    })),
   });
 
-  const servicesByStudioId = useMemo(() => {
-    const map = new Map<
-      number,
-      ReadonlyArray<{ visibility: string }> | undefined
-    >();
+  const connectQueries = useQueries({
+    queries: studios.map((studio) => ({
+      queryKey: queryKeys.studio.stripeStatus(studio.id),
+      queryFn: () => fetchStudioStripeStatus(studio.id),
+      enabled:
+        myStudiosQuery.isSuccess &&
+        roleHasPermission(studio.role, StudioPermission.MANAGE_PAYOUTS),
+    })),
+  });
 
-    studios.forEach((studio, index) => {
-      const canManageServices = roleHasPermission(
-        studio.role,
-        StudioPermission.MANAGE_SERVICES,
-      );
+  const servicesByStudioId = useMemo(
+    () => buildServicesByStudioId(studios, serviceQueries),
+    [serviceQueries, studios],
+  );
 
-      if (!canManageServices) {
-        map.set(studio.id, undefined);
-        return;
-      }
-
-      const query = serviceQueries[index];
-      if (!query || query.isLoading || query.isPending || query.isError) {
-        // WHY: leave undefined on error — panel surfaces isError, never fake empty.
-        map.set(studio.id, undefined);
-        return;
-      }
-
-      map.set(studio.id, query.data?.items ?? []);
-    });
-
-    return map;
-  }, [serviceQueries, studios]);
+  const connectByStudioId = useMemo(
+    () => buildConnectByStudioId(studios, connectQueries),
+    [connectQueries, studios],
+  );
 
   const rows = useMemo<StudioListRow[]>(
     () =>
@@ -89,13 +81,18 @@ export function useMyStudiosDashboard(): UseMyStudiosDashboardResult {
         step: resolveStudioOnboardingStep(
           studio,
           servicesByStudioId.get(studio.id),
+          connectByStudioId.get(studio.id),
         ),
       })),
-    [servicesByStudioId, studios],
+    [connectByStudioId, servicesByStudioId, studios],
   );
 
   const spotlight = useMemo(() => {
-    const picked = pickSpotlightStudioStep(studios, servicesByStudioId);
+    const picked = pickSpotlightStudioStep(
+      studios,
+      servicesByStudioId,
+      connectByStudioId,
+    );
     if (picked == null) {
       return null;
     }
@@ -103,29 +100,40 @@ export function useMyStudiosDashboard(): UseMyStudiosDashboardResult {
       studio: picked.studio as StudioWithRoleResponse,
       step: picked.step,
     };
-  }, [servicesByStudioId, studios]);
+  }, [connectByStudioId, servicesByStudioId, studios]);
 
-  const isServicesLoading = serviceQueries.some(
-    (query, index) =>
-      roleHasPermission(studios[index]?.role, StudioPermission.MANAGE_SERVICES) &&
-      (query.isLoading || query.isPending),
+  const servicesIssue = findRoleScopedQueryIssue(
+    studios,
+    serviceQueries,
+    StudioPermission.MANAGE_SERVICES,
   );
-
-  const failedServicesQuery = serviceQueries.find(
-    (query, index) =>
-      roleHasPermission(studios[index]?.role, StudioPermission.MANAGE_SERVICES) &&
-      query.isError,
+  const connectIssue = findRoleScopedQueryIssue(
+    studios,
+    connectQueries,
+    StudioPermission.MANAGE_PAYOUTS,
   );
 
   return {
     rows,
     spotlight,
-    isLoading: myStudiosQuery.isLoading || isServicesLoading,
-    isError: myStudiosQuery.isError || Boolean(failedServicesQuery),
-    error: myStudiosQuery.error ?? failedServicesQuery?.error,
+    isLoading:
+      myStudiosQuery.isLoading ||
+      servicesIssue.isLoading ||
+      connectIssue.isLoading,
+    isError:
+      myStudiosQuery.isError ||
+      Boolean(servicesIssue.failed) ||
+      Boolean(connectIssue.failed),
+    error:
+      myStudiosQuery.error ??
+      servicesIssue.failed?.error ??
+      connectIssue.failed?.error,
     refetch: () => {
       void myStudiosQuery.refetch();
       for (const query of serviceQueries) {
+        void query.refetch();
+      }
+      for (const query of connectQueries) {
         void query.refetch();
       }
     },

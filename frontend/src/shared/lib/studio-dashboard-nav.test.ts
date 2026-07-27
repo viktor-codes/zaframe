@@ -19,6 +19,7 @@ describe("studio dashboard nav", () => {
       "services",
       "calendar",
       "bookings",
+      "payouts",
     ]);
     expect(items[0].href).toBe("/dashboard/studios/7");
     expect(items[0].isExact).toBe(true);
@@ -42,6 +43,7 @@ describe("studio dashboard nav", () => {
       "services",
       "calendar",
       "bookings",
+      "payouts",
     ]);
   });
 
@@ -56,6 +58,7 @@ describe("studio dashboard nav", () => {
       "services",
       "calendar",
       "bookings",
+      "payouts",
     ]);
   });
 });

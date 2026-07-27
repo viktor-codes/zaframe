@@ -43,7 +43,15 @@ export {
 export {
   createCheckoutSession,
   createOrderCheckoutSession,
+  createStudioStripeOnboarding,
+  fetchStudioPayoutSettings,
+  fetchStudioStripeStatus,
+  updateStudioPayoutSettings,
   type CreateCheckoutSessionOptions,
+  type PayoutSettingsUpdate,
+  type StripeConnectOnboardCreate,
+  type StripeConnectOnboardResponse,
+  type StripeConnectStatusResponse,
 } from "./payments";
 export { fetchSearch } from "./search";
 export {

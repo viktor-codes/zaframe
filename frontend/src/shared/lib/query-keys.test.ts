@@ -105,5 +105,13 @@ describe("queryKeys", () => {
       "2026-08-01",
     ]);
   });
+
+  it("keys studio stripe status by id", () => {
+    expect(queryKeys.studio.stripeStatus(9)).toEqual([
+      "studio",
+      9,
+      "stripe-status",
+    ]);
+  });
 });
 

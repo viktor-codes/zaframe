@@ -73,6 +73,8 @@ export const queryKeys = {
       id: number,
       filters: Omit<StudioServicesParams, "page"> = {},
     ) => ["studio", id, "services", filters] as const,
+    /** Stripe Connect / payout status (`GET …/stripe/status`). */
+    stripeStatus: (id: number) => ["studio", id, "stripe-status"] as const,
   },
 
   service: {

@@ -3,6 +3,7 @@ export * from "./studio";
 export {
   pickSpotlightStudioStep,
   resolveStudioOnboardingStep,
+  type StudioConnectOnboardingInput,
   type StudioOnboardingStep,
   type StudioOnboardingStepId,
 } from "./studio-onboarding";

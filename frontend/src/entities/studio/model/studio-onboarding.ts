@@ -5,6 +5,7 @@ import type { StudioWithRoleResponse } from "./types";
 
 export type StudioOnboardingStepId =
   | "complete_profile"
+  | "connect_stripe"
   | "create_service"
   | "publish_service"
   | "ready";
@@ -26,23 +27,39 @@ type ServiceVisibilityInput = {
   visibility: string;
 };
 
+/** Connect flags for funnel gating — `undefined` while status is still loading. */
+export type StudioConnectOnboardingInput =
+  | {
+      stripe_account_id?: string | null;
+      stripe_charges_enabled: boolean;
+      stripe_payouts_enabled: boolean;
+    }
+  | undefined;
+
 function isProfileIncomplete(studio: StudioOnboardingInput): boolean {
   const city = studio.city?.trim() ?? "";
   const description = studio.description?.trim() ?? "";
   return !hasStudioSlug(studio) || city.length === 0 || description.length === 0;
 }
 
+function isConnectIncomplete(connect: NonNullable<StudioConnectOnboardingInput>): boolean {
+  const accountId = connect.stripe_account_id?.trim() ?? "";
+  if (!accountId) return true;
+  return !(connect.stripe_charges_enabled && connect.stripe_payouts_enabled);
+}
+
 /**
  * Next onboarding action for a membership studio.
  *
- * WHY: Stripe Connect is Phase 6 — skipped here. Schedule/occurrence depth
- * waits for manage-schedule; after a published service we treat the studio as ready.
+ * Funnel (STRATEGY): profile → Stripe Connect → create/publish service.
  *
  * @param services - `undefined` when the caller cannot/should not load services yet.
+ * @param connect - `undefined` while Connect status is loading for a payouts manager.
  */
 export function resolveStudioOnboardingStep(
   studio: StudioOnboardingInput,
   services: ReadonlyArray<ServiceVisibilityInput> | undefined,
+  connect: StudioConnectOnboardingInput = undefined,
 ): StudioOnboardingStep | null {
   const base = `/dashboard/studios/${studio.id}`;
 
@@ -61,6 +78,28 @@ export function resolveStudioOnboardingStep(
       href: `${base}/profile`,
       ctaLabel: "Edit profile",
     };
+  }
+
+  const canManagePayouts = roleHasPermission(
+    studio.role,
+    StudioPermission.MANAGE_PAYOUTS,
+  );
+
+  if (canManagePayouts) {
+    // Connect status still loading — wait before guessing.
+    if (connect === undefined) {
+      return null;
+    }
+    if (isConnectIncomplete(connect)) {
+      return {
+        id: "connect_stripe",
+        title: "Connect Stripe to get paid",
+        description:
+          "Finish Stripe Connect so customers can pay for classes and you can receive payouts.",
+        href: `${base}/payouts`,
+        ctaLabel: "Set up payouts",
+      };
+    }
   }
 
   const canManageServices = roleHasPermission(
@@ -127,6 +166,7 @@ export function pickSpotlightStudioStep(
     number,
     ReadonlyArray<ServiceVisibilityInput> | undefined
   >,
+  connectByStudioId: ReadonlyMap<number, StudioConnectOnboardingInput> = new Map(),
 ): { studio: StudioOnboardingInput; step: StudioOnboardingStep } | null {
   if (studios.length === 0) {
     return null;
@@ -136,6 +176,7 @@ export function pickSpotlightStudioStep(
     const step = resolveStudioOnboardingStep(
       studio,
       servicesByStudioId.get(studio.id),
+      connectByStudioId.get(studio.id),
     );
     if (step == null) {
       continue;
@@ -149,6 +190,7 @@ export function pickSpotlightStudioStep(
   const step = resolveStudioOnboardingStep(
     first,
     servicesByStudioId.get(first.id),
+    connectByStudioId.get(first.id),
   );
   if (step == null) {
     return null;
