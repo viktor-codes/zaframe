@@ -79,6 +79,12 @@ export const queryKeys = {
     detail: (id: number | undefined) => ["service", id] as const,
     scheduleTemplates: (serviceId: number) =>
       ["service", serviceId, "schedule-templates"] as const,
+    /**
+     * Public course availability (`GET /services/{id}/availability`).
+     * @param startDate - Exact `start_date` query value passed to the fetch (or null).
+     */
+    availability: (serviceId: number, startDate: string | null = null) =>
+      ["service", serviceId, "availability", startDate] as const,
   },
 
   bookings: {

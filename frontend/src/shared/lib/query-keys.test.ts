@@ -86,5 +86,20 @@ describe("queryKeys", () => {
     const params = { size: 20 };
     expect(queryKeys.orders.my(params)).toEqual(["orders", "my", params]);
   });
+
+  it("keys service availability by id and optional start date", () => {
+    expect(queryKeys.service.availability(55)).toEqual([
+      "service",
+      55,
+      "availability",
+      null,
+    ]);
+    expect(queryKeys.service.availability(55, "2026-08-01")).toEqual([
+      "service",
+      55,
+      "availability",
+      "2026-08-01",
+    ]);
+  });
 });
 
