@@ -81,13 +81,18 @@ def _set_refresh_cookie(response: Response, refresh_token: str) -> None:
 
 
 def _clear_refresh_cookie(response: Response) -> None:
+    # WHY: browsers require matching Secure/SameSite to clear previously set cookies.
     response.delete_cookie(
         key=REFRESH_TOKEN_COOKIE_NAME,
         path="/",
+        secure=settings.cookie_secure,
+        samesite=settings.cookie_samesite,
     )
     response.delete_cookie(
         key=CSRF_COOKIE_NAME,
         path="/",
+        secure=settings.cookie_secure,
+        samesite=settings.cookie_samesite,
     )
 
 

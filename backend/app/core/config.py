@@ -111,8 +111,9 @@ class Settings(BaseSettings):
     @computed_field
     @property
     def cookie_secure(self) -> bool:
-        """Send auth cookies only over HTTPS in production."""
-        return self.is_production
+        """Send auth cookies only over HTTPS outside local dev."""
+        # WHY: staging/production are HTTPS; Secure=false there can leave cookies uncleared.
+        return self.ENVIRONMENT != "dev"
 
     @computed_field
     @property
