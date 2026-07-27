@@ -298,6 +298,7 @@ async def simulate_bookings(
                 success_url="https://example.com/payments/success",
                 cancel_url="https://example.com/payments/cancel",
                 access_token=access_token,
+                idempotency_key=f"seed-booking-{booking_id}",
             )
         except AppError as e:
             print(f"[payments] booking_id={booking_id} checkout error: {e.detail}")
@@ -310,6 +311,7 @@ async def simulate_bookings(
                 success_url="https://example.com/payments/success",
                 cancel_url="https://example.com/payments/cancel",
                 access_token=access_token,
+                idempotency_key=f"seed-order-{order_id}",
             )
         except AppError as e:
             print(f"[payments] order_id={order_id} checkout error: {e.detail}")

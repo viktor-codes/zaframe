@@ -43,14 +43,14 @@ async def create_checkout_session_endpoint(
     uow: Annotated[UnitOfWork, Depends(get_uow)],
     current_user: Annotated[User | None, Depends(get_current_user)],
     idempotency_key: Annotated[
-        str | None,
+        str,
         Header(
             min_length=8,
             max_length=255,
             alias="Idempotency-Key",
-            description="Client-generated key for safe checkout retries",
+            description="Required client-generated key for safe checkout retries",
         ),
-    ] = None,
+    ],
 ) -> CheckoutSessionResponse:
     """
     Create a Stripe Checkout Session for booking payment.
@@ -85,14 +85,14 @@ async def create_order_checkout_session_endpoint(
     uow: Annotated[UnitOfWork, Depends(get_uow)],
     current_user: Annotated[User | None, Depends(get_current_user)],
     idempotency_key: Annotated[
-        str | None,
+        str,
         Header(
             min_length=8,
             max_length=255,
             alias="Idempotency-Key",
-            description="Client-generated key for safe checkout retries",
+            description="Required client-generated key for safe checkout retries",
         ),
-    ] = None,
+    ],
 ) -> CheckoutSessionResponse:
     """
     Create a Stripe Checkout Session for order payment.

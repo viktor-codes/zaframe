@@ -115,8 +115,8 @@ Legacy `/count` endpoints and `skip` / `limit` query params are removed.
 | `GET /services/{id}/availability` | course availability / overbooked dates |
 | `GET /occurrences?service_id=…` | bookable slots |
 | `POST /bookings` | guest or user; `BookingCreate` (single) or `CourseBookingCreate` (course → Order + N bookings); returns `access_token` for guests; rate limit 10/min |
-| `POST /payments/checkout-session` | Stripe Checkout for single booking; supports `Idempotency-Key` header |
-| `POST /payments/order-checkout-session` | Stripe Checkout for course order; `Idempotency-Key` |
+| `POST /payments/checkout-session` | Stripe Checkout for single booking; **requires** `Idempotency-Key` header |
+| `POST /payments/order-checkout-session` | Stripe Checkout for course order; **requires** `Idempotency-Key` |
 
 Guest flow: `access_token` from booking/order is kept in `sessionStorage` after create.
 Deep links use `/bookings/{id}/confirm#access_token=…` (hash is not sent to servers;

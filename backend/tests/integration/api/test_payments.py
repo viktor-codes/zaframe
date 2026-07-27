@@ -14,6 +14,9 @@ from tests.conftest import authenticate_via_otp, create_test_service
 from app.core.uow_factory import create_uow
 from app.main import app
 
+_IDEMPOTENCY_KEY = "payments-idempotency-key-01"
+_CHECKOUT_HEADERS = {"Idempotency-Key": _IDEMPOTENCY_KEY}
+
 _CHECKOUT_PAYLOAD = {
     "success_url": "http://localhost:3000/payments/success",
     "cancel_url": "http://localhost:3000/payments/cancel",
@@ -148,6 +151,7 @@ async def test_checkout_session_returns_201_for_pending_booking(client: AsyncCli
         response = await client.post(
             "/api/v1/payments/checkout-session",
             json={"booking_id": booking_id, "access_token": access_token, **_CHECKOUT_PAYLOAD},
+            headers=_CHECKOUT_HEADERS,
         )
 
     assert response.status_code == 201
@@ -171,7 +175,7 @@ async def test_checkout_session_foreign_user_gets_404(client: AsyncClient):
     response = await client.post(
         "/api/v1/payments/checkout-session",
         json={"booking_id": booking_id, **_CHECKOUT_PAYLOAD},
-        headers=stranger_headers,
+        headers={**stranger_headers, **_CHECKOUT_HEADERS},
     )
 
     assert response.status_code == 404
@@ -195,7 +199,7 @@ async def test_checkout_session_authenticated_owner_succeeds(client: AsyncClient
         response = await client.post(
             "/api/v1/payments/checkout-session",
             json={"booking_id": booking_id, **_CHECKOUT_PAYLOAD},
-            headers=guest_headers,
+            headers={**guest_headers, **_CHECKOUT_HEADERS},
         )
 
     assert response.status_code == 201
@@ -214,12 +218,14 @@ async def test_checkout_session_rate_limit_returns_429_on_11th_request(client: A
             response = await client.post(
                 "/api/v1/payments/checkout-session",
                 json={"booking_id": 999_999, **_CHECKOUT_PAYLOAD},
+                headers=_CHECKOUT_HEADERS,
             )
             assert response.status_code == 404
 
         eleventh = await client.post(
             "/api/v1/payments/checkout-session",
             json={"booking_id": 999_999, **_CHECKOUT_PAYLOAD},
+            headers=_CHECKOUT_HEADERS,
         )
         assert eleventh.status_code == 429
     finally:
@@ -240,12 +246,14 @@ async def test_checkout_session_returns_400_when_session_already_created(client:
         first = await client.post(
             "/api/v1/payments/checkout-session",
             json={"booking_id": booking_id, "access_token": access_token, **_CHECKOUT_PAYLOAD},
+            headers=_CHECKOUT_HEADERS,
         )
         assert first.status_code == 201
 
         second = await client.post(
             "/api/v1/payments/checkout-session",
             json={"booking_id": booking_id, "access_token": access_token, **_CHECKOUT_PAYLOAD},
+            headers={"Idempotency-Key": "payments-idempotency-key-02"},
         )
 
     assert second.status_code == 400
@@ -266,6 +274,7 @@ async def test_checkout_rejects_foreign_redirect_host(client: AsyncClient):
             "success_url": "https://evil.example/payments/success",
             "cancel_url": "http://localhost:3000/payments/cancel",
         },
+        headers=_CHECKOUT_HEADERS,
     )
 
     assert response.status_code == 400
@@ -290,7 +299,22 @@ async def test_checkout_accepts_frontend_host(client: AsyncClient):
                 "access_token": access_token,
                 **_CHECKOUT_PAYLOAD,
             },
+            headers=_CHECKOUT_HEADERS,
         )
 
     assert response.status_code == 201
     assert response.json()["session_id"] == "cs_allowed_host"
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_checkout_session_requires_idempotency_key(client: AsyncClient):
+    """Missing Idempotency-Key header is rejected with 422."""
+    booking_id, access_token = await _create_pending_booking(client)
+
+    response = await client.post(
+        "/api/v1/payments/checkout-session",
+        json={"booking_id": booking_id, "access_token": access_token, **_CHECKOUT_PAYLOAD},
+    )
+
+    assert response.status_code == 422

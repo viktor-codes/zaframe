@@ -118,9 +118,13 @@ async def _create_pending_booking_with_token(
     return body["id"], body["access_token"]
 
 
+_IDEMPOTENCY_KEY = "guest-checkout-idem-key"
+
+
 @pytest.fixture
 def mock_uow():
     uow = MagicMock()
+    uow.commit = AsyncMock()
     uow.bookings.flush = AsyncMock()
     uow.orders.flush = AsyncMock()
     return uow
@@ -148,7 +152,7 @@ async def test_guest_checkout_with_valid_token_succeeds(mock_uow):
     booking.user_id = None
     booking.guest_email = "g@x.com"
     booking.access_token = "valid-secret-token"
-    mock_uow.bookings.get_by_id_with_occurrence_and_studio = AsyncMock(return_value=booking)
+    mock_uow.bookings.get_by_id_for_update_with_occurrence_and_studio = AsyncMock(return_value=booking)
     mock_client = _mock_stripe_checkout_session()
 
     with patch("app.modules.payment.stripe_client.settings") as mock_settings:
@@ -165,6 +169,7 @@ async def test_guest_checkout_with_valid_token_succeeds(mock_uow):
                 success_url="http://localhost:3000/s",
                 cancel_url="http://localhost:3000/c",
                 access_token="valid-secret-token",
+                idempotency_key=_IDEMPOTENCY_KEY,
             )
 
     assert result["session_id"] == "cs_test_token"
@@ -178,11 +183,15 @@ async def test_guest_checkout_without_token_returns_404(mock_uow):
     booking.guest_email = "g@x.com"
     booking.access_token = "stored-token"
     booking.occurrence = MagicMock(spec=Occurrence)
-    mock_uow.bookings.get_by_id_with_occurrence_and_studio = AsyncMock(return_value=booking)
+    mock_uow.bookings.get_by_id_for_update_with_occurrence_and_studio = AsyncMock(return_value=booking)
 
     with pytest.raises(NotFoundError, match="Booking not found"):
         await create_checkout_session(
-            mock_uow, 1, success_url="http://localhost:3000/s", cancel_url="http://localhost:3000/c"
+            mock_uow,
+            1,
+            success_url="http://localhost:3000/s",
+            cancel_url="http://localhost:3000/c",
+            idempotency_key=_IDEMPOTENCY_KEY,
         )
 
 
@@ -193,7 +202,7 @@ async def test_guest_checkout_with_wrong_token_returns_404(mock_uow):
     booking.guest_email = "g@x.com"
     booking.access_token = "stored-token"
     booking.occurrence = MagicMock(spec=Occurrence)
-    mock_uow.bookings.get_by_id_with_occurrence_and_studio = AsyncMock(return_value=booking)
+    mock_uow.bookings.get_by_id_for_update_with_occurrence_and_studio = AsyncMock(return_value=booking)
 
     with pytest.raises(NotFoundError, match="Booking not found"):
         await create_checkout_session(
@@ -202,6 +211,7 @@ async def test_guest_checkout_with_wrong_token_returns_404(mock_uow):
             success_url="http://localhost:3000/s",
             cancel_url="http://localhost:3000/c",
             access_token="wrong-token",
+            idempotency_key=_IDEMPOTENCY_KEY,
         )
 
 
@@ -212,7 +222,7 @@ async def test_legacy_booking_without_token_guest_checkout_returns_404(mock_uow)
     booking.guest_email = "g@x.com"
     booking.access_token = None
     booking.occurrence = MagicMock(spec=Occurrence)
-    mock_uow.bookings.get_by_id_with_occurrence_and_studio = AsyncMock(return_value=booking)
+    mock_uow.bookings.get_by_id_for_update_with_occurrence_and_studio = AsyncMock(return_value=booking)
 
     with pytest.raises(NotFoundError, match="Booking not found"):
         await create_checkout_session(
@@ -221,6 +231,7 @@ async def test_legacy_booking_without_token_guest_checkout_returns_404(mock_uow)
             success_url="http://localhost:3000/s",
             cancel_url="http://localhost:3000/c",
             access_token="any-token",
+            idempotency_key=_IDEMPOTENCY_KEY,
         )
 
 
@@ -242,7 +253,7 @@ async def test_order_guest_checkout_with_valid_token_succeeds(mock_uow):
     active_booking = MagicMock(spec=Booking)
     active_booking.status = BookingStatus.PENDING
     active_booking.reserved_until = _active_hold_until()
-    mock_uow.orders.get_by_id_with_service_and_studio = AsyncMock(return_value=order)
+    mock_uow.orders.get_by_id_for_update_with_service_and_studio = AsyncMock(return_value=order)
     mock_uow.bookings.list_ = AsyncMock(return_value=[active_booking])
     mock_client = _mock_stripe_checkout_session(session_id="cs_order_token")
 
@@ -260,6 +271,7 @@ async def test_order_guest_checkout_with_valid_token_succeeds(mock_uow):
                 success_url="http://localhost:3000/s",
                 cancel_url="http://localhost:3000/c",
                 access_token="order-secret",
+                idempotency_key=_IDEMPOTENCY_KEY,
             )
 
     assert result["session_id"] == "cs_order_token"
@@ -285,6 +297,7 @@ async def test_guest_checkout_with_valid_token_succeeds_integration(client: Asyn
                 "access_token": access_token,
                 **_CHECKOUT_PAYLOAD,
             },
+            headers={"Idempotency-Key": _IDEMPOTENCY_KEY},
         )
 
     assert response.status_code == 201
@@ -299,6 +312,7 @@ async def test_guest_checkout_without_token_returns_404_integration(client: Asyn
     response = await client.post(
         "/api/v1/payments/checkout-session",
         json={"booking_id": booking_id, **_CHECKOUT_PAYLOAD},
+        headers={"Idempotency-Key": _IDEMPOTENCY_KEY},
     )
 
     assert response.status_code == 404
@@ -317,6 +331,7 @@ async def test_guest_checkout_with_wrong_token_returns_404_integration(client: A
             "access_token": "definitely-wrong-token",
             **_CHECKOUT_PAYLOAD,
         },
+        headers={"Idempotency-Key": _IDEMPOTENCY_KEY},
     )
 
     assert response.status_code == 404

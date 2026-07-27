@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.core.exceptions import AppError, NotFoundError, ValidationError
+from app.core.exceptions import AppError, ConflictError, NotFoundError, ValidationError
 from app.models.booking import Booking, BookingStatus
 from app.models.occurrence import Occurrence
 from app.models.order import Order, OrderStatus
@@ -27,6 +27,7 @@ from app.modules.payment.service import (
 @pytest.fixture
 def mock_uow():
     uow = MagicMock()
+    uow.commit = AsyncMock()
     uow.bookings.flush = AsyncMock()
     uow.orders.flush = AsyncMock()
     uow.payments.mark_booking_manual_review = AsyncMock(return_value=1)
@@ -49,11 +50,15 @@ def _ready_connect_studio() -> MagicMock:
     return studio
 
 
+_IDEMPOTENCY_KEY = "test-idempotency-key-01"
+
+
 def _checkout_kwargs(*, access_token: str = _GUEST_CHECKOUT_TOKEN) -> dict[str, str]:
     return {
         "success_url": "http://localhost:3000/s",
         "cancel_url": "http://localhost:3000/c",
         "access_token": access_token,
+        "idempotency_key": _IDEMPOTENCY_KEY,
     }
 
 
@@ -96,10 +101,14 @@ def _mock_order_confirm_batch_capacity(
 
 @pytest.mark.asyncio
 async def test_create_checkout_session_booking_not_found(mock_uow):
-    mock_uow.bookings.get_by_id_with_occurrence_and_studio = AsyncMock(return_value=None)
+    mock_uow.bookings.get_by_id_for_update_with_occurrence_and_studio = AsyncMock(return_value=None)
     with pytest.raises(NotFoundError, match="Booking not found"):
         await create_checkout_session(
-            mock_uow, 1, success_url="http://localhost:3000/s", cancel_url="http://localhost:3000/c"
+            mock_uow,
+            1,
+            success_url="http://localhost:3000/s",
+            cancel_url="http://localhost:3000/c",
+            idempotency_key=_IDEMPOTENCY_KEY,
         )
 
 
@@ -108,7 +117,7 @@ async def test_create_checkout_session_foreign_user_gets_not_found(mock_uow):
     booking = MagicMock(spec=Booking)
     booking.user_id = 99
     booking.guest_email = "other@example.com"
-    mock_uow.bookings.get_by_id_with_occurrence_and_studio = AsyncMock(return_value=booking)
+    mock_uow.bookings.get_by_id_for_update_with_occurrence_and_studio = AsyncMock(return_value=booking)
     user = MagicMock(spec=User)
     user.id = 1
     user.email = "me@example.com"
@@ -119,6 +128,7 @@ async def test_create_checkout_session_foreign_user_gets_not_found(mock_uow):
             success_url="http://localhost:3000/s",
             cancel_url="http://localhost:3000/c",
             current_user=user,
+            idempotency_key=_IDEMPOTENCY_KEY,
         )
 
 
@@ -138,7 +148,7 @@ async def test_create_checkout_session_guest_email_owner_allowed(mock_uow):
     booking.user_id = None
     booking.guest_email = "me@example.com"
     booking.access_token = "owner-token-not-needed"
-    mock_uow.bookings.get_by_id_with_occurrence_and_studio = AsyncMock(return_value=booking)
+    mock_uow.bookings.get_by_id_for_update_with_occurrence_and_studio = AsyncMock(return_value=booking)
     user = MagicMock(spec=User)
     user.id = 1
     user.email = "me@example.com"
@@ -161,6 +171,7 @@ async def test_create_checkout_session_guest_email_owner_allowed(mock_uow):
                 success_url="http://localhost:3000/s",
                 cancel_url="http://localhost:3000/c",
                 current_user=user,
+                idempotency_key=_IDEMPOTENCY_KEY,
             )
     assert result["session_id"] == "cs_123"
 
@@ -173,7 +184,7 @@ async def test_create_checkout_session_expired_hold(mock_uow):
     booking.checkout_session_id = None
     booking.occurrence = MagicMock(spec=Occurrence)
     booking.access_token = _GUEST_CHECKOUT_TOKEN
-    mock_uow.bookings.get_by_id_with_occurrence_and_studio = AsyncMock(return_value=booking)
+    mock_uow.bookings.get_by_id_for_update_with_occurrence_and_studio = AsyncMock(return_value=booking)
     with pytest.raises(ValidationError, match="hold has expired"):
         await create_checkout_session(mock_uow, 1, **_checkout_kwargs())
 
@@ -187,7 +198,7 @@ async def test_create_checkout_session_wrong_status(mock_uow):
     booking.occurrence.price_cents = 1000
     booking.guest_email = "g@x.com"
     booking.access_token = _GUEST_CHECKOUT_TOKEN
-    mock_uow.bookings.get_by_id_with_occurrence_and_studio = AsyncMock(return_value=booking)
+    mock_uow.bookings.get_by_id_for_update_with_occurrence_and_studio = AsyncMock(return_value=booking)
     with pytest.raises(ValidationError, match="already paid or cancelled"):
         await create_checkout_session(mock_uow, 1, **_checkout_kwargs())
 
@@ -200,8 +211,21 @@ async def test_create_checkout_session_already_has_session_id(mock_uow):
     booking.checkout_session_id = "cs_old"
     booking.occurrence = MagicMock(spec=Occurrence)
     booking.access_token = _GUEST_CHECKOUT_TOKEN
-    mock_uow.bookings.get_by_id_with_occurrence_and_studio = AsyncMock(return_value=booking)
+    mock_uow.bookings.get_by_id_for_update_with_occurrence_and_studio = AsyncMock(return_value=booking)
     with pytest.raises(ValidationError, match="Checkout Session already created"):
+        await create_checkout_session(mock_uow, 1, **_checkout_kwargs())
+
+
+@pytest.mark.asyncio
+async def test_create_checkout_session_rejects_foreign_pending_claim(mock_uow):
+    booking = MagicMock(spec=Booking)
+    booking.status = BookingStatus.PENDING
+    booking.reserved_until = _active_hold_until()
+    booking.checkout_session_id = "pending:other-claim-marker-0123456789abcdef"
+    booking.occurrence = MagicMock(spec=Occurrence)
+    booking.access_token = _GUEST_CHECKOUT_TOKEN
+    mock_uow.bookings.get_by_id_for_update_with_occurrence_and_studio = AsyncMock(return_value=booking)
+    with pytest.raises(ConflictError, match="already in progress"):
         await create_checkout_session(mock_uow, 1, **_checkout_kwargs())
 
 
@@ -219,7 +243,7 @@ async def test_create_checkout_session_slot_price_zero(mock_uow):
     booking.occurrence = occurrence
     booking.guest_email = None
     booking.access_token = _GUEST_CHECKOUT_TOKEN
-    mock_uow.bookings.get_by_id_with_occurrence_and_studio = AsyncMock(return_value=booking)
+    mock_uow.bookings.get_by_id_for_update_with_occurrence_and_studio = AsyncMock(return_value=booking)
     with pytest.raises(ValidationError, match="no price for checkout"):
         await create_checkout_session(mock_uow, 1, **_checkout_kwargs())
 
@@ -241,7 +265,7 @@ async def test_create_checkout_session_requires_connect_ready(mock_uow):
     booking.occurrence = occurrence
     booking.guest_email = "g@x.com"
     booking.access_token = _GUEST_CHECKOUT_TOKEN
-    mock_uow.bookings.get_by_id_with_occurrence_and_studio = AsyncMock(return_value=booking)
+    mock_uow.bookings.get_by_id_for_update_with_occurrence_and_studio = AsyncMock(return_value=booking)
 
     with (
         patch("app.modules.payment.checkout.get_stripe_client") as mock_get_client,
@@ -267,13 +291,14 @@ async def test_create_checkout_session_no_stripe_key(mock_uow):
     booking.occurrence = occurrence
     booking.guest_email = "g@x.com"
     booking.access_token = _GUEST_CHECKOUT_TOKEN
-    mock_uow.bookings.get_by_id_with_occurrence_and_studio = AsyncMock(return_value=booking)
-    with patch("app.modules.payment.stripe_client.settings") as mock_settings:
-        mock_settings.STRIPE_SECRET_KEY = None
+    mock_uow.bookings.get_by_id_for_update_with_occurrence_and_studio = AsyncMock(return_value=booking)
+    with patch("app.modules.payment.stripe_client.settings.STRIPE_SECRET_KEY", None):
         with pytest.raises(AppError) as exc_info:
             await create_checkout_session(mock_uow, 1, **_checkout_kwargs())
     assert exc_info.value.status_code == 503
     assert "STRIPE_SECRET_KEY" in str(exc_info.value.detail)
+    assert booking.checkout_session_id is None
+    assert mock_uow.commit.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -291,7 +316,7 @@ async def test_create_checkout_session_success(mock_uow):
     booking.occurrence = occurrence
     booking.guest_email = "g@x.com"
     booking.access_token = _GUEST_CHECKOUT_TOKEN
-    mock_uow.bookings.get_by_id_with_occurrence_and_studio = AsyncMock(return_value=booking)
+    mock_uow.bookings.get_by_id_for_update_with_occurrence_and_studio = AsyncMock(return_value=booking)
     mock_session = MagicMock()
     mock_session.id = "cs_123"
     mock_session.url = "https://checkout.stripe.com/pay"
@@ -313,7 +338,8 @@ async def test_create_checkout_session_success(mock_uow):
     assert result["checkout_url"] == "https://checkout.stripe.com/pay"
     assert result["session_id"] == "cs_123"
     assert booking.checkout_session_id == "cs_123"
-    mock_uow.bookings.flush.assert_awaited_once()
+    assert mock_uow.bookings.flush.await_count == 2
+    assert mock_uow.commit.await_count == 2
 
 
 # --- create_order_checkout_session ---
@@ -321,10 +347,14 @@ async def test_create_checkout_session_success(mock_uow):
 
 @pytest.mark.asyncio
 async def test_create_order_checkout_session_order_not_found(mock_uow):
-    mock_uow.orders.get_by_id_with_service_and_studio = AsyncMock(return_value=None)
+    mock_uow.orders.get_by_id_for_update_with_service_and_studio = AsyncMock(return_value=None)
     with pytest.raises(NotFoundError, match="Order not found"):
         await create_order_checkout_session(
-            mock_uow, 1, success_url="http://localhost:3000/s", cancel_url="http://localhost:3000/c"
+            mock_uow,
+            1,
+            success_url="http://localhost:3000/s",
+            cancel_url="http://localhost:3000/c",
+            idempotency_key=_IDEMPOTENCY_KEY,
         )
 
 
@@ -333,7 +363,7 @@ async def test_create_order_checkout_session_foreign_user_gets_not_found(mock_uo
     order = MagicMock(spec=Order)
     order.user_id = 99
     order.guest_email = "other@example.com"
-    mock_uow.orders.get_by_id_with_service_and_studio = AsyncMock(return_value=order)
+    mock_uow.orders.get_by_id_for_update_with_service_and_studio = AsyncMock(return_value=order)
     user = MagicMock(spec=User)
     user.id = 1
     user.email = "me@example.com"
@@ -344,6 +374,7 @@ async def test_create_order_checkout_session_foreign_user_gets_not_found(mock_uo
             success_url="http://localhost:3000/s",
             cancel_url="http://localhost:3000/c",
             current_user=user,
+            idempotency_key=_IDEMPOTENCY_KEY,
         )
 
 
@@ -361,7 +392,7 @@ async def test_create_order_checkout_session_expired_hold(mock_uow):
     expired_booking.reserved_until = datetime.now(UTC) - timedelta(minutes=1)
     order.access_token = _ORDER_CHECKOUT_TOKEN
     order.checkout_session_id = None
-    mock_uow.orders.get_by_id_with_service_and_studio = AsyncMock(return_value=order)
+    mock_uow.orders.get_by_id_for_update_with_service_and_studio = AsyncMock(return_value=order)
     mock_uow.bookings.list_ = AsyncMock(return_value=[expired_booking])
     with pytest.raises(ValidationError, match="hold has expired"):
         await create_order_checkout_session(mock_uow, 1, **_order_checkout_kwargs())
@@ -377,7 +408,7 @@ async def test_create_order_checkout_session_wrong_status(mock_uow):
     order.id = 1
     order.guest_email = None
     order.access_token = _ORDER_CHECKOUT_TOKEN
-    mock_uow.orders.get_by_id_with_service_and_studio = AsyncMock(return_value=order)
+    mock_uow.orders.get_by_id_for_update_with_service_and_studio = AsyncMock(return_value=order)
     with pytest.raises(ValidationError, match="already paid or cancelled"):
         await create_order_checkout_session(mock_uow, 1, **_order_checkout_kwargs())
 
@@ -391,7 +422,7 @@ async def test_create_order_checkout_session_zero_amount(mock_uow):
     order.id = 1
     order.access_token = _ORDER_CHECKOUT_TOKEN
     order.checkout_session_id = None
-    mock_uow.orders.get_by_id_with_service_and_studio = AsyncMock(return_value=order)
+    mock_uow.orders.get_by_id_for_update_with_service_and_studio = AsyncMock(return_value=order)
     mock_uow.bookings.list_ = AsyncMock(return_value=[])
     with pytest.raises(ValidationError, match="no payable amount"):
         await create_order_checkout_session(mock_uow, 1, **_order_checkout_kwargs())
@@ -411,7 +442,7 @@ async def test_create_order_checkout_session_requires_connect_ready(mock_uow):
     order.studio = MagicMock()
     order.studio.stripe_account_id = None
     order.studio.stripe_charges_enabled = False
-    mock_uow.orders.get_by_id_with_service_and_studio = AsyncMock(return_value=order)
+    mock_uow.orders.get_by_id_for_update_with_service_and_studio = AsyncMock(return_value=order)
     active_booking = MagicMock(spec=Booking)
     active_booking.status = BookingStatus.PENDING
     active_booking.reserved_until = _active_hold_until()
@@ -434,7 +465,7 @@ async def test_create_order_checkout_session_rejects_duplicate_session(mock_uow)
     order.guest_email = None
     order.access_token = _ORDER_CHECKOUT_TOKEN
     order.checkout_session_id = "cs_existing"
-    mock_uow.orders.get_by_id_with_service_and_studio = AsyncMock(return_value=order)
+    mock_uow.orders.get_by_id_for_update_with_service_and_studio = AsyncMock(return_value=order)
 
     with (
         patch("app.modules.payment.checkout.get_stripe_client") as mock_get_client,
@@ -459,7 +490,7 @@ async def test_create_order_checkout_session_success(mock_uow):
     order.checkout_session_id = None
     order.application_fee_cents = None
     order.studio = _ready_connect_studio()
-    mock_uow.orders.get_by_id_with_service_and_studio = AsyncMock(return_value=order)
+    mock_uow.orders.get_by_id_for_update_with_service_and_studio = AsyncMock(return_value=order)
     active_booking = MagicMock(spec=Booking)
     active_booking.status = BookingStatus.PENDING
     active_booking.reserved_until = _active_hold_until()
@@ -485,7 +516,8 @@ async def test_create_order_checkout_session_success(mock_uow):
     assert result["session_id"] == "cs_order_1"
     assert result["checkout_url"] == "https://checkout.stripe.com/order"
     assert order.checkout_session_id == "cs_order_1"
-    mock_uow.orders.flush.assert_awaited_once()
+    assert mock_uow.orders.flush.await_count == 2
+    assert mock_uow.commit.await_count == 2
 
 
 # --- confirm_booking_after_payment ---
