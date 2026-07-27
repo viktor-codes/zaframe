@@ -13,9 +13,35 @@ See `backend/.env.example` and `frontend/.env.example` for descriptions.
 - [ ] `SECRET_KEY` — strong unique value (Blueprint may `generateValue`)
 - [ ] `FRONTEND_URL` — exact web origin, no trailing slash
 - [ ] `CORS_ORIGINS` — same web origin (comma-separated if more than one)
-- [ ] Rate limit: `REDIS_URL` **or** `ALLOW_INMEMORY_RATE_LIMIT=true` (single API instance only)
+- [ ] Rate limiting — see § Rate limiting below (Redis preferred)
 - [ ] `METRICS_TOKEN` — if you will scrape `/metrics`
 - [ ] `TRUSTED_PROXY_IPS` — set only after confirming Render edge peer; empty = peer IP only
+
+### Rate limiting (production recommendation)
+
+**Prefer Redis.** SlowAPI counters must be shared across API processes. Without
+`REDIS_URL`, each instance keeps its own in-memory counters (OTP/refresh/checkout
+limits weaken under scale).
+
+| Mode | When | Env |
+|------|------|-----|
+| **Recommended** | Any paid / multi-instance deploy | `REDIS_URL` set; `ALLOW_INMEMORY_RATE_LIMIT=false` (or unset) |
+| **Closed-beta escape hatch** | Single free `zeeframe-api` instance only | `ALLOW_INMEMORY_RATE_LIMIT=true`; leave `REDIS_URL` empty |
+
+Local / `ENVIRONMENT=dev`: leave both unset — in-memory is fine for one process.
+
+**Upgrade path (Render Key Value):**
+
+1. Create a Key Value instance (Blueprint snippet at bottom of `render.yaml`, or Dashboard → New → Key Value). Plan is paid (`starter`+); not on free Blueprint.
+2. Wire `REDIS_URL` from the instance `connectionString` (`fromService` type `keyvalue`).
+3. Set `ALLOW_INMEMORY_RATE_LIMIT=false` (or remove the var) on `zeeframe-api`.
+4. Redeploy; confirm startup succeeds without the in-memory warning log
+   (`production_inmemory_rate_limit_allowed`).
+5. Keep a **single** API instance until Redis is live — never scale replicas on the escape hatch.
+
+- [ ] Decision recorded: Redis **or** documented single-instance escape hatch
+- [ ] If Redis: `REDIS_URL` set; escape hatch off
+- [ ] If escape hatch: exactly one API instance; no horizontal scale
 
 ### Cron (Render `zeeframe-booking-lifecycle`)
 

@@ -180,7 +180,9 @@ Closed-beta operator checklist (secrets names, smoke checks, no real values):
 - `DATABASE_URL` has a local-development default only. Every deployed API and cron process must
   override it with the managed production Postgres URL.
 - `REDIS_URL` is required when `ENVIRONMENT=production` (startup fails otherwise). Override only
-  with `ALLOW_INMEMORY_RATE_LIMIT=true` for a single-instance emergency — unsafe with replicas.
+  with `ALLOW_INMEMORY_RATE_LIMIT=true` for a **single-instance** emergency / free closed beta —
+  unsafe with replicas. Prefer Render Key Value + `REDIS_URL` (see `render.yaml` upgrade snippet
+  and `docs/ops/closed-beta-checklist.md` § Rate limiting). Local `ENVIRONMENT=dev` needs neither.
 - `GET /metrics` is open in `dev`; staging/production require `Authorization: Bearer <METRICS_TOKEN>`.
   If `METRICS_TOKEN` is unset outside dev, the endpoint returns 503.
 - OpenAPI UI (`/docs`, `/redoc`, `/openapi.json`) is enabled only when `ENVIRONMENT=dev`.

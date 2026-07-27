@@ -1,5 +1,11 @@
 # Render Blueprint: New -> Blueprint -> connect the repository.
 # The service is built from the backend directory.
+#
+# Rate limiting (production preference):
+#   Prefer Render Key Value (Redis-compatible) + REDIS_URL, with
+#   ALLOW_INMEMORY_RATE_LIMIT=false. Free web alone has no Redis — the
+#   Blueprint keeps the single-instance escape hatch until you upgrade
+#   (see docs/ops/closed-beta-checklist.md § Rate limiting).
 services:
   - type: web
     name: zeeframe-api
@@ -24,7 +30,11 @@ services:
         sync: false
       - key: CORS_ORIGINS
         sync: false
-      # Single free web instance: in-memory SlowAPI is acceptable until Redis is provisioned.
+      # Preferred when Key Value is provisioned (wire via fromService — see checklist).
+      - key: REDIS_URL
+        sync: false
+      # Escape hatch for free single-instance closed beta only.
+      # After adding Key Value: set this to "false" (or delete) and set REDIS_URL.
       - key: ALLOW_INMEMORY_RATE_LIMIT
         value: "true"
       # Comma-separated proxy IPs/CIDRs for SlowAPI client IP (optional).
@@ -60,3 +70,20 @@ services:
           type: web
           name: zeeframe-api
           envVarKey: SECRET_KEY
+
+# Optional upgrade (paid): uncomment and remove ALLOW_INMEMORY_RATE_LIMIT=true above.
+# Key Value is not available on the free Blueprint path used for closed beta.
+# services:
+#   - type: keyvalue
+#     name: zeeframe-redis
+#     plan: starter
+#     maxmemoryPolicy: noeviction
+#     ipAllowList: []   # internal Render network only
+# Then on zeeframe-api:
+#   - key: REDIS_URL
+#     fromService:
+#       name: zeeframe-redis
+#       type: keyvalue
+#       property: connectionString
+#   - key: ALLOW_INMEMORY_RATE_LIMIT
+#     value: "false"
