@@ -13,6 +13,10 @@ import pytest
 # Before any `from app.main import app` — Settings() reads env at import time.
 if "SECRET_KEY" not in os.environ:
     os.environ["SECRET_KEY"] = "test-secret-key-min-32-chars-for-pytest"
+# WHY: checkout-session integration tests mock StripeClient but still call
+# get_stripe_client(), which 503s when STRIPE_SECRET_KEY is unset (CI has no .env).
+if "STRIPE_SECRET_KEY" not in os.environ:
+    os.environ["STRIPE_SECRET_KEY"] = "sk_test_pytest_dummy"
 # httpx uses http://test; dev disables Secure cookies for local/test HTTP clients.
 os.environ["ENVIRONMENT"] = "dev"
 
