@@ -19,7 +19,9 @@ export interface AddMemberFormProps {
 
 export function AddMemberForm({ studioId }: AddMemberFormProps) {
   const { addMember, isAdding } = useMemberMutations(studioId);
-  const [values, setValues] = useState<AddMemberForm>(() => emptyAddMemberForm());
+  const [values, setValues] = useState<AddMemberForm>(() =>
+    emptyAddMemberForm(),
+  );
   const [errors, setErrors] = useState<
     Partial<Record<keyof AddMemberForm, string>>
   >({});
@@ -95,7 +97,11 @@ export function AddMemberForm({ studioId }: AddMemberFormProps) {
       </div>
 
       <div className="flex justify-end">
-        <Button type="submit" isLoading={isAdding} data-testid="add-member-submit">
+        <Button
+          type="submit"
+          isLoading={isAdding}
+          data-testid="add-member-submit"
+        >
           Add to team
         </Button>
       </div>

@@ -20,7 +20,8 @@ export function useNow(options: UseNowOptions = {}): Date {
   useEffect(() => {
     if (!enabled) return;
 
-    setNow(new Date());
+    // WHY: avoid synchronous setState in the effect body (react-hooks/set-state-in-effect).
+    // Initial state already seeds `now`; interval keeps the clock fresh while enabled.
     const id = window.setInterval(() => setNow(new Date()), intervalMs);
     return () => window.clearInterval(id);
   }, [enabled, intervalMs]);

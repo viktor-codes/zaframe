@@ -23,7 +23,10 @@ describe("STUDIO_PERMISSIONS_BY_ROLE", () => {
 
   it("denies manage_studio and manage_members to manager", () => {
     expect(
-      roleHasPermission(StudioMemberRole.MANAGER, StudioPermission.MANAGE_STUDIO),
+      roleHasPermission(
+        StudioMemberRole.MANAGER,
+        StudioPermission.MANAGE_STUDIO,
+      ),
     ).toBe(false);
     expect(
       roleHasPermission(

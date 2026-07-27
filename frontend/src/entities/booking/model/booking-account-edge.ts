@@ -38,9 +38,7 @@ export function isSessionCancelledByStudio(occurrence: {
   return occurrence.status === OccurrenceStatus.CANCELLED;
 }
 
-export function getStudioRebookHref(studio: {
-  slug?: string | null;
-}): string {
+export function getStudioRebookHref(studio: { slug?: string | null }): string {
   const slug = studio.slug?.trim();
   return slug ? `/s/${encodeURIComponent(slug)}` : "/studios";
 }

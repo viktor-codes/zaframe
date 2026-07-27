@@ -90,11 +90,7 @@ describe("resolveStudioOnboardingStep", () => {
   });
 
   it("asks to connect Stripe when Connect is incomplete", () => {
-    const step = resolveStudioOnboardingStep(
-      baseStudio,
-      [],
-      connectIncomplete,
-    );
+    const step = resolveStudioOnboardingStep(baseStudio, [], connectIncomplete);
     expect(step?.id).toBe("connect_stripe");
   });
 
@@ -105,9 +101,9 @@ describe("resolveStudioOnboardingStep", () => {
   });
 
   it("asks to create a service when the catalog is empty", () => {
-    expect(
-      resolveStudioOnboardingStep(baseStudio, [], connectReady)?.id,
-    ).toBe("create_service");
+    expect(resolveStudioOnboardingStep(baseStudio, [], connectReady)?.id).toBe(
+      "create_service",
+    );
   });
 
   it("asks to publish when only drafts exist", () => {

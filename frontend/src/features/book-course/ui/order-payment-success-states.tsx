@@ -199,7 +199,10 @@ export function OrderPaymentLoadErrorState({
   errorMessage: string | null;
 }) {
   return (
-    <Card className="py-12 text-center" data-testid="order-payment-success-error">
+    <Card
+      className="py-12 text-center"
+      data-testid="order-payment-success-error"
+    >
       <Alert
         variant="error"
         title="Could not load order"

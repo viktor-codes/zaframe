@@ -4,11 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 
 import { getUserFacingApiMessage } from "@shared/api";
-import {
-  Card,
-  ResourceErrorState,
-  ResourceListSkeleton,
-} from "@shared/ui";
+import { Card, ResourceErrorState, ResourceListSkeleton } from "@shared/ui";
 
 import { suggestGenerateFromTemplates } from "../model/schedule-form-values";
 import { useScheduleTemplatesPanel } from "../model/use-schedule-templates-panel";

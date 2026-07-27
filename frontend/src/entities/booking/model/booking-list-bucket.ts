@@ -19,10 +19,7 @@ export function getBookingListBucket(
   now: Date = new Date(),
 ): BookingListBucket {
   // Expired holds belong with inactive bookings (rebook CTA on the card).
-  if (
-    isCancelledBooking(booking) ||
-    booking.status === BookingStatus.EXPIRED
-  ) {
+  if (isCancelledBooking(booking) || booking.status === BookingStatus.EXPIRED) {
     return "cancelled";
   }
 

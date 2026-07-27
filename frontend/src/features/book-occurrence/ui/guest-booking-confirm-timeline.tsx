@@ -57,10 +57,7 @@ export function guestConfirmTimelineSlot(
   occurrence: TimelineOccurrenceSource | undefined,
 ): ReactNode {
   if (occurrence == null) return null;
-  const timelineBooking = buildGuestConfirmTimelineBooking(
-    booking,
-    occurrence,
-  );
+  const timelineBooking = buildGuestConfirmTimelineBooking(booking, occurrence);
   if (timelineBooking == null) return null;
   return <GuestBookingConfirmTimeline booking={timelineBooking} />;
 }

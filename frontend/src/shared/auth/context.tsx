@@ -78,8 +78,7 @@ function bootstrapAuthClient(): void {
 function useAuthQuery(loginTrigger: number, isReady: boolean) {
   return useQuery({
     queryKey: queryKeys.auth.me(loginTrigger),
-    queryFn: ({ signal }) =>
-      api.get<AuthUser>("/api/v1/auth/me", { signal }),
+    queryFn: ({ signal }) => api.get<AuthUser>("/api/v1/auth/me", { signal }),
     enabled: isReady,
     staleTime: 5 * 60 * 1000,
     retry: false,
@@ -111,10 +110,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => setAuthSessionInvalidatedHandler(null);
   }, [queryClient]);
 
-  const { data: user, isLoading, isError } = useAuthQuery(
-    loginTrigger,
-    isBootstrapped,
-  );
+  const {
+    data: user,
+    isLoading,
+    isError,
+  } = useAuthQuery(loginTrigger, isBootstrapped);
 
   const login = useCallback((accessToken: string) => {
     setStoredTokens(accessToken);

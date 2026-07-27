@@ -7,7 +7,9 @@ interface StudioTodayPageProps {
   params: Promise<{ id: string }>;
 }
 
-export default async function StudioTodayPage({ params }: StudioTodayPageProps) {
+export default async function StudioTodayPage({
+  params,
+}: StudioTodayPageProps) {
   const { id } = await params;
   const studioId = parsePositiveIdString(id);
 

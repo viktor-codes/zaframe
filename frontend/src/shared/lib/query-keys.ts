@@ -71,10 +71,8 @@ export const queryKeys = {
      * @param filters - Exact params passed to `fetchStudioServices` (no `page`;
      *   infinite query supplies page via pageParam).
      */
-    services: (
-      id: number,
-      filters: Omit<StudioServicesParams, "page"> = {},
-    ) => ["studio", id, "services", filters] as const,
+    services: (id: number, filters: Omit<StudioServicesParams, "page"> = {}) =>
+      ["studio", id, "services", filters] as const,
     /** Stripe Connect / payout status (`GET …/stripe/status`). */
     stripeStatus: (id: number) => ["studio", id, "stripe-status"] as const,
     /** Prefix for invalidating the studio members list. */

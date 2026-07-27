@@ -8,19 +8,25 @@ import {
 describe("isAllowedStripeCheckoutUrl", () => {
   it("accepts checkout.stripe.com https URLs", () => {
     expect(
-      isAllowedStripeCheckoutUrl("https://checkout.stripe.com/c/pay/cs_test_123"),
+      isAllowedStripeCheckoutUrl(
+        "https://checkout.stripe.com/c/pay/cs_test_123",
+      ),
     ).toBe(true);
   });
 
   it("accepts other stripe.com subdomains over https", () => {
-    expect(isAllowedStripeCheckoutUrl("https://pay.stripe.com/test")).toBe(true);
+    expect(isAllowedStripeCheckoutUrl("https://pay.stripe.com/test")).toBe(
+      true,
+    );
   });
 
   it("rejects non-https and non-Stripe hosts", () => {
     expect(
       isAllowedStripeCheckoutUrl("http://checkout.stripe.com/c/pay/cs_test"),
     ).toBe(false);
-    expect(isAllowedStripeCheckoutUrl("https://evil.example/phish")).toBe(false);
+    expect(isAllowedStripeCheckoutUrl("https://evil.example/phish")).toBe(
+      false,
+    );
     expect(
       isAllowedStripeCheckoutUrl("https://checkout.stripe.com.evil.com/x"),
     ).toBe(false);

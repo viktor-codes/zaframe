@@ -28,14 +28,16 @@ describe("fetchServiceAvailability", () => {
         { date: "2026-08-01", is_overbooked: false, remaining: 2 },
       ],
     };
-    const fetchMock = vi.fn(async (input: string | URL, _init?: RequestInit) => {
-      expect(String(input)).toContain("/api/v1/services/55/availability");
-      expect(String(input)).toContain("start_date=2026-08-01");
-      return new Response(JSON.stringify(payload), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
-    });
+    const fetchMock = vi.fn(
+      async (input: string | URL, _init?: RequestInit) => {
+        expect(String(input)).toContain("/api/v1/services/55/availability");
+        expect(String(input)).toContain("start_date=2026-08-01");
+        return new Response(JSON.stringify(payload), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      },
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await fetchServiceAvailability(55, {

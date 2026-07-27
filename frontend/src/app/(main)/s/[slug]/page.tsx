@@ -70,7 +70,9 @@ export default async function StudioStorefrontPage({
 
   const studio = await loadPublicStudio(slug);
   const services = studio.services ?? [];
-  const singleServices = services.filter((service) => !isCourseService(service));
+  const singleServices = services.filter(
+    (service) => !isCourseService(service),
+  );
   const courseServices = services.filter((service) => isCourseService(service));
   const orderedServices = [...singleServices, ...courseServices];
 

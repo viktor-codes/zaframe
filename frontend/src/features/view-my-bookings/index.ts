@@ -4,4 +4,7 @@ export {
   type MyBookingsActionContext,
   type MyBookingsPanelProps,
 } from "./ui";
-export { useMyBookingsList, type UseMyBookingsListResult } from "./model/use-my-bookings-list";
+export {
+  useMyBookingsList,
+  type UseMyBookingsListResult,
+} from "./model/use-my-bookings-list";

@@ -66,11 +66,7 @@ describe("queryKeys", () => {
 
   it("nests studio services filters under servicesRoot", () => {
     const filters = { size: 20 };
-    expect(queryKeys.studio.servicesRoot(9)).toEqual([
-      "studio",
-      9,
-      "services",
-    ]);
+    expect(queryKeys.studio.servicesRoot(9)).toEqual(["studio", 9, "services"]);
     expect(queryKeys.studio.services(9, filters)).toEqual([
       "studio",
       9,
@@ -124,4 +120,3 @@ describe("queryKeys", () => {
     ]);
   });
 });
-

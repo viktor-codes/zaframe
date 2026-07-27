@@ -9,7 +9,10 @@ export function PaymentProcessingState({
   isWebhookSlow: boolean;
 }) {
   return (
-    <Card className="py-12 text-center" data-testid="payment-success-processing">
+    <Card
+      className="py-12 text-center"
+      data-testid="payment-success-processing"
+    >
       <div
         className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-full bg-sky-100 text-sky-700"
         aria-hidden
@@ -109,11 +112,7 @@ export function PaymentConfirmedState({ bookingId }: { bookingId: number }) {
   );
 }
 
-export function PaymentManualReviewState({
-  bookingId,
-}: {
-  bookingId: number;
-}) {
+export function PaymentManualReviewState({ bookingId }: { bookingId: number }) {
   return (
     <Card
       className="py-12 text-center"

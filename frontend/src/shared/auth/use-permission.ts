@@ -6,10 +6,7 @@
 
 import { useCallback, useMemo } from "react";
 
-import type {
-  StudioMemberRole,
-  StudioPermission,
-} from "@shared/lib/constants";
+import type { StudioMemberRole, StudioPermission } from "@shared/lib/constants";
 import { roleHasPermission } from "@shared/lib/constants";
 
 import { useRole } from "./use-role";

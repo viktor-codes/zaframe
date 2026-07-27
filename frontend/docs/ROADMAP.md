@@ -36,7 +36,7 @@ After **every** finished roadmap chunk (one checklist item or one agreed sub-ste
 
 ## Phase 0 — Fixation (done 2026-07-05)
 
-- [x] STRATEGY.md — decisions resolved, stories prioritised, URL   tree agreed
+- [x] STRATEGY.md — decisions resolved, stories prioritised, URL tree agreed
 - [x] ARCHITECTURE.md — FSD layers, stack, migration map
 - [x] CONTRACTS.md — roles, permissions, statuses, errors, endpoints
 - [x] ROADMAP.md — this file
@@ -94,7 +94,7 @@ Public zone first: simplest auth-wise, demoable to studios, closes the money loo
 - [x] Migrate old `/bookings` pages, set up redirects
 
 ## Phase 5 — Studio dashboard (P0 stories 3, 4)
-   
+
 Hardest zone — last, when the FSD pattern is routine.
 
 **MVP decision (2026-07-26):** dual-persona mode switch ("Customer ↔ Studio {name}")

@@ -4,10 +4,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 
 import { usePermission } from "@shared/auth";
-import {
-  buildStudioDashboardNav,
-  filterStudioDashboardNav,
-} from "@shared/lib";
+import { buildStudioDashboardNav, filterStudioDashboardNav } from "@shared/lib";
 
 export interface TodayQuickActionsProps {
   studioId: number;

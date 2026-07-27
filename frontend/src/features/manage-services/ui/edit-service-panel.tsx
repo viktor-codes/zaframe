@@ -5,11 +5,7 @@ import Link from "next/link";
 
 import { fetchService, getUserFacingApiMessage } from "@shared/api";
 import { queryKeys } from "@shared/lib";
-import {
-  Card,
-  ResourceErrorState,
-  ResourceListSkeleton,
-} from "@shared/ui";
+import { Card, ResourceErrorState, ResourceListSkeleton } from "@shared/ui";
 
 import { EditServiceForm } from "./edit-service-form";
 

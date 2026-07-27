@@ -64,8 +64,8 @@ export function GuestBookingConfirmOutcome({
       {isFreeUnpaid ? (
         <Alert variant="success" title="Free session" className="mb-6">
           No payment required. Your seat is reserved
-          {bookingStatus === "confirmed" ? " and confirmed" : ""}
-          — check your email for details.
+          {bookingStatus === "confirmed" ? " and confirmed" : ""}— check your
+          email for details.
         </Alert>
       ) : null}
     </>

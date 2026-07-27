@@ -15,8 +15,5 @@ export function useRole(
   studioId: number | null | undefined,
 ): StudioMemberRole | null {
   const { user } = useAuth();
-  return useMemo(
-    () => resolveStudioRole(user, studioId),
-    [user, studioId],
-  );
+  return useMemo(() => resolveStudioRole(user, studioId), [user, studioId]);
 }

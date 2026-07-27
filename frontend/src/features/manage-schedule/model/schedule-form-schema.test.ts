@@ -4,10 +4,7 @@ import {
   parseCreateTemplate,
   parseGenerateOccurrences,
 } from "./schedule-form-schema";
-import {
-  emptyGenerateForm,
-  emptyTemplateForm,
-} from "./schedule-form-values";
+import { emptyGenerateForm, emptyTemplateForm } from "./schedule-form-values";
 
 describe("parseCreateTemplate", () => {
   it("normalises start_time to HH:MM:SS", () => {

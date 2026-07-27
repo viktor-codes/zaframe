@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  StudioMemberRole,
-  StudioPermission,
-} from "@shared/lib/constants";
+import { StudioMemberRole, StudioPermission } from "@shared/lib/constants";
 
 import {
   canStudioPermission,
@@ -12,9 +9,7 @@ import {
 } from "./resolve-studio-access";
 import type { AuthUser } from "./types";
 
-function userWithRoles(
-  roles: { studio_id: number; role: string }[],
-): AuthUser {
+function userWithRoles(roles: { studio_id: number; role: string }[]): AuthUser {
   return {
     id: 1,
     email: "a@b.c",
@@ -45,9 +40,9 @@ describe("canStudioPermission / hasStudioRole", () => {
   const instructor = userWithRoles([{ studio_id: 10, role: "instructor" }]);
 
   it("checks permissions via the shared matrix", () => {
-    expect(
-      canStudioPermission(owner, 10, StudioPermission.MANAGE_STUDIO),
-    ).toBe(true);
+    expect(canStudioPermission(owner, 10, StudioPermission.MANAGE_STUDIO)).toBe(
+      true,
+    );
     expect(
       canStudioPermission(instructor, 10, StudioPermission.MANAGE_STUDIO),
     ).toBe(false);
@@ -64,8 +59,6 @@ describe("canStudioPermission / hasStudioRole", () => {
         StudioMemberRole.MANAGER,
       ]),
     ).toBe(false);
-    expect(
-      hasStudioRole(owner, 10, [StudioMemberRole.OWNER]),
-    ).toBe(true);
+    expect(hasStudioRole(owner, 10, [StudioMemberRole.OWNER])).toBe(true);
   });
 });

@@ -224,7 +224,11 @@ async def test_public_bookable_occurrences_include_capacity(client: AsyncClient)
     )
     assert r_studio.status_code == 201
     studio_id = r_studio.json()["id"]
-    service_id = await create_test_service(client, studio_id, headers)
+    service_id = await create_test_service(
+        client,
+        headers=headers,
+        studio_id=studio_id,
+    )
 
     start = datetime.now(UTC) + timedelta(days=2)
     end = start + timedelta(hours=1)
@@ -286,7 +290,11 @@ async def test_studio_occurrences_include_capacity(client: AsyncClient):
     )
     assert r_studio.status_code == 201
     studio_id = r_studio.json()["id"]
-    service_id = await create_test_service(client, studio_id, headers)
+    service_id = await create_test_service(
+        client,
+        headers=headers,
+        studio_id=studio_id,
+    )
 
     start = datetime.now(UTC) + timedelta(days=2)
     end = start + timedelta(hours=1)

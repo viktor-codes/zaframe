@@ -94,7 +94,11 @@ export function useOtpLogin(): OtpLoginController {
       const bookingId = parseBookingId(searchParams.get("booking_id"));
       const nextPath = getSafeNextPath(searchParams.get("next")) ?? "/";
 
-      verifyOtp({ email, code, ...(bookingId ? { booking_id: bookingId } : {}) })
+      verifyOtp({
+        email,
+        code,
+        ...(bookingId ? { booking_id: bookingId } : {}),
+      })
         .then((res) => {
           login(res.access_token);
           router.replace(nextPath);

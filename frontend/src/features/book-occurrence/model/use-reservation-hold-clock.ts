@@ -23,8 +23,7 @@ export function useReservationHoldClock(
 ): UseReservationHoldClockResult {
   const isPending = isPendingBooking({ status });
   const tickingNow = useNow({
-    enabled:
-      nowOverride == null && isPending && Boolean(reservedUntil),
+    enabled: nowOverride == null && isPending && Boolean(reservedUntil),
   });
   const now = nowOverride ?? tickingNow;
 

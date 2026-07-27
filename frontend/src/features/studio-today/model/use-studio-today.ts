@@ -17,11 +17,7 @@ export function useStudioToday(studioId: number) {
 
   // WHY: Today counters must cover the full local day — auto-drain pages.
   useEffect(() => {
-    if (
-      query.isLoading ||
-      query.isFetchingNextPage ||
-      !query.hasNextPage
-    ) {
+    if (query.isLoading || query.isFetchingNextPage || !query.hasNextPage) {
       return;
     }
     void query.fetchNextPage();

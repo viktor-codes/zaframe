@@ -1,7 +1,4 @@
-import {
-  formatOrderTotal,
-  getOrderBookingCount,
-} from "../model/order";
+import { formatOrderTotal, getOrderBookingCount } from "../model/order";
 import { getOrderStatusPresentation } from "../model/order-status";
 import type { OrderListItem } from "../model/types";
 import { OrderStatusBadge } from "./order-status-badge";
@@ -46,7 +43,10 @@ export function OrderCard({ order, className = "" }: OrderCardProps) {
             {sessionsLabel} · Ordered {formatOrderedAt(order.created_at)}
           </p>
           {detail ? (
-            <p className="text-sm text-amber-800" data-testid="order-status-detail">
+            <p
+              className="text-sm text-amber-800"
+              data-testid="order-status-detail"
+            >
               {detail}
             </p>
           ) : null}

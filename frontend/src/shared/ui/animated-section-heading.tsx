@@ -2,10 +2,7 @@
 
 import { cn } from "@shared/lib/utils";
 
-import {
-  SectionHeading,
-  type SectionHeadingProps,
-} from "./section-heading";
+import { SectionHeading, type SectionHeadingProps } from "./section-heading";
 import { useSectionInView } from "./section";
 
 const transitionClasses = "transition-all duration-500 ease-out";

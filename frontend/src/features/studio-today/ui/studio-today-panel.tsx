@@ -23,15 +23,8 @@ export function StudioTodayPanel({ studioId }: StudioTodayPanelProps) {
   const canManageSchedule = can(StudioPermission.MANAGE_SCHEDULE);
   const canViewBookings = can(StudioPermission.VIEW_BOOKINGS);
 
-  const {
-    heading,
-    sessions,
-    summary,
-    isLoading,
-    isError,
-    error,
-    refetch,
-  } = useStudioToday(studioId);
+  const { heading, sessions, summary, isLoading, isError, error, refetch } =
+    useStudioToday(studioId);
 
   if (isLoading) {
     return <ResourceListSkeleton testId="today-skeleton" rows={3} />;

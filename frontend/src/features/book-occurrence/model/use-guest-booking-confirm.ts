@@ -2,11 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  fetchBooking,
-  fetchOccurrence,
-  fetchStudio,
-} from "@shared/api";
+import { fetchBooking, fetchOccurrence, fetchStudio } from "@shared/api";
 import {
   getGuestBookingAccessToken,
   getGuestBookingSnapshot,
@@ -24,9 +20,7 @@ import {
 } from "./sync-guest-access-token";
 import { useGuestBookingActions } from "./use-guest-booking-actions";
 
-export type ResolvedGuestBooking =
-  | BookingDetailResponse
-  | GuestBookingSnapshot;
+export type ResolvedGuestBooking = BookingDetailResponse | GuestBookingSnapshot;
 
 export interface UseGuestBookingConfirmResult {
   bookingId: number | null;
@@ -65,11 +59,20 @@ export function useGuestBookingConfirm(
 
   useEffect(() => {
     if (bookingId == null) return;
-    const synced = syncGuestAccessTokenFromLocation(
-      bookingId,
-      persistGuestBookingAccessToken,
-    );
-    setUrlTokenPeek(synced ?? peekUrlAccessToken());
+    // WHY: defer setState so we do not sync-update during the effect body
+    // (react-hooks/set-state-in-effect). Token is also readable via peekUrlAccessToken.
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      const synced = syncGuestAccessTokenFromLocation(
+        bookingId,
+        persistGuestBookingAccessToken,
+      );
+      setUrlTokenPeek(synced ?? peekUrlAccessToken());
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [bookingId]);
 
   const guestSnapshot =
@@ -136,8 +139,7 @@ export function useGuestBookingConfirm(
     booking: isMissingId ? null : resolvedBooking,
     occurrence: isMissingId ? undefined : occurrence,
     studio: isMissingId ? undefined : studio,
-    isLoading:
-      !isMissingId && loadingBooking && !booking && !guestSnapshot,
+    isLoading: !isMissingId && loadingBooking && !booking && !guestSnapshot,
     isNotFound: isMissingId || Boolean(errorBooking && !booking),
     isGuestSession: !isMissingId && isGuestSession,
     accessToken: isMissingId ? null : accessToken,

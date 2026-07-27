@@ -1,10 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { formatMoneyFromCents } from "@shared/lib";
-import {
-  getPublicServicePriceCents,
-  isCourseService,
-} from "../model/service";
+import { getPublicServicePriceCents, isCourseService } from "../model/service";
 import type { PublicService } from "../model/types";
 
 export interface ServicePolaroidCardProps {

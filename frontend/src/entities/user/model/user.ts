@@ -6,7 +6,9 @@ import {
 
 import type { StudioRoleResponse, UserProfile } from "./types";
 
-export function getUserDisplayName(user: Pick<UserProfile, "name" | "email">): string {
+export function getUserDisplayName(
+  user: Pick<UserProfile, "name" | "email">,
+): string {
   const name = user.name.trim();
   return name.length > 0 ? name : user.email;
 }

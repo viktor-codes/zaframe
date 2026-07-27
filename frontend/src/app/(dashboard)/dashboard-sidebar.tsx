@@ -57,15 +57,12 @@ export function DashboardSidebar() {
           <SidebarLink
             href="/dashboard"
             label="My studios"
-            isActive={
-              pathname === "/dashboard" || pathname === "/dashboard/"
-            }
+            isActive={pathname === "/dashboard" || pathname === "/dashboard/"}
           />
           {studioNav.map((item) => {
             const isActive = item.isExact
               ? pathname === item.href || pathname === `${item.href}/`
-              : pathname === item.href ||
-                pathname.startsWith(`${item.href}/`);
+              : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
             return (
               <SidebarLink

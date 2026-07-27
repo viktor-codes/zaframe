@@ -148,11 +148,13 @@ describe("clearPrivateClientSession", () => {
     expect(getGuestOrderAccessToken(9)).toBeNull();
     expect(queryClient.getQueryData(queryKeys.auth.me(1))).toBeUndefined();
     expect(queryClient.getQueryData(queryKeys.bookings.my())).toBeUndefined();
-    expect(queryClient.getQueryData(queryKeys.booking.detail(3))).toBeUndefined();
+    expect(
+      queryClient.getQueryData(queryKeys.booking.detail(3)),
+    ).toBeUndefined();
     expect(queryClient.getQueryData(queryKeys.orders.my())).toBeUndefined();
     expect(queryClient.getQueryData(queryKeys.order.detail(9))).toBeUndefined();
-    expect(
-      queryClient.getQueryData(queryKeys.studios.explore({})),
-    ).toEqual([{ id: 1 }]);
+    expect(queryClient.getQueryData(queryKeys.studios.explore({}))).toEqual([
+      { id: 1 },
+    ]);
   });
 });

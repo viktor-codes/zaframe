@@ -29,4 +29,3 @@ export type PaginatedStudioMemberList =
 export type StudioMembersParams = NonNullable<
   operations["list_studio_members_endpoint_api_v1_studios__studio_id__members_get"]["parameters"]["query"]
 >;
-

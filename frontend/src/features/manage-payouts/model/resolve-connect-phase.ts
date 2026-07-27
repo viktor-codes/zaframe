@@ -4,9 +4,7 @@ export type ConnectPhase = "not_started" | "incomplete" | "ready";
 
 type ConnectFlags = Pick<
   StripeConnectStatusResponse,
-  | "stripe_account_id"
-  | "stripe_charges_enabled"
-  | "stripe_payouts_enabled"
+  "stripe_account_id" | "stripe_charges_enabled" | "stripe_payouts_enabled"
 >;
 
 /**

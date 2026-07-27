@@ -24,7 +24,10 @@ export interface OccurrenceRowProps {
   actionLabel?: string;
 }
 
-function formatSlot(startIso: string, endIso: string): {
+function formatSlot(
+  startIso: string,
+  endIso: string,
+): {
   date: string;
   time: string;
 } {

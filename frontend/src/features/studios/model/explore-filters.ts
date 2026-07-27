@@ -1,7 +1,4 @@
-import {
-  isServiceCategory,
-  type ServiceCategory,
-} from "@entities/service";
+import { isServiceCategory, type ServiceCategory } from "@entities/service";
 import type {
   PaginatedSearchResultList,
   SearchResult,
@@ -17,9 +14,7 @@ export interface StudiosExploreFilters {
   amenities: string[];
 }
 
-function firstSearchParam(
-  value: string | string[] | undefined,
-): string {
+function firstSearchParam(value: string | string[] | undefined): string {
   if (Array.isArray(value)) return value[0] ?? "";
   return value ?? "";
 }
@@ -38,7 +33,10 @@ export function parseStudiosExploreFilters(
     city: firstSearchParam(searchParams.city).trim(),
     query: firstSearchParam(searchParams.query).trim(),
     amenities: amenitiesRaw
-      ? amenitiesRaw.split(",").map((item) => item.trim()).filter(Boolean)
+      ? amenitiesRaw
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean)
       : [],
   };
 }
@@ -65,9 +63,7 @@ export function toStudiosExploreListParams(
     ...(filters.category ? { category: filters.category } : {}),
     ...(filters.city ? { city: filters.city } : {}),
     ...(filters.query ? { query: filters.query } : {}),
-    ...(filters.amenities.length > 0
-      ? { amenities: filters.amenities }
-      : {}),
+    ...(filters.amenities.length > 0 ? { amenities: filters.amenities } : {}),
   };
 }
 

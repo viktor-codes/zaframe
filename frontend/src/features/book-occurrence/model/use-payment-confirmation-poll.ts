@@ -7,6 +7,7 @@ import {
   getGuestBookingAccessToken,
   parsePositiveIdString,
   queryKeys,
+  useNow,
 } from "@shared/lib";
 
 import {
@@ -42,8 +43,6 @@ export function usePaymentConfirmationPoll(
   const queryClient = useQueryClient();
   const bookingId = parsePositiveIdString(bookingIdParam);
   const [pollStartedAt] = useState(() => Date.now());
-  const [isWebhookSlow, setIsWebhookSlow] = useState(false);
-  const [hasTimedOut, setHasTimedOut] = useState(false);
 
   const query = useQuery({
     queryKey: queryKeys.booking.detail(bookingId ?? 0),
@@ -69,6 +68,12 @@ export function usePaymentConfirmationPoll(
 
   const confirmation =
     query.data != null ? resolvePaymentConfirmation(query.data) : null;
+  const isProcessing = confirmation?.phase === "processing";
+  // WHY: derive slow/timeout from a ticking clock — avoids setState-in-effect.
+  const now = useNow({ enabled: isProcessing });
+  const elapsedMs = isProcessing ? now.getTime() - pollStartedAt : 0;
+  const isWebhookSlow = isProcessing && elapsedMs >= SLOW_WEBHOOK_HINT_AFTER_MS;
+  const hasTimedOut = isProcessing && elapsedMs >= POLL_HARD_TIMEOUT_MS;
 
   useEffect(() => {
     if (
@@ -79,38 +84,6 @@ export function usePaymentConfirmationPoll(
       void queryClient.invalidateQueries({ queryKey: queryKeys.bookings.all });
     }
   }, [confirmation, queryClient]);
-
-  useEffect(() => {
-    if (confirmation?.phase !== "processing") {
-      setIsWebhookSlow(false);
-      setHasTimedOut(false);
-      return;
-    }
-
-    const elapsed = Date.now() - pollStartedAt;
-    if (elapsed >= POLL_HARD_TIMEOUT_MS) {
-      setHasTimedOut(true);
-      setIsWebhookSlow(true);
-      return;
-    }
-
-    if (elapsed >= SLOW_WEBHOOK_HINT_AFTER_MS) {
-      setIsWebhookSlow(true);
-    }
-
-    const slowTimer = window.setTimeout(() => {
-      setIsWebhookSlow(true);
-    }, Math.max(SLOW_WEBHOOK_HINT_AFTER_MS - elapsed, 0));
-
-    const hardTimer = window.setTimeout(() => {
-      setHasTimedOut(true);
-    }, POLL_HARD_TIMEOUT_MS - elapsed);
-
-    return () => {
-      window.clearTimeout(slowTimer);
-      window.clearTimeout(hardTimer);
-    };
-  }, [confirmation?.phase, pollStartedAt]);
 
   if (bookingId == null) {
     return {
@@ -128,15 +101,10 @@ export function usePaymentConfirmationPoll(
   return {
     isLoading: query.isLoading && !query.data,
     isError: query.isError,
-    errorMessage: query.isError
-      ? getUserFacingApiMessage(query.error)
-      : null,
+    errorMessage: query.isError ? getUserFacingApiMessage(query.error) : null,
     confirmation,
     isWebhookSlow,
-    hasTimedOut:
-      hasTimedOut ||
-      (confirmation?.phase === "processing" &&
-        Date.now() - pollStartedAt >= POLL_HARD_TIMEOUT_MS),
+    hasTimedOut,
     bookingId,
   };
 }

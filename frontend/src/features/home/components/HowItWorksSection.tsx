@@ -48,7 +48,11 @@ export const HowItWorksSection = () => {
         >
           Process
         </AnimatedSectionHeading>
-        <AnimatedSectionHeading size="section" as="h2" className="text-zinc-900">
+        <AnimatedSectionHeading
+          size="section"
+          as="h2"
+          className="text-zinc-900"
+        >
           Your journey, <br />
           <span className="font-serif font-light text-zinc-400 italic">
             in three frames.

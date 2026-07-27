@@ -117,9 +117,10 @@ export function parseCreateService(
   };
 }
 
-export function parseUpdateService(
-  input: ServiceFormValues,
-): { data: ServiceUpdate | null; errors: FormErrorMap } {
+export function parseUpdateService(input: ServiceFormValues): {
+  data: ServiceUpdate | null;
+  errors: FormErrorMap;
+} {
   const result = ServiceFormSchema.safeParse(input);
   if (!result.success) {
     return { data: null, errors: collectErrors(result.error) };

@@ -35,7 +35,9 @@ export function TemplateList({
             </p>
             <p className="mt-0.5 text-xs text-neutral-500">
               From {template.valid_from}
-              {template.valid_to ? ` · to ${template.valid_to}` : " · open-ended"}
+              {template.valid_to
+                ? ` · to ${template.valid_to}`
+                : " · open-ended"}
             </p>
           </div>
           <div className="flex gap-2">

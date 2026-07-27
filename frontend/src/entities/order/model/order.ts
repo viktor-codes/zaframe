@@ -19,7 +19,9 @@ export function isPaidOrder(order: Pick<OrderState, "status">): boolean {
   return order.status === ORDER_STATUS.PAID;
 }
 
-export function isManualReviewOrder(order: Pick<OrderState, "status">): boolean {
+export function isManualReviewOrder(
+  order: Pick<OrderState, "status">,
+): boolean {
   return order.status === ORDER_STATUS.MANUAL_REVIEW;
 }
 

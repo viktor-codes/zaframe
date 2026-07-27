@@ -1,8 +1,5 @@
 import type { BookingLike } from "./types";
-import {
-  BookingPaymentStatus,
-  BookingStatus,
-} from "@shared/lib/constants";
+import { BookingPaymentStatus, BookingStatus } from "@shared/lib/constants";
 
 type BookingState = Pick<
   BookingLike,
@@ -14,7 +11,9 @@ type BookingPaymentState = {
   payment_status?: string | null;
 };
 
-export function isPendingBooking(booking: Pick<BookingState, "status">): boolean {
+export function isPendingBooking(
+  booking: Pick<BookingState, "status">,
+): boolean {
   return booking.status === BookingStatus.PENDING;
 }
 

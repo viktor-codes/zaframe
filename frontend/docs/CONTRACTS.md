@@ -7,11 +7,11 @@
 
 ### Global roles (`UserRole`, `backend/app/models/user.py`)
 
-| Role | Meaning |
-|------|---------|
-| `user` | Customer: account, own bookings/orders |
+| Role           | Meaning                                                                   |
+| -------------- | ------------------------------------------------------------------------- |
+| `user`         | Customer: account, own bookings/orders                                    |
 | `studio_owner` | Can create studios; staff access comes from `StudioMember`, not this flag |
-| `admin` | Everything (admin bypass on selected endpoints) |
+| `admin`        | Everything (admin bypass on selected endpoints)                           |
 
 ### Studio roles (`StudioMemberRole`) and how the frontend learns them
 
@@ -26,17 +26,17 @@ Frontend builds navigation, guards, and the StudioSwitcher from these two respon
 
 ## 2. Permissions matrix (mirror of `STUDIO_PERMISSIONS_BY_ROLE`)
 
-| Permission | owner | manager | instructor |
-|--------------------|:-----:|:-------:|:----------:|
-| `view_dashboard` | ✅ | ✅ | ✅ |
-| `manage_studio` | ✅ | — | — |
-| `manage_services` | ✅ | ✅ | — |
-| `manage_schedule` | ✅ | ✅ | — |
-| `view_bookings` | ✅ | ✅ | ✅ |
-| `manage_bookings` | ✅ | ✅ | — |
-| `check_in_booking` | ✅ | ✅ | ✅ |
-| `manage_payouts` | ✅ | ✅ | — |
-| `manage_members` | ✅ | — | — |
+| Permission         | owner | manager | instructor |
+| ------------------ | :---: | :-----: | :--------: |
+| `view_dashboard`   |  ✅   |   ✅    |     ✅     |
+| `manage_studio`    |  ✅   |    —    |     —      |
+| `manage_services`  |  ✅   |   ✅    |     —      |
+| `manage_schedule`  |  ✅   |   ✅    |     —      |
+| `view_bookings`    |  ✅   |   ✅    |     ✅     |
+| `manage_bookings`  |  ✅   |   ✅    |     —      |
+| `check_in_booking` |  ✅   |   ✅    |     ✅     |
+| `manage_payouts`   |  ✅   |   ✅    |     —      |
+| `manage_members`   |  ✅   |    —    |     —      |
 
 The frontend copy of this matrix lives in `shared/lib/constants.ts` and feeds
 `usePermission()`. Enforcement is server-side; the frontend gate is UX only.
@@ -96,27 +96,27 @@ Legacy `/count` endpoints and `skip` / `limit` query params are removed.
 
 ### Auth (all surfaces)
 
-| Endpoint | Notes |
-|----------|-------|
-| `POST /auth/otp/request` | email → OTP |
-| `POST /auth/otp/verify` | → tokens + user |
-| `POST /auth/refresh` | refresh access token |
-| `POST /auth/logout` | 204 |
-| `GET /auth/me` | user + studio roles (see §1) |
-| `PATCH /auth/me` | profile update (name, phone, marketing consent) |
+| Endpoint                 | Notes                                           |
+| ------------------------ | ----------------------------------------------- |
+| `POST /auth/otp/request` | email → OTP                                     |
+| `POST /auth/otp/verify`  | → tokens + user                                 |
+| `POST /auth/refresh`     | refresh access token                            |
+| `POST /auth/logout`      | 204                                             |
+| `GET /auth/me`           | user + studio roles (see §1)                    |
+| `PATCH /auth/me`         | profile update (name, phone, marketing consent) |
 
 ### Storefront (public, no auth)
 
-| Endpoint | Notes |
-|----------|-------|
-| `GET /studios/slug/{slug}/public` | `StudioPublicResponse`: profile + `PublicService[]` (published only, availability, term info) |
-| `GET /studios` | catalog list |
-| `GET /search` | studio search |
-| `GET /services/{id}/availability` | course availability / overbooked dates |
-| `GET /occurrences?service_id=…` | bookable slots |
-| `POST /bookings` | guest or user (optional Bearer); `BookingCreate` (single) or `CourseBookingCreate` (course → Order + N bookings); with Bearer → `user_id` set immediately; without → guest until OTP attach; returns `access_token` for checkout; rate limit 10/min |
-| `POST /payments/checkout-session` | Stripe Checkout for single booking; **requires** `Idempotency-Key` header |
-| `POST /payments/order-checkout-session` | Stripe Checkout for course order; **requires** `Idempotency-Key` |
+| Endpoint                                | Notes                                                                                                                                                                                                                                               |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /studios/slug/{slug}/public`       | `StudioPublicResponse`: profile + `PublicService[]` (published only, availability, term info)                                                                                                                                                       |
+| `GET /studios`                          | catalog list                                                                                                                                                                                                                                        |
+| `GET /search`                           | studio search                                                                                                                                                                                                                                       |
+| `GET /services/{id}/availability`       | course availability / overbooked dates                                                                                                                                                                                                              |
+| `GET /occurrences?service_id=…`         | bookable slots                                                                                                                                                                                                                                      |
+| `POST /bookings`                        | guest or user (optional Bearer); `BookingCreate` (single) or `CourseBookingCreate` (course → Order + N bookings); with Bearer → `user_id` set immediately; without → guest until OTP attach; returns `access_token` for checkout; rate limit 10/min |
+| `POST /payments/checkout-session`       | Stripe Checkout for single booking; **requires** `Idempotency-Key` header                                                                                                                                                                           |
+| `POST /payments/order-checkout-session` | Stripe Checkout for course order; **requires** `Idempotency-Key`                                                                                                                                                                                    |
 
 Guest flow: `access_token` from booking/order is kept in `sessionStorage` after create.
 Deep links use `/bookings/{id}/confirm#access_token=…` (hash is not sent to servers;
@@ -125,36 +125,36 @@ bookings merge by email (`include_guest_email=true` on `/bookings/my`).
 
 ### Account (customer, auth required)
 
-| Endpoint | Notes |
-|----------|-------|
-| `GET /bookings/my` | booking + occurrence + studio nested (no N+1) |
-| `GET /bookings/{id}` | self or owner perspective |
-| `PATCH /bookings/{id}/cancel` | respects `cancel_before_hours` cutoff |
-| `GET /orders/my` | orders + service + booking summaries |
-| `GET /orders/{id}` | session owner **or** guest `access_token` as Bearer (same gate as order checkout); nested bookings include `reserved_until`; no secrets / Stripe ids |
+| Endpoint                      | Notes                                                                                                                                                |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /bookings/my`            | booking + occurrence + studio nested (no N+1)                                                                                                        |
+| `GET /bookings/{id}`          | self or owner perspective                                                                                                                            |
+| `PATCH /bookings/{id}/cancel` | respects `cancel_before_hours` cutoff                                                                                                                |
+| `GET /orders/my`              | orders + service + booking summaries                                                                                                                 |
+| `GET /orders/{id}`            | session owner **or** guest `access_token` as Bearer (same gate as order checkout); nested bookings include `reserved_until`; no secrets / Stripe ids |
 
 ### Dashboard (studio staff, auth + studio permission)
 
-| Endpoint | Permission | Notes |
-|----------|------------|-------|
-| `GET /studios/my` | any member | studios + my role |
-| `POST /studios` / `PATCH /studios/{id}` / `DELETE /studios/{id}` | owner (`manage_studio`) | |
-| `GET /studios/{id}/services` | member | includes drafts |
-| `POST /services` / `PATCH /services/{id}` / `DELETE /services/{id}` | `manage_services` | `visibility` field drives draft/publish/archive |
-| `GET /services/{id}/schedule-templates` + POST/PATCH/DELETE `/services/schedule-templates/{id}` | `manage_schedule` | template edits never touch existing occurrences |
-| `POST /studios/{id}/generate-occurrences` | `manage_schedule` | days + start_time + weeks_count |
-| `GET /studios/{id}/occurrences` | member | filters: date range, status; includes `confirmed_count` / `pending_count` |
-| `POST /occurrences` / `PATCH /occurrences/{id}` / `DELETE /occurrences/{id}` | `manage_schedule` | calendar mode |
-| `GET /occurrences/mine` | instructor | "my sessions" |
-| `GET /bookings` | `view_bookings` | filter: `studio_id` (recommended), occurrence, status; nested `occurrence` |
-| `PATCH /bookings/{id}/check-in` | `check_in_booking` | |
-| `PATCH /bookings/{id}/mark-no-show` | `check_in_booking` | |
-| `GET /orders` | owner | studio orders |
-| `GET /studios/{id}/payments` | `manage_payouts` | payment list (P1) |
-| `GET /studios/{id}/members` | `manage_members` | paginated team list |
-| `POST /studios/{id}/members` | `manage_members` | add existing user by email (`manager` \| `instructor`; no pending invite) |
-| `PATCH /studios/{id}/members/{member_id}` | `manage_members` | change role; cannot demote last owner |
-| `DELETE /studios/{id}/members/{member_id}` | `manage_members` | remove; cannot remove last owner |
+| Endpoint                                                                                        | Permission              | Notes                                                                      |
+| ----------------------------------------------------------------------------------------------- | ----------------------- | -------------------------------------------------------------------------- |
+| `GET /studios/my`                                                                               | any member              | studios + my role                                                          |
+| `POST /studios` / `PATCH /studios/{id}` / `DELETE /studios/{id}`                                | owner (`manage_studio`) |                                                                            |
+| `GET /studios/{id}/services`                                                                    | member                  | includes drafts                                                            |
+| `POST /services` / `PATCH /services/{id}` / `DELETE /services/{id}`                             | `manage_services`       | `visibility` field drives draft/publish/archive                            |
+| `GET /services/{id}/schedule-templates` + POST/PATCH/DELETE `/services/schedule-templates/{id}` | `manage_schedule`       | template edits never touch existing occurrences                            |
+| `POST /studios/{id}/generate-occurrences`                                                       | `manage_schedule`       | days + start_time + weeks_count                                            |
+| `GET /studios/{id}/occurrences`                                                                 | member                  | filters: date range, status; includes `confirmed_count` / `pending_count`  |
+| `POST /occurrences` / `PATCH /occurrences/{id}` / `DELETE /occurrences/{id}`                    | `manage_schedule`       | calendar mode                                                              |
+| `GET /occurrences/mine`                                                                         | instructor              | "my sessions"                                                              |
+| `GET /bookings`                                                                                 | `view_bookings`         | filter: `studio_id` (recommended), occurrence, status; nested `occurrence` |
+| `PATCH /bookings/{id}/check-in`                                                                 | `check_in_booking`      |                                                                            |
+| `PATCH /bookings/{id}/mark-no-show`                                                             | `check_in_booking`      |                                                                            |
+| `GET /orders`                                                                                   | owner                   | studio orders                                                              |
+| `GET /studios/{id}/payments`                                                                    | `manage_payouts`        | payment list (P1)                                                          |
+| `GET /studios/{id}/members`                                                                     | `manage_members`        | paginated team list                                                        |
+| `POST /studios/{id}/members`                                                                    | `manage_members`        | add existing user by email (`manager` \| `instructor`; no pending invite)  |
+| `PATCH /studios/{id}/members/{member_id}`                                                       | `manage_members`        | change role; cannot demote last owner                                      |
+| `DELETE /studios/{id}/members/{member_id}`                                                      | `manage_members`        | remove; cannot remove last owner                                           |
 
 ### Webhooks (backend-internal, listed for awareness)
 
@@ -165,9 +165,9 @@ webhook clears it; after clear, session owner / email match still works.
 
 ## 7. Known contract gaps (tracked, do not build around silently)
 
-| Gap | Owner | Status |
-|-----|-------|--------|
-| Pagination envelope `{items, total, page, size}` | backend | **done** — all paginated list endpoints |
-| Machine-readable error `code` | backend | backlog (post-MVP) |
-| FR-12 stabilization (failing tests, auth/payment prod blockers) | backend | **done** — see `docs/frontend-readiness/fr-12-stabilization.md` |
-| `GET /orders/{id}` for course success-page poll | backend | **done** — guest Bearer token or session owner; see Account table |
+| Gap                                                             | Owner   | Status                                                            |
+| --------------------------------------------------------------- | ------- | ----------------------------------------------------------------- |
+| Pagination envelope `{items, total, page, size}`                | backend | **done** — all paginated list endpoints                           |
+| Machine-readable error `code`                                   | backend | backlog (post-MVP)                                                |
+| FR-12 stabilization (failing tests, auth/payment prod blockers) | backend | **done** — see `docs/frontend-readiness/fr-12-stabilization.md`   |
+| `GET /orders/{id}` for course success-page poll                 | backend | **done** — guest Bearer token or session owner; see Account table |
