@@ -103,7 +103,7 @@ export function StepSummary({
         >
           <p>{error}</p>
           <div className="mt-3 flex flex-wrap gap-2">
-            {isOccurrenceFull && onPickAnotherTime ? (
+            {(isOccurrenceFull || heldBookingId != null) && onPickAnotherTime ? (
               <Button
                 type="button"
                 variant="outline"
@@ -128,7 +128,12 @@ export function StepSummary({
       ) : null}
 
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-        <Button type="button" variant="ghost" onClick={onBack} disabled={isPaying}>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={onBack}
+          disabled={isPaying || heldBookingId != null}
+        >
           Back
         </Button>
         <Button
@@ -138,7 +143,11 @@ export function StepSummary({
           disabled={isOccurrenceFull}
           data-testid="submit-booking-button"
         >
-          {isFree ? "Confirm free booking" : "Pay with Stripe"}
+          {isFree
+            ? "Confirm free booking"
+            : heldBookingId != null
+              ? "Retry payment"
+              : "Pay with Stripe"}
         </Button>
       </div>
     </div>
