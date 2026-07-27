@@ -22,6 +22,7 @@ from app.modules.catalog.occurrence.router import studio_occurrence_router
 from app.modules.catalog.public.router import public_router
 from app.modules.catalog.schedule.router import schedule_router
 from app.modules.catalog.service.router import router as service_router
+from app.modules.catalog.studio.members_router import router as studio_members_router
 from app.modules.catalog.studio.router import router as studio_router
 from app.modules.payment.router import router as payment_router
 from app.modules.payment.studio_router import studio_payment_router
@@ -43,6 +44,7 @@ api_v1 = APIRouter(prefix="/api/v1")
 for r in (
     public_router,
     studio_router,
+    studio_members_router,
     studio_occurrence_router,
     schedule_router,
     service_router,
