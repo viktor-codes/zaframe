@@ -121,7 +121,7 @@ HTTP rate limits (slowapi на router): `10/minute` otp/request, `20/minute` otp
 
 ### Auth service — публичные
 
-#### `request_otp` (`backend/app/modules/auth/service.py`)
+#### `request_otp` (`backend/app/modules/auth/otp.py`)
 
 - **Зачем:** выдать одноразовый код на email; **User ещё не создаётся**.
 - **Вход:** `uow`, `email`, `name`, optional `request_ip`.
@@ -130,9 +130,10 @@ HTTP rate limits (slowapi на router): `10/minute` otp/request, `20/minute` otp
   2. `uow.otp_codes.count_recent_requests` за последний час; если `>= OTP_MAX_REQUESTS_PER_EMAIL_PER_HOUR` → `ValidationError`.
   3. `invalidate_active_for_email` — старые активные коды пометить `used_at`.
   4. `generate_otp_code` → `hash_otp_code` → `uow.otp_codes.add(OTPCode(...))` с `expires_at=get_otp_expires_at()`.
-  5. `send_otp_email(email, code)`; если `False` → `ServiceUnavailableError`.
+  5. **`await uow.commit()`** — persist OTP **до** внешнего email call (WHY: не держать транзакцию на Resend; не откатывать код после успешной доставки).
+  6. `send_otp_email(email, code)`; если `False` → invalidate active OTP + commit → `ServiceUnavailableError`.
 - **Выход / ошибки:** `None` / rate limit 400 / delivery 503.
-- **Кто вызывает:** `otp_request` в `auth/router.py`.
+- **Кто вызывает:** `otp_request` в `auth/router.py` (shim `auth/service.py`).
 
 #### `verify_otp` (`backend/app/modules/auth/service.py`)
 
