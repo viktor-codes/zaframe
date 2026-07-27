@@ -10,3 +10,6 @@ export { EmptyState } from "./EmptyState";
 export type { EmptyStateProps } from "./EmptyState";
 export { StudiosExplore } from "./studios-explore";
 export type { StudiosExploreProps } from "./studios-explore";
+export { SaveStudioButton } from "./save-studio-button";
+export { ClearFiltersButton } from "./clear-filters-button";
+export type { ClearFiltersButtonProps } from "./clear-filters-button";
