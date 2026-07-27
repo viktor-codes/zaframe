@@ -1,5 +1,5 @@
 import { RequireAuth } from "@shared/auth";
-import { RouteErrorBoundary } from "@shared/ui";
+import { RouteErrorBoundary } from "@shared/ui/route-error-boundary";
 
 import { AccountShell } from "./account-shell";
 
