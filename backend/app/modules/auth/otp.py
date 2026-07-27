@@ -43,6 +43,10 @@ async def request_otp(
     Generate and email an OTP.
 
     Does not create a User — registration happens on successful verify.
+
+    WHY: commit the OTP row before calling Resend so (1) a delivery failure cannot
+    roll back a code the provider already accepted, and (2) the DB lock/connection
+    is not held for the duration of the sync email SDK call.
     """
     now_utc = utc_now()
     existing_user = await uow.users.get_by_email_including_deleted(email)
@@ -71,6 +75,8 @@ async def request_otp(
             request_ip=request_ip,
         )
     )
+    await uow.commit()
+
     email_sent = await send_otp_email(email, code)
     if not email_sent:
         log_domain_event(
@@ -79,6 +85,9 @@ async def request_otp(
             level="error",
             user_id=existing_user.id if existing_user is not None else None,
         )
+        # WHY: never leave a usable OTP when the user never received the email.
+        await uow.otp_codes.invalidate_active_for_email(email, utc_now())
+        await uow.commit()
         raise ServiceUnavailableError(_OTP_DELIVERY_UNAVAILABLE_MESSAGE)
 
     log_domain_event(
