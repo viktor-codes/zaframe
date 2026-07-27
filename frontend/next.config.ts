@@ -10,7 +10,9 @@ const contentSecurityPolicy = [
     ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
     : "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: https://images.unsplash.com",
+  // WHY: studio cover_url/logo_url are arbitrary https hosts (not only Unsplash).
+  // UI uses next/image with unoptimized for remote http(s); CSP must still allow them.
+  "img-src 'self' data: https:",
   "font-src 'self' data:",
   "connect-src 'self'",
   "frame-ancestors 'none'",
@@ -47,6 +49,8 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
   allowedDevOrigins: ["127.0.0.1", "localhost"],
   images: {
+    // Optimized remote images: Unsplash only. Arbitrary studio https URLs use
+    // unoptimized={url.startsWith("http")} and are allowed by CSP img-src https:.
     remotePatterns: [
       {
         protocol: "https",
