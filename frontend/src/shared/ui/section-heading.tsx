@@ -1,7 +1,4 @@
-"use client";
-
-import { cn } from "@shared/lib";
-import { useSectionInView } from "./section";
+import { cn } from "@shared/lib/utils";
 
 type SectionHeadingSize = "hero" | "section" | "subsection" | "label";
 
@@ -30,43 +27,22 @@ const sizeStyles: Record<
   },
 };
 
-const transitionClasses = "transition-all duration-500 ease-out";
-const inViewClasses = "opacity-100 translate-y-0";
-const notInViewClasses = "opacity-0 translate-y-4";
-
 export interface SectionHeadingProps {
   size?: SectionHeadingSize;
   as?: "h1" | "h2" | "h3" | "span";
   children: React.ReactNode;
   className?: string;
-  /** Disable the reveal animation (enabled by default inside Section). */
-  animate?: boolean;
 }
 
+/** Presentational heading — safe in Server Components. */
 export function SectionHeading({
   size = "section",
   as,
   children,
   className,
-  animate = true,
 }: SectionHeadingProps) {
   const config = sizeStyles[size];
   const Tag = as ?? config.defaultTag;
-  const sectionView = useSectionInView();
 
-  const shouldAnimate = animate && sectionView !== null;
-  const visible = shouldAnimate ? sectionView!.inView : true;
-
-  return (
-    <Tag
-      className={cn(
-        config.className,
-        className,
-        shouldAnimate && transitionClasses,
-        shouldAnimate && (visible ? inViewClasses : notInViewClasses),
-      )}
-    >
-      {children}
-    </Tag>
-  );
+  return <Tag className={cn(config.className, className)}>{children}</Tag>;
 }

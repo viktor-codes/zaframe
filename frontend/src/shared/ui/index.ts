@@ -21,6 +21,8 @@ export { Section, useSectionInView } from "./section";
 export type { SectionProps } from "./section";
 export { SectionHeading } from "./section-heading";
 export type { SectionHeadingProps } from "./section-heading";
+export { AnimatedSectionHeading } from "./animated-section-heading";
+export type { AnimatedSectionHeadingProps } from "./animated-section-heading";
 export { Skeleton } from "./skeleton";
 export type { SkeletonProps } from "./skeleton";
 export {

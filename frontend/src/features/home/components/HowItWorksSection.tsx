@@ -3,7 +3,7 @@
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 import { Camera, Calendar, Trophy } from "lucide-react";
-import { SectionHeading } from "@shared/ui";
+import { AnimatedSectionHeading } from "@shared/ui/animated-section-heading";
 
 const steps = [
   {
@@ -42,15 +42,18 @@ export const HowItWorksSection = () => {
       className="relative container mx-auto max-w-7xl px-6 pb-36"
     >
       <div className="mb-24 max-w-2xl">
-        <SectionHeading size="label" className="mb-6 block text-teal-500">
+        <AnimatedSectionHeading
+          size="label"
+          className="mb-6 block text-teal-500"
+        >
           Process
-        </SectionHeading>
-        <SectionHeading size="section" as="h2" className="text-zinc-900">
+        </AnimatedSectionHeading>
+        <AnimatedSectionHeading size="section" as="h2" className="text-zinc-900">
           Your journey, <br />
           <span className="font-serif font-light text-zinc-400 italic">
             in three frames.
           </span>
-        </SectionHeading>
+        </AnimatedSectionHeading>
       </div>
 
       <div className="relative">
