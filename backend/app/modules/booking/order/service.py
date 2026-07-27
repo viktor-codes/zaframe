@@ -8,6 +8,7 @@ from app.core import datetime_utils
 from app.core.access_tokens import generate_resource_access_token
 from app.core.booking_holds import get_booking_reserved_until
 from app.core.config import settings
+from app.core.email_utils import normalize_email
 from app.core.exceptions import NotFoundError, ValidationError
 from app.core.observability import log_domain_event
 from app.core.uow import UnitOfWork
@@ -111,12 +112,13 @@ async def create_course_booking(
     prices = _distribute_course_unit_prices(total_amount_cents, len(occurrences))
 
     user_id = user.id if user is not None else None
+    guest_email = normalize_email(data.guest_email)
     order = await uow.orders.add(
         Order(
             studio_id=service.studio_id,
             service_id=service.id,
             user_id=user_id,
-            guest_email=data.guest_email,
+            guest_email=guest_email,
             guest_name=data.guest_name,
             guest_phone=data.guest_phone,
             total_amount_cents=total_amount_cents,
@@ -131,7 +133,7 @@ async def create_course_booking(
         await ensure_no_active_booking_for_guest(
             uow,
             occurrence_id=occurrence.id,
-            guest_email=data.guest_email,
+            guest_email=guest_email,
             user_id=user_id,
         )
         unit_price = prices[idx]
@@ -140,7 +142,7 @@ async def create_course_booking(
                 occurrence_id=occurrence.id,
                 user_id=user_id,
                 guest_name=data.guest_name,
-                guest_email=data.guest_email,
+                guest_email=guest_email,
                 guest_phone=data.guest_phone,
                 status=BookingStatus.PENDING,
                 reserved_until=get_booking_reserved_until(now=now_utc),

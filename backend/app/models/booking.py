@@ -7,7 +7,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Index, String, text
+from sqlalchemy import DateTime, ForeignKey, Index, String, column, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models import Base
@@ -47,10 +47,11 @@ class Booking(TimestampMixin, Base):
 
     __tablename__ = "bookings"
     __table_args__ = (
+        # WHY: lower(guest_email) matches app-level ownership / duplicate checks.
         Index(
             "uq_bookings_occurrence_guest_email_active",
             "occurrence_id",
-            "guest_email",
+            func.lower(column("guest_email")),
             unique=True,
             postgresql_where=text("status IN ('pending', 'confirmed') AND guest_email IS NOT NULL"),
         ),

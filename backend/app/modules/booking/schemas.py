@@ -4,8 +4,17 @@ Pydantic schemas for Booking model.
 
 from __future__ import annotations
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, EmailStr, Field, computed_field
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    computed_field,
+    field_validator,
+)
 
+from app.core.email_utils import normalize_email
 from app.models.booking import BookingType
 from app.modules.catalog.occurrence import OccurrenceResponse
 from app.modules.catalog.studio.schemas import StudioResponse
@@ -40,6 +49,13 @@ class BookingCreate(BookingBase):
         None,
         description="Service ID (required for course bookings)",
     )
+
+    @field_validator("guest_email", mode="before")
+    @classmethod
+    def _normalize_guest_email(cls, value: object) -> object:
+        if isinstance(value, str):
+            return normalize_email(value)
+        return value
 
 
 class BookingCreateAuthenticated(BookingBase):

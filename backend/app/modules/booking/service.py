@@ -11,6 +11,7 @@ import structlog
 from app.core.access_tokens import generate_resource_access_token
 from app.core.booking_holds import get_booking_reserved_until
 from app.core.datetime_utils import ensure_utc, utc_now
+from app.core.email_utils import normalize_email
 from app.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from app.core.observability import log_domain_event
 from app.core.uow import UnitOfWork
@@ -63,10 +64,11 @@ async def create_booking(
         raise ValidationError("No seats available")
 
     user_id = user.id if user is not None else None
+    guest_email = normalize_email(str(schema.guest_email))
     await ensure_no_active_booking_for_guest(
         uow,
         occurrence_id=schema.occurrence_id,
-        guest_email=schema.guest_email,
+        guest_email=guest_email,
         user_id=user_id,
     )
 
@@ -74,7 +76,7 @@ async def create_booking(
         occurrence_id=schema.occurrence_id,
         user_id=user_id,
         guest_name=schema.guest_name,
-        guest_email=schema.guest_email,
+        guest_email=guest_email,
         guest_phone=schema.guest_phone,
         status=BookingStatus.PENDING,
         reserved_until=get_booking_reserved_until(now=now_utc),
