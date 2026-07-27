@@ -119,7 +119,7 @@ Full mode switch → P1/polish when real cross-over demand appears.
 - [x] Course booking wizard (order checkout, availability warnings)
 - [x] Stripe Connect onboarding + payouts status
 - [x] `features/check-in`: participants list + check-in / no-show (mobile-first)
-- [ ] Team members management (invite manager/instructor)
+- [x] Team members management (invite manager/instructor)
 
 ## Later (P2 backlog)
 

@@ -6,6 +6,7 @@ export type StudioDashboardNavId =
   | "services"
   | "calendar"
   | "bookings"
+  | "team"
   | "payouts";
 
 export interface StudioDashboardNavItem {
@@ -23,7 +24,7 @@ export interface StudioDashboardNavItem {
 
 /**
  * Full studio dashboard nav (before permission filtering).
- * STRATEGY §6: instructor sees Today + bookings; no services/schedule/profile/payouts.
+ * STRATEGY §6: instructor sees Today + bookings; no services/schedule/profile/team/payouts.
  */
 export function buildStudioDashboardNav(
   studioId: number,
@@ -54,6 +55,12 @@ export function buildStudioDashboardNav(
       label: "Bookings",
       href: `${base}/bookings`,
       permission: StudioPermission.VIEW_BOOKINGS,
+    },
+    {
+      id: "team",
+      label: "Team",
+      href: `${base}/team`,
+      permission: StudioPermission.MANAGE_MEMBERS,
     },
     {
       id: "payouts",
