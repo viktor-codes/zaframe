@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchOrder, getUserFacingApiMessage } from "@shared/api";
 import {
   getGuestOrderAccessToken,
@@ -19,6 +19,8 @@ const POLL_INTERVAL_MS = 2_000;
 const SLOW_WEBHOOK_HINT_AFTER_MS = 60_000;
 const POLL_HARD_TIMEOUT_MS = 5 * 60_000;
 
+const TERMINAL_SUCCESS_PHASES = new Set(["confirmed", "manual_review"]);
+
 export interface UseOrderPaymentConfirmationPollResult {
   isLoading: boolean;
   isError: boolean;
@@ -35,6 +37,7 @@ export interface UseOrderPaymentConfirmationPollResult {
 export function useOrderPaymentConfirmationPoll(
   orderIdParam: string | null,
 ): UseOrderPaymentConfirmationPollResult {
+  const queryClient = useQueryClient();
   const orderId = parsePositiveIdString(orderIdParam);
   const [pollStartedAt] = useState(() => Date.now());
   const [isWebhookSlow, setIsWebhookSlow] = useState(false);
@@ -64,6 +67,17 @@ export function useOrderPaymentConfirmationPoll(
 
   const confirmation =
     query.data != null ? resolveOrderPaymentConfirmation(query.data) : null;
+
+  useEffect(() => {
+    if (
+      confirmation != null &&
+      TERMINAL_SUCCESS_PHASES.has(confirmation.phase)
+    ) {
+      // WHY: course payment updates both order and booking list caches.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.bookings.all });
+    }
+  }, [confirmation, queryClient]);
 
   useEffect(() => {
     if (confirmation?.phase !== "processing") {

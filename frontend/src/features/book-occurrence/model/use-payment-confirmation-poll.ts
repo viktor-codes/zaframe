@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchBooking, getUserFacingApiMessage } from "@shared/api";
 import {
   getGuestBookingAccessToken,
@@ -21,6 +21,8 @@ const SLOW_WEBHOOK_HINT_AFTER_MS = 60_000;
 /** Stop polling after this wall-clock window (battery / runaway requests). */
 const POLL_HARD_TIMEOUT_MS = 5 * 60_000;
 
+const TERMINAL_SUCCESS_PHASES = new Set(["confirmed", "manual_review"]);
+
 export interface UsePaymentConfirmationPollResult {
   isLoading: boolean;
   isError: boolean;
@@ -37,6 +39,7 @@ export interface UsePaymentConfirmationPollResult {
 export function usePaymentConfirmationPoll(
   bookingIdParam: string | null,
 ): UsePaymentConfirmationPollResult {
+  const queryClient = useQueryClient();
   const bookingId = parsePositiveIdString(bookingIdParam);
   const [pollStartedAt] = useState(() => Date.now());
   const [isWebhookSlow, setIsWebhookSlow] = useState(false);
@@ -66,6 +69,16 @@ export function usePaymentConfirmationPoll(
 
   const confirmation =
     query.data != null ? resolvePaymentConfirmation(query.data) : null;
+
+  useEffect(() => {
+    if (
+      confirmation != null &&
+      TERMINAL_SUCCESS_PHASES.has(confirmation.phase)
+    ) {
+      // WHY: account lists can stay stale for staleTime after webhook confirms.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.bookings.all });
+    }
+  }, [confirmation, queryClient]);
 
   useEffect(() => {
     if (confirmation?.phase !== "processing") {
