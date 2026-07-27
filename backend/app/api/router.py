@@ -19,11 +19,15 @@ from app.modules.booking.schemas import (
     BookingSelfResponse,
     BookingWithUser,
 )
+from app.modules.catalog.occurrence.list_router import list_router as occurrence_list_router
 from app.modules.catalog.occurrence.router import router as occurrence_router
-from app.modules.catalog.occurrence.router import studio_occurrence_router
+from app.modules.catalog.occurrence.studio_occurrence_router import studio_occurrence_router
 from app.modules.catalog.public.router import public_router
 from app.modules.catalog.schedule.router import schedule_router
 from app.modules.catalog.service.router import router as service_router
+from app.modules.catalog.service.schedule_templates_router import schedule_templates_router
+from app.modules.catalog.service.studio_services_router import studio_services_router
+from app.modules.catalog.studio.list_router import list_router as studio_list_router
 from app.modules.catalog.studio.members_router import router as studio_members_router
 from app.modules.catalog.studio.router import router as studio_router
 from app.modules.payment.router import router as payment_router
@@ -45,11 +49,15 @@ SearchResult.model_rebuild()
 api_v1 = APIRouter(prefix="/api/v1")
 for r in (
     public_router,
+    studio_list_router,
     studio_router,
+    studio_services_router,
     studio_members_router,
     studio_occurrence_router,
     schedule_router,
     service_router,
+    schedule_templates_router,
+    occurrence_list_router,
     occurrence_router,
     booking_create_router,
     booking_router,
