@@ -47,8 +47,7 @@ jobs:
       - name: Unit tests
         run: npm run test:unit
 
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
-
-      - name: E2E tests
-        run: npm run test:e2e
+      # E2E (Playwright) is intentionally NOT in the default PR gate.
+      # playwright.config.ts starts the FastAPI backend via `uv` and needs Postgres
+      # + secrets — CI would be a false signal with Node-only setup.
+      # Run locally: `make e2e` / `make e2e-critical` (see frontend/playwright.config.ts).

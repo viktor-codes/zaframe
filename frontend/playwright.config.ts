@@ -7,6 +7,12 @@ const apiURL = (process.env.API_URL ?? "http://127.0.0.1:8000").replace(
 );
 
 /**
+ * Playwright E2E — local / manual only (not the default Frontend CI PR gate).
+ *
+ * WHY: webServer boots FastAPI (`uv run uvicorn`) and needs Postgres + backend
+ * env (SECRET_KEY, DATABASE_URL, Stripe test keys for checkout flows). A
+ * Node-only GitHub job cannot honestly run these tests.
+ *
  * Run locally:
  *   make e2e-critical
  *

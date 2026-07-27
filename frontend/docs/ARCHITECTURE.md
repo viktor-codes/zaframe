@@ -127,7 +127,7 @@ Domain components that appear on multiple surfaces live in `entities/`, not in a
 | API types | `openapi-typescript` | generated from FastAPI `/openapi.json`, committed |
 | Styling | Tailwind v4 (existing tokens: mint/navy, polaroid) | |
 | Unit tests | Vitest | |
-| E2E | Playwright (`e2e/`, POM pattern) | critical flows only |
+| E2E | Playwright (`e2e/`, POM pattern) | critical flows only; **local/`make e2e`**, not default Frontend CI |
 | Lint | ESLint + boundary rule between FSD layers | |
 
 ## 7. Type generation from OpenAPI
