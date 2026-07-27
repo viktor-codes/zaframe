@@ -1,18 +1,27 @@
-# TD-04 — Decompose `catalog/studio/router.py` god-router (P2)
+# TD-04 — Decompose `catalog/studio/router.py` god-router (P2) — PARTIAL
+
+> **Status (Jul 2026):** Cross-domain handlers already moved:
+> - `catalog/public/router.py` — `GET /studios/slug/{slug}/public`
+> - `catalog/schedule/router.py` — `POST /studios/{id}/generate-occurrences`
+> - `catalog/occurrence` — `studio_occurrence_router` for `GET /studios/{id}/occurrences`
+>
+> **Still oversized:** `studio/router.py` (~224), `occurrence/router.py` (~241),
+> `service/router.py` (~236). Wave 3 E: trim each to ≤150 without URL changes.
 
 > Read [README.md](./README.md).
 
 ## Problem
 
-`modules/catalog/studio/router.py` (~230 lines) owns HTTP for **five concerns**:
+`modules/catalog/studio/router.py` originally owned HTTP for **five concerns**:
 
-| Route | Real owner |
-|-------|------------|
-| `GET/POST/PATCH/DELETE /studios` | studio ✓ |
-| `GET /studios/{id}/occurrences` | occurrence (nested) |
-| `GET /studios/slug/{slug}/public` | public |
-| `POST /studios/{id}/generate-occurrences` | schedule |
-| `GET /studios` with `include_services` | studio + search shape |
+| Route | Real owner | Status |
+|-------|------------|--------|
+| `GET/POST/PATCH/DELETE /studios` | studio ✓ | stays |
+| `GET /studios/{id}/occurrences` | occurrence (nested) | moved |
+| `GET /studios/slug/{slug}/public` | public | moved |
+| `POST /studios/{id}/generate-occurrences` | schedule | moved |
+| `GET /studios` with `include_services` | studio + search shape | still in studio |
+| `GET /studios/{id}/services` | service (nested) | Wave 3 E candidate |
 
 Routers should stay thin; cross-subdomain routes obscure ownership.
 

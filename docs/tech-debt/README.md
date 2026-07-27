@@ -30,9 +30,9 @@ Also in CI / `make lint`: `uv run pyright app scripts`.
 | Priority | Step | Topic | Effort |
 |----------|------|-------|--------|
 | ✅ Done | [td-01](./td-01-catalog-capacity-dry.md) | DRY overbooking logic → `catalog/capacity.py` | done |
-| 🟡 P2 | [td-02](./td-02-split-large-services.md) | Split oversized services (payment/auth/studio done; booking TBD) | partial |
+| 🟡 P2 | [td-02](./td-02-split-large-services.md) | Split oversized services — leftover: checkout / booking attendance+router | partial |
 | ✅ Done | [td-03](./td-03-identity-ownership-policies.md) | Unify `is_own_booking` / `is_own_order` | done |
-| 🟡 P2 | [td-04](./td-04-split-studio-router.md) | Decompose `studio/router.py` god-router | ~3h |
+| 🟡 P2 | [td-04](./td-04-split-studio-router.md) | Studio god-router — public/schedule moved; trim studio/occurrence/service | partial |
 | 🟡 P2 | [td-05](./td-05-booking-persistence-internal.md) | `booking/persistence.py` for intra-domain helpers | ~1.5h |
 | 🟡 P2 | [td-06](./td-06-occurrence-bookings-count.md) | Relocate `get_bookings_count` from occurrence | ~1h |
 | 🟢 P3 | [td-07](./td-07-docs-cleanup.md) | README vocabulary + retire stale plan doc | ~1h |
@@ -46,9 +46,13 @@ Also in CI / `make lint`: `uv run pyright app scripts`.
 - **td-01:** Shared pure helpers in `catalog/capacity.py` (+ `capacity_types.py`);
   callers in `catalog/service` and `catalog/public`. Unit tests in
   `tests/unit/catalog/test_catalog_capacity.py`.
+- **td-02 (partial):** payment/auth/catalog service splits landed; Wave 3 leftover is
+  `payment/checkout.py`, `booking/service` attendance, `booking/router`.
 - **td-03:** `identity.policies.is_owned_by_user`; booking/payment thin wrappers;
   import-linter allows `payment → identity`. Unit tests in
   `tests/unit/identity/test_identity_policies.py`.
+- **td-04 (partial):** `public` + `schedule` routers extracted; Wave 3 leftover is
+  trimming `studio` / `occurrence` / `service` routers to ≤150.
 - **td-09:** `uv run pyright app scripts` in `Makefile` lint and `.github/workflows/backend-ci.yml`.
 - **td-10:** Option A in `frontend/e2e/flows/guest-checkout.spec.ts` + POM; run `make e2e-critical`.
   Not on default Frontend CI. Option B (Stripe CLI full confirm) remains optional/local.
@@ -59,8 +63,11 @@ Also in CI / `make lint`: `uv run pyright app scripts`.
 ```
 P1 — done (td-01, td-03)
 
-P2 (next):
-  td-02 → td-05 → td-06 → td-04
+Wave 3 hygiene (td-02 / td-04 leftover):
+  A docs → B payment/checkout → C booking/attendance → D booking/router → E catalog routers
+
+P2 (after Wave 3):
+  td-05 → td-06 → finish td-02/td-04 if anything remains
 
 P3 (remaining / anytime):
   td-07, td-08
