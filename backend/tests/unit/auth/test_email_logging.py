@@ -88,3 +88,23 @@ async def test_send_otp_email_uses_configured_sender():
 
     assert result is True
     assert sent_payloads[0]["from"] == "ZeeFrame <login@example.com>"
+
+
+@pytest.mark.asyncio
+async def test_send_otp_email_times_out_when_provider_hangs():
+    """Hung Resend SDK must not block forever; returns False."""
+
+    def hang(_payload: dict[str, object]) -> dict[str, str]:
+        import time
+
+        time.sleep(5)
+        return {"id": "never"}
+
+    with (
+        patch("app.integrations.email.service.settings.RESEND_API_KEY", "re_test"),
+        patch("app.integrations.email.service._RESEND_TIMEOUT_SECONDS", 0.05),
+        patch("resend.Emails.send", side_effect=hang),
+    ):
+        result = await send_otp_email("john@domain.com", "123456")
+
+    assert result is False

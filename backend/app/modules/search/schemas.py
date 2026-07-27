@@ -15,6 +15,12 @@ from app.models import ServiceCategory, ServiceType, ServiceVisibility
 
 ServiceVisibilityLiteral = Literal["draft", "published", "archived"]
 
+SEARCH_MIN_RADIUS_KM = 1
+SEARCH_DEFAULT_RADIUS_KM = 10
+SEARCH_MAX_RADIUS_KM = 50
+SEARCH_DEFAULT_LIMIT = 20
+SEARCH_MAX_LIMIT = 50
+
 
 class SearchStudioResponse(BaseModel):
     """Studio fields returned in search results."""
@@ -91,13 +97,20 @@ class SearchQueryParams(BaseModel):
         description="Longitude for geo search",
     )
     radius_km: int | None = Field(
-        10,
-        ge=0,
-        description="Search radius in kilometres (default 10 km)",
+        SEARCH_DEFAULT_RADIUS_KM,
+        ge=SEARCH_MIN_RADIUS_KM,
+        le=SEARCH_MAX_RADIUS_KM,
+        description="Search radius in kilometres (default 10 km, max 50)",
     )
     amenities: list[str] | None = Field(
         None,
         description="Required studio amenities",
+    )
+    limit: int = Field(
+        SEARCH_DEFAULT_LIMIT,
+        ge=1,
+        le=SEARCH_MAX_LIMIT,
+        description="Max studios to return (default 20, max 50)",
     )
 
 

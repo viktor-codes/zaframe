@@ -2,93 +2,176 @@
  * Bookings API.
  */
 
-import { api } from "./client";
+import { api, type RequestConfig } from "./client";
 import type {
   BookingCreate,
   BookingCreatedResponse,
   BookingDetailResponse,
   BookingOwnerResponse,
-  BookingSelfListItem,
-  PaginatedBookingOwnerList,
+  CourseBookingCreate,
+  CourseBookingResponse,
   PaginatedBookingSelfList,
+  PaginatedBookingWithOccurrenceList,
 } from "@entities/booking";
+import type { BookingStatus } from "@shared/lib/constants";
 
 export interface BookingsListParams {
-  skip?: number;
-  limit?: number;
+  page?: number;
+  size?: number;
+  /** Recommended for studio dashboard; requires view_bookings. */
+  studio_id?: number;
   occurrence_id?: number;
-  user_id?: number;
-  guest_email?: string;
-  status?: string;
+  status?: BookingStatus;
 }
 
+/** Query params for GET /bookings/my (page is supplied by infinite-query pageParam). */
+export interface MyBookingsParams {
+  page?: number;
+  size?: number;
+  include_guest_email?: boolean;
+}
+
+export interface BookingAccessOptions {
+  /**
+   * Guest JWT from POST /bookings (sessionStorage on confirm page).
+   * When set, sent as Bearer and session refresh is skipped.
+   */
+  accessToken?: string | null;
+  /** TanStack Query (or caller) cancellation signal. */
+  signal?: AbortSignal;
+}
+
+function bookingAuthConfig(options?: BookingAccessOptions): RequestConfig {
+  const config: RequestConfig = {};
+  if (options?.signal) {
+    config.signal = options.signal;
+  }
+  const accessToken = options?.accessToken;
+  if (accessToken) {
+    return {
+      ...config,
+      skipAuth: true,
+      skipRefresh: true,
+      headers: { Authorization: `Bearer ${accessToken}` },
+    };
+  }
+  return config;
+}
+
+const DEFAULT_PAGE = 1;
+const DEFAULT_SIZE = 20;
+
+/**
+ * Studio-staff bookings list (paginated envelope + nested occurrence).
+ * WHY: callers need `total` for pagination and occurrence for session context.
+ */
 export async function fetchBookings(
   params: BookingsListParams = {},
-): Promise<BookingOwnerResponse[]> {
+): Promise<PaginatedBookingWithOccurrenceList> {
   const {
-    skip = 0,
-    limit = 20,
+    page = DEFAULT_PAGE,
+    size = DEFAULT_SIZE,
+    studio_id,
     occurrence_id,
-    user_id,
-    guest_email,
     status,
   } = params;
   const searchParams: Record<string, string | number | undefined> = {
-    skip,
-    limit,
+    page,
+    size,
   };
+  if (studio_id !== undefined) searchParams.studio_id = studio_id;
   if (occurrence_id !== undefined) searchParams.occurrence_id = occurrence_id;
-  if (user_id !== undefined) searchParams.user_id = user_id;
-  if (guest_email) searchParams.guest_email = guest_email;
   if (status) searchParams.status = status;
 
-  const response = await api.get<PaginatedBookingOwnerList>("api/v1/bookings", {
+  return api.get<PaginatedBookingWithOccurrenceList>("api/v1/bookings", {
     params: searchParams,
   });
-  return response.items;
 }
 
-export async function fetchMyBookings(params?: {
-  skip?: number;
-  limit?: number;
-  include_guest_email?: boolean;
-}): Promise<BookingSelfListItem[]> {
-  const searchParams: Record<string, string | number | boolean | undefined> = {};
-  if (params?.skip !== undefined) searchParams.skip = params.skip;
-  if (params?.limit !== undefined) searchParams.limit = params.limit;
-  if (params?.include_guest_email !== undefined)
+/**
+ * List current-user bookings (paginated envelope).
+ * WHY: callers need `total` / `page` / `size` for account infinite scroll.
+ */
+export async function fetchMyBookings(
+  params: MyBookingsParams = {},
+): Promise<PaginatedBookingSelfList> {
+  const searchParams: Record<string, string | number | boolean | undefined> = {
+    page: params.page ?? DEFAULT_PAGE,
+    size: params.size ?? DEFAULT_SIZE,
+  };
+  if (params.include_guest_email !== undefined) {
     searchParams.include_guest_email = params.include_guest_email;
+  }
 
-  const response = await api.get<PaginatedBookingSelfList>("api/v1/bookings/my", {
+  return api.get<PaginatedBookingSelfList>("api/v1/bookings/my", {
     params: searchParams,
   });
-  return response.items;
 }
 
 export async function fetchBooking(
   id: number,
+  options?: BookingAccessOptions,
 ): Promise<BookingDetailResponse> {
-  return api.get<BookingDetailResponse>(`api/v1/bookings/${id}`, {
-    skipAuth: true,
-  });
+  return api.get<BookingDetailResponse>(
+    `api/v1/bookings/${id}`,
+    bookingAuthConfig(options),
+  );
 }
 
 export async function createBooking(
   data: BookingCreate,
+  options?: { idempotencyKey: string },
 ): Promise<BookingCreatedResponse> {
+  // WHY: send Bearer when present so the API can attach user_id immediately;
+  // guests without a token still create anonymously (optional auth on backend).
   return api.post<BookingCreatedResponse>("api/v1/bookings", data, {
-    skipAuth: true,
+    idempotencyKey: options?.idempotencyKey,
+  });
+}
+
+/**
+ * Course purchase: one Order + N bookings (`CourseBookingCreate`).
+ * WHY: same path as single booking, but response shape is order-centric
+ * (access_token pays the order, not a single booking).
+ */
+export async function createCourseBooking(
+  data: CourseBookingCreate,
+  options?: { idempotencyKey: string },
+): Promise<CourseBookingResponse> {
+  return api.post<CourseBookingResponse>("api/v1/bookings", data, {
+    idempotencyKey: options?.idempotencyKey,
   });
 }
 
 export async function cancelBooking(
   id: number,
+  options?: BookingAccessOptions,
 ): Promise<BookingDetailResponse> {
   return api.patch<BookingDetailResponse>(
     `api/v1/bookings/${id}/cancel`,
     undefined,
-    {
-      skipAuth: true,
-    },
+    bookingAuthConfig(options),
+  );
+}
+
+/**
+ * Mark attendee as checked in (`PATCH /bookings/{id}/check-in`).
+ * Requires `check_in_booking`; idempotent when already checked in.
+ */
+export async function checkInBooking(
+  id: number,
+): Promise<BookingOwnerResponse> {
+  return api.patch<BookingOwnerResponse>(`api/v1/bookings/${id}/check-in`);
+}
+
+/**
+ * Mark attendee as no-show (`PATCH /bookings/{id}/mark-no-show`).
+ * Requires `check_in_booking`; blocked after check-in.
+ */
+export async function markBookingNoShow(
+  id: number,
+): Promise<BookingOwnerResponse> {
+  return api.patch<BookingOwnerResponse>(
+    `api/v1/bookings/${id}/mark-no-show`,
   );
 }

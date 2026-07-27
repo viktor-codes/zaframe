@@ -179,12 +179,15 @@ class OccurrenceRepository(WriteRepositoryMixin):
     ) -> list[Occurrence]:
         query = (
             select(Occurrence)
+            .options(
+                selectinload(Occurrence.instructor).selectinload(StudioMember.user),
+            )
             .where(
                 Occurrence.service_id == service_id,
                 Occurrence.status == OccurrenceStatus.SCHEDULED,
                 Occurrence.start_time >= ensure_utc(now),
             )
-            .order_by(Occurrence.id.asc())
+            .order_by(Occurrence.start_time.asc())
         )
         result = await self._session.execute(query)
         return list(result.scalars().all())

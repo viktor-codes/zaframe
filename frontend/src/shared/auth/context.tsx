@@ -6,18 +6,27 @@
  * - Wires API client with getAccessToken and refreshTokens
  * - Exposes user, login, logout
  * - User is loaded via TanStack Query when a token is present
+ * - Failed refresh clears tokens + auth query cache (no ghost session)
  */
 
 import {
   createContext,
   useCallback,
   useContext,
+  useLayoutEffect,
   useMemo,
   useState,
 } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, setAuthTokenProvider, setRefreshTokensFn } from "@shared/api";
+import { queryKeys } from "@shared/lib/query-keys";
+import { clearPrivateClientSession } from "@shared/lib/clear-private-client-session";
 import { logoutSession, refreshAccessToken } from "./api";
+import {
+  notifyAuthSessionInvalidated,
+  resolveAuthUserFromQuery,
+  setAuthSessionInvalidatedHandler,
+} from "./session-invalidation";
 import {
   clearStoredTokens,
   getStoredAccessToken,
@@ -59,6 +68,8 @@ function bootstrapAuthClient(): void {
       return { access_token: res.access_token };
     } catch {
       clearStoredTokens();
+      // WHY: TQ keeps previous /auth/me data on error — force logged-out UI.
+      notifyAuthSessionInvalidated();
       return null;
     }
   });
@@ -66,8 +77,9 @@ function bootstrapAuthClient(): void {
 
 function useAuthQuery(loginTrigger: number, isReady: boolean) {
   return useQuery({
-    queryKey: ["auth", "me", loginTrigger],
-    queryFn: () => api.get<AuthUser>("/api/v1/auth/me"),
+    queryKey: queryKeys.auth.me(loginTrigger),
+    queryFn: ({ signal }) =>
+      api.get<AuthUser>("/api/v1/auth/me", { signal }),
     enabled: isReady,
     staleTime: 5 * 60 * 1000,
     retry: false,
@@ -75,6 +87,7 @@ function useAuthQuery(loginTrigger: number, isReady: boolean) {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient();
   const [loginTrigger, setLoginTrigger] = useState(0);
   const [isBootstrapped] = useState(() => {
     if (typeof window === "undefined") {
@@ -84,7 +97,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return true;
   });
 
-  const { data: user, isLoading } = useAuthQuery(loginTrigger, isBootstrapped);
+  const clearAuthSession = useCallback(() => {
+    clearStoredTokens();
+    clearPrivateClientSession(queryClient);
+    setLoginTrigger((prev) => prev + 1);
+  }, [queryClient]);
+
+  useLayoutEffect(() => {
+    setAuthSessionInvalidatedHandler(() => {
+      clearPrivateClientSession(queryClient);
+      setLoginTrigger((prev) => prev + 1);
+    });
+    return () => setAuthSessionInvalidatedHandler(null);
+  }, [queryClient]);
+
+  const { data: user, isLoading, isError } = useAuthQuery(
+    loginTrigger,
+    isBootstrapped,
+  );
 
   const login = useCallback((accessToken: string) => {
     setStoredTokens(accessToken);
@@ -94,19 +124,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(() => {
     void logoutSession().finally(() => {
-      clearStoredTokens();
-      setLoginTrigger((prev) => prev + 1);
+      clearAuthSession();
     });
-  }, []);
+  }, [clearAuthSession]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
-      user: user ?? null,
+      user: resolveAuthUserFromQuery(user, isError),
       isInitialized: isBootstrapped && !isLoading,
       login,
       logout,
+      clearSession: clearAuthSession,
     }),
-    [user, isBootstrapped, isLoading, login, logout],
+    [user, isError, isBootstrapped, isLoading, login, logout, clearAuthSession],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

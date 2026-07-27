@@ -29,12 +29,12 @@ Small and mid-size studios often juggle calendars, payments, and waitlists in se
 | ----------------------- | ---------------------------------------------------------------------- |
 | **API**                 | Python 3.13+, **FastAPI**, **Pydantic v2**, **uv**                     |
 | **Data**                | **PostgreSQL**, **SQLAlchemy 2** (async), **Alembic** migrations       |
-| **Auth & security**     | **python-jose** (JWT), **passlib** (bcrypt), refresh-token persistence |
-| **Payments & email**    | **Stripe**, **Resend**                                                 |
-| **Resilience**          | **slowapi** rate limiting, **structlog**                               |
+| **Auth & security**     | **email OTP** (HMAC-hashed), **PyJWT** (access + refresh), httpOnly refresh cookies + CSRF |
+| **Payments & email**    | **Stripe** (Connect + Checkout), **Resend**                            |
+| **Resilience**          | **slowapi** (+ optional **Redis**), **structlog**, Prometheus metrics  |
 | **Web**                 | **Next.js 16**, **React 19**, **TypeScript** (strict)                  |
 | **UI & data on client** | **Tailwind CSS v4**, **TanStack Query**, **Zustand**, **Zod**          |
-| **Quality**             | **Ruff**, **pytest** + **pytest-asyncio**, **Vitest**, **Playwright**  |
+| **Quality**             | **Ruff**, **Pyright**, **pytest** + **pytest-asyncio**, **Vitest**, **Playwright** |
 
 ---
 
@@ -86,7 +86,7 @@ The web app is organised by **feature modules** (navigation, home, studios, book
 - **Migrations as code** — schema changes tracked with Alembic.
 - **Automated tests** — async API tests, auth, webhooks, and payment service scenarios on the backend; Vitest and Playwright wired on the frontend.
 - **Linting & formatting** — Ruff on Python; ESLint and Prettier (with Tailwind class sorting) on the frontend.
-- **Security-minded defaults** — rate limits, secure headers, password hashing, token handling, and webhook-oriented payment state updates rather than trusting the client alone.
+- **Security-minded defaults** — rate limits, secure headers, passwordless OTP (no stored passwords), JWT/refresh rotation with reuse detection, and Stripe webhook verification rather than trusting the client alone.
 
 ---
 
@@ -101,7 +101,7 @@ with the managed Postgres URL from the deployment environment.
 | `DATABASE_URL` | Yes | Async PostgreSQL URL. Production must provide a managed database URL; the local `postgres:postgres` default is never acceptable for deployed environments. |
 | `SECRET_KEY` | Yes | JWT signing secret. Generate a strong environment-specific value and never commit it. |
 | `EMAIL_FROM` | Production email | Verified sender identity for transactional OTP email, for example `ZeeFrame <login@your-domain.com>`. |
-| `REDIS_URL` | No | Redis URL for **distributed rate limiting** when running multiple API instances (e.g. `redis://localhost:6379/0`). When unset, slowapi uses in-memory storage — fine for local single-instance dev, but counters are not shared across replicas. Requires `limits[redis]` and `redis` packages (see below). |
+| `REDIS_URL` | No | Redis URL for **distributed rate limiting** when running multiple API instances (e.g. `redis://localhost:6379/0`). When unset, slowapi uses in-memory storage — fine for local single-instance dev, but counters are not shared across replicas. The `redis` package is a declared project dependency. |
 
 ### Rate limiting and Redis
 

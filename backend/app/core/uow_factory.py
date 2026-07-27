@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import async_session_maker
 from app.core.uow import UnitOfWork
 from app.modules.auth.repository import OTPCodeRepository, RefreshTokenRepository
+from app.modules.booking.idempotency_repository import BookingIdempotencyRepository
 from app.modules.booking.order.repository import OrderRepository
 from app.modules.booking.repository import BookingRepository
 from app.modules.catalog.occurrence.repository import OccurrenceRepository
@@ -24,6 +25,7 @@ def create_uow(session: AsyncSession) -> UnitOfWork:
     return UnitOfWork(
         session=session,
         bookings=BookingRepository(session),
+        booking_idempotency=BookingIdempotencyRepository(session),
         otp_codes=OTPCodeRepository(session),
         users=UserRepository(session),
         studios=StudioRepository(session),

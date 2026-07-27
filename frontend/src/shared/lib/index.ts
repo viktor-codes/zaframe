@@ -1,10 +1,45 @@
 /** Utils, config, constants, and cross-cutting client helpers. */
 export { config } from "./config";
 export { cn } from "./utils";
+export { formatMoneyFromCents } from "./format-money";
+export { getSafeNextPath } from "./safe-next-path";
+export { parsePositiveIdString } from "./parse-positive-id";
+export {
+  getSafeStripeCheckoutUrl,
+  isAllowedStripeCheckoutUrl,
+} from "./stripe-checkout-url";
 export { useUIStore, type HeaderVariant } from "./ui-store";
 export {
+  clearAllGuestBookingAccess,
   getGuestBookingAccessToken,
   getGuestBookingSnapshot,
+  persistGuestBookingAccessToken,
   storeGuestBookingAccess,
+  updateGuestBookingSnapshot,
   type GuestBookingSnapshot,
 } from "./booking-guest-token";
+export {
+  clearAllGuestOrderAccess,
+  getGuestOrderAccessToken,
+  getGuestOrderSnapshot,
+  persistGuestOrderAccessToken,
+  storeGuestOrderAccess,
+  type GuestOrderSnapshot,
+} from "./order-guest-token";
+export { clearPrivateClientSession } from "./clear-private-client-session";
+export * from "./constants";
+export {
+  buildStudioDashboardNav,
+  filterStudioDashboardNav,
+  type StudioDashboardNavId,
+  type StudioDashboardNavItem,
+} from "./studio-dashboard-nav";
+export { queryKeys } from "./query-keys";
+export type {
+  StudioOccurrencesParams,
+  StudioServicesParams,
+  StudiosListParams,
+} from "./query-keys";
+export { useNow, type UseNowOptions } from "./use-now";
+// WHY: createAppQueryClient stays a deep import (`@shared/lib/query-client`)
+// so isomorphic barrels do not pull TanStack Query + module augmentation.

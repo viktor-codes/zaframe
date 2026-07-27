@@ -4,8 +4,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, ArrowRight, MapPin, Navigation } from "lucide-react";
-import { SectionHeading, useSectionInView } from "@shared/ui";
-import { cn } from "@shared/lib";
+import { AnimatedSectionHeading } from "@shared/ui/animated-section-heading";
+import { useSectionInView } from "@shared/ui/section";
+import { cn } from "@shared/lib/utils";
 
 const SUGGESTION_TO_CATEGORY: Record<string, string> = {
   yoga: "yoga",
@@ -56,7 +57,7 @@ export const SearchSection = () => {
     <>
       <div className="relative z-10 container mx-auto max-w-5xl px-6">
         <div className="mb-20 text-left md:mb-32 md:text-center">
-          <SectionHeading
+          <AnimatedSectionHeading
             size="section"
             as="h2"
             className="leading-[0.9] text-zinc-900"
@@ -65,7 +66,7 @@ export const SearchSection = () => {
             <span className="font-serif font-light text-zinc-400 italic">
               your frame?
             </span>
-          </SectionHeading>
+          </AnimatedSectionHeading>
         </div>
 
         <div

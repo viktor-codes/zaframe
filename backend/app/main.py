@@ -10,6 +10,7 @@ from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from typing import Any
 
+import sentry_sdk
 import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -28,7 +29,12 @@ from app.core.middleware.logging_middleware import (
     REQUEST_ID_STATE_KEY,
     RequestLoggingMiddleware,
 )
+from app.core.production_guards import (
+    api_docs_route_kwargs,
+    validate_production_rate_limit_config,
+)
 from app.core.rate_limit import limiter
+from app.core.sentry import init_sentry
 
 API_CONTENT_SECURITY_POLICY = (
     "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
@@ -76,6 +82,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     On shutdown: close all DB connections.
     """
     setup_logging()
+    init_sentry()
+    validate_production_rate_limit_config()
     yield
     await engine.dispose()
 
@@ -83,11 +91,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 # Use settings from `config.py` instead of hardcoding.
 # Centralize `title` and `version` and allow overrides via `.env`.
 # `lifespan=lifespan` wires the lifecycle management.
+# WHY: OpenAPI UI is a reconnaissance surface — only expose it in local/dev.
+_api_docs_routes = api_docs_route_kwargs(settings.ENVIRONMENT)
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
     debug=settings.DEBUG,
     lifespan=lifespan,
+    docs_url=_api_docs_routes["docs_url"],
+    redoc_url=_api_docs_routes["redoc_url"],
+    openapi_url=_api_docs_routes["openapi_url"],
 )
 
 app.state.limiter = limiter
@@ -198,6 +211,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
         exc_type=type(exc).__name__,
         stack=stack,
     )
+    sentry_sdk.capture_exception(exc)
     return _problem_response(
         status_code=500,
         content=_error_body(
@@ -221,12 +235,23 @@ app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 
 # === CORS middleware ===
+# WHY: least-privilege methods/headers; wildcard CORS is unnecessary with credentials.
+_CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+_CORS_ALLOW_HEADERS = [
+    "Accept",
+    "Authorization",
+    "Content-Type",
+    "Idempotency-Key",
+    "X-CSRF-Token",
+    "X-Request-ID",
+]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=_CORS_ALLOW_METHODS,
+    allow_headers=_CORS_ALLOW_HEADERS,
+    expose_headers=[REQUEST_ID_HEADER],
 )
 
 register_routers(app)

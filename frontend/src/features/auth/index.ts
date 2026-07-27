@@ -1,2 +1,4 @@
-/** Auth feature — public API: OTP login form and route guard. */
-export { LoginForm, RequireAuth } from "./ui";
+/** Auth feature — public API: OTP login form.
+ * Route guards: `@shared/auth` (`RequireAuth`, `RequireStudioPermission`, `RequireStudioRole`).
+ */
+export { LoginForm } from "./ui";

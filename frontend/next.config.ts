@@ -1,4 +1,27 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
+
+const isDev = process.env.NODE_ENV !== "production";
+
+/** Checkout redirect (not Stripe Elements) — keep connect/frame surface small. */
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  // WHY: Next needs unsafe-inline; unsafe-eval only in dev for HMR/React Refresh.
+  isDev
+    ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+    : "script-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline'",
+  // WHY: studio cover_url/logo_url are arbitrary https hosts (not only Unsplash).
+  // UI uses next/image with unoptimized for remote http(s); CSP must still allow them.
+  "img-src 'self' data: https:",
+  "font-src 'self' data:",
+  // WHY: Sentry browser SDK posts events to ingest hosts when DSN is set.
+  "connect-src 'self' https://*.ingest.sentry.io https://*.ingest.de.sentry.io",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "form-action 'self' https://checkout.stripe.com https://*.stripe.com",
+].join("; ");
 
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -11,9 +34,13 @@ const securityHeaders = [
     key: "Permissions-Policy",
     value: "camera=(), microphone=(), geolocation=()",
   },
+  {
+    key: "Content-Security-Policy",
+    value: contentSecurityPolicy,
+  },
 ];
 
-if (process.env.NODE_ENV === "production") {
+if (!isDev) {
   securityHeaders.push({
     key: "Strict-Transport-Security",
     value: "max-age=63072000; includeSubDomains; preload",
@@ -24,6 +51,8 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
   allowedDevOrigins: ["127.0.0.1", "localhost"],
   images: {
+    // Optimized remote images: Unsplash only. Arbitrary studio https URLs use
+    // unoptimized={url.startsWith("http")} and are allowed by CSP img-src https:.
     remotePatterns: [
       {
         protocol: "https",
@@ -31,6 +60,19 @@ const nextConfig: NextConfig = {
         pathname: "/**",
       },
     ],
+  },
+  /**
+   * Account list used to live at exact `/bookings`. Guest checkout keeps
+   * `/bookings/success`, `/bookings/cancel`, `/bookings/:id/confirm`.
+   */
+  async redirects() {
+    return [
+      {
+        source: "/bookings",
+        destination: "/account/bookings",
+        permanent: true,
+      },
+    ];
   },
   async headers() {
     return [
@@ -40,25 +82,35 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+
   /**
-   * Dev-only: proxy /api/* to FastAPI so the browser stays same-origin with the Next app.
-   * Then Set-Cookie from the backend is stored for localhost:3000 (refresh token works).
-   * Pair with NEXT_PUBLIC_API_URL=http://localhost:3000 in .env.development.
+   * Same-origin API proxy (dev + prod).
    *
-   * Production: no rewrites — the browser calls the API origin from NEXT_PUBLIC_API_URL.
-   * Configure CORS and cookie attributes on the API for that origin.
+   * Browser → NEXT_PUBLIC_API_URL (Next origin) → rewrite → API_UPSTREAM_URL.
+   * Set-Cookie lands on the web origin so CSRF double-submit can read csrf_token.
+   * Stripe webhooks stay on the API host (/webhooks/* is outside this rewrite).
    */
   async rewrites() {
-    if (process.env.NODE_ENV !== "development") {
+    const upstream = (process.env.API_UPSTREAM_URL ?? "")
+      .trim()
+      .replace(/\/$/, "");
+    if (!upstream) {
       return [];
     }
     return [
       {
         source: "/api/:path*",
-        destination: "http://127.0.0.1:8000/api/:path*",
+        destination: `${upstream}/api/:path*`,
       },
     ];
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  // Avoid interactive source-map upload in CI without org/project secrets.
+  silent: true,
+  disableLogger: true,
+  sourcemaps: {
+    disable: true,
+  },
+});

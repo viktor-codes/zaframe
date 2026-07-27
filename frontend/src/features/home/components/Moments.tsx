@@ -3,8 +3,9 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import React from "react";
-import { SectionHeading, useSectionInView } from "@shared/ui";
-import { cn } from "@shared/lib";
+import { AnimatedSectionHeading } from "@shared/ui/animated-section-heading";
+import { useSectionInView } from "@shared/ui/section";
+import { cn } from "@shared/lib/utils";
 
 interface Moment {
   text: string;
@@ -161,11 +162,14 @@ export const Moments = () => {
 
       <div className="relative z-10 container mx-auto max-w-7xl px-6">
         <div className="mb-24 text-center">
-          <SectionHeading size="label" className="mb-8 block text-teal-500">
+          <AnimatedSectionHeading
+            size="label"
+            className="mb-8 block text-teal-500"
+          >
             Community
-          </SectionHeading>
+          </AnimatedSectionHeading>
 
-          <SectionHeading size="section" as="h2" className="text-white">
+          <AnimatedSectionHeading size="section" as="h2" className="text-white">
             Real people <br />
             <span className="relative mt-4 inline-block font-serif font-light text-zinc-400 italic">
               real impact
@@ -197,7 +201,7 @@ export const Moments = () => {
                 </defs>
               </svg>
             </span>
-          </SectionHeading>
+          </AnimatedSectionHeading>
 
           <p
             className={cn(

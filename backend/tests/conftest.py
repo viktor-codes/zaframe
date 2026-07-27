@@ -40,11 +40,15 @@ async def app_with_rollback_uow():
     from app.core.deps import get_uow
     from app.core.uow_factory import uow_scope
     from app.main import app
+    from app.models.booking_idempotency_key import BookingIdempotencyKey
     from app.models.processed_webhook_event import ProcessedWebhookEvent
 
     async with engine.begin() as conn:
         await conn.run_sync(
             lambda sync_conn: ProcessedWebhookEvent.__table__.create(sync_conn, checkfirst=True)
+        )
+        await conn.run_sync(
+            lambda sync_conn: BookingIdempotencyKey.__table__.create(sync_conn, checkfirst=True)
         )
 
     async with async_session_maker() as session:
@@ -107,7 +111,7 @@ async def authenticate_via_otp(
         captured_codes.append(code)
         return True
 
-    with patch("app.modules.auth.service.send_otp_email", side_effect=capture_otp):
+    with patch("app.modules.auth.otp.send_otp_email", side_effect=capture_otp):
         r_request = await client.post(
             "/api/v1/auth/otp/request",
             json={"email": email, "name": name},

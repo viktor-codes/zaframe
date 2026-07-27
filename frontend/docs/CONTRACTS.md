@@ -114,12 +114,14 @@ Legacy `/count` endpoints and `skip` / `limit` query params are removed.
 | `GET /search` | studio search |
 | `GET /services/{id}/availability` | course availability / overbooked dates |
 | `GET /occurrences?service_id=…` | bookable slots |
-| `POST /bookings` | guest or user; `BookingCreate` (single) or `CourseBookingCreate` (course → Order + N bookings); returns `access_token` for guests; rate limit 10/min |
-| `POST /payments/checkout-session` | Stripe Checkout for single booking; supports `Idempotency-Key` header |
-| `POST /payments/order-checkout-session` | Stripe Checkout for course order; `Idempotency-Key` |
+| `POST /bookings` | guest or user (optional Bearer); `BookingCreate` (single) or `CourseBookingCreate` (course → Order + N bookings); with Bearer → `user_id` set immediately; without → guest until OTP attach; returns `access_token` for checkout; rate limit 10/min |
+| `POST /payments/checkout-session` | Stripe Checkout for single booking; **requires** `Idempotency-Key` header |
+| `POST /payments/order-checkout-session` | Stripe Checkout for course order; **requires** `Idempotency-Key` |
 
-Guest flow: `access_token` from booking/order → `/bookings/{id}/confirm` page; after OTP
-sign-in, guest bookings merge by email (`include_guest_email=true` on `/bookings/my`).
+Guest flow: `access_token` from booking/order is kept in `sessionStorage` after create.
+Deep links use `/bookings/{id}/confirm#access_token=…` (hash is not sent to servers;
+legacy `?access_token=` is still accepted once and stripped). After OTP sign-in, guest
+bookings merge by email (`include_guest_email=true` on `/bookings/my`).
 
 ### Account (customer, auth required)
 
@@ -129,6 +131,7 @@ sign-in, guest bookings merge by email (`include_guest_email=true` on `/bookings
 | `GET /bookings/{id}` | self or owner perspective |
 | `PATCH /bookings/{id}/cancel` | respects `cancel_before_hours` cutoff |
 | `GET /orders/my` | orders + service + booking summaries |
+| `GET /orders/{id}` | session owner **or** guest `access_token` as Bearer (same gate as order checkout); nested bookings include `reserved_until`; no secrets / Stripe ids |
 
 ### Dashboard (studio staff, auth + studio permission)
 
@@ -140,19 +143,25 @@ sign-in, guest bookings merge by email (`include_guest_email=true` on `/bookings
 | `POST /services` / `PATCH /services/{id}` / `DELETE /services/{id}` | `manage_services` | `visibility` field drives draft/publish/archive |
 | `GET /services/{id}/schedule-templates` + POST/PATCH/DELETE `/services/schedule-templates/{id}` | `manage_schedule` | template edits never touch existing occurrences |
 | `POST /studios/{id}/generate-occurrences` | `manage_schedule` | days + start_time + weeks_count |
-| `GET /studios/{id}/occurrences` | member | filters: date range, status |
+| `GET /studios/{id}/occurrences` | member | filters: date range, status; includes `confirmed_count` / `pending_count` |
 | `POST /occurrences` / `PATCH /occurrences/{id}` / `DELETE /occurrences/{id}` | `manage_schedule` | calendar mode |
 | `GET /occurrences/mine` | instructor | "my sessions" |
-| `GET /bookings` (+ `/count`) | `view_bookings` | studio bookings, filter by occurrence/status |
+| `GET /bookings` | `view_bookings` | filter: `studio_id` (recommended), occurrence, status; nested `occurrence` |
 | `PATCH /bookings/{id}/check-in` | `check_in_booking` | |
 | `PATCH /bookings/{id}/mark-no-show` | `check_in_booking` | |
 | `GET /orders` | owner | studio orders |
 | `GET /studios/{id}/payments` | `manage_payouts` | payment list (P1) |
+| `GET /studios/{id}/members` | `manage_members` | paginated team list |
+| `POST /studios/{id}/members` | `manage_members` | add existing user by email (`manager` \| `instructor`; no pending invite) |
+| `PATCH /studios/{id}/members/{member_id}` | `manage_members` | change role; cannot demote last owner |
+| `DELETE /studios/{id}/members/{member_id}` | `manage_members` | remove; cannot remove last owner |
 
 ### Webhooks (backend-internal, listed for awareness)
 
 `POST /webhooks/stripe` — payment confirmation is asynchronous; the success page must poll
-booking/order status instead of assuming instant confirmation.
+booking status (`GET /bookings/{id}`) or order status (`GET /orders/{id}`) instead of
+assuming instant confirmation. Guest order poll uses the create `access_token` until
+webhook clears it; after clear, session owner / email match still works.
 
 ## 7. Known contract gaps (tracked, do not build around silently)
 
@@ -161,3 +170,4 @@ booking/order status instead of assuming instant confirmation.
 | Pagination envelope `{items, total, page, size}` | backend | **done** — all paginated list endpoints |
 | Machine-readable error `code` | backend | backlog (post-MVP) |
 | FR-12 stabilization (failing tests, auth/payment prod blockers) | backend | **done** — see `docs/frontend-readiness/fr-12-stabilization.md` |
+| `GET /orders/{id}` for course success-page poll | backend | **done** — guest Bearer token or session owner; see Account table |

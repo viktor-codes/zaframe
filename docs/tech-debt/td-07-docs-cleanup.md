@@ -4,7 +4,9 @@
 
 ## Problem
 
-1. **Root `README.md`** still uses pre-ADR-002 vocabulary ("slots", "magic-link" vs OTP).
+1. **Root `README.md`** had outdated auth stack wording (`python-jose` / `passlib`) and
+   historically drifted vocabulary ("slots", "magic-link" vs OTP/occurrences).
+   Auth/stack table was corrected in the production-hardening pass (2026-07).
 2. **`backend/docs/ARCHITECTURE_IMPROVEMENTS_PLAN.md`** references deleted `app.services`,
    `app.schemas` layout — misleading for new contributors.
 3. **`docs/refactor/README.md`** status still reads like work-in-progress.
@@ -22,7 +24,7 @@ Docs match the modular-monolith reality. Single source of truth for architecture
 |---------|--------|
 | "What it does" | `slots` → **occurrences**; `ScheduleTemplate` where relevant |
 | Architecture diagram | `Services` → `modules/*` or annotate "domain modules" |
-| Auth | "magic-link" → **email OTP** (accurate to implementation) |
+| Auth | ✅ email OTP + **PyJWT** (not python-jose/passlib) |
 | Engineering practices | Add bullet: modular monolith + `uv run lint-imports` |
 | Link | Add `[Architecture](docs/ARCHITECTURE.md)` and `[ADR-003](docs/adr/003-modular-monolith.md)` |
 

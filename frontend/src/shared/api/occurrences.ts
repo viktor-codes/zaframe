@@ -4,7 +4,6 @@
 
 import { api } from "./client";
 import type {
-  BookingOwnerResponse,
   PaginatedBookingOwnerList,
 } from "@entities/booking";
 import type {
@@ -13,9 +12,16 @@ import type {
   OccurrenceUpdate,
 } from "@entities/occurrence";
 
-export async function fetchOccurrence(id: number): Promise<OccurrenceResponse> {
+const DEFAULT_PAGE = 1;
+const DEFAULT_SIZE = 50;
+
+export async function fetchOccurrence(
+  id: number,
+  options?: { signal?: AbortSignal },
+): Promise<OccurrenceResponse> {
   return api.get<OccurrenceResponse>(`api/v1/occurrences/${id}`, {
     skipAuth: true,
+    signal: options?.signal,
   });
 }
 
@@ -38,19 +44,22 @@ export async function deleteOccurrence(id: number): Promise<void> {
 
 export async function fetchOccurrenceBookings(
   occurrenceId: number,
-  params?: { skip?: number; limit?: number; status?: string },
-): Promise<BookingOwnerResponse[]> {
-  const { skip = 0, limit = 50, status } = params ?? {};
+  params?: { page?: number; size?: number; status?: string },
+): Promise<PaginatedBookingOwnerList> {
+  const {
+    page = DEFAULT_PAGE,
+    size = DEFAULT_SIZE,
+    status,
+  } = params ?? {};
   const searchParams: Record<string, string | number | undefined> = {
-    skip,
-    limit,
+    page,
+    size,
   };
   if (status) searchParams.status = status;
-  const response = await api.get<PaginatedBookingOwnerList>(
+  return api.get<PaginatedBookingOwnerList>(
     `api/v1/occurrences/${occurrenceId}/bookings`,
     {
       params: searchParams,
     },
   );
-  return response.items;
 }

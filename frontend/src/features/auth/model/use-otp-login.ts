@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getUserFacingApiMessage } from "@shared/api";
 import { useAuth } from "@shared/auth";
+import { getSafeNextPath } from "@shared/lib";
 import { requestOtp, verifyOtp } from "../api";
 
 export type OtpStep = "request" | "code";
@@ -49,8 +50,12 @@ export function useOtpLogin(): OtpLoginController {
   const [code, setCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // WHY: isSubmitting updates only after re-render — sync guard blocks double Enter.
+  const isInFlightRef = useRef(false);
 
   const sendCode = useCallback(async () => {
+    if (isInFlightRef.current) return;
+    isInFlightRef.current = true;
     setError(null);
     setIsSubmitting(true);
     try {
@@ -60,6 +65,7 @@ export function useOtpLogin(): OtpLoginController {
     } catch (err) {
       setError(getUserFacingApiMessage(err));
     } finally {
+      isInFlightRef.current = false;
       setIsSubmitting(false);
     }
   }, [email, name]);
@@ -75,23 +81,29 @@ export function useOtpLogin(): OtpLoginController {
   const submitCode = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
+      if (isInFlightRef.current) return;
       if (code.length !== CODE_LENGTH) {
         setError("Enter the 6-digit code from your email.");
         return;
       }
 
+      isInFlightRef.current = true;
       setError(null);
       setIsSubmitting(true);
 
       const bookingId = parseBookingId(searchParams.get("booking_id"));
+      const nextPath = getSafeNextPath(searchParams.get("next")) ?? "/";
 
       verifyOtp({ email, code, ...(bookingId ? { booking_id: bookingId } : {}) })
         .then((res) => {
           login(res.access_token);
-          router.replace("/");
+          router.replace(nextPath);
         })
         .catch((err) => {
           setError(getUserFacingApiMessage(err));
+        })
+        .finally(() => {
+          isInFlightRef.current = false;
           setIsSubmitting(false);
         });
     },

@@ -27,11 +27,13 @@ class BookingListQueriesMixin(BookingGetMixin):
         user_id: int,
         skip: int = 0,
         limit: int = 20,
+        studio_id: int | None = None,
         occurrence_id: int | None = None,
         status: str | None = None,
     ) -> list[Booking]:
         query = (
             select(Booking)
+            .options(selectinload(Booking.occurrence))
             .join(Booking.occurrence)
             .join(Occurrence.studio)
             .outerjoin(
@@ -41,6 +43,8 @@ class BookingListQueriesMixin(BookingGetMixin):
             .where(self._studio_member_clause(user_id=user_id))
             .distinct()
         )
+        if studio_id is not None:
+            query = query.where(Occurrence.studio_id == studio_id)
         if occurrence_id is not None:
             query = query.where(Booking.occurrence_id == occurrence_id)
         if status is not None:
@@ -53,11 +57,13 @@ class BookingListQueriesMixin(BookingGetMixin):
         self,
         *,
         user_id: int,
+        studio_id: int | None = None,
         occurrence_id: int | None = None,
         status: str | None = None,
     ) -> int:
+        # WHY: outerjoin on studio_members can duplicate rows; count distinct booking ids.
         query = (
-            select(func.count())
+            select(func.count(func.distinct(Booking.id)))
             .select_from(Booking)
             .join(Booking.occurrence)
             .join(Occurrence.studio)
@@ -67,12 +73,14 @@ class BookingListQueriesMixin(BookingGetMixin):
             )
             .where(self._studio_member_clause(user_id=user_id))
         )
+        if studio_id is not None:
+            query = query.where(Occurrence.studio_id == studio_id)
         if occurrence_id is not None:
             query = query.where(Booking.occurrence_id == occurrence_id)
         if status is not None:
             query = query.where(Booking.status == status)
         result = await self._session.execute(query)
-        return result.scalar_one()
+        return int(result.scalar_one())
 
     async def list_my_with_occurrence_and_studio(
         self,
@@ -83,15 +91,18 @@ class BookingListQueriesMixin(BookingGetMixin):
         user_email: str,
         include_guest_email: bool = True,
     ) -> list[Booking]:
+        normalized_email = user_email.strip().lower()
+        guest_match = (
+            func.lower(Booking.guest_email) == normalized_email
+            if include_guest_email
+            else False
+        )
         query = (
             select(Booking)
             .options(
                 selectinload(Booking.occurrence).selectinload(Occurrence.studio),
             )
-            .where(
-                (Booking.user_id == user_id)
-                | ((Booking.guest_email == user_email) if include_guest_email else False)
-            )
+            .where((Booking.user_id == user_id) | guest_match)
             .order_by(Booking.created_at.desc())
             .offset(skip)
             .limit(limit)
@@ -106,13 +117,16 @@ class BookingListQueriesMixin(BookingGetMixin):
         user_email: str,
         include_guest_email: bool = True,
     ) -> int:
+        normalized_email = user_email.strip().lower()
+        guest_match = (
+            func.lower(Booking.guest_email) == normalized_email
+            if include_guest_email
+            else False
+        )
         query = (
             select(func.count())
             .select_from(Booking)
-            .where(
-                (Booking.user_id == user_id)
-                | ((Booking.guest_email == user_email) if include_guest_email else False)
-            )
+            .where((Booking.user_id == user_id) | guest_match)
         )
         result = await self._session.execute(query)
         return result.scalar_one()
@@ -134,7 +148,9 @@ class BookingListQueriesMixin(BookingGetMixin):
         if user_id is not None:
             query = query.where(Booking.user_id == user_id)
         if guest_email is not None:
-            query = query.where(Booking.guest_email == guest_email)
+            query = query.where(
+                func.lower(Booking.guest_email) == guest_email.strip().lower()
+            )
         if status is not None:
             query = query.where(Booking.status == status)
         if order_id is not None:
@@ -157,7 +173,9 @@ class BookingListQueriesMixin(BookingGetMixin):
         if user_id is not None:
             query = query.where(Booking.user_id == user_id)
         if guest_email is not None:
-            query = query.where(Booking.guest_email == guest_email)
+            query = query.where(
+                func.lower(Booking.guest_email) == guest_email.strip().lower()
+            )
         if status is not None:
             query = query.where(Booking.status == status)
         result = await self._session.execute(query)

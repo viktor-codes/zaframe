@@ -158,7 +158,7 @@ async def test_otp_verify_attaches_only_specified_booking(client: AsyncClient):
         captured_codes.append(code)
         return True
 
-    with patch("app.modules.auth.service.send_otp_email", side_effect=capture_otp):
+    with patch("app.modules.auth.otp.send_otp_email", side_effect=capture_otp):
         r_request = await client.post(
             "/api/v1/auth/otp/request",
             json={"email": guest_email, "name": "Guest"},

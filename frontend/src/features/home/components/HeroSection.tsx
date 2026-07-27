@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { SectionHeading } from "@shared/ui";
+import { AnimatedSectionHeading } from "@shared/ui/animated-section-heading";
 import FloatingCards from "./FloatingCards";
 import Link from "next/link";
 
@@ -24,7 +24,7 @@ export const HeroSection = () => {
                 Book it like a moment
               </span>
             </div>
-            <SectionHeading
+            <AnimatedSectionHeading
               size="hero"
               as="h1"
               className="mb-6 text-center text-zinc-900 xl:text-left"
@@ -41,7 +41,7 @@ export const HeroSection = () => {
               <span className="bg-linear-to-r from-sky-500 via-teal-500 to-lime-400 bg-clip-text text-transparent">
                 yoga, dance & movement
               </span>
-            </SectionHeading>
+            </AnimatedSectionHeading>
 
             <p className="mb-10 max-w-2xl text-center text-lg leading-relaxed text-zinc-600 md:text-xl xl:mx-0 xl:text-left">
               Discover and book classes at verified studios.{" "}

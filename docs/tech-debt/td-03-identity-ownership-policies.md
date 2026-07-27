@@ -1,5 +1,8 @@
 # TD-03 — Unify guest/user ownership policies (P1)
 
+> **Status: Done.** Canonical rule in `identity/policies.is_owned_by_user`;
+> thin wrappers in `booking/policies.is_own_booking` and `payment/access.is_own_order`.
+
 > Read [README.md](./README.md).
 
 ## Problem

@@ -150,6 +150,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/studios/slug/{slug}/services/{service_id}/occurrences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Public Service Occurrences
+         * @description Public bookable occurrence list for a storefront service.
+         *
+         *     Includes confirmed/pending seat counts so the booking wizard can disable full slots.
+         */
+        get: operations["list_public_service_occurrences_api_v1_studios_slug__slug__services__service_id__occurrences_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/studios": {
         parameters: {
             query?: never;
@@ -245,6 +267,57 @@ export interface paths {
          * @description Update a studio when the user has manage_studio permission.
          */
         patch: operations["update_studio_endpoint_api_v1_studios__studio_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/studios/{studio_id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List studio members
+         * @description List members when the caller has manage_members (owner-only in the matrix).
+         */
+        get: operations["list_studio_members_endpoint_api_v1_studios__studio_id__members_get"];
+        put?: never;
+        /**
+         * Add studio member
+         * @description Add an existing user by email as manager or instructor.
+         *
+         *     Owner role is only created with the studio. Unknown emails return 404
+         *     (no pending-invite infrastructure in MVP).
+         */
+        post: operations["add_studio_member_endpoint_api_v1_studios__studio_id__members_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/studios/{studio_id}/members/{member_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove studio member
+         * @description Remove a member; cannot remove the last owner.
+         */
+        delete: operations["remove_studio_member_endpoint_api_v1_studios__studio_id__members__member_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update studio member role
+         * @description Change a member to manager or instructor; cannot demote the last owner.
+         */
+        patch: operations["update_studio_member_endpoint_api_v1_studios__studio_id__members__member_id__patch"];
         trace?: never;
     };
     "/api/v1/studios/{studio_id}/occurrences": {
@@ -495,7 +568,7 @@ export interface paths {
         };
         /**
          * List Bookings
-         * @description List bookings for studios owned by the current user.
+         * @description List bookings for studios where the user is a member, with nested occurrence.
          */
         get: operations["list_bookings_api_v1_bookings_get"];
         put?: never;
@@ -506,6 +579,12 @@ export interface paths {
          *     Variants:
          *     - single occurrence booking (BookingCreate)
          *     - course purchase (CourseBookingCreate), creating one Order and N bookings
+         *
+         *     Auth is optional: with a valid Bearer token, ``user_id`` is set immediately;
+         *     without a token the booking stays guest-owned until OTP attach.
+         *
+         *     When ``Idempotency-Key`` is present, repeated creates with the same key and
+         *     payload reuse the original booking/order instead of consuming another seat.
          */
         post: operations["create_booking_endpoint_api_v1_bookings_post"];
         delete?: never;
@@ -571,7 +650,7 @@ export interface paths {
         head?: never;
         /**
          * Cancel Booking Endpoint
-         * @description Cancel a booking when owned by the user or allowed by studio permission.
+         * @description Cancel own booking, or a studio booking when the user has manage_bookings.
          */
         patch: operations["cancel_booking_endpoint_api_v1_bookings__booking_id__cancel_patch"];
         trace?: never;
@@ -668,6 +747,29 @@ export interface paths {
          * @description List orders for studios owned by the current user.
          */
         get: operations["list_owner_orders_endpoint_api_v1_orders_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orders/{order_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Order By Id
+         * @description Read a single order for success-page status poll.
+         *
+         *     Auth: session JWT owner (user_id or guest_email match) **or**
+         *     opaque guest ``access_token`` from course create, sent as ``Authorization: Bearer``.
+         */
+        get: operations["get_order_by_id_api_v1_orders__order_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -935,6 +1037,26 @@ export interface paths {
         patch: operations["update_current_user_me_api_v1_auth_me_patch"];
         trace?: never;
     };
+    "/api/v1/me/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Current User Account
+         * @description Return a GDPR data export for the authenticated user (DSAR).
+         */
+        get: operations["export_current_user_account_api_v1_me_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/delete-account": {
         parameters: {
             query?: never;
@@ -990,6 +1112,8 @@ export interface paths {
          *
          *     Verifies the signature, parses checkout.session.completed events, and delegates
          *     payment confirmation to the webhook processor.
+         *
+         *     Returns 503 when processing is incomplete so Stripe retries until durable success.
          */
         post: operations["stripe_webhook_webhooks_stripe_post"];
         delete?: never;
@@ -1021,9 +1145,11 @@ export interface components {
         };
         /**
          * BookingCreate
-         * @description Guest booking create payload.
+         * @description Booking create payload (guest or authenticated).
          *
-         *     Used before OTP verify; user_id is attached after verification.
+         *     Guest checkout: no Bearer → ``user_id`` stays null until OTP attach.
+         *     Authenticated: Bearer present → ``user_id`` set on create; guest_* still
+         *     required for contact / receipt (wizard prefills from the profile).
          */
         BookingCreate: {
             /**
@@ -1132,6 +1258,40 @@ export interface components {
              * @description True when booking was created without a linked user account.
              */
             readonly is_guest_booking: boolean;
+        };
+        /**
+         * BookingExportItem
+         * @description Booking row included in a DSAR export (no Stripe secrets).
+         */
+        BookingExportItem: {
+            /** Id */
+            id: number;
+            /** Occurrence Id */
+            occurrence_id: number;
+            /** User Id */
+            user_id?: number | null;
+            /** Status */
+            status: string;
+            /** Guest Name */
+            guest_name?: string | null;
+            /** Guest Email */
+            guest_email?: string | null;
+            /** Guest Phone */
+            guest_phone?: string | null;
+            /** Payment Status */
+            payment_status?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Cancelled At */
+            cancelled_at?: string | null;
         };
         /**
          * BookingOwnerResponse
@@ -1340,6 +1500,79 @@ export interface components {
              * @description Phone on the booking
              */
             guest_phone?: string | null;
+            /**
+             * Is Guest Booking
+             * @description True when booking was created without a linked user account.
+             */
+            readonly is_guest_booking: boolean;
+        };
+        /**
+         * BookingWithOccurrence
+         * @description Owner list item for GET /bookings.
+         *
+         *     Nested occurrence avoids N+1 on the studio dashboard bookings screen.
+         */
+        BookingWithOccurrence: {
+            /**
+             * Occurrence Id
+             * @description Occurrence ID to book
+             */
+            occurrence_id: number;
+            /** Id */
+            id: number;
+            /** User Id */
+            user_id: number | null;
+            /** Status */
+            status: string;
+            /**
+             * Reserved Until
+             * @description UTC timestamp until which a pending booking reserves occurrence capacity
+             */
+            reserved_until?: string | null;
+            /**
+             * Payment Status
+             * @description Payment status (no internal Stripe IDs)
+             */
+            payment_status?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Cancelled At */
+            cancelled_at: string | null;
+            /**
+             * Checked In At
+             * @description UTC timestamp when studio staff checked the attendee in
+             */
+            checked_in_at?: string | null;
+            /**
+             * No Show At
+             * @description UTC timestamp when studio staff marked the attendee as no-show
+             */
+            no_show_at?: string | null;
+            /**
+             * Guest Name
+             * @description Guest name
+             */
+            guest_name?: string | null;
+            /**
+             * Guest Email
+             * @description Guest email for contact
+             */
+            guest_email?: string | null;
+            /**
+             * Guest Phone
+             * @description Guest phone for contact
+             */
+            guest_phone?: string | null;
+            /** @description Occurrence details */
+            occurrence: components["schemas"]["OccurrenceResponse"];
             /**
              * Is Guest Booking
              * @description True when booking was created without a linked user account.
@@ -1803,6 +2036,16 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /**
+             * Confirmed Count
+             * @description Confirmed seats when capacity is included (public bookable lists and studio schedule)
+             */
+            confirmed_count?: number | null;
+            /**
+             * Pending Count
+             * @description Active pending holds when capacity is included (public bookable lists and studio schedule)
+             */
+            pending_count?: number | null;
         };
         /**
          * OccurrenceUpdate
@@ -1839,7 +2082,7 @@ export interface components {
         };
         /**
          * OrderBookingSummary
-         * @description Booking summary nested in order list responses.
+         * @description Booking summary nested in order list / detail responses.
          */
         OrderBookingSummary: {
             /** Id */
@@ -1856,6 +2099,11 @@ export interface components {
              * @description Payment status when available
              */
             payment_status?: string | null;
+            /**
+             * Reserved Until
+             * @description Hold expiry for pending bookings (null after confirm/expire)
+             */
+            reserved_until?: string | null;
         };
         /**
          * OrderCheckoutSessionCreate
@@ -1886,6 +2134,42 @@ export interface components {
              * @description Guest checkout token from course order create response
              */
             access_token?: string | null;
+        };
+        /**
+         * OrderExportItem
+         * @description Order row included in a DSAR export.
+         */
+        OrderExportItem: {
+            /** Id */
+            id: number;
+            /** Studio Id */
+            studio_id: number;
+            /** Service Id */
+            service_id?: number | null;
+            /** User Id */
+            user_id?: number | null;
+            /** Guest Email */
+            guest_email?: string | null;
+            /** Guest Name */
+            guest_name?: string | null;
+            /** Guest Phone */
+            guest_phone?: string | null;
+            /** Status */
+            status: string;
+            /** Total Amount Cents */
+            total_amount_cents: number;
+            /** Currency */
+            currency: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
         };
         /**
          * OrderListItem
@@ -2032,6 +2316,26 @@ export interface components {
              */
             size: number;
         };
+        /** PaginatedResponse[BookingWithOccurrence] */
+        PaginatedResponse_BookingWithOccurrence_: {
+            /** Items */
+            items: components["schemas"]["BookingWithOccurrence"][];
+            /**
+             * Total
+             * @description Total matching records across all pages
+             */
+            total: number;
+            /**
+             * Page
+             * @description Current page number (1-based)
+             */
+            page: number;
+            /**
+             * Size
+             * @description Number of records per page
+             */
+            size: number;
+        };
         /** PaginatedResponse[OccurrenceResponse] */
         PaginatedResponse_OccurrenceResponse_: {
             /** Items */
@@ -2152,6 +2456,26 @@ export interface components {
              */
             size: number;
         };
+        /** PaginatedResponse[StudioMemberResponse] */
+        PaginatedResponse_StudioMemberResponse_: {
+            /** Items */
+            items: components["schemas"]["StudioMemberResponse"][];
+            /**
+             * Total
+             * @description Total matching records across all pages
+             */
+            total: number;
+            /**
+             * Page
+             * @description Current page number (1-based)
+             */
+            page: number;
+            /**
+             * Size
+             * @description Number of records per page
+             */
+            size: number;
+        };
         /** PaginatedResponse[StudioResponse] */
         PaginatedResponse_StudioResponse_: {
             /** Items */
@@ -2191,6 +2515,42 @@ export interface components {
              * @description Number of records per page
              */
             size: number;
+        };
+        /**
+         * PaymentExportItem
+         * @description Payment ledger row for DSAR (Stripe ids are user-facing refs, not secrets).
+         */
+        PaymentExportItem: {
+            /** Id */
+            id: number;
+            /** Booking Id */
+            booking_id?: number | null;
+            /** Order Id */
+            order_id?: number | null;
+            /** Amount Cents */
+            amount_cents: number;
+            /** Currency */
+            currency: string;
+            /** Status */
+            status: string;
+            /** Provider */
+            provider: string;
+            /** Stripe Checkout Session Id */
+            stripe_checkout_session_id: string;
+            /** Paid At */
+            paid_at?: string | null;
+            /** Refunded Amount Cents */
+            refunded_amount_cents: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
         };
         /**
          * PaymentListItem
@@ -3088,6 +3448,86 @@ export interface components {
             timezone: string;
         };
         /**
+         * StudioMemberCreate
+         * @description Add an existing user to a studio by email (no pending-invite flow in MVP).
+         */
+        StudioMemberCreate: {
+            /**
+             * Email
+             * Format: email
+             * @description Email of an existing ZeeFrame user
+             * @example instructor@example.com
+             */
+            email: string;
+            /**
+             * Role
+             * @description Assignable role; owner is created only with the studio
+             * @example instructor
+             * @enum {string}
+             */
+            role: "manager" | "instructor";
+        };
+        /**
+         * StudioMemberResponse
+         * @description Studio membership with nested user summary for the team UI.
+         */
+        StudioMemberResponse: {
+            /**
+             * Id
+             * @description Studio member ID
+             */
+            id: number;
+            /**
+             * Studio Id
+             * @description Studio ID
+             */
+            studio_id: number;
+            /**
+             * User Id
+             * @description User ID
+             */
+            user_id: number;
+            /**
+             * Role
+             * @description Membership role: owner | manager | instructor
+             */
+            role: string;
+            /**
+             * Email
+             * Format: email
+             * @description Member email
+             */
+            email: string;
+            /**
+             * Name
+             * @description Member display name
+             */
+            name?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * StudioMemberUpdate
+         * @description Change a member's role (owner demotion blocked when they are the last owner).
+         */
+        StudioMemberUpdate: {
+            /**
+             * Role
+             * @description New role; owner cannot be assigned via this endpoint
+             * @example manager
+             * @enum {string}
+             */
+            role: "manager" | "instructor";
+        };
+        /**
          * StudioPublicResponse
          * @description Public studio page: profile + service catalog.
          */
@@ -3375,6 +3815,76 @@ export interface components {
             token_type: string;
         };
         /**
+         * UserDataExportResponse
+         * @description GDPR data export envelope for the authenticated user.
+         */
+        UserDataExportResponse: {
+            /** @description Account profile snapshot */
+            user: components["schemas"]["UserExportItem"];
+            /**
+             * Bookings
+             * @description Bookings linked by user_id or guest email
+             */
+            bookings?: components["schemas"]["BookingExportItem"][];
+            /**
+             * Orders
+             * @description Course orders linked by user_id or guest email
+             */
+            orders?: components["schemas"]["OrderExportItem"][];
+            /**
+             * Payments
+             * @description Payment ledger rows for those bookings/orders
+             */
+            payments?: components["schemas"]["PaymentExportItem"][];
+        };
+        /**
+         * UserExportItem
+         * @description User snapshot for GDPR data export (DSAR).
+         */
+        UserExportItem: {
+            /**
+             * Id
+             * @description User id
+             */
+            id: number;
+            /**
+             * Email
+             * Format: email
+             * @description Account email
+             */
+            email: string;
+            /**
+             * Name
+             * @description Display name
+             */
+            name?: string | null;
+            /**
+             * Phone
+             * @description Phone if set
+             */
+            phone?: string | null;
+            /**
+             * Marketing Consent
+             * @description Marketing preference
+             */
+            marketing_consent: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /**
+             * Deleted At
+             * @description Soft-delete timestamp; null while account is active
+             */
+            deleted_at?: string | null;
+        };
+        /**
          * UserResponse
          * @description API response schema including id and timestamps.
          */
@@ -3593,6 +4103,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StudioPublicResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_public_service_occurrences_api_v1_studios_slug__slug__services__service_id__occurrences_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+                service_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OccurrenceResponse"][];
                 };
             };
             /** @description Validation Error */
@@ -3827,6 +4369,143 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StudioResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_studio_members_endpoint_api_v1_studios__studio_id__members_get: {
+        parameters: {
+            query?: {
+                /** @description Page number (1-based) */
+                page?: number;
+                /** @description Records per page */
+                size?: number;
+            };
+            header?: never;
+            path: {
+                studio_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedResponse_StudioMemberResponse_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_studio_member_endpoint_api_v1_studios__studio_id__members_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                studio_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StudioMemberCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudioMemberResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_studio_member_endpoint_api_v1_studios__studio_id__members__member_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                studio_id: number;
+                member_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_studio_member_endpoint_api_v1_studios__studio_id__members__member_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                studio_id: number;
+                member_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StudioMemberUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudioMemberResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4432,6 +5111,8 @@ export interface operations {
                 page?: number;
                 /** @description Records per page */
                 size?: number;
+                /** @description Filter by studio (recommended for dashboard); requires view_bookings */
+                studio_id?: number | null;
                 /** @description Filter by occurrence */
                 occurrence_id?: number | null;
                 /** @description Filter by status */
@@ -4449,7 +5130,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PaginatedResponse_BookingOwnerResponse_"];
+                    "application/json": components["schemas"]["PaginatedResponse_BookingWithOccurrence_"];
                 };
             };
             /** @description Validation Error */
@@ -4466,7 +5147,10 @@ export interface operations {
     create_booking_endpoint_api_v1_bookings_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional client key; retries with the same key return the original hold */
+                "Idempotency-Key"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -4764,12 +5448,43 @@ export interface operations {
             };
         };
     };
+    get_order_by_id_api_v1_orders__order_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderListItem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_checkout_session_endpoint_api_v1_payments_checkout_session_post: {
         parameters: {
             query?: never;
-            header?: {
-                /** @description Client-generated key for safe checkout retries */
-                "Idempotency-Key"?: string | null;
+            header: {
+                /** @description Required client-generated key for safe checkout retries */
+                "Idempotency-Key": string;
             };
             path?: never;
             cookie?: never;
@@ -4803,9 +5518,9 @@ export interface operations {
     create_order_checkout_session_endpoint_api_v1_payments_order_checkout_session_post: {
         parameters: {
             query?: never;
-            header?: {
-                /** @description Client-generated key for safe checkout retries */
-                "Idempotency-Key"?: string | null;
+            header: {
+                /** @description Required client-generated key for safe checkout retries */
+                "Idempotency-Key": string;
             };
             path?: never;
             cookie?: never;
@@ -5209,6 +5924,26 @@ export interface operations {
             };
         };
     };
+    export_current_user_account_api_v1_me_export_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserDataExportResponse"];
+                };
+            };
+        };
+    };
     delete_current_user_account_api_v1_me_delete_account_post: {
         parameters: {
             query?: never;
@@ -5244,6 +5979,8 @@ export interface operations {
                 radius_km?: number | null;
                 /** @description Amenities; can be repeated */
                 amenities?: string[] | null;
+                /** @description Max studios to return */
+                limit?: number;
             };
             header?: never;
             path?: never;

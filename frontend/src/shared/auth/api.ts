@@ -19,6 +19,8 @@ export async function refreshAccessToken(): Promise<TokenResponse> {
   const csrf = getCookieValue("csrf_token");
   return api.post<TokenResponse>("/api/v1/auth/refresh", undefined, {
     skipAuth: true,
+    // WHY: refresh must not re-enter the client's 401→refresh loop.
+    skipRefresh: true,
     headers: csrf ? { "X-CSRF-Token": csrf } : undefined,
   });
 }

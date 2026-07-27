@@ -69,16 +69,21 @@ Playwright test tagged `@slow` / `test.describe.configure({ mode: 'serial' })`.
 Document in test file which mode is used. **Default deliverable: Option A** unless user
 explicitly wants Option B.
 
+**Status (2026-07-27):** Option A implemented in `frontend/e2e/flows/guest-checkout.spec.ts`
+(+ POM pages). Run locally with `make e2e-critical`. Not on default Frontend CI.
+
 ## Frontend requirements
 
 Add `data-testid` to critical elements (minimal set):
 
 | Element | testid |
 |---------|--------|
-| Book button | `book-occurrence-button` |
+| Continue after slot select | `book-occurrence-button` |
+| Guest name input | `guest-name-input` |
 | Guest email input | `guest-email-input` |
-| Submit booking | `submit-booking-button` |
-| Pay button | `pay-booking-button` |
+| Submit / Pay on summary | `submit-booking-button` |
+| Pay on confirm page | `pay-booking-button` |
+| Service card on storefront | `service-polaroid-card` + `data-service-id` |
 
 Search existing components before adding — avoid duplicates.
 

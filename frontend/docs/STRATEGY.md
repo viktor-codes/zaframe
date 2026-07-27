@@ -86,7 +86,8 @@ Sign in → Create studio → Profile/slug → Stripe Connect
 
 10. Search/filters on `/studios`.
 11. Week-view calendar in the dashboard.
-12. GDPR: export / delete account.
+
+**Done (Wave 1):** GDPR export / delete account (`GET /me/export`, delete UI, privacy/cookies).
 
 ## 6. URL tree (agreed)
 
@@ -97,7 +98,7 @@ Sign in → Create studio → Profile/slug → Stripe Connect
 /s/{slug}                       → studio storefront (public API)
 /s/{slug}/book/{serviceId}      → booking wizard (single or course)
 /bookings/success               → post-payment confirmation
-/bookings/{id}/confirm          → guest booking view (via access_token)
+/bookings/{id}/confirm          → guest booking view (#access_token= preferred)
 
 # Auth
 /auth/login                     → OTP request

@@ -27,6 +27,7 @@ __all__ = [
     "OrderResponse",
     "create_course_booking",
     "get_my_orders",
+    "get_order_for_access_or_raise",
     "get_owner_orders",
 ]
 
@@ -34,17 +35,24 @@ if TYPE_CHECKING:
     from app.modules.booking.order.service import (
         create_course_booking,
         get_my_orders,
+        get_order_for_access_or_raise,
         get_owner_orders,
     )
 
 
 def __getattr__(name: str):
-    if name in ("create_course_booking", "get_my_orders", "get_owner_orders"):
+    if name in (
+        "create_course_booking",
+        "get_my_orders",
+        "get_order_for_access_or_raise",
+        "get_owner_orders",
+    ):
         from app.modules.booking.order import service
 
         return {
             "create_course_booking": service.create_course_booking,
             "get_my_orders": service.get_my_orders,
+            "get_order_for_access_or_raise": service.get_order_for_access_or_raise,
             "get_owner_orders": service.get_owner_orders,
         }[name]
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

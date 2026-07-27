@@ -7,7 +7,7 @@ Each `td-NN-*.md` is one self-contained step for a coding agent.
 ```bash
 cd backend && uv run ruff check . && uv run lint-imports && uv run pytest -q
 ```
-Currently: **172 tests**, **7 import-linter contracts KEPT**.
+Also in CI / `make lint`: `uv run pyright app scripts`.
 
 ---
 
@@ -29,37 +29,53 @@ Currently: **172 tests**, **7 import-linter contracts KEPT**.
 
 | Priority | Step | Topic | Effort |
 |----------|------|-------|--------|
-| 🔴 P1 | [td-01](./td-01-catalog-capacity-dry.md) | DRY overbooking logic → `catalog/capacity.py` | ~3h |
-| 🔴 P1 | [td-02](./td-02-split-large-services.md) | Split `payment`, `booking`, `catalog/service` services | ~4h |
-| 🔴 P1 | [td-03](./td-03-identity-ownership-policies.md) | Unify `is_own_booking` / `is_own_order` | ~2h |
-| 🟡 P2 | [td-04](./td-04-split-studio-router.md) | Decompose `studio/router.py` god-router | ~3h |
+| ✅ Done | [td-01](./td-01-catalog-capacity-dry.md) | DRY overbooking logic → `catalog/capacity.py` | done |
+| 🟡 P2 | [td-02](./td-02-split-large-services.md) | Split oversized services — leftover: checkout done; booking attendance/router done | partial |
+| ✅ Done | [td-03](./td-03-identity-ownership-policies.md) | Unify `is_own_booking` / `is_own_order` | done |
+| ✅ Done | [td-04](./td-04-split-studio-router.md) | Studio god-router split across list/CRUD/public/schedule/occurrence/services | done |
 | 🟡 P2 | [td-05](./td-05-booking-persistence-internal.md) | `booking/persistence.py` for intra-domain helpers | ~1.5h |
 | 🟡 P2 | [td-06](./td-06-occurrence-bookings-count.md) | Relocate `get_bookings_count` from occurrence | ~1h |
 | 🟢 P3 | [td-07](./td-07-docs-cleanup.md) | README vocabulary + retire stale plan doc | ~1h |
 | 🟢 P3 | [td-08](./td-08-merge-prep.md) | PR checklist + optional history fix | ~30m |
-| 🟢 P3 | [td-09](./td-09-pyright-ci.md) | Pyright strict in dev + CI/Makefile | ~4h |
-| 🟢 P3 | [td-10](./td-10-e2e-book-pay-flow.md) | Playwright: guest book → pay → confirm | ~1d |
-| 🟢 P3 | [td-11](./td-11-booking-lifecycle-cron.md) | Production cron for booking lifecycle | ~2h |
+| ✅ Done | [td-09](./td-09-pyright-ci.md) | Pyright strict in `make lint` + Backend CI | done |
+| ✅ Done | [td-10](./td-10-e2e-book-pay-flow.md) | Playwright guest book → Checkout (Option A) | done |
+| ✅ Done | [td-11](./td-11-booking-lifecycle-cron.md) | Production cron for booking lifecycle | done |
+
+### Done notes
+
+- **td-01:** Shared pure helpers in `catalog/capacity.py` (+ `capacity_types.py`);
+  callers in `catalog/service` and `catalog/public`. Unit tests in
+  `tests/unit/catalog/test_catalog_capacity.py`.
+- **td-02 (partial):** payment checkout + booking attendance/router splits landed in
+  Wave 3; `payment/repository.py` still oversized (deferred).
+- **td-03:** `identity.policies.is_owned_by_user`; booking/payment thin wrappers;
+  import-linter allows `payment → identity`. Unit tests in
+  `tests/unit/identity/test_identity_policies.py`.
+- **td-04:** Catalog HTTP split — `studio/list_router`, nested services,
+  occurrence list/CRUD/`studio_occurrence_router`, service schedule-templates.
+- **td-09:** `uv run pyright app scripts` in `Makefile` lint and `.github/workflows/backend-ci.yml`.
+- **td-10:** Option A in `frontend/e2e/flows/guest-checkout.spec.ts` + POM; run `make e2e-critical`.
+  Not on default Frontend CI. Option B (Stripe CLI full confirm) remains optional/local.
+- **td-11:** Render cron `zeeframe-booking-lifecycle` + Procfile worker fallback.
 
 ## Suggested execution order
 
 ```
-P1 (any order, but td-01 before td-02 catalog split):
-  td-01 → td-03 → td-02
+P1 — done (td-01, td-03)
+Wave 3 hygiene — done (td-02 leftover A→E except payment/repository; td-04 done)
 
-P2 (after P1):
-  td-05 → td-06 → td-04   # td-05 before td-02 if booking split not done yet
+P2 (next):
+  td-05 → td-06 → optional payment/repository split
 
-P3 (parallel / anytime):
-  td-07, td-09, td-11 independent
-  td-10 needs running stack + Stripe test mode
-  td-08 last — before merge to main
+P3 (remaining / anytime):
+  td-07, td-08
+  td-01, td-03, td-04, td-09, td-10, td-11 — done
 ```
 
 ## Growth items (not in this pack — future ADR)
 
 - Redis cache for `get_studio_public` (Phase B, ~10k MAU)
-- `StudioMember` RBAC module
 - Read replica for `search` module
+- Platform `application_fee` / take-rate writer (FR-04 deferred piece)
 
 See architecture review discussion for rationale.

@@ -64,10 +64,10 @@ async def test_security_headers_hsts_only_in_production(monkeypatch):
         base_url="http://test",
     ) as ac:
         monkeypatch.setattr(settings, "ENVIRONMENT", "dev")
-        dev_response = await ac.get("/metrics")
+        dev_response = await ac.get("/health")
 
         monkeypatch.setattr(settings, "ENVIRONMENT", "production")
-        prod_response = await ac.get("/metrics")
+        prod_response = await ac.get("/health")
 
     assert "strict-transport-security" not in dev_response.headers
     assert (
@@ -77,9 +77,9 @@ async def test_security_headers_hsts_only_in_production(monkeypatch):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_docs_open_without_api_csp(monkeypatch):
-    """Swagger UI keeps working because API CSP is skipped for docs paths."""
-    monkeypatch.setattr(settings, "ENVIRONMENT", "production")
+async def test_docs_open_in_dev_without_api_csp(monkeypatch):
+    """Swagger UI works in dev; API CSP is skipped for docs paths."""
+    monkeypatch.setattr(settings, "ENVIRONMENT", "dev")
     async with AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://test",
@@ -93,8 +93,8 @@ async def test_docs_open_without_api_csp(monkeypatch):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_metrics_returns_200():
-    """Prometheus metrics endpoint is available without auth."""
+async def test_metrics_returns_200_in_dev():
+    """Prometheus metrics endpoint is open in development."""
     async with AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://test",
@@ -107,9 +107,43 @@ async def test_metrics_returns_200():
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+async def test_metrics_requires_bearer_token_outside_dev(monkeypatch):
+    """Staging/production require a configured bearer token for /metrics."""
+    monkeypatch.setattr(settings, "ENVIRONMENT", "production")
+    monkeypatch.setattr(settings, "METRICS_TOKEN", "ci-metrics-token")
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as ac:
+        missing = await ac.get("/metrics")
+        wrong = await ac.get("/metrics", headers={"Authorization": "Bearer wrong"})
+        ok = await ac.get("/metrics", headers={"Authorization": "Bearer ci-metrics-token"})
+
+    assert missing.status_code == 401
+    assert wrong.status_code == 401
+    assert ok.status_code == 200
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_metrics_unavailable_when_token_unset_outside_dev(monkeypatch):
+    """Misconfigured production metrics fail closed with 503."""
+    monkeypatch.setattr(settings, "ENVIRONMENT", "production")
+    monkeypatch.setattr(settings, "METRICS_TOKEN", None)
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as ac:
+        response = await ac.get("/metrics")
+
+    assert response.status_code == 503
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_otp_request_returns_200(client):
     """POST /auth/otp/request returns 200."""
-    with patch("app.modules.auth.service.send_otp_email", new_callable=AsyncMock):
+    with patch("app.modules.auth.otp.send_otp_email", new_callable=AsyncMock):
         r = await client.post(
             "/api/v1/auth/otp/request",
             json={"email": "test-auth@example.com", "name": "Test User"},
@@ -123,7 +157,7 @@ async def test_otp_request_returns_200(client):
 @pytest.mark.asyncio
 async def test_otp_request_delivery_failure_returns_503(client):
     """POST /auth/otp/request fails honestly when email delivery is unavailable."""
-    with patch("app.modules.auth.service.send_otp_email", AsyncMock(return_value=False)):
+    with patch("app.modules.auth.otp.send_otp_email", AsyncMock(return_value=False)):
         response = await client.post(
             "/api/v1/auth/otp/request",
             json={"email": "delivery-failed@example.com", "name": "Delivery Failed"},
@@ -139,7 +173,7 @@ async def test_otp_request_delivery_failure_returns_503(client):
 @pytest.mark.asyncio
 async def test_otp_verify_invalid_code_returns_400(client):
     """POST /auth/otp/verify with invalid code returns 400."""
-    with patch("app.modules.auth.service.send_otp_email", new_callable=AsyncMock):
+    with patch("app.modules.auth.otp.send_otp_email", new_callable=AsyncMock):
         await client.post(
             "/api/v1/auth/otp/request",
             json={"email": "invalid-otp@example.com", "name": "Test User"},
@@ -330,6 +364,75 @@ async def test_patch_auth_me_updates_marketing_consent(client):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+async def test_export_account_returns_user_bookings_orders_payments(
+    client, app_with_rollback_uow
+):
+    """GET /me/export returns DSAR envelope for the authenticated user."""
+    suffix = uuid4().hex[:8]
+    email = f"export-account-{suffix}@example.com"
+    auth_data = await authenticate_via_otp(client, email=email, name="Export User")
+    access_token = auth_data["access_token"]
+    user_id = auth_data["user"]["id"]
+
+    session = app_with_rollback_uow.state._integration_session
+    uow = create_uow(session)
+    studio = await uow.studios.add(
+        Studio(
+            owner_id=user_id,
+            name=f"Export Studio {suffix}",
+            slug=f"export-studio-{suffix}",
+            email=f"export-studio-{suffix}@example.com",
+            timezone="Europe/Dublin",
+        )
+    )
+    service = await uow.services.add(
+        Service(
+            studio_id=studio.id,
+            name="Export Service",
+            duration_minutes=60,
+            max_capacity=10,
+            price_single_cents=1500,
+        )
+    )
+    occurrence = await uow.occurrences.add(
+        Occurrence(
+            studio_id=studio.id,
+            service_id=service.id,
+            start_time=datetime.now(UTC) + timedelta(days=1),
+            end_time=datetime.now(UTC) + timedelta(days=1, hours=1),
+            title="Export Session",
+            max_capacity=10,
+            price_cents=1500,
+        )
+    )
+    booking = await uow.bookings.add(
+        Booking(
+            occurrence_id=occurrence.id,
+            user_id=user_id,
+            guest_name="Export User",
+            guest_email=email,
+            status=BookingStatus.CONFIRMED,
+        )
+    )
+    booking_id = booking.id
+
+    response = await client.get(
+        "/api/v1/me/export",
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["user"]["id"] == user_id
+    assert data["user"]["email"] == email
+    assert data["user"]["name"] == "Export User"
+    assert "marketing_consent" in data["user"]
+    assert any(item["id"] == booking_id for item in data["bookings"])
+    assert isinstance(data["orders"], list)
+    assert isinstance(data["payments"], list)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_delete_account_soft_deletes_user_and_revokes_sessions(client, app_with_rollback_uow):
     """
     Deleting an account hides the user from normal auth lookups and preserves history rows.
@@ -392,7 +495,7 @@ async def test_delete_account_soft_deletes_user_and_revokes_sessions(client, app
         pre_delete_codes.append(code)
         return True
 
-    with patch("app.modules.auth.service.send_otp_email", side_effect=capture_pre_delete_otp):
+    with patch("app.modules.auth.otp.send_otp_email", side_effect=capture_pre_delete_otp):
         pre_delete_otp_response = await client.post(
             "/api/v1/auth/otp/request",
             json={"email": email, "name": "Deleted User"},
@@ -451,7 +554,7 @@ async def test_delete_account_soft_deletes_user_and_revokes_sessions(client, app
         captured_codes.append(code)
         return True
 
-    with patch("app.modules.auth.service.send_otp_email", side_effect=capture_otp):
+    with patch("app.modules.auth.otp.send_otp_email", side_effect=capture_otp):
         otp_response = await client.post(
             "/api/v1/auth/otp/request",
             json={"email": email, "name": "Deleted User"},

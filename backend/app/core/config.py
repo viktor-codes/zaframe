@@ -111,15 +111,21 @@ class Settings(BaseSettings):
     @computed_field
     @property
     def cookie_secure(self) -> bool:
-        """Send auth cookies only over HTTPS in production."""
-        return self.is_production
+        """Send auth cookies only over HTTPS outside local dev."""
+        # WHY: staging/production are HTTPS; Secure=false there can leave cookies uncleared.
+        return self.ENVIRONMENT != "dev"
 
     @computed_field
     @property
     def cookie_samesite(self) -> Literal["lax", "strict", "none"]:
-        """SameSite policy for browser auth cookies."""
-        if self.is_production:
-            return "none"
+        """
+        SameSite policy for browser auth cookies.
+
+        WHY: the browser talks to the Next.js origin; Next rewrites /api to FastAPI.
+        Cookies are stored on the web origin (same-site), so Lax is correct.
+        SameSite=None was for split-host SPA→API and broke CSRF double-submit
+        (JS cannot read a csrf cookie set on another host).
+        """
         return "lax"
 
     @computed_field
@@ -163,7 +169,36 @@ class Settings(BaseSettings):
         default=None,
         description=(
             "Redis connection URL for distributed rate limiting (e.g. redis://localhost:6379/0). "
-            "When unset, slowapi uses in-memory storage (single-instance dev only)."
+            "Required in production unless ALLOW_INMEMORY_RATE_LIMIT=true (single-instance only)."
+        ),
+    )
+    ALLOW_INMEMORY_RATE_LIMIT: bool = Field(
+        default=False,
+        description=(
+            "Emergency escape hatch: allow in-memory SlowAPI storage in production. "
+            "Unsafe with more than one API instance — prefer REDIS_URL."
+        ),
+    )
+    TRUSTED_PROXY_IPS: str = Field(
+        default="",
+        description=(
+            "Comma-separated proxy IPs/CIDRs allowed to supply X-Forwarded-For "
+            "for rate-limit keys (e.g. 10.0.0.0/8,127.0.0.1). Empty = never trust XFF."
+        ),
+    )
+
+    # === Observability ===
+    METRICS_TOKEN: str | None = Field(
+        default=None,
+        description=(
+            "Bearer token required for GET /metrics in staging/production. "
+            "When unset outside dev, /metrics returns 503."
+        ),
+    )
+    SENTRY_DSN: str | None = Field(
+        default=None,
+        description=(
+            "Sentry DSN for API error reporting. When unset, Sentry is disabled."
         ),
     )
 

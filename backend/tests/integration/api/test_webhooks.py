@@ -266,7 +266,7 @@ async def test_stripe_webhook_account_updated_updates_connect_status(client):
                 side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw),
             ):
                 with patch(
-                    "app.modules.payment.webhook_processor.update_studio_connect_status_from_account",
+                    "app.modules.payment.webhook_handlers.update_studio_connect_status_from_account",
                     new_callable=AsyncMock,
                     return_value=True,
                 ) as mock_update:
@@ -299,7 +299,7 @@ async def test_stripe_webhook_refund_updated_updates_refund_status(client):
                 side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw),
             ):
                 with patch(
-                    "app.modules.payment.webhook_processor.update_refund_from_stripe_object",
+                    "app.modules.payment.webhook_handlers.update_refund_from_stripe_object",
                     new_callable=AsyncMock,
                     return_value=True,
                 ) as mock_update:
@@ -332,7 +332,7 @@ async def test_stripe_webhook_account_updated_unmatched_records_event(client):
                 side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw),
             ):
                 with patch(
-                    "app.modules.payment.webhook_processor.update_studio_connect_status_from_account",
+                    "app.modules.payment.webhook_handlers.update_studio_connect_status_from_account",
                     new_callable=AsyncMock,
                     return_value=False,
                 ):
@@ -364,7 +364,7 @@ async def test_stripe_webhook_order_id_confirms_order(client):
                 side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw),
             ):
                 with patch(
-                    "app.modules.payment.webhook_processor.confirm_order_after_payment",
+                    "app.modules.payment.webhook_paid_checkout.confirm_order_after_payment",
                     new_callable=AsyncMock,
                     return_value=True,
                 ) as mock_confirm:
@@ -401,7 +401,7 @@ async def test_stripe_webhook_unpaid_checkout_does_not_confirm_order(client):
                 side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw),
             ):
                 with patch(
-                    "app.modules.payment.webhook_processor.confirm_order_after_payment",
+                    "app.modules.payment.webhook_paid_checkout.confirm_order_after_payment",
                     new_callable=AsyncMock,
                     return_value=True,
                 ) as mock_confirm:
@@ -435,7 +435,7 @@ async def test_stripe_webhook_order_id_invalid_int_returns_200(client):
                 side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw),
             ):
                 with patch(
-                    "app.modules.payment.webhook_processor.confirm_order_after_payment",
+                    "app.modules.payment.webhook_paid_checkout.confirm_order_after_payment",
                     new_callable=AsyncMock,
                 ) as mock_confirm:
                     r = await client.post(
@@ -466,7 +466,7 @@ async def test_stripe_webhook_booking_id_confirms_booking(client):
                 side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw),
             ):
                 with patch(
-                    "app.modules.payment.webhook_processor.confirm_booking_after_payment",
+                    "app.modules.payment.webhook_paid_checkout.confirm_booking_after_payment",
                     new_callable=AsyncMock,
                     return_value=True,
                 ) as mock_confirm:
@@ -495,7 +495,7 @@ async def test_stripe_webhook_booking_id_invalid_int_returns_200(client):
                 side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw),
             ):
                 with patch(
-                    "app.modules.payment.webhook_processor.confirm_booking_after_payment",
+                    "app.modules.payment.webhook_paid_checkout.confirm_booking_after_payment",
                     new_callable=AsyncMock,
                 ) as mock_confirm:
                     r = await client.post(
@@ -539,8 +539,8 @@ async def test_stripe_webhook_no_metadata_returns_200(client):
 
 
 @pytest.mark.asyncio
-async def test_stripe_webhook_order_not_found_returns_200(client):
-    """confirm_order_after_payment returns False → 200 and records unmatched outcome."""
+async def test_stripe_webhook_order_not_found_returns_503(client):
+    """confirm_order_after_payment returns False → 503 so Stripe retries."""
     event = _stripe_event("checkout.session.completed", {"order_id": "999"})
     mock_uow = _mock_webhook_uow()
 
@@ -552,7 +552,7 @@ async def test_stripe_webhook_order_not_found_returns_200(client):
                 side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw),
             ):
                 with patch(
-                    "app.modules.payment.webhook_processor.confirm_order_after_payment",
+                    "app.modules.payment.webhook_paid_checkout.confirm_order_after_payment",
                     new_callable=AsyncMock,
                     return_value=False,
                 ):
@@ -561,17 +561,14 @@ async def test_stripe_webhook_order_not_found_returns_200(client):
                         content=b"{}",
                         headers={"Stripe-Signature": "t=1,v1=x"},
                     )
-    assert r.status_code == 200
-    mock_uow.webhook_events.record.assert_awaited_once_with(
-        event_id="evt_test_1",
-        event_type="checkout.session.completed",
-    )
-    mock_uow.commit.assert_awaited_once()
+    assert r.status_code == 503
+    mock_uow.webhook_events.record.assert_not_awaited()
+    mock_uow.commit.assert_not_awaited()
 
 
 @pytest.mark.asyncio
-async def test_stripe_webhook_booking_not_found_returns_200(client):
-    """confirm_booking_after_payment returns False → 200 and records unmatched outcome."""
+async def test_stripe_webhook_booking_not_found_returns_503(client):
+    """confirm_booking_after_payment returns False → 503 so Stripe retries."""
     event = _stripe_event("checkout.session.completed", {"booking_id": "999"})
     mock_uow = _mock_webhook_uow()
 
@@ -583,7 +580,7 @@ async def test_stripe_webhook_booking_not_found_returns_200(client):
                 side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw),
             ):
                 with patch(
-                    "app.modules.payment.webhook_processor.confirm_booking_after_payment",
+                    "app.modules.payment.webhook_paid_checkout.confirm_booking_after_payment",
                     new_callable=AsyncMock,
                     return_value=False,
                 ):
@@ -592,12 +589,38 @@ async def test_stripe_webhook_booking_not_found_returns_200(client):
                         content=b"{}",
                         headers={"Stripe-Signature": "t=1,v1=x"},
                     )
-    assert r.status_code == 200
-    mock_uow.webhook_events.record.assert_awaited_once_with(
-        event_id="evt_test_1",
-        event_type="checkout.session.completed",
-    )
-    mock_uow.commit.assert_awaited_once()
+    assert r.status_code == 503
+    mock_uow.webhook_events.record.assert_not_awaited()
+    mock_uow.commit.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_stripe_webhook_booking_ledger_unavailable_returns_503(client):
+    """Missing booking for ledger → 503 without recording processed event."""
+    event = _stripe_event("checkout.session.completed", {"booking_id": "999"}, "pi_456")
+    mock_uow = _mock_webhook_uow()
+    mock_uow.bookings.get_by_id = AsyncMock(return_value=None)
+
+    with patch("app.modules.payment.webhooks.settings") as mock_settings:
+        mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
+        with patch("stripe.Webhook.construct_event", return_value=event):
+            with patch(
+                "app.modules.payment.webhooks.uow_scope",
+                side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw),
+            ):
+                with patch(
+                    "app.modules.payment.webhook_paid_checkout.confirm_booking_after_payment",
+                    new_callable=AsyncMock,
+                ) as mock_confirm:
+                    r = await client.post(
+                        "/webhooks/stripe",
+                        content=b"{}",
+                        headers={"Stripe-Signature": "t=1,v1=x"},
+                    )
+    assert r.status_code == 503
+    mock_confirm.assert_not_awaited()
+    mock_uow.webhook_events.record.assert_not_awaited()
+    mock_uow.commit.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -614,7 +637,7 @@ async def test_stripe_webhook_duplicate_event_skips_confirm(client):
                 side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw),
             ):
                 with patch(
-                    "app.modules.payment.webhook_processor.confirm_booking_after_payment",
+                    "app.modules.payment.webhook_paid_checkout.confirm_booking_after_payment",
                     new_callable=AsyncMock,
                 ) as mock_confirm:
                     r = await client.post(
@@ -784,7 +807,7 @@ async def test_webhook_duplicate_event_integration(rollback_client, app_with_rol
         with patch("app.modules.payment.webhooks.settings") as mock_settings:
             mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
             with patch(
-                "app.modules.payment.webhook_processor.confirm_booking_after_payment",
+                "app.modules.payment.webhook_paid_checkout.confirm_booking_after_payment",
                 wraps=payment_service.confirm_booking_after_payment,
             ) as mock_confirm:
                 r1 = await rollback_client.post(
@@ -817,43 +840,43 @@ async def test_webhook_duplicate_event_integration(rollback_client, app_with_rol
 # --- Юнит-тесты хелперов парсинга ---
 
 
-def test_parse_checkout_session_metadata_dict():
-    """_parse_checkout_session_metadata с dict metadata."""
-    from app.modules.payment.webhook_processor import _parse_checkout_session_metadata
+def testparse_checkout_session_metadata_dict():
+    """parse_checkout_session_metadata с dict metadata."""
+    from app.modules.payment.webhook_processor import parse_checkout_session_metadata
 
     session = MagicMock()
     session.metadata = {"booking_id": "1", "order_id": "2"}
-    assert _parse_checkout_session_metadata(session) == ("1", "2")
+    assert parse_checkout_session_metadata(session) == ("1", "2")
     session.metadata = {}
-    assert _parse_checkout_session_metadata(session) == (None, None)
+    assert parse_checkout_session_metadata(session) == (None, None)
 
 
-def test_parse_checkout_session_metadata_object():
-    """_parse_checkout_session_metadata с object-like metadata."""
-    from app.modules.payment.webhook_processor import _parse_checkout_session_metadata
+def testparse_checkout_session_metadata_object():
+    """parse_checkout_session_metadata с object-like metadata."""
+    from app.modules.payment.webhook_processor import parse_checkout_session_metadata
 
     session = MagicMock()
     meta = MagicMock()
     meta.booking_id = "b"
     meta.order_id = "o"
     session.metadata = meta
-    assert _parse_checkout_session_metadata(session) == ("b", "o")
+    assert parse_checkout_session_metadata(session) == ("b", "o")
 
 
-def test_parse_payment_intent_id():
-    """_parse_payment_intent_id извлекает id из payment_intent."""
-    from app.modules.payment.webhook_processor import _parse_payment_intent_id
+def testparse_payment_intent_id():
+    """parse_payment_intent_id извлекает id из payment_intent."""
+    from app.modules.payment.webhook_processor import parse_payment_intent_id
 
     session = MagicMock()
     session.payment_intent = MagicMock(id="pi_xyz")
-    assert _parse_payment_intent_id(session) == "pi_xyz"
+    assert parse_payment_intent_id(session) == "pi_xyz"
     session.payment_intent = None
-    assert _parse_payment_intent_id(session) is None
+    assert parse_payment_intent_id(session) is None
 
 
-def test_parse_payment_intent_id_dict():
-    """_parse_payment_intent_id при session как dict (payment_intent строка)."""
-    from app.modules.payment.webhook_processor import _parse_payment_intent_id
+def testparse_payment_intent_id_dict():
+    """parse_payment_intent_id при session как dict (payment_intent строка)."""
+    from app.modules.payment.webhook_processor import parse_payment_intent_id
 
-    assert _parse_payment_intent_id({"payment_intent": "pi_str"}) == "pi_str"
-    assert _parse_payment_intent_id({"payment_intent": None}) is None
+    assert parse_payment_intent_id({"payment_intent": "pi_str"}) == "pi_str"
+    assert parse_payment_intent_id({"payment_intent": None}) is None

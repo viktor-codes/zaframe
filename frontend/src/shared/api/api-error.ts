@@ -8,6 +8,8 @@ export class ApiError extends Error {
     message: string,
     public status: number,
     public body?: unknown,
+    /** Correlation id from `X-Request-ID` or Problem JSON `request_id`. */
+    public requestId?: string,
   ) {
     super(message);
     this.name = "ApiError";

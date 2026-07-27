@@ -4,8 +4,17 @@ Pydantic schemas for Booking model.
 
 from __future__ import annotations
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, EmailStr, Field, computed_field
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    computed_field,
+    field_validator,
+)
 
+from app.core.email_utils import normalize_email
 from app.models.booking import BookingType
 from app.modules.catalog.occurrence import OccurrenceResponse
 from app.modules.catalog.studio.schemas import StudioResponse
@@ -22,9 +31,11 @@ class BookingBase(BaseModel):
 
 class BookingCreate(BookingBase):
     """
-    Guest booking create payload.
+    Booking create payload (guest or authenticated).
 
-    Used before OTP verify; user_id is attached after verification.
+    Guest checkout: no Bearer → ``user_id`` stays null until OTP attach.
+    Authenticated: Bearer present → ``user_id`` set on create; guest_* still
+    required for contact / receipt (wizard prefills from the profile).
     """
 
     guest_name: str = Field(..., min_length=1, max_length=100, description="Guest name")
@@ -39,9 +50,21 @@ class BookingCreate(BookingBase):
         description="Service ID (required for course bookings)",
     )
 
+    @field_validator("guest_email", mode="before")
+    @classmethod
+    def _normalize_guest_email(cls, value: object) -> object:
+        if isinstance(value, str):
+            return normalize_email(value)
+        return value
+
 
 class BookingCreateAuthenticated(BookingBase):
-    """Authenticated user booking create payload (user_id from token)."""
+    """
+    Reserved payload for occurrence-only authenticated create.
+
+    Current HTTP create uses ``BookingCreate`` (guest_* + optional Bearer).
+    Keep this schema for a future slim authenticated path if needed.
+    """
 
     pass
 
@@ -111,7 +134,11 @@ class BookingOwnerResponse(BookingResponseBase):
 
 
 class BookingWithOccurrence(BookingOwnerResponse):
-    """Owner perspective with nested occurrence."""
+    """
+    Owner list item for GET /bookings.
+
+    Nested occurrence avoids N+1 on the studio dashboard bookings screen.
+    """
 
     occurrence: OccurrenceResponse = Field(
         ...,

@@ -1,6 +1,6 @@
-"use client";
-
 import React, { forwardRef } from "react";
+
+import { resolveButtonDisabled } from "./resolve-button-disabled";
 
 export type ButtonSize = "sm" | "md" | "lg";
 export type ButtonVariant =
@@ -77,7 +77,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={classes}
-        disabled={disabled ?? isLoading}
+        disabled={resolveButtonDisabled(disabled, isLoading)}
         {...props}
       >
         {isLoading ? (

@@ -2,8 +2,9 @@
  * Seed bookable studio + occurrence for E2E via backend script.
  *
  * Requires: PostgreSQL migrated, backend deps installed (`uv sync` in backend/).
- * Override with E2E_STUDIO_ID + E2E_OCCURRENCE_ID + E2E_OCCURRENCE_DATE env vars
- * to skip seeding (e.g. when using pre-seeded demo data).
+ * Override with env vars to skip seeding (pre-seeded demo data):
+ *   E2E_STUDIO_ID, E2E_STUDIO_SLUG, E2E_SERVICE_ID,
+ *   E2E_OCCURRENCE_ID, E2E_OCCURRENCE_DATE[, E2E_OWNER_ACCESS_TOKEN]
  */
 
 import { execSync } from "node:child_process";
@@ -11,6 +12,8 @@ import path from "node:path";
 
 export interface E2eSeedData {
   studioId: number;
+  studioSlug: string;
+  serviceId: number;
   occurrenceId: number;
   occurrenceDate: string;
   ownerAccessToken: string;
@@ -18,16 +21,26 @@ export interface E2eSeedData {
 
 function seedFromEnv(): E2eSeedData | null {
   const studioId = process.env.E2E_STUDIO_ID;
+  const studioSlug = process.env.E2E_STUDIO_SLUG;
+  const serviceId = process.env.E2E_SERVICE_ID;
   const occurrenceId = process.env.E2E_OCCURRENCE_ID;
   const occurrenceDate = process.env.E2E_OCCURRENCE_DATE;
   const ownerAccessToken = process.env.E2E_OWNER_ACCESS_TOKEN ?? "";
 
-  if (!studioId || !occurrenceId || !occurrenceDate) {
+  if (
+    !studioId ||
+    !studioSlug ||
+    !serviceId ||
+    !occurrenceId ||
+    !occurrenceDate
+  ) {
     return null;
   }
 
   return {
     studioId: Number(studioId),
+    studioSlug,
+    serviceId: Number(serviceId),
     occurrenceId: Number(occurrenceId),
     occurrenceDate,
     ownerAccessToken,
@@ -58,16 +71,26 @@ export function seedBookableOccurrence(): E2eSeedData {
 
   const parsed = JSON.parse(line) as {
     studioId: number;
+    studioSlug: string;
+    serviceId: number;
     occurrenceId: number;
     occurrenceDate: string;
     ownerAccessToken: string;
   };
 
+  if (!parsed.studioSlug || !parsed.serviceId) {
+    throw new Error(
+      "e2e_seed JSON missing studioSlug/serviceId — regenerate with updated seed script",
+    );
+  }
+
   return parsed;
 }
 
 /**
- * Fetch booking status via owner JWT (GET /bookings/{id} requires auth).
+ * Fetch booking status via owner JWT (GET /bookings/{id} requires a user session).
+ *
+ * WHY: guest opaque `access_token` is for checkout / order poll — not GET /bookings/{id}.
  */
 export async function fetchBookingStatusAsOwner(
   apiBaseUrl: string,

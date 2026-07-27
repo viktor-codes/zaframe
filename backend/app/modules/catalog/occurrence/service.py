@@ -10,9 +10,46 @@ from app.core.observability import log_domain_event
 from app.core.uow import UnitOfWork
 from app.models.occurrence import Occurrence, OccurrenceStatus
 from app.models.studio_member import StudioMemberRole
-from app.modules.catalog.occurrence.schemas import OccurrenceCreate, OccurrenceUpdate
+from app.modules.catalog.occurrence.schemas import (
+    OccurrenceCreate,
+    OccurrenceResponse,
+    OccurrenceUpdate,
+)
 
 logger = structlog.get_logger(__name__)
+
+
+async def to_occurrence_responses_with_capacity(
+    uow: UnitOfWork,
+    occurrences: list[Occurrence],
+    *,
+    now: datetime | None = None,
+) -> list[OccurrenceResponse]:
+    """Map ORM occurrences to responses with confirmed/pending seat counts.
+
+    WHY: Studio Today/Calendar need the same occupancy numbers as the public
+    bookable list, without N+1 booking fetches from the frontend.
+    """
+    if not occurrences:
+        return []
+
+    now_utc = now or utc_now()
+    counts_map = await uow.bookings.get_confirmed_pending_counts_by_occurrence_ids(
+        [occurrence.id for occurrence in occurrences],
+        now=now_utc,
+    )
+    responses: list[OccurrenceResponse] = []
+    for occurrence in occurrences:
+        confirmed, pending = counts_map.get(occurrence.id, (0, 0))
+        responses.append(
+            OccurrenceResponse.model_validate(occurrence).model_copy(
+                update={
+                    "confirmed_count": confirmed,
+                    "pending_count": pending,
+                }
+            )
+        )
+    return responses
 
 
 async def get_occurrence(uow: UnitOfWork, occurrence_id: int) -> Occurrence | None:

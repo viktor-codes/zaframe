@@ -1,0 +1,137 @@
+"use client";
+
+import Link from "next/link";
+import { useState } from "react";
+
+import {
+  formatOccurrenceTimeRange,
+  isOccurrenceCancelled,
+  isOccurrenceScheduled,
+  OCCURRENCE_STATUS,
+  type OccurrenceResponse,
+} from "@entities/occurrence";
+import { PermissionGate } from "@entities/user";
+import { StudioPermission } from "@shared/lib";
+import { Button, Chip } from "@shared/ui";
+
+import { CancelOccurrenceForm } from "./cancel-occurrence-form";
+import { EditOccurrenceForm } from "./edit-occurrence-form";
+
+export interface CalendarOccurrenceCardProps {
+  studioId: number;
+  occurrence: OccurrenceResponse;
+}
+
+type PanelMode = "idle" | "edit" | "cancel";
+
+function statusTone(
+  status: OccurrenceResponse["status"],
+): "neutral" | "success" | "warning" {
+  if (status === OCCURRENCE_STATUS.SCHEDULED) return "success";
+  if (status === OCCURRENCE_STATUS.CANCELLED) return "warning";
+  return "neutral";
+}
+
+export function CalendarOccurrenceCard({
+  studioId,
+  occurrence,
+}: CalendarOccurrenceCardProps) {
+  const [mode, setMode] = useState<PanelMode>("idle");
+  const canManage = isOccurrenceScheduled(occurrence);
+
+  return (
+    <article
+      className="rounded-xl border border-neutral-200 bg-white px-4 py-3"
+      data-testid={`calendar-occurrence-${occurrence.id}`}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 space-y-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-display text-base font-semibold text-neutral-900">
+              {occurrence.title}
+            </h3>
+            <Chip tone={statusTone(occurrence.status)} size="sm">
+              {occurrence.status}
+            </Chip>
+          </div>
+          <p className="text-sm text-neutral-600">
+            {formatOccurrenceTimeRange(
+              occurrence.start_time,
+              occurrence.end_time,
+            )}
+            <span className="text-neutral-400">
+              {" "}
+              · capacity {occurrence.max_capacity}
+            </span>
+          </p>
+          {isOccurrenceCancelled(occurrence) &&
+          occurrence.cancellation_reason ? (
+            <p className="text-xs text-amber-800">
+              Reason: {occurrence.cancellation_reason}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <PermissionGate
+            studioId={studioId}
+            permission={StudioPermission.VIEW_BOOKINGS}
+          >
+            <Button asChild variant="outline" size="sm">
+              <Link
+                href={`/dashboard/studios/${studioId}/occurrences/${occurrence.id}`}
+                data-testid={`calendar-check-in-${occurrence.id}`}
+              >
+                Check in
+              </Link>
+            </Button>
+          </PermissionGate>
+          {canManage ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setMode((current) => (current === "edit" ? "idle" : "edit"))
+                }
+              >
+                Edit
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setMode((current) =>
+                    current === "cancel" ? "idle" : "cancel",
+                  )
+                }
+              >
+                Cancel
+              </Button>
+            </>
+          ) : null}
+        </div>
+      </div>
+
+      {mode === "edit" ? (
+        <EditOccurrenceForm
+          studioId={studioId}
+          occurrence={occurrence}
+          onCancel={() => setMode("idle")}
+          onSaved={() => setMode("idle")}
+        />
+      ) : null}
+
+      {mode === "cancel" ? (
+        <CancelOccurrenceForm
+          studioId={studioId}
+          occurrence={occurrence}
+          onCancel={() => setMode("idle")}
+          onCancelled={() => setMode("idle")}
+        />
+      ) : null}
+    </article>
+  );
+}

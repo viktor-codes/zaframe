@@ -58,3 +58,27 @@ export function getOccurrenceInstructorName(
 ): string | null {
   return occurrence.instructor?.name ?? null;
 }
+
+export interface OccurrenceCapacityCounts {
+  max_capacity: number;
+  confirmed_count: number;
+  pending_count?: number;
+}
+
+export function getOccurrenceHeldSeats(
+  capacity: OccurrenceCapacityCounts,
+): number {
+  const confirmed = Math.max(capacity.confirmed_count, 0);
+  const pending = Math.max(capacity.pending_count ?? 0, 0);
+  return confirmed + pending;
+}
+
+export function getOccurrenceRemainingSeats(
+  capacity: OccurrenceCapacityCounts,
+): number {
+  return Math.max(capacity.max_capacity - getOccurrenceHeldSeats(capacity), 0);
+}
+
+export function isOccurrenceFull(capacity: OccurrenceCapacityCounts): boolean {
+  return getOccurrenceRemainingSeats(capacity) === 0;
+}

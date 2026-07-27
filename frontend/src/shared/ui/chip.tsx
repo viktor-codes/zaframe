@@ -1,5 +1,3 @@
-"use client";
-
 export type ChipTone = "neutral" | "brand" | "success" | "warning" | "danger";
 export type ChipSize = "xs" | "sm" | "md";
 

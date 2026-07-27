@@ -90,7 +90,8 @@ If GitHub Actions exists, add pyright step to lint job. If no CI yet, document i
 | Lazy `__getattr__` in `__init__.py` | pyright doesn't see exports | Add explicit imports in `TYPE_CHECKING` block + `__all__` |
 | FastAPI `Depends()` | B008 ignored in Ruff | pyright may need annotated deps |
 
-Optional: `uv add --dev types-passlib` etc. only if errors warrant it — ask user before
+Optional: add narrowly scoped type stubs only if errors warrant it — ask user before
+adding packages.
 adding many stub packages.
 
 ## Tests

@@ -96,3 +96,96 @@ class UserPublic(UserBase):
     created_at: AwareDatetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class UserExportItem(BaseModel):
+    """User snapshot for GDPR data export (DSAR)."""
+
+    id: int = Field(..., description="User id")
+    email: EmailStr = Field(..., description="Account email")
+    name: str | None = Field(None, description="Display name")
+    phone: str | None = Field(None, description="Phone if set")
+    marketing_consent: bool = Field(..., description="Marketing preference")
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+    deleted_at: AwareDatetime | None = Field(
+        None,
+        description="Soft-delete timestamp; null while account is active",
+    )
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class BookingExportItem(BaseModel):
+    """Booking row included in a DSAR export (no Stripe secrets)."""
+
+    id: int
+    occurrence_id: int
+    user_id: int | None = None
+    status: str
+    guest_name: str | None = None
+    guest_email: str | None = None
+    guest_phone: str | None = None
+    payment_status: str | None = None
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+    cancelled_at: AwareDatetime | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class OrderExportItem(BaseModel):
+    """Order row included in a DSAR export."""
+
+    id: int
+    studio_id: int
+    service_id: int | None = None
+    user_id: int | None = None
+    guest_email: str | None = None
+    guest_name: str | None = None
+    guest_phone: str | None = None
+    status: str
+    total_amount_cents: int
+    currency: str
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PaymentExportItem(BaseModel):
+    """Payment ledger row for DSAR (Stripe ids are user-facing refs, not secrets)."""
+
+    id: int
+    booking_id: int | None = None
+    order_id: int | None = None
+    amount_cents: int
+    currency: str
+    status: str
+    provider: str
+    stripe_checkout_session_id: str
+    paid_at: AwareDatetime | None = None
+    refunded_amount_cents: int
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UserDataExportResponse(BaseModel):
+    """GDPR data export envelope for the authenticated user."""
+
+    user: UserExportItem = Field(..., description="Account profile snapshot")
+    bookings: list[BookingExportItem] = Field(
+        default_factory=list,
+        description="Bookings linked by user_id or guest email",
+    )
+    orders: list[OrderExportItem] = Field(
+        default_factory=list,
+        description="Course orders linked by user_id or guest email",
+    )
+    payments: list[PaymentExportItem] = Field(
+        default_factory=list,
+        description="Payment ledger rows for those bookings/orders",
+    )
+

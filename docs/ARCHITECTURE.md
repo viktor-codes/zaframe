@@ -147,6 +147,11 @@ access token is cleared.
 If Stripe later reports a successful payment that cannot safely confirm seats, the order/payment
 ledger moves to `manual_review` instead of being shown as a normal paid booking.
 
+**Fallback (Option B — Procfile worker):** platforms without a native cron can run
+`python -m scripts.run_booking_lifecycle_loop` via the `worker` process in `backend/Procfile`.
+Interval defaults to 300s (`BOOKING_LIFECYCLE_INTERVAL_SECONDS`). Prefer Render cron when
+available — an always-on loop burns a dyno continuously.
+
 **Manual / local ops:**
 
 ```bash
@@ -157,22 +162,34 @@ make booking-lifecycle
 **Monitoring (log-based, no external tooling required):**
 
 - Spike in `expired_count` per run → investigate checkout/payment funnel abandonment.
-- Missing `booking_lifecycle_complete` for 3+ consecutive intervals (~15 min) → cron failure;
-  check Render dashboard (Trigger Run for debug) and `DATABASE_URL` on the cron service.
+- Missing `booking_lifecycle_complete` for 3+ consecutive intervals (~15 min) → cron/worker
+  failure; check Render dashboard (Trigger Run for debug) and `DATABASE_URL` on the job.
 
-Alternatives not used: always-on worker loop (Option B), HTTP internal endpoint (Option D).
-See [TD-11](./tech-debt/td-11-booking-lifecycle-cron.md).
+HTTP internal endpoint (Option D) is not used.
+See [TD-11](./tech-debt/td-11-booking-lifecycle-cron.md) (done).
 
 ## Production Readiness Notes
 
+Closed-beta operator checklist (secrets names, smoke checks, no real values):
+[docs/ops/closed-beta-checklist.md](./ops/closed-beta-checklist.md).
+
+- **Migrations on deploy:** Render web service runs `python -m alembic upgrade head` via
+  `preDeployCommand` in root `render.yaml` (deploy fails if migrate fails). Docker image CMD
+  migrates then starts uvicorn. Heroku-style platforms use `release` in `backend/Procfile`.
+  Cron jobs do not migrate — only the web/release path owns schema upgrades.
 - `DATABASE_URL` has a local-development default only. Every deployed API and cron process must
   override it with the managed production Postgres URL.
-- `REDIS_URL` is required for multi-instance production rate limiting. Without Redis, slowapi uses
-  process-local counters, which is acceptable only for single-instance development.
+- `REDIS_URL` is required when `ENVIRONMENT=production` (startup fails otherwise). Override only
+  with `ALLOW_INMEMORY_RATE_LIMIT=true` for a **single-instance** emergency / free closed beta —
+  unsafe with replicas. Prefer Render Key Value + `REDIS_URL` (see `render.yaml` upgrade snippet
+  and `docs/ops/closed-beta-checklist.md` § Rate limiting). Local `ENVIRONMENT=dev` needs neither.
+- `GET /metrics` is open in `dev`; staging/production require `Authorization: Bearer <METRICS_TOKEN>`.
+  If `METRICS_TOKEN` is unset outside dev, the endpoint returns 503.
+- OpenAPI UI (`/docs`, `/redoc`, `/openapi.json`) is enabled only when `ENVIRONMENT=dev`.
 - Paid checkout is gated behind a completed Stripe Connect account (`stripe_account_id` plus
   `stripe_charges_enabled`). Platform fee calculation remains deferred until the Connect fee model
   is implemented end-to-end.
-- `manage_members` is present in the RBAC permission matrix, but member management endpoints are
-  intentionally deferred until a current UI flow needs them.
+- `manage_members` is in the RBAC matrix; member management endpoints and Team UI are shipped
+  (`GET/POST/PATCH/DELETE /studios/{id}/members`).
 - Soft-deleted accounts cannot authenticate again with the same email in the MVP policy. A future
   re-registration/anonymization flow must be designed before changing that behavior.

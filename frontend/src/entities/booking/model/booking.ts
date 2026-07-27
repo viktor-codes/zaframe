@@ -1,34 +1,68 @@
 import type { BookingLike } from "./types";
-
-export const BOOKING_STATUS = {
-  PENDING: "pending",
-  CONFIRMED: "confirmed",
-  COMPLETED: "completed",
-  CANCELLED: "cancelled",
-  EXPIRED: "expired",
-  NO_SHOW: "no_show",
-} as const;
+import {
+  BookingPaymentStatus,
+  BookingStatus,
+} from "@shared/lib/constants";
 
 type BookingState = Pick<
   BookingLike,
   "status" | "reserved_until" | "is_guest_booking" | "cancelled_at"
 >;
 
+type BookingPaymentState = {
+  status: string;
+  payment_status?: string | null;
+};
+
 export function isPendingBooking(booking: Pick<BookingState, "status">): boolean {
-  return booking.status === BOOKING_STATUS.PENDING;
+  return booking.status === BookingStatus.PENDING;
 }
 
 export function isConfirmedBooking(
   booking: Pick<BookingState, "status">,
 ): boolean {
-  return booking.status === BOOKING_STATUS.CONFIRMED;
+  return booking.status === BookingStatus.CONFIRMED;
+}
+
+/** True when webhook (or free confirm) marked payment complete on the booking. */
+export function isBookingPaymentSucceeded(
+  booking: Pick<BookingPaymentState, "payment_status">,
+): boolean {
+  return booking.payment_status === BookingPaymentStatus.SUCCEEDED;
+}
+
+/**
+ * Pending unpaid hold that still needs Stripe Checkout.
+ * Free sessions (`price_cents === 0`) never need checkout.
+ */
+export function bookingNeedsCheckoutPayment(
+  booking: BookingPaymentState,
+  occurrence: { price_cents: number },
+): boolean {
+  if (occurrence.price_cents <= 0) return false;
+  if (isConfirmedBooking(booking)) return false;
+  if (isBookingPaymentSucceeded(booking)) return false;
+  return isPendingBooking(booking);
+}
+
+/**
+ * True when the guest can still open Stripe Checkout for this hold.
+ * Expired `reserved_until` means the seat was released — Pay must be disabled.
+ */
+export function canCompleteBookingPayment(
+  booking: BookingPaymentState & { reserved_until?: string | null },
+  occurrence: { price_cents: number },
+  now: Date = new Date(),
+): boolean {
+  if (!bookingNeedsCheckoutPayment(booking, occurrence)) return false;
+  return !isBookingReservationExpired(booking, now);
 }
 
 export function isCancelledBooking(
   booking: Pick<BookingState, "status" | "cancelled_at">,
 ): boolean {
   return (
-    booking.status === BOOKING_STATUS.CANCELLED || booking.cancelled_at != null
+    booking.status === BookingStatus.CANCELLED || booking.cancelled_at != null
   );
 }
 
@@ -81,7 +115,7 @@ export function getBookingReservationRemainingMs(
 }
 
 export function canCustomerCancelBooking(
-  booking: Pick<BookingState, "status" | "cancelled_at">,
+  booking: Pick<BookingState, "status" | "cancelled_at" | "reserved_until">,
   occurrence: { start_time: string },
   studio: { cancel_before_hours: number },
   now: Date = new Date(),
@@ -90,9 +124,14 @@ export function canCustomerCancelBooking(
     return false;
   }
 
+  // WHY: expired unpaid holds already show a rebook CTA — cancel is noise.
+  if (isBookingReservationExpired(booking, now)) {
+    return false;
+  }
+
   if (
-    booking.status !== BOOKING_STATUS.CONFIRMED &&
-    booking.status !== BOOKING_STATUS.PENDING
+    booking.status !== BookingStatus.CONFIRMED &&
+    booking.status !== BookingStatus.PENDING
   ) {
     return false;
   }

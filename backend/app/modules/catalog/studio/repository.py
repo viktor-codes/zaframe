@@ -4,12 +4,14 @@ Repository for the Studio entity.
 Studio queries with filters and by slug for the public page.
 """
 
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import and_, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.elements import ColumnElement
 
+from app.core.datetime_utils import utc_now
 from app.core.repository import WriteRepositoryMixin
+from app.models.occurrence import Occurrence, OccurrenceStatus
 from app.models.service import Service, ServiceVisibility
 from app.models.studio import Studio
 from app.models.studio_member import StudioMember
@@ -36,10 +38,22 @@ class StudioRepository(WriteRepositoryMixin):
     async def get_by_slug_with_services_occurrences(
         self, slug: str, *, is_active: bool = True
     ) -> Studio | None:
+        """
+        Load a public studio with services and upcoming scheduled occurrences only.
+
+        WHY: loading every historical occurrence for a busy studio blows up memory
+        and response time on the public storefront aggregate.
+        """
+        now_utc = utc_now()
         result = await self._session.execute(
             select(Studio)
             .options(
-                selectinload(Studio.services).selectinload(Service.occurrences),
+                selectinload(Studio.services).selectinload(
+                    Service.occurrences.and_(
+                        Occurrence.start_time >= now_utc,
+                        Occurrence.status == OccurrenceStatus.SCHEDULED,
+                    )
+                ),
             )
             .where(
                 Studio.slug == slug,
@@ -184,6 +198,14 @@ class StudioMemberRepository(WriteRepositoryMixin):
         )
         return result.scalar_one_or_none()
 
+    async def get_by_id_with_user(self, member_id: int) -> StudioMember | None:
+        result = await self._session.execute(
+            select(StudioMember)
+            .options(selectinload(StudioMember.user))
+            .where(StudioMember.id == member_id)
+        )
+        return result.scalar_one_or_none()
+
     async def get_by_studio_and_user(
         self,
         *,
@@ -207,11 +229,47 @@ class StudioMemberRepository(WriteRepositoryMixin):
         )
         return list(result.scalars().all())
 
-    async def list_for_studio(self, *, studio_id: int) -> list[StudioMember]:
+    async def list_for_studio(
+        self,
+        *,
+        studio_id: int,
+        skip: int = 0,
+        limit: int = 20,
+    ) -> list[StudioMember]:
         result = await self._session.execute(
             select(StudioMember)
             .options(selectinload(StudioMember.user))
             .where(StudioMember.studio_id == studio_id)
             .order_by(StudioMember.created_at.desc())
+            .offset(skip)
+            .limit(limit)
         )
         return list(result.scalars().all())
+
+    async def count_for_studio(self, *, studio_id: int) -> int:
+        result = await self._session.execute(
+            select(func.count())
+            .select_from(StudioMember)
+            .where(StudioMember.studio_id == studio_id)
+        )
+        return int(result.scalar_one())
+
+    async def count_owners(self, *, studio_id: int) -> int:
+        result = await self._session.execute(
+            select(func.count())
+            .select_from(StudioMember)
+            .where(
+                StudioMember.studio_id == studio_id,
+                StudioMember.role == "owner",
+            )
+        )
+        return int(result.scalar_one())
+
+    async def clear_instructor_assignments(self, *, member_id: int) -> None:
+        """Null occurrence.instructor_id so member delete/role change is not blocked by FK."""
+        await self._session.execute(
+            update(Occurrence)
+            .where(Occurrence.instructor_id == member_id)
+            .values(instructor_id=None)
+        )
+        await self._session.flush()

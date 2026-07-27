@@ -1,0 +1,188 @@
+/**
+ * Unauthenticated API fetch for React Server Components (public endpoints only).
+ *
+ * WHY: access tokens live in client memory; the Next.js server cannot authenticate.
+ * Import from `@shared/api/server` — never from the `@shared/api` barrel (that pulls
+ * `client-only` code and breaks RSC).
+ */
+
+import "server-only";
+
+import type { OccurrenceResponse } from "@entities/occurrence";
+import type {
+  PaginatedSearchResultList,
+  StudioPublicResponse,
+  StudioResponse,
+} from "@entities/studio";
+import { config } from "@shared/lib/config";
+
+import { ApiError } from "./api-error";
+import { buildApiUrl, type QueryParams } from "./build-url";
+import { safeParseJson, throwApiError } from "./http-error";
+import { createRequestId, REQUEST_ID_HEADER } from "./request-headers";
+
+/** Default ISR window for storefront data (ARCHITECTURE §3). */
+export const STOREFRONT_REVALIDATE_SECONDS = 60;
+
+export interface ServerRequestConfig {
+  params?: QueryParams;
+  /** Override auto-generated `X-Request-ID`. */
+  requestId?: string;
+  /** Next.js fetch cache options (`revalidate`, `tags`). */
+  next?: {
+    revalidate?: number | false;
+    tags?: string[];
+  };
+  cache?: RequestCache;
+}
+
+function resolveServerUrl(
+  path: string,
+  params?: ServerRequestConfig["params"],
+): string {
+  // WHY: hit FastAPI directly — do not loop through the Next /api rewrite.
+  if (!config.apiUpstreamUrl) {
+    throw new ApiError(
+      "Backend URL is not configured (set API_UPSTREAM_URL or NEXT_PUBLIC_API_URL)",
+      0,
+      {
+        code: "BACKEND_NOT_CONFIGURED",
+      },
+    );
+  }
+  return buildApiUrl(config.apiUpstreamUrl, path, params);
+}
+
+/**
+ * GET a public API path from a Server Component (no cookies, no Bearer).
+ */
+export async function serverGet<T>(
+  path: string,
+  options: ServerRequestConfig = {},
+): Promise<T> {
+  const { params, requestId: requestIdOption, next, cache } = options;
+  const requestId = requestIdOption ?? createRequestId();
+  const url = resolveServerUrl(path, params);
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      Accept: "application/json",
+      [REQUEST_ID_HEADER]: requestId,
+    },
+    ...(next !== undefined ? { next } : {}),
+    ...(cache !== undefined ? { cache } : {}),
+  });
+
+  if (!response.ok) {
+    throwApiError(response, await safeParseJson(response), requestId);
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  return response.json() as Promise<T>;
+}
+
+/**
+ * Public storefront payload for `/s/[slug]` (ISR default: 60s).
+ */
+export async function fetchStudioPublicBySlug(
+  slug: string,
+  options: Omit<ServerRequestConfig, "params"> = {},
+): Promise<StudioPublicResponse> {
+  const encoded = encodeURIComponent(slug);
+  return serverGet<StudioPublicResponse>(
+    `api/v1/studios/slug/${encoded}/public`,
+    {
+      ...options,
+      next: {
+        revalidate: STOREFRONT_REVALIDATE_SECONDS,
+        ...options.next,
+      },
+    },
+  );
+}
+
+/**
+ * Public studio-by-id lookup (no auth). Used for legacy `/studios/[id]` redirects.
+ */
+export async function fetchStudioById(
+  studioId: number,
+  options: Omit<ServerRequestConfig, "params"> = {},
+): Promise<StudioResponse> {
+  return serverGet<StudioResponse>(`api/v1/studios/${studioId}`, {
+    ...options,
+    next: {
+      revalidate: STOREFRONT_REVALIDATE_SECONDS,
+      ...options.next,
+    },
+  });
+}
+
+/**
+ * Public bookable occurrences for a service on a slug storefront.
+ */
+export async function fetchPublicServiceOccurrences(
+  slug: string,
+  serviceId: number,
+  options: Omit<ServerRequestConfig, "params"> = {},
+): Promise<OccurrenceResponse[]> {
+  const encoded = encodeURIComponent(slug);
+  return serverGet<OccurrenceResponse[]>(
+    `api/v1/studios/slug/${encoded}/services/${serviceId}/occurrences`,
+    {
+      ...options,
+      next: {
+        revalidate: STOREFRONT_REVALIDATE_SECONDS,
+        ...options.next,
+      },
+    },
+  );
+}
+
+/**
+ * Public explore list (`GET /studios` with `include_services=true`).
+ * Always returns SearchResult pages — never owner-scoped filters.
+ */
+export async function fetchStudiosExplore(
+  params: {
+    page?: number;
+    size?: number;
+    is_active?: boolean;
+    city?: string;
+    category?: string;
+    query?: string;
+    amenities?: string[];
+  } = {},
+  options: Omit<ServerRequestConfig, "params"> = {},
+): Promise<PaginatedSearchResultList> {
+  const {
+    page = 1,
+    size = 12,
+    is_active = true,
+    city,
+    category,
+    query,
+    amenities,
+  } = params;
+
+  return serverGet<PaginatedSearchResultList>("api/v1/studios", {
+    ...options,
+    params: {
+      page,
+      size,
+      is_active,
+      include_services: true,
+      ...(city ? { city } : {}),
+      ...(category ? { category } : {}),
+      ...(query ? { query } : {}),
+      ...(amenities?.length ? { amenities } : {}),
+    },
+    next: {
+      revalidate: STOREFRONT_REVALIDATE_SECONDS,
+      ...options.next,
+    },
+  });
+}

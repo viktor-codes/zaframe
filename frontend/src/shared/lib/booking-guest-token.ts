@@ -1,19 +1,29 @@
 /**
- * Guest checkout token from POST /bookings (one-time, not returned on GET).
+ * Guest checkout token from POST /bookings (not returned on later GETs).
  * Stored in sessionStorage for the confirm page and Stripe checkout.
+ *
+ * Deep link canon: `/bookings/{id}/confirm#access_token=…` (hash not sent to
+ * servers). Legacy `?access_token=` is still accepted once, then stripped.
  */
+
+import { z } from "zod";
+
+import { removeSessionStorageByPrefixes } from "./remove-session-storage-by-prefixes";
 
 const TOKEN_PREFIX = "zeeframe_booking_access_token_";
 const SNAPSHOT_PREFIX = "zeeframe_booking_snapshot_";
 
-export interface GuestBookingSnapshot {
-  id: number;
-  occurrence_id: number;
-  guest_name: string | null;
-  guest_email: string | null;
-  status: string;
-  payment_status: string | null;
-}
+const GuestBookingSnapshotSchema = z.object({
+  id: z.number().int().positive(),
+  occurrence_id: z.number().int().positive(),
+  guest_name: z.string().nullable(),
+  guest_email: z.string().nullable(),
+  status: z.string().min(1),
+  payment_status: z.string().nullable(),
+  reserved_until: z.string().nullable().optional(),
+});
+
+export type GuestBookingSnapshot = z.infer<typeof GuestBookingSnapshotSchema>;
 
 export function storeGuestBookingAccess(
   bookingId: number,
@@ -21,11 +31,28 @@ export function storeGuestBookingAccess(
   snapshot: GuestBookingSnapshot,
 ): void {
   if (typeof window === "undefined") return;
+  const parsed = GuestBookingSnapshotSchema.safeParse({
+    ...snapshot,
+    id: bookingId,
+  });
+  if (!parsed.success) return;
+
   sessionStorage.setItem(`${TOKEN_PREFIX}${bookingId}`, accessToken);
   sessionStorage.setItem(
     `${SNAPSHOT_PREFIX}${bookingId}`,
-    JSON.stringify(snapshot),
+    JSON.stringify(parsed.data),
   );
+}
+
+/** Persist token from email / deep-link query without overwriting an existing snapshot. */
+export function persistGuestBookingAccessToken(
+  bookingId: number,
+  accessToken: string,
+): void {
+  if (typeof window === "undefined") return;
+  const trimmed = accessToken.trim();
+  if (!trimmed) return;
+  sessionStorage.setItem(`${TOKEN_PREFIX}${bookingId}`, trimmed);
 }
 
 export function getGuestBookingAccessToken(bookingId: number): string | null {
@@ -40,8 +67,33 @@ export function getGuestBookingSnapshot(
   const raw = sessionStorage.getItem(`${SNAPSHOT_PREFIX}${bookingId}`);
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as GuestBookingSnapshot;
+    const parsed = GuestBookingSnapshotSchema.safeParse(JSON.parse(raw));
+    return parsed.success ? parsed.data : null;
   } catch {
     return null;
   }
+}
+
+export function updateGuestBookingSnapshot(
+  bookingId: number,
+  patch: Partial<GuestBookingSnapshot>,
+): void {
+  if (typeof window === "undefined") return;
+  const current = getGuestBookingSnapshot(bookingId);
+  if (!current) return;
+  const next = GuestBookingSnapshotSchema.safeParse({
+    ...current,
+    ...patch,
+    id: bookingId,
+  });
+  if (!next.success) return;
+  sessionStorage.setItem(
+    `${SNAPSHOT_PREFIX}${bookingId}`,
+    JSON.stringify(next.data),
+  );
+}
+
+/** Remove all guest booking tokens and PII snapshots (logout / session invalidate). */
+export function clearAllGuestBookingAccess(): void {
+  removeSessionStorageByPrefixes([TOKEN_PREFIX, SNAPSHOT_PREFIX]);
 }

@@ -55,20 +55,33 @@ class BookingCapacityQueriesMixin(BookingGetMixin):
         )
         return result.scalar_one()
 
-    async def list_stale_pending(self, *, now: datetime | None = None) -> list[Booking]:
+    async def list_stale_pending(
+        self,
+        *,
+        now: datetime | None = None,
+        limit: int = 500,
+    ) -> list[Booking]:
         now_utc = ensure_utc(now or utc_now())
         result = await self._session.execute(
-            select(Booking).where(
+            select(Booking)
+            .where(
                 Booking.status == BookingStatus.PENDING,
                 or_(
                     Booking.reserved_until.is_(None),
                     Booking.reserved_until <= now_utc,
                 ),
             )
+            .order_by(Booking.id)
+            .limit(limit)
         )
         return list(result.scalars().all())
 
-    async def list_past_confirmed(self, *, now: datetime | None = None) -> list[Booking]:
+    async def list_past_confirmed(
+        self,
+        *,
+        now: datetime | None = None,
+        limit: int = 500,
+    ) -> list[Booking]:
         now_utc = ensure_utc(now or utc_now())
         result = await self._session.execute(
             select(Booking)
@@ -77,6 +90,8 @@ class BookingCapacityQueriesMixin(BookingGetMixin):
                 Booking.status == BookingStatus.CONFIRMED,
                 Occurrence.end_time < now_utc,
             )
+            .order_by(Booking.id)
+            .limit(limit)
         )
         return list(result.scalars().all())
 

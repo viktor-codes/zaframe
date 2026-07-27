@@ -7,10 +7,19 @@
 
 - The landing page is **not touched** — it ships as-is.
 - One phase = a sequence of small commits by FSD layer: entity → feature → app.
-  Conventional Commits (`feat(web): …`, `refactor(web): …`) must be added as text in chat, do not commit to github yourself.
 - A screen is done only when it passes the Definition of Done (below).
 - API-first: before building a screen, verify the endpoint exists, matches CONTRACTS.md,
   and is covered by generated types. Never build on mocks that will drift.
+
+### Git — human commits only (mandatory)
+
+After **every** finished roadmap chunk (one checklist item or one agreed sub-step):
+
+1. The agent **never** runs `git commit` / `git push` unless the human explicitly asks.
+2. The agent ends the chunk with a ready-to-paste **Conventional Commit** message
+   (`feat(web): …`, `refactor(web): …`, `chore(web): …`, `test(web): …`).
+3. The human commits locally by hand (and pushes when ready).
+4. Next chunk starts only after the human confirms the previous commit (or says to continue).
 
 ## Definition of Done (every screen)
 
@@ -27,7 +36,7 @@
 
 ## Phase 0 — Fixation (done 2026-07-05)
 
-- [x] STRATEGY.md — decisions resolved, stories prioritised, URL tree agreed
+- [x] STRATEGY.md — decisions resolved, stories prioritised, URL   tree agreed
 - [x] ARCHITECTURE.md — FSD layers, stack, migration map
 - [x] CONTRACTS.md — roles, permissions, statuses, errors, endpoints
 - [x] ROADMAP.md — this file
@@ -53,58 +62,68 @@ One commit per step, history stays readable:
 
 ## Phase 2 — Shared foundation
 
-- [ ] `shared/api/client.ts` (client-only): auth headers, refresh, `ApiError` (RFC 7807), `X-Request-ID`, Idempotency-Key helper
-- [ ] `shared/api/server.ts`: unauthenticated server fetch for public endpoints (RSC, see ARCHITECTURE §3)
-- [ ] `shared/lib/constants.ts`: all statuses + permissions matrix (single source of truth)
-- [ ] `shared/auth`: `useAuth`, `useRole`, `usePermission`, `RequireAuth`, `RequireStudioRole`
-- [ ] `PermissionGate` component
-- [ ] TanStack Query provider + query key conventions
-- [ ] Global toast for transient errors; error boundary per route group
+- [x] `shared/api/client.ts` (client-only): auth headers, refresh, `ApiError` (RFC 7807), `X-Request-ID`, Idempotency-Key helper
+- [x] `shared/api/server.ts`: unauthenticated server fetch for public endpoints (RSC, see ARCHITECTURE §3)
+- [x] `shared/lib/constants.ts`: all statuses + permissions matrix (single source of truth)
+- [x] `shared/auth`: `useAuth`, `useRole`, `usePermission`, `RequireAuth`, `RequireStudioRole`
+- [x] `PermissionGate` component
+- [x] TanStack Query provider + query key conventions
+- [x] Global toast for transient errors; error boundary per route group
 
 ## Phase 3 — Storefront + booking + payment (P0 stories 1, 2)
 
 Public zone first: simplest auth-wise, demoable to studios, closes the money loop.
 
-- [ ] `entities/studio` ui: StudioHeader, StudioGallery; `entities/service`: ServicePolaroidCard
-- [ ] `entities/occurrence`: OccurrenceRow, CapacityIndicator
-- [ ] `app/(main)/s/[slug]` on `GET /studios/slug/{slug}/public` (mobile-first)
-- [ ] `features/book-occurrence`: wizard (slot → guest form or sign-in → summary → Stripe)
-- [ ] Success page with webhook polling ("Payment processing…")
-- [ ] Guest confirm page `/bookings/{id}/confirm` via `access_token`
-- [ ] Edge cases: occurrence full, pending timer, webhook delayed
-- [ ] Playwright: guest checkout flow (update existing spec to slug routes)
+- [x] `entities/studio` ui: StudioHeader, StudioGallery; `entities/service`: ServicePolaroidCard
+- [x] `entities/occurrence`: OccurrenceRow, CapacityIndicator
+- [x] `app/(main)/s/[slug]` on `GET /studios/slug/{slug}/public` (mobile-first)
+- [x] `features/book-occurrence`: wizard (slot → guest form or sign-in → summary → Stripe)
+- [x] Success page with webhook polling ("Payment processing…")
+- [x] Guest confirm page `/bookings/{id}/confirm` via `access_token`
+- [x] Edge cases: occurrence full, pending timer, webhook delayed
+- [x] Playwright: guest checkout flow (update existing spec to slug routes)
 
 ## Phase 4 — Customer account (P0 stories 2, 5)
 
-- [ ] `entities/booking` ui: BookingCard, BookingStatusBadge, timeline
-- [ ] `app/(account)/bookings`: upcoming / past / cancelled (paginated via envelope)
-- [ ] `features/cancel-booking` with `cancel_before_hours` cutoff logic
-- [ ] `features/manage-account`: profile (PATCH /auth/me)
-- [ ] `app/(account)/orders`: course orders list
-- [ ] Edge cases: cancelled-by-studio, expired booking
-- [ ] Migrate old `/bookings` pages, set up redirects
+- [x] `entities/booking` ui: BookingCard, BookingStatusBadge, timeline
+- [x] `app/(account)/bookings`: upcoming / past / cancelled (paginated via envelope)
+- [x] `features/cancel-booking` with `cancel_before_hours` cutoff logic
+- [x] `features/manage-account`: profile (PATCH /auth/me)
+- [x] `app/(account)/orders`: course orders list
+- [x] Edge cases: cancelled-by-studio, expired booking
+- [x] Migrate old `/bookings` pages, set up redirects
 
 ## Phase 5 — Studio dashboard (P0 stories 3, 4)
-
+   
 Hardest zone — last, when the FSD pattern is routine.
 
-- [ ] `app/(dashboard)`: sidebar layout + StudioSwitcher + header mode switch (Customer ↔ Studio)
-- [ ] `/dashboard`: my studios list + onboarding funnel state (what's the next step)
-- [ ] `features/manage-studio`: create/edit profile, slug, timezone, cancel policy
-- [ ] `features/manage-services`: CRUD + VisibilityBadge (draft/published/archived tabs)
-- [ ] `features/manage-schedule`: **two separate sections** — Templates (+ generate + warning) and Calendar (list by date, edit/cancel with reason)
-- [ ] Studio "Today" screen: sessions, booked/capacity/pending counters, quick actions
-- [ ] `/dashboard/studios/{id}/bookings` with filters
-- [ ] Permission-driven navigation (instructor sees reduced menu)
+**MVP decision (2026-07-26):** dual-persona mode switch ("Customer ↔ Studio {name}")
+is **deferred**. One account can still be staff and customer in the API, but UX keeps
+surfaces separate — simple cross-links only (`Account` ↔ `Dashboard`), never mixed nav.
+Full mode switch → P1/polish when real cross-over demand appears.
+
+- [x] `app/(dashboard)`: sidebar layout + StudioSwitcher + Account cross-link
+- [x] `(account)` header: Dashboard cross-link when the user has a studio role
+- [x] `/dashboard`: my studios list + onboarding funnel state (what's the next step)
+- [x] `features/manage-studio`: create/edit profile, slug, timezone, cancel policy
+- [x] `features/manage-services`: CRUD + VisibilityBadge (draft/published/archived tabs)
+- [x] `features/manage-schedule` — **two separate sections**
+  - [x] Templates (+ generate + warning) — `/dashboard/studios/{id}/services/{sid}/schedule`
+  - [x] Calendar (list by date, edit/cancel with reason) — `/dashboard/studios/{id}/calendar`
+- [x] Studio "Today" screen: sessions, booked/capacity/pending counters, quick actions
+- [x] `/dashboard/studios/{id}/bookings` with filters
+- [x] Permission-driven navigation (instructor sees reduced menu)
 
 ## Phase 6 — P1 stories
 
-- [ ] Course booking wizard (order checkout, availability warnings)
-- [ ] Stripe Connect onboarding + payouts status
-- [ ] `features/check-in`: participants list + check-in / no-show (mobile-first)
-- [ ] Team members management (invite manager/instructor)
+- [x] Course booking wizard (order checkout, availability warnings)
+- [x] Stripe Connect onboarding + payouts status
+- [x] `features/check-in`: participants list + check-in / no-show (mobile-first)
+- [x] Team members management (invite manager/instructor)
 
 ## Later (P2 backlog)
 
-Search/filters on `/studios` · week-view calendar · GDPR export/delete ·
-"Add to calendar" · i18n (RU) — see STRATEGY §5.
+Search/filters on `/studios` · week-view calendar · "Add to calendar" ·
+i18n (RU) — see STRATEGY §5.
+
+**Done (Wave 1):** GDPR export (`GET /me/export`) + delete-account UI + privacy/cookies.

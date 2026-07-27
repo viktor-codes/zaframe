@@ -4,8 +4,9 @@ Order and course-purchase schemas.
 
 from __future__ import annotations
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, EmailStr, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, EmailStr, Field, field_validator
 
+from app.core.email_utils import normalize_email
 from app.modules.booking.schemas import BookingSelfResponse
 from app.modules.catalog.service import ServiceResponse
 
@@ -35,12 +36,16 @@ class OrderResponse(OrderBase):
 
 
 class OrderBookingSummary(BaseModel):
-    """Booking summary nested in order list responses."""
+    """Booking summary nested in order list / detail responses."""
 
     id: int
     occurrence_id: int
     status: str = Field(..., description="Booking lifecycle status")
     payment_status: str | None = Field(None, description="Payment status when available")
+    reserved_until: AwareDatetime | None = Field(
+        None,
+        description="Hold expiry for pending bookings (null after confirm/expire)",
+    )
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -99,6 +104,13 @@ class CourseBookingCreate(BaseModel):
     guest_name: str = Field(..., min_length=1, max_length=100)
     guest_email: EmailStr = Field(..., description="Guest email")
     guest_phone: str | None = Field(None, max_length=20)
+
+    @field_validator("guest_email", mode="before")
+    @classmethod
+    def _normalize_guest_email(cls, value: object) -> object:
+        if isinstance(value, str):
+            return normalize_email(value)
+        return value
 
 
 class CourseBookingResponse(BaseModel):

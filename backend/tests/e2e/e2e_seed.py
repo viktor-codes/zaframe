@@ -4,6 +4,8 @@ Seed a bookable studio and occurrence for Playwright E2E tests (guest checkout f
 Prints a single JSON line to stdout:
   {
     "studioId": 1,
+    "studioSlug": "e2e-yoga",
+    "serviceId": 3,
     "occurrenceId": 2,
     "occurrenceDate": "2026-06-17",
     "ownerAccessToken": "..."
@@ -119,6 +121,8 @@ async def seed_e2e_bookable_occurrence() -> dict[str, int | str]:
 
         return {
             "studioId": studio.id,
+            "studioSlug": studio.slug or "e2e-yoga",
+            "serviceId": service.id,
             "occurrenceId": occurrence.id,
             "occurrenceDate": occurrence_date,
             "ownerAccessToken": owner_access_token,

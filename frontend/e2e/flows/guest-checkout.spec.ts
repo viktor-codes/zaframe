@@ -1,18 +1,29 @@
 /**
- * Guest book → Stripe checkout session (Option A).
+ * Guest book → Stripe checkout session (Option A / td-10).
  *
- * Mode: hybrid E2E — UI flow through Pay; asserts checkout session created and
- * booking stays pending. Webhook confirmation is covered by backend tests
- * (`backend/tests/test_webhooks.py`).
+ * Flow: `/s/{slug}` → service → wizard (slot → details → summary) → Pay.
+ *
+ * Mode: hybrid E2E — UI through Pay; asserts Stripe Checkout URL + booking
+ * stays `pending`. Webhook → `confirmed` is covered by backend
+ * `tests/integration/api/test_webhooks.py`.
+ *
+ * Option B (local full confirm, not default):
+ *   stripe listen --forward-to localhost:8000/webhooks/stripe
+ *   then complete Checkout with card 4242… and assert confirmed in UI/API.
  *
  * Prerequisites (local):
  *   - PostgreSQL with migrations applied
  *   - Backend `.env`: SECRET_KEY, DATABASE_URL, STRIPE_SECRET_KEY (test mode)
  *   - `make e2e-critical` starts API + Next.js via Playwright webServer
  *
- * Env overrides:
+ * Env overrides (skip seed script):
+ *   E2E_STUDIO_ID, E2E_STUDIO_SLUG, E2E_SERVICE_ID,
+ *   E2E_OCCURRENCE_ID, E2E_OCCURRENCE_DATE[, E2E_OWNER_ACCESS_TOKEN]
  *   API_URL — backend origin (default http://127.0.0.1:8000)
- *   E2E_STUDIO_ID, E2E_OCCURRENCE_ID, E2E_OCCURRENCE_DATE — skip seed script
+ *
+ * Selectors: data-testid only
+ *   service-polaroid-card + data-service-id, book-occurrence-button,
+ *   guest-name-input, guest-email-input, submit-booking-button
  */
 
 import { test, expect } from "@playwright/test";
@@ -36,7 +47,7 @@ const GUEST = {
 test.describe("guest checkout critical flow", () => {
   test.describe.configure({ mode: "serial" });
 
-  test("guest books occurrence and receives Stripe checkout URL", async ({
+  test("guest books via slug storefront and receives Stripe checkout URL", async ({
     page,
   }) => {
     const seed = seedBookableOccurrence();
@@ -44,42 +55,39 @@ test.describe("guest checkout critical flow", () => {
     const bookingPage = new BookingPage(page);
     const stripePage = new StripeCheckoutPage(page);
 
-    await studioPage.goto(seed.studioId);
-    await studioPage.setScheduleDate(seed.occurrenceDate);
-    await studioPage.clickBookFirstSession();
+    await studioPage.gotoBySlug(seed.studioSlug);
+    await studioPage.clickServiceById(seed.serviceId);
 
-    await bookingPage.fillGuestDetails(GUEST);
-    await bookingPage.submitBooking();
-    await bookingPage.expectConfirmPage();
+    await bookingPage.completeWizardToSummary(seed.occurrenceId, GUEST);
 
-    const urlMatch = page.url().match(/\/bookings\/(\d+)\/confirm/);
-    expect(urlMatch).not.toBeNull();
-    const bookingId = Number(urlMatch![1]);
-    expect(bookingId).toBeGreaterThan(0);
-
-    const guestAccessToken = await page.evaluate((id) => {
-      return sessionStorage.getItem(`zeeframe_booking_access_token_${id}`);
-    }, bookingId);
-    expect(guestAccessToken).toBeTruthy();
-
-    await expect(page.getByTestId("pay-booking-button")).toBeVisible();
-
+    const createCapture = await bookingPage.armCreateBookingCapture();
     await stripePage.blockStripeRedirect();
-    const checkoutBody = await stripePage.clickPayAndCaptureCheckoutSession();
+    const checkoutBody = await stripePage.clickPayAndCaptureCheckoutSession(
+      "submit-booking-button",
+    );
+    const created = await createCapture.waitForBooking();
 
     expect(StripeCheckoutPage.isStripeCheckoutUrl(checkoutBody.checkout_url)).toBe(
       true,
     );
     expect(checkoutBody.session_id).toMatch(/^cs_/);
+    expect(created.id).toBeGreaterThan(0);
+    expect(created.access_token.length).toBeGreaterThan(8);
+    expect(created.status).toBe("pending");
 
+    const storedToken = await bookingPage.readGuestAccessToken(created.id);
+    expect(storedToken).toBe(created.access_token);
+
+    // WHY: GET /bookings/{id} needs a user JWT; guest opaque token is checkout-only.
+    // Prefer owner seed token; create-response already proves pending hold.
     if (seed.ownerAccessToken) {
-      const booking = await fetchBookingStatusAsOwner(
+      const ownerView = await fetchBookingStatusAsOwner(
         API_URL,
-        bookingId,
+        created.id,
         seed.ownerAccessToken,
       );
-      expect(booking.status).toBe("pending");
-      expect(booking.payment_status).not.toBe("paid");
+      expect(ownerView.status).toBe("pending");
+      expect(ownerView.payment_status).not.toBe("succeeded");
     }
   });
 });

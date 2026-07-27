@@ -1,18 +1,23 @@
 # TD-04 — Decompose `catalog/studio/router.py` god-router (P2)
 
+> **Status: Done (Wave 3 E).** Cross-domain handlers live in `public` / `schedule` /
+> `studio_occurrence_router`; studio list vs CRUD split; nested services on
+> `service/studio_services_router`. All catalog `*/router*.py` ≤150 lines.
+
 > Read [README.md](./README.md).
 
 ## Problem
 
-`modules/catalog/studio/router.py` (~230 lines) owns HTTP for **five concerns**:
+`modules/catalog/studio/router.py` originally owned HTTP for **five concerns**:
 
-| Route | Real owner |
-|-------|------------|
-| `GET/POST/PATCH/DELETE /studios` | studio ✓ |
-| `GET /studios/{id}/occurrences` | occurrence (nested) |
-| `GET /studios/slug/{slug}/public` | public |
-| `POST /studios/{id}/generate-occurrences` | schedule |
-| `GET /studios` with `include_services` | studio + search shape |
+| Route | Real owner | Status |
+|-------|------------|--------|
+| `GET/POST/PATCH/DELETE /studios` | studio ✓ | `studio/router.py` + `list_router.py` |
+| `GET /studios/{id}/occurrences` | occurrence (nested) | `studio_occurrence_router.py` |
+| `GET /studios/slug/{slug}/public` | public | `public/router.py` |
+| `POST /studios/{id}/generate-occurrences` | schedule | `schedule/router.py` |
+| `GET /studios` with `include_services` | studio explore | `studio/list_router.py` |
+| `GET /studios/{id}/services` | service (nested) | `service/studio_services_router.py` |
 
 Routers should stay thin; cross-subdomain routes obscure ownership.
 

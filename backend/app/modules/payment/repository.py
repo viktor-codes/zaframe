@@ -25,6 +25,41 @@ class PaymentRepository(WriteRepositoryMixin):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
+    async def list_for_user(
+        self,
+        *,
+        user_id: int,
+        user_email: str,
+        skip: int = 0,
+        limit: int = 500,
+    ) -> list[Payment]:
+        """Payments for bookings/orders owned by user_id or matching guest email."""
+        normalized_email = user_email.strip().lower()
+        booking_owner = or_(
+            Booking.user_id == user_id,
+            func.lower(Booking.guest_email) == normalized_email,
+        )
+        order_owner = or_(
+            Order.user_id == user_id,
+            func.lower(Order.guest_email) == normalized_email,
+        )
+        stmt = (
+            select(Payment)
+            .outerjoin(Booking, Booking.id == Payment.booking_id)
+            .outerjoin(Order, Order.id == Payment.order_id)
+            .where(
+                or_(
+                    (Payment.booking_id.is_not(None) & booking_owner),
+                    (Payment.order_id.is_not(None) & order_owner),
+                )
+            )
+            .order_by(Payment.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+        )
+        result = await self._session.execute(stmt)
+        return list(result.scalars().unique().all())
+
     async def get_by_id(self, payment_id: int) -> Payment | None:
         """Fetch one payment with linked booking/order context."""
         result = await self._session.execute(

@@ -1,4 +1,6 @@
-import { RequireAuth } from "@features/auth";
+import { RequireAuth } from "@shared/auth";
+import { RouteErrorBoundary } from "@shared/ui/route-error-boundary";
+
 import { AccountShell } from "./account-shell";
 
 export default function AccountLayout({
@@ -8,7 +10,14 @@ export default function AccountLayout({
 }) {
   return (
     <RequireAuth>
-      <AccountShell>{children}</AccountShell>
+      <AccountShell>
+        <RouteErrorBoundary
+          title="Account unavailable"
+          description="Your account section could not be displayed. Try again or reload the page."
+        >
+          {children}
+        </RouteErrorBoundary>
+      </AccountShell>
     </RequireAuth>
   );
 }

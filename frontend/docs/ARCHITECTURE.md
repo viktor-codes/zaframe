@@ -40,9 +40,12 @@ sidebar + StudioSwitcher for `(dashboard)`.
 The token model dictates the strategy — this is a constraint, not a preference:
 
 - Access token lives **in client memory** (`shared/auth/storage`), never in cookies.
-- Refresh token is an httpOnly cookie on the **API origin**, not the Next.js origin.
-- Therefore the Next.js server (RSC, middleware, route handlers) **cannot authenticate
-  a user**. Server-side data fetching is possible only for public endpoints.
+- Refresh + CSRF cookies are set by FastAPI but stored on the **Next.js (web) origin**
+  via same-origin `/api` rewrites (`API_UPSTREAM_URL`). The browser never talks to the
+  API host for cookie auth — that keeps CSRF double-submit readable in JS.
+- RSC still **cannot authenticate a user** (access token is memory-only; refresh is
+  httpOnly). Server-side data fetching is possible only for public endpoints
+  (direct to `API_UPSTREAM_URL`, not through the rewrite loop).
 
 | Zone | Rendering | Data fetching |
 |------|-----------|---------------|
@@ -71,6 +74,7 @@ src/
 ├── app/                        # routing only
 ├── features/
 │   ├── book-occurrence/        # ui/ + model/ + api.ts + index.ts (public API of the feature)
+│   ├── view-my-bookings/       # account list tabs + envelope pagination
 │   ├── cancel-booking/
 │   ├── manage-account/
 │   ├── manage-studio/
@@ -108,7 +112,7 @@ Domain components that appear on multiple surfaces live in `entities/`, not in a
 | `src/features/home`, `navigation` | stay as features (landing untouched) |
 | `src/features/studios` | split: cards → `entities/studio`, search → `features/search-studios` |
 | `src/app/(main)/studios/[id]` (public) | `app/(main)/s/[slug]` on public API |
-| `src/app/(main)/bookings/*` (account pages) | `app/(account)/bookings` |
+| `src/app/(main)/bookings/*` (account list) | `app/(account)/account/bookings` (`/account/bookings`; exact `/bookings` redirects) |
 | `src/app/(main)/dashboard/*` | `app/(dashboard)/…` sidebar + sub-routes |
 | `src/store/useUIStore.ts` | keep only if actually used; prefer local state |
 
@@ -123,7 +127,7 @@ Domain components that appear on multiple surfaces live in `entities/`, not in a
 | API types | `openapi-typescript` | generated from FastAPI `/openapi.json`, committed |
 | Styling | Tailwind v4 (existing tokens: mint/navy, polaroid) | |
 | Unit tests | Vitest | |
-| E2E | Playwright (`e2e/`, POM pattern) | critical flows only |
+| E2E | Playwright (`e2e/`, POM pattern) | critical flows only; **local/`make e2e`**, not default Frontend CI |
 | Lint | ESLint + boundary rule between FSD layers | |
 
 ## 7. Type generation from OpenAPI

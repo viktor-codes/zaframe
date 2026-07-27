@@ -1,6 +1,4 @@
-"use client";
-
-import { Skeleton } from "@shared/ui";
+import { Skeleton } from "@shared/ui/skeleton";
 
 export function StudiosSkeleton() {
   return (

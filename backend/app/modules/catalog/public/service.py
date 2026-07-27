@@ -14,6 +14,7 @@ from app.modules.catalog.capacity import (
     OccurrenceFill,
     build_public_course_availability,
 )
+from app.modules.catalog.occurrence.schemas import OccurrenceResponse
 from app.modules.catalog.public.dto import (
     PublicServiceAvailabilityDTO,
     PublicServiceDTO,
@@ -123,3 +124,49 @@ async def get_studio_public(
         cover_url=studio.cover_url,
         services=services_public,
     )
+
+
+async def list_public_bookable_occurrences(
+    uow: UnitOfWork,
+    *,
+    slug: str,
+    service_id: int,
+) -> list[OccurrenceResponse]:
+    """
+    Upcoming scheduled occurrences for a public service, with seat counts.
+
+    Used by the anonymous booking wizard (auth is not required).
+    """
+    studio = await uow.studios.get_by_slug(slug)
+    if studio is None:
+        raise NotFoundError("Studio not found")
+
+    service = await uow.services.get_by_studio_and_id(studio.id, service_id)
+    if service is None or not service.is_publicly_visible():
+        raise NotFoundError("Service not found")
+
+    now_utc = utc_now()
+    occurrences = await uow.occurrences.list_active_future_by_service(
+        service_id,
+        now=now_utc,
+    )
+    if not occurrences:
+        return []
+
+    counts_map = await uow.bookings.get_confirmed_pending_counts_by_occurrence_ids(
+        [occurrence.id for occurrence in occurrences],
+        now=now_utc,
+    )
+
+    responses: list[OccurrenceResponse] = []
+    for occurrence in occurrences:
+        confirmed, pending = counts_map.get(occurrence.id, (0, 0))
+        responses.append(
+            OccurrenceResponse.model_validate(occurrence).model_copy(
+                update={
+                    "confirmed_count": confirmed,
+                    "pending_count": pending,
+                }
+            )
+        )
+    return responses

@@ -1,17 +1,39 @@
-# TD-02 — Split oversized service modules (P1)
+# TD-02 — Split oversized service modules (P1) — PARTIAL
+
+> **Status (Jul 2026):** Original Part A/C mostly landed. `booking` already has
+> `lifecycle` / `queries` / `mapping` / `persistence` / `repository/`.
+>
+> **Wave 3 leftover (A→E plan):**
+> - `payment/checkout.py` (~460) — split session/order/helpers
+> - `booking/service.py` (~256) — extract attendance → `attendance.py`
+> - `booking/router.py` (~317) — split customer vs studio/attendance HTTP
+> - `payment/repository.py` (~252) — deferred (out of Wave 3 A→E)
 
 > Read [README.md](./README.md). Do **td-01** first if touching `catalog/service/service.py`.
 
 ## Problem
 
-Project rule: functions/components **≤ 150 lines**; several modules violate this:
+Project rule: functions/components **≤ 150 lines**; several modules violate this.
 
-| File | ~Lines | Concerns mixed |
-|------|--------|----------------|
+### Original hotspots (historical)
+
+| File | ~Lines then | Concerns mixed |
+|------|-------------|----------------|
 | `payment/service.py` | 438 | checkout creation, access checks, capacity simulation, webhook confirm |
 | `booking/service.py` | 370 | CRUD, authz mapping, lifecycle, persist helpers |
 | `catalog/service/service.py` | 317 | CRUD + availability (smaller after td-01) |
 | `booking/repository.py` | 300 | many query variants |
+
+### Current hotspots (Jul 2026 re-measure)
+
+| File | ~Lines | Next action |
+|------|--------|-------------|
+| `payment/checkout.py` | ~460 | Split (Wave 3 B) |
+| `booking/router.py` | ~317 | Split routers (Wave 3 D) |
+| `booking/service.py` | ~256 | Extract attendance (Wave 3 C) |
+| `payment/repository.py` | ~252 | Deferred |
+| `catalog/service/service.py` | ~133 | Done (CRUD) |
+| `payment/service.py` | ~20 | Done (shim) |
 
 ## Goal
 

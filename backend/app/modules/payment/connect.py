@@ -14,7 +14,7 @@ from app.core.observability import log_domain_event
 from app.core.uow import UnitOfWork
 from app.models.studio import Studio
 from app.modules.payment.schemas import validate_checkout_redirect_urls
-from app.modules.payment.stripe_client import get_stripe_client, raise_stripe_app_error
+from app.modules.payment.stripe_client import get_stripe_client, raise_stripe_app_error, run_stripe
 
 logger = structlog.get_logger(__name__)
 
@@ -61,9 +61,12 @@ async def refresh_stripe_connect_status(uow: UnitOfWork, *, studio: Studio) -> S
     """Fetch the Stripe account and refresh stored Connect flags."""
     if not studio.stripe_account_id:
         return studio
+    stripe_account_id = studio.stripe_account_id
     client = get_stripe_client()
     try:
-        account = client.v1.accounts.retrieve(account=studio.stripe_account_id)
+        account = await run_stripe(
+            lambda: client.v1.accounts.retrieve(account=stripe_account_id)
+        )
     except stripe.StripeError as e:
         raise_stripe_app_error(e, action="account status refresh")
     _apply_account_status(studio, account)
@@ -83,14 +86,16 @@ async def create_stripe_onboarding_link(
 
     if not studio.stripe_account_id:
         try:
-            account = client.v1.accounts.create(
-                params={
-                    "type": "express",
-                    "capabilities": {
-                        "card_payments": {"requested": True},
-                        "transfers": {"requested": True},
-                    },
-                }
+            account = await run_stripe(
+                lambda: client.v1.accounts.create(
+                    params={
+                        "type": "express",
+                        "capabilities": {
+                            "card_payments": {"requested": True},
+                            "transfers": {"requested": True},
+                        },
+                    }
+                )
             )
         except stripe.StripeError as e:
             raise_stripe_app_error(e, action="account creation")
@@ -100,14 +105,17 @@ async def create_stripe_onboarding_link(
         studio.stripe_account_id = account_id
         _apply_account_status(studio, account)
 
+    stripe_account_id = studio.stripe_account_id
     try:
-        link = client.v1.account_links.create(
-            params={
-                "account": studio.stripe_account_id,
-                "refresh_url": refresh_url,
-                "return_url": return_url,
-                "type": "account_onboarding",
-            }
+        link = await run_stripe(
+            lambda: client.v1.account_links.create(
+                params={
+                    "account": stripe_account_id,
+                    "refresh_url": refresh_url,
+                    "return_url": return_url,
+                    "type": "account_onboarding",
+                }
+            )
         )
     except stripe.StripeError as e:
         raise_stripe_app_error(e, action="account onboarding link creation")

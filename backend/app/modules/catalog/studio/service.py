@@ -1,70 +1,29 @@
-"""
-Business logic for studios.
-
-Why the service layer exists:
-- Routers stay thin and handle only HTTP concerns
-- Business logic lives in one place and is easier to test
-- Logic can be reused across endpoints, webhooks, and CLI scripts
-"""
-
-from typing import Literal
+"""Studio CRUD and list use-cases. Permission helpers re-exported from permissions."""
 
 import structlog
 
-from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError, ValidationError
+from app.core.exceptions import ConflictError, NotFoundError, ValidationError
 from app.core.observability import log_domain_event
 from app.core.uow import UnitOfWork
 from app.models.studio import Studio
 from app.models.studio_member import StudioMember, StudioMemberRole
-from app.models.user import User, UserRole
+from app.models.user import UserRole
+from app.modules.catalog.studio.permissions import (
+    STUDIO_PERMISSIONS_BY_ROLE,
+    StudioPermission,
+    ensure_studio_owner,
+    has_studio_permission,
+    require_studio_permission,
+)
 from app.modules.catalog.studio.schemas import StudioCreate, StudioRoleResponse, StudioUpdate
 
-StudioPermission = Literal[
-    "view_dashboard",
-    "manage_studio",
-    "manage_services",
-    "manage_schedule",
-    "view_bookings",
-    "manage_bookings",
-    "check_in_booking",
-    "manage_payouts",
-    "manage_members",
+__all__ = [
+    "STUDIO_PERMISSIONS_BY_ROLE", "StudioPermission", "create_studio", "delete_studio",
+    "ensure_studio_owner", "ensure_studio_slug_available", "get_current_user_studio_roles",
+    "get_my_studios", "get_studio", "get_studio_or_raise", "get_studios", "get_studios_count",
+    "has_studio_permission", "require_studio_permission", "update_studio",
 ]
 logger = structlog.get_logger(__name__)
-
-STUDIO_PERMISSIONS_BY_ROLE: dict[str, frozenset[StudioPermission]] = {
-    StudioMemberRole.OWNER.value: frozenset(
-        {
-            "view_dashboard",
-            "manage_studio",
-            "manage_services",
-            "manage_schedule",
-            "view_bookings",
-            "manage_bookings",
-            "check_in_booking",
-            "manage_payouts",
-            "manage_members",
-        }
-    ),
-    StudioMemberRole.MANAGER.value: frozenset(
-        {
-            "view_dashboard",
-            "manage_services",
-            "manage_schedule",
-            "view_bookings",
-            "manage_bookings",
-            "check_in_booking",
-            "manage_payouts",
-        }
-    ),
-    StudioMemberRole.INSTRUCTOR.value: frozenset(
-        {
-            "view_dashboard",
-            "view_bookings",
-            "check_in_booking",
-        }
-    ),
-}
 
 
 async def get_studio(uow: UnitOfWork, studio_id: int) -> Studio | None:
@@ -142,73 +101,6 @@ async def get_studio_or_raise(uow: UnitOfWork, studio_id: int) -> Studio:
     if studio is None:
         raise NotFoundError("Studio not found")
     return studio
-
-
-def ensure_studio_owner(studio: Studio, user_id: int) -> None:
-    """Legacy owner_id check kept for compatibility with older call sites."""
-    if studio.owner_id != user_id:
-        raise ForbiddenError("Access denied for this studio")
-
-
-async def _get_studio_role(
-    uow: UnitOfWork,
-    *,
-    studio: Studio,
-    user: User,
-) -> str | None:
-    membership = await uow.studio_members.get_by_studio_and_user(
-        studio_id=studio.id,
-        user_id=user.id,
-    )
-    if membership is not None:
-        return membership.role
-    if studio.owner_id == user.id:
-        return StudioMemberRole.OWNER.value
-    return None
-
-
-async def has_studio_permission(
-    uow: UnitOfWork,
-    *,
-    studio: Studio,
-    user: User,
-    permission: StudioPermission,
-    allow_admin_bypass: bool = False,
-) -> bool:
-    """Check a studio-scoped permission without raising."""
-    if allow_admin_bypass and user.role == UserRole.ADMIN.value:
-        return True
-    role = await _get_studio_role(uow, studio=studio, user=user)
-    if role is None:
-        return False
-    return permission in STUDIO_PERMISSIONS_BY_ROLE.get(role, frozenset())
-
-
-async def require_studio_permission(
-    uow: UnitOfWork,
-    *,
-    studio: Studio,
-    user: User,
-    permission: StudioPermission,
-    allow_admin_bypass: bool = False,
-) -> None:
-    """Raise ForbiddenError unless the user has the requested studio permission."""
-    if not await has_studio_permission(
-        uow,
-        studio=studio,
-        user=user,
-        permission=permission,
-        allow_admin_bypass=allow_admin_bypass,
-    ):
-        log_domain_event(
-            logger,
-            "permission_denied",
-            level="warning",
-            user_id=user.id,
-            studio_id=studio.id,
-            permission=permission,
-        )
-        raise ForbiddenError("Access denied for this studio")
 
 
 async def ensure_studio_slug_available(

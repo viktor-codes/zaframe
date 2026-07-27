@@ -202,6 +202,51 @@ async def test_owner_list_excludes_foreign_studio_bookings(client: AsyncClient):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+async def test_owner_list_supports_studio_filter_and_nested_occurrence(
+    client: AsyncClient,
+):
+    """Dashboard bookings list scopes by studio_id and embeds occurrence."""
+    owner_access, _ = await _authenticate_user(client, "owner-authz-filter@example.com")
+    owner_headers = {"Authorization": f"Bearer {owner_access}"}
+    studio_a, occurrence_a, booking_a = await _create_studio_slot_and_booking(
+        client,
+        owner_headers,
+        guest_email="filter-guest-a@example.com",
+    )
+    studio_b, _, booking_b = await _create_studio_slot_and_booking(
+        client,
+        owner_headers,
+        guest_email="filter-guest-b@example.com",
+    )
+
+    r_filtered = await client.get(
+        "/api/v1/bookings",
+        params={"studio_id": studio_a},
+        headers=owner_headers,
+    )
+    assert r_filtered.status_code == 200
+    body = r_filtered.json()
+    ids = [item["id"] for item in body["items"]]
+    assert booking_a in ids
+    assert booking_b not in ids
+    match = next(item for item in body["items"] if item["id"] == booking_a)
+    assert match["occurrence"]["id"] == occurrence_a
+    assert match["occurrence"]["title"] == "Authz Class"
+
+    stranger_access, _ = await _authenticate_user(
+        client, "stranger-authz-filter@example.com"
+    )
+    stranger_headers = {"Authorization": f"Bearer {stranger_access}"}
+    r_forbidden = await client.get(
+        "/api/v1/bookings",
+        params={"studio_id": studio_b},
+        headers=stranger_headers,
+    )
+    assert r_forbidden.status_code == 403
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_guest_booking_visible_in_my_after_otp_login(client: AsyncClient):
     owner_access, _ = await _authenticate_user(client, "owner-authz-my@example.com")
     owner_headers = {"Authorization": f"Bearer {owner_access}"}
@@ -214,6 +259,84 @@ async def test_guest_booking_visible_in_my_after_otp_login(client: AsyncClient):
     guest_headers = {"Authorization": f"Bearer {guest_access}"}
 
     r_my = await client.get("/api/v1/bookings/my", headers=guest_headers)
+    assert r_my.status_code == 200
+    my_ids = [item["id"] for item in r_my.json()["items"]]
+    assert booking_id in my_ids
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_authenticated_create_sets_user_id_and_lists_in_my(
+    client: AsyncClient,
+):
+    """Bearer on POST /bookings attaches user_id immediately (no OTP attach needed)."""
+    owner_access, _ = await _authenticate_user(
+        client, "owner-authz-auth-create@example.com"
+    )
+    owner_headers = {"Authorization": f"Bearer {owner_access}"}
+
+    customer_email = "customer-authz-auth-create@example.com"
+    customer_access, customer = await _authenticate_user(
+        client, customer_email, name="Signed In Customer"
+    )
+    customer_headers = {"Authorization": f"Bearer {customer_access}"}
+
+    r_studio = await client.post(
+        "/api/v1/studios",
+        json={
+            "name": "Auth Create Studio",
+            "description": "Authenticated create",
+            "email": "auth-create-studio@example.com",
+            "address": "Auth create street 1",
+            "timezone": "Europe/Dublin",
+        },
+        headers=owner_headers,
+    )
+    assert r_studio.status_code == 201
+    studio_id = r_studio.json()["id"]
+    service_id = await create_test_service(
+        client,
+        headers=owner_headers,
+        studio_id=studio_id,
+        name="Auth Create Class",
+    )
+
+    start = datetime.now(UTC) + timedelta(hours=48)
+    end = start + timedelta(hours=1)
+    r_occurrence = await client.post(
+        "/api/v1/occurrences",
+        json={
+            "start_time": start.isoformat(),
+            "end_time": end.isoformat(),
+            "title": "Auth Create Class",
+            "description": "Test slot",
+            "max_capacity": 5,
+            "price_cents": 1000,
+            "studio_id": studio_id,
+            "service_id": service_id,
+        },
+        headers=owner_headers,
+    )
+    assert r_occurrence.status_code == 201
+    occurrence_id = r_occurrence.json()["id"]
+
+    r_booking = await client.post(
+        "/api/v1/bookings",
+        json={
+            "occurrence_id": occurrence_id,
+            "guest_name": "Signed In Customer",
+            "guest_email": customer_email,
+            "guest_phone": "+353000000",
+        },
+        headers=customer_headers,
+    )
+    assert r_booking.status_code == 201
+    body = r_booking.json()
+    assert body["user_id"] == customer["id"]
+    assert body["access_token"]
+    booking_id = body["id"]
+
+    r_my = await client.get("/api/v1/bookings/my", headers=customer_headers)
     assert r_my.status_code == 200
     my_ids = [item["id"] for item in r_my.json()["items"]]
     assert booking_id in my_ids
