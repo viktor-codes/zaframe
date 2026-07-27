@@ -1,16 +1,17 @@
-"use client";
-
-import { useParams } from "next/navigation";
-
 import { StudioCalendarPanel } from "@features/manage-schedule";
 import { RequireStudioPermission } from "@shared/auth";
-import { StudioPermission } from "@shared/lib";
+import { StudioPermission } from "@shared/lib/constants";
+import { parsePositiveIdString } from "@shared/lib/parse-positive-id";
 
-import { parsePositiveRouteId } from "@/app/(dashboard)/parse-route-id";
+interface StudioCalendarPageProps {
+  params: Promise<{ id: string }>;
+}
 
-export default function StudioCalendarPage() {
-  const params = useParams();
-  const studioId = parsePositiveRouteId(params.id);
+export default async function StudioCalendarPage({
+  params,
+}: StudioCalendarPageProps) {
+  const { id } = await params;
+  const studioId = parsePositiveIdString(id);
 
   if (studioId == null) {
     return (

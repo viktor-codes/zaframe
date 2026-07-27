@@ -1,18 +1,18 @@
-"use client";
-
 import Link from "next/link";
-import { useParams } from "next/navigation";
 
 import { CreateServiceForm } from "@features/manage-services";
 import { RequireStudioPermission } from "@shared/auth";
-import { StudioPermission } from "@shared/lib";
-import { Card } from "@shared/ui";
+import { StudioPermission } from "@shared/lib/constants";
+import { parsePositiveIdString } from "@shared/lib/parse-positive-id";
+import { Card } from "@shared/ui/card";
 
-import { parsePositiveRouteId } from "@/app/(dashboard)/parse-route-id";
+interface NewServicePageProps {
+  params: Promise<{ id: string }>;
+}
 
-export default function NewServicePage() {
-  const params = useParams();
-  const studioId = parsePositiveRouteId(params.id);
+export default async function NewServicePage({ params }: NewServicePageProps) {
+  const { id } = await params;
+  const studioId = parsePositiveIdString(id);
 
   if (studioId == null) {
     return (

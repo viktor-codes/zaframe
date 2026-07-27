@@ -1,18 +1,20 @@
-"use client";
-
 import { Suspense } from "react";
-import { useParams } from "next/navigation";
 
 import { PayoutsPanel } from "@features/manage-payouts";
 import { RequireStudioPermission } from "@shared/auth";
-import { StudioPermission } from "@shared/lib";
-import { ResourceListSkeleton } from "@shared/ui";
+import { StudioPermission } from "@shared/lib/constants";
+import { parsePositiveIdString } from "@shared/lib/parse-positive-id";
+import { ResourceListSkeleton } from "@shared/ui/resource-states";
 
-import { parsePositiveRouteId } from "@/app/(dashboard)/parse-route-id";
+interface StudioPayoutsPageProps {
+  params: Promise<{ id: string }>;
+}
 
-export default function StudioPayoutsPage() {
-  const params = useParams();
-  const studioId = parsePositiveRouteId(params.id);
+export default async function StudioPayoutsPage({
+  params,
+}: StudioPayoutsPageProps) {
+  const { id } = await params;
+  const studioId = parsePositiveIdString(id);
 
   if (studioId == null) {
     return (

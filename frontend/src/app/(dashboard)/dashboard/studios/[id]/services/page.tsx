@@ -1,16 +1,17 @@
-"use client";
-
-import { useParams } from "next/navigation";
-
 import { ServicesPanel } from "@features/manage-services";
 import { RequireStudioPermission } from "@shared/auth";
-import { StudioPermission } from "@shared/lib";
+import { StudioPermission } from "@shared/lib/constants";
+import { parsePositiveIdString } from "@shared/lib/parse-positive-id";
 
-import { parsePositiveRouteId } from "@/app/(dashboard)/parse-route-id";
+interface StudioServicesPageProps {
+  params: Promise<{ id: string }>;
+}
 
-export default function StudioServicesPage() {
-  const params = useParams();
-  const studioId = parsePositiveRouteId(params.id);
+export default async function StudioServicesPage({
+  params,
+}: StudioServicesPageProps) {
+  const { id } = await params;
+  const studioId = parsePositiveIdString(id);
 
   if (studioId == null) {
     return (

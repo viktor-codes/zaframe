@@ -1,9 +1,7 @@
-"use client";
-
 import Link from "next/link";
 
 import { CreateStudioForm } from "@features/manage-studio";
-import { Card } from "@shared/ui";
+import { Card } from "@shared/ui/card";
 
 export default function NewStudioPage() {
   return (

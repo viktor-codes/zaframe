@@ -1,5 +1,3 @@
-"use client";
-
 import { MyStudiosPanel } from "@features/view-my-studios";
 
 export default function DashboardPage() {

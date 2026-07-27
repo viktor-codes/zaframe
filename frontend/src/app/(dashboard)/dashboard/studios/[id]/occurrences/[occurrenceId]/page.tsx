@@ -1,17 +1,18 @@
-"use client";
-
-import { useParams } from "next/navigation";
-
 import { CheckInPanel } from "@features/check-in";
 import { RequireStudioPermission } from "@shared/auth";
-import { StudioPermission } from "@shared/lib";
+import { StudioPermission } from "@shared/lib/constants";
+import { parsePositiveIdString } from "@shared/lib/parse-positive-id";
 
-import { parsePositiveRouteId } from "@/app/(dashboard)/parse-route-id";
+interface OccurrenceCheckInPageProps {
+  params: Promise<{ id: string; occurrenceId: string }>;
+}
 
-export default function OccurrenceCheckInPage() {
-  const params = useParams();
-  const studioId = parsePositiveRouteId(params.id);
-  const occurrenceId = parsePositiveRouteId(params.occurrenceId);
+export default async function OccurrenceCheckInPage({
+  params,
+}: OccurrenceCheckInPageProps) {
+  const { id, occurrenceId: occurrenceIdParam } = await params;
+  const studioId = parsePositiveIdString(id);
+  const occurrenceId = parsePositiveIdString(occurrenceIdParam);
 
   if (studioId == null || occurrenceId == null) {
     return (

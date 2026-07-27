@@ -1,16 +1,17 @@
-"use client";
-
-import { useParams } from "next/navigation";
-
 import { StudioBookingsPanel } from "@features/view-studio-bookings";
 import { RequireStudioPermission } from "@shared/auth";
-import { StudioPermission } from "@shared/lib";
+import { StudioPermission } from "@shared/lib/constants";
+import { parsePositiveIdString } from "@shared/lib/parse-positive-id";
 
-import { parsePositiveRouteId } from "@/app/(dashboard)/parse-route-id";
+interface StudioBookingsPageProps {
+  params: Promise<{ id: string }>;
+}
 
-export default function StudioBookingsPage() {
-  const params = useParams();
-  const studioId = parsePositiveRouteId(params.id);
+export default async function StudioBookingsPage({
+  params,
+}: StudioBookingsPageProps) {
+  const { id } = await params;
+  const studioId = parsePositiveIdString(id);
 
   if (studioId == null) {
     return (

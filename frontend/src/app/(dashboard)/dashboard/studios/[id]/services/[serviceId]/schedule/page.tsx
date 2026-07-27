@@ -1,17 +1,18 @@
-"use client";
-
-import { useParams } from "next/navigation";
-
 import { ScheduleTemplatesPanel } from "@features/manage-schedule";
 import { RequireStudioPermission } from "@shared/auth";
-import { StudioPermission } from "@shared/lib";
+import { StudioPermission } from "@shared/lib/constants";
+import { parsePositiveIdString } from "@shared/lib/parse-positive-id";
 
-import { parsePositiveRouteId } from "@/app/(dashboard)/parse-route-id";
+interface ServiceSchedulePageProps {
+  params: Promise<{ id: string; serviceId: string }>;
+}
 
-export default function ServiceSchedulePage() {
-  const params = useParams();
-  const studioId = parsePositiveRouteId(params.id);
-  const serviceId = parsePositiveRouteId(params.serviceId);
+export default async function ServiceSchedulePage({
+  params,
+}: ServiceSchedulePageProps) {
+  const { id, serviceId: serviceIdParam } = await params;
+  const studioId = parsePositiveIdString(id);
+  const serviceId = parsePositiveIdString(serviceIdParam);
 
   if (studioId == null || serviceId == null) {
     return (
