@@ -87,6 +87,10 @@ describe("queryKeys", () => {
     expect(queryKeys.orders.my(params)).toEqual(["orders", "my", params]);
   });
 
+  it("keys order detail by id", () => {
+    expect(queryKeys.order.detail(42)).toEqual(["order", 42]);
+  });
+
   it("keys service availability by id and optional start date", () => {
     expect(queryKeys.service.availability(55)).toEqual([
       "service",

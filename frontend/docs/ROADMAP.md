@@ -116,7 +116,7 @@ Full mode switch → P1/polish when real cross-over demand appears.
 
 ## Phase 6 — P1 stories
 
-- [ ] Course booking wizard (order checkout, availability warnings)
+- [x] Course booking wizard (order checkout, availability warnings)
 - [ ] Stripe Connect onboarding + payouts status
 - [ ] `features/check-in`: participants list + check-in / no-show (mobile-first)
 - [ ] Team members management (invite manager/instructor)

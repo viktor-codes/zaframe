@@ -60,7 +60,7 @@ export {
   fetchServiceScheduleTemplates,
   updateScheduleTemplate,
 } from "./schedule-templates";
-export { fetchMyOrders, type MyOrdersParams } from "./orders";
+export { fetchMyOrders, fetchOrder, type MyOrdersParams, type OrderAccessOptions } from "./orders";
 export { updateCurrentUser } from "./users";
 export {
   createStudio,

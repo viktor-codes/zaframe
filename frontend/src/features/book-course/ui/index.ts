@@ -14,3 +14,7 @@ export {
   CourseSchedulePreview,
   type CourseSchedulePreviewProps,
 } from "./course-schedule-preview";
+export {
+  OrderPaymentSuccessPanel,
+  type OrderPaymentSuccessPanelProps,
+} from "./order-payment-success-panel";

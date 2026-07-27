@@ -110,6 +110,10 @@ export const queryKeys = {
       ["orders", "my", params] as const,
   },
 
+  order: {
+    detail: (id: number) => ["order", id] as const,
+  },
+
   occurrence: {
     detail: (id: number | undefined) => ["occurrence", id] as const,
     bookings: (id: number) => ["occurrence", id, "bookings"] as const,

@@ -8,6 +8,8 @@ export {
   type CourseAvailabilityPanelProps,
   CourseSchedulePreview,
   type CourseSchedulePreviewProps,
+  OrderPaymentSuccessPanel,
+  type OrderPaymentSuccessPanelProps,
 } from "./ui";
 export {
   getCourseAvailabilityPresentation,

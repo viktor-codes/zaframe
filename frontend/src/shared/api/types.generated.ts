@@ -528,6 +528,9 @@ export interface paths {
          *     Variants:
          *     - single occurrence booking (BookingCreate)
          *     - course purchase (CourseBookingCreate), creating one Order and N bookings
+         *
+         *     Auth is optional: with a valid Bearer token, ``user_id`` is set immediately;
+         *     without a token the booking stays guest-owned until OTP attach.
          */
         post: operations["create_booking_endpoint_api_v1_bookings_post"];
         delete?: never;
@@ -593,7 +596,7 @@ export interface paths {
         head?: never;
         /**
          * Cancel Booking Endpoint
-         * @description Cancel a booking when owned by the user or allowed by studio permission.
+         * @description Cancel own booking, or a studio booking when the user has manage_bookings.
          */
         patch: operations["cancel_booking_endpoint_api_v1_bookings__booking_id__cancel_patch"];
         trace?: never;
@@ -690,6 +693,29 @@ export interface paths {
          * @description List orders for studios owned by the current user.
          */
         get: operations["list_owner_orders_endpoint_api_v1_orders_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orders/{order_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Order By Id
+         * @description Read a single order for success-page status poll.
+         *
+         *     Auth: session JWT owner (user_id or guest_email match) **or**
+         *     opaque guest ``access_token`` from course create, sent as ``Authorization: Bearer``.
+         */
+        get: operations["get_order_by_id_api_v1_orders__order_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1043,9 +1069,11 @@ export interface components {
         };
         /**
          * BookingCreate
-         * @description Guest booking create payload.
+         * @description Booking create payload (guest or authenticated).
          *
-         *     Used before OTP verify; user_id is attached after verification.
+         *     Guest checkout: no Bearer → ``user_id`` stays null until OTP attach.
+         *     Authenticated: Bearer present → ``user_id`` set on create; guest_* still
+         *     required for contact / receipt (wizard prefills from the profile).
          */
         BookingCreate: {
             /**
@@ -1944,7 +1972,7 @@ export interface components {
         };
         /**
          * OrderBookingSummary
-         * @description Booking summary nested in order list responses.
+         * @description Booking summary nested in order list / detail responses.
          */
         OrderBookingSummary: {
             /** Id */
@@ -1961,6 +1989,11 @@ export interface components {
              * @description Payment status when available
              */
             payment_status?: string | null;
+            /**
+             * Reserved Until
+             * @description Hold expiry for pending bookings (null after confirm/expire)
+             */
+            reserved_until?: string | null;
         };
         /**
          * OrderCheckoutSessionCreate
@@ -4923,12 +4956,43 @@ export interface operations {
             };
         };
     };
+    get_order_by_id_api_v1_orders__order_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderListItem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_checkout_session_endpoint_api_v1_payments_checkout_session_post: {
         parameters: {
             query?: never;
-            header?: {
-                /** @description Client-generated key for safe checkout retries */
-                "Idempotency-Key"?: string | null;
+            header: {
+                /** @description Required client-generated key for safe checkout retries */
+                "Idempotency-Key": string;
             };
             path?: never;
             cookie?: never;
@@ -4962,9 +5026,9 @@ export interface operations {
     create_order_checkout_session_endpoint_api_v1_payments_order_checkout_session_post: {
         parameters: {
             query?: never;
-            header?: {
-                /** @description Client-generated key for safe checkout retries */
-                "Idempotency-Key"?: string | null;
+            header: {
+                /** @description Required client-generated key for safe checkout retries */
+                "Idempotency-Key": string;
             };
             path?: never;
             cookie?: never;
