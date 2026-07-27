@@ -47,3 +47,10 @@ services:
     envVars:
       - key: DATABASE_URL
         sync: false
+      # WHY: app.core.config.Settings requires SECRET_KEY at import time
+      # (even though this job only needs DB access).
+      - key: SECRET_KEY
+        fromService:
+          type: web
+          name: zeeframe-api
+          envVarKey: SECRET_KEY
