@@ -7,6 +7,8 @@ import type {
   BookingCreate,
   BookingCreatedResponse,
   BookingDetailResponse,
+  CourseBookingCreate,
+  CourseBookingResponse,
   PaginatedBookingSelfList,
   PaginatedBookingWithOccurrenceList,
 } from "@entities/booking";
@@ -121,6 +123,17 @@ export async function createBooking(
   // WHY: send Bearer when present so the API can attach user_id immediately;
   // guests without a token still create anonymously (optional auth on backend).
   return api.post<BookingCreatedResponse>("api/v1/bookings", data);
+}
+
+/**
+ * Course purchase: one Order + N bookings (`CourseBookingCreate`).
+ * WHY: same path as single booking, but response shape is order-centric
+ * (access_token pays the order, not a single booking).
+ */
+export async function createCourseBooking(
+  data: CourseBookingCreate,
+): Promise<CourseBookingResponse> {
+  return api.post<CourseBookingResponse>("api/v1/bookings", data);
 }
 
 export async function cancelBooking(

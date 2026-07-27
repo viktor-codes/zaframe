@@ -25,6 +25,7 @@ export type { components, operations, paths } from "./types.generated";
 export {
   cancelBooking,
   createBooking,
+  createCourseBooking,
   fetchBooking,
   fetchBookings,
   fetchMyBookings,
@@ -41,6 +42,7 @@ export {
 } from "./occurrences";
 export {
   createCheckoutSession,
+  createOrderCheckoutSession,
   type CreateCheckoutSessionOptions,
 } from "./payments";
 export { fetchSearch } from "./search";
@@ -48,7 +50,9 @@ export {
   createService,
   deactivateService,
   fetchService,
+  fetchServiceAvailability,
   updateService,
+  type ServiceAvailabilityParams,
 } from "./services";
 export {
   createScheduleTemplate,

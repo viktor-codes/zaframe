@@ -1,14 +1,44 @@
 /**
- * Service catalog API (dashboard CRUD).
+ * Service catalog API (dashboard CRUD + public availability).
  */
 
 import type {
+  ServiceAvailabilityResponse,
   ServiceCreate,
   ServiceResponse,
   ServiceUpdate,
 } from "@entities/service";
 
 import { api } from "./client";
+
+export interface ServiceAvailabilityParams {
+  /** Optional start date (YYYY-MM-DD); backend defaults to today. */
+  start_date?: string | null;
+  signal?: AbortSignal;
+}
+
+/**
+ * Public course availability for purchase warnings (overbooked dates).
+ * WHY: storefront must warn before course checkout (STRATEGY §7).
+ */
+export async function fetchServiceAvailability(
+  serviceId: number,
+  params: ServiceAvailabilityParams = {},
+): Promise<ServiceAvailabilityResponse> {
+  const searchParams: Record<string, string | undefined> = {};
+  if (params.start_date != null && params.start_date !== "") {
+    searchParams.start_date = params.start_date;
+  }
+
+  return api.get<ServiceAvailabilityResponse>(
+    `api/v1/services/${serviceId}/availability`,
+    {
+      skipAuth: true,
+      params: searchParams,
+      signal: params.signal,
+    },
+  );
+}
 
 export async function fetchService(
   serviceId: number,

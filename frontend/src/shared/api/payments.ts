@@ -12,6 +12,7 @@ import type {
   CheckoutSessionCreate,
   CheckoutSessionResponse,
 } from "@entities/booking";
+import type { OrderCheckoutSessionCreate } from "@entities/order";
 
 import { api, type RequestConfig } from "./client";
 
@@ -21,21 +22,41 @@ export interface CreateCheckoutSessionOptions {
   requestId?: string;
 }
 
-export async function createCheckoutSession(
-  data: CheckoutSessionCreate,
+function checkoutRequestConfig(
+  accessToken: string | null | undefined,
   options: CreateCheckoutSessionOptions,
-): Promise<CheckoutSessionResponse> {
-  const isGuestCheckout = Boolean(data.access_token);
-  const requestConfig: RequestConfig = {
+): RequestConfig {
+  const isGuestCheckout = Boolean(accessToken);
+  return {
     skipAuth: isGuestCheckout,
     skipRefresh: isGuestCheckout,
     idempotencyKey: options.idempotencyKey,
     requestId: options.requestId,
   };
+}
 
+export async function createCheckoutSession(
+  data: CheckoutSessionCreate,
+  options: CreateCheckoutSessionOptions,
+): Promise<CheckoutSessionResponse> {
   return api.post<CheckoutSessionResponse>(
     "api/v1/payments/checkout-session",
     data,
-    requestConfig,
+    checkoutRequestConfig(data.access_token, options),
+  );
+}
+
+/**
+ * Stripe Checkout for a course order (`OrderCheckoutSessionCreate`).
+ * WHY: amount and metadata come from the order, not a single booking hold.
+ */
+export async function createOrderCheckoutSession(
+  data: OrderCheckoutSessionCreate,
+  options: CreateCheckoutSessionOptions,
+): Promise<CheckoutSessionResponse> {
+  return api.post<CheckoutSessionResponse>(
+    "api/v1/payments/order-checkout-session",
+    data,
+    checkoutRequestConfig(data.access_token, options),
   );
 }

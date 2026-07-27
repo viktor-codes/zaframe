@@ -7,7 +7,10 @@ vi.mock("@shared/lib/config", () => ({
   },
 }));
 
-import { createCheckoutSession } from "./payments";
+import {
+  createCheckoutSession,
+  createOrderCheckoutSession,
+} from "./payments";
 import { setAuthTokenProvider } from "./client";
 
 describe("createCheckoutSession", () => {
@@ -41,6 +44,7 @@ describe("createCheckoutSession", () => {
 
     const headers = new Headers(fetchMock.mock.calls[0]?.[1]?.headers);
     expect(headers.get("Authorization")).toBe("Bearer session-token");
+    expect(headers.get("Idempotency-Key")).toBe("idem-session-1");
   });
 
   it("skips session Bearer for guest checkout with access_token", async () => {
@@ -66,5 +70,68 @@ describe("createCheckoutSession", () => {
     expect(headers.get("Authorization")).toBeNull();
     const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
     expect(body.access_token).toBe("guest-jwt");
+  });
+});
+
+describe("createOrderCheckoutSession", () => {
+  beforeEach(() => {
+    setAuthTokenProvider(() => "session-token");
+  });
+
+  afterEach(() => {
+    setAuthTokenProvider(() => null);
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("posts to order-checkout-session with Idempotency-Key", async () => {
+    const fetchMock = vi.fn(async (input: string | URL) => {
+      expect(String(input)).toContain("/api/v1/payments/order-checkout-session");
+      return new Response(
+        JSON.stringify({ checkout_url: "https://stripe.test/o", session_id: "cs_o1" }),
+        { status: 201, headers: { "Content-Type": "application/json" } },
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await createOrderCheckoutSession(
+      {
+        order_id: 42,
+        success_url: "https://app.test/ok",
+        cancel_url: "https://app.test/cancel",
+      },
+      { idempotencyKey: "idem-order-1" },
+    );
+
+    const headers = new Headers(fetchMock.mock.calls[0]?.[1]?.headers);
+    expect(headers.get("Authorization")).toBe("Bearer session-token");
+    expect(headers.get("Idempotency-Key")).toBe("idem-order-1");
+    const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+    expect(body.order_id).toBe(42);
+  });
+
+  it("skips session Bearer for guest order checkout with access_token", async () => {
+    const fetchMock = vi.fn(async () => {
+      return new Response(
+        JSON.stringify({ checkout_url: "https://stripe.test/o", session_id: "cs_o2" }),
+        { status: 201, headers: { "Content-Type": "application/json" } },
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await createOrderCheckoutSession(
+      {
+        order_id: 7,
+        success_url: "https://app.test/ok",
+        cancel_url: "https://app.test/cancel",
+        access_token: "order-guest-jwt",
+      },
+      { idempotencyKey: "idem-order-guest" },
+    );
+
+    const headers = new Headers(fetchMock.mock.calls[0]?.[1]?.headers);
+    expect(headers.get("Authorization")).toBeNull();
+    const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+    expect(body.access_token).toBe("order-guest-jwt");
   });
 });
