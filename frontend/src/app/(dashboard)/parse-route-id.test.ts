@@ -17,4 +17,10 @@ describe("parsePositiveRouteId", () => {
     expect(parsePositiveRouteId("0")).toBeNull();
     expect(parsePositiveRouteId("abc")).toBeNull();
   });
+
+  it("rejects floats and scientific notation", () => {
+    expect(parsePositiveRouteId("1.5")).toBeNull();
+    expect(parsePositiveRouteId("1e2")).toBeNull();
+    expect(parsePositiveRouteId("-3")).toBeNull();
+  });
 });

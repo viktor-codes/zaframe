@@ -18,6 +18,8 @@ describe("parseBookingRouteId", () => {
     expect(parseBookingRouteId("abc")).toBeNull();
     expect(parseBookingRouteId("0")).toBeNull();
     expect(parseBookingRouteId(-1)).toBeNull();
+    expect(parseBookingRouteId("1.5")).toBeNull();
+    expect(parseBookingRouteId("1e2")).toBeNull();
   });
 });
 

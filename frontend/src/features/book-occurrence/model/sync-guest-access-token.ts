@@ -7,10 +7,14 @@
  */
 
 export function parseBookingRouteId(raw: unknown): number | null {
-  const id =
-    typeof raw === "string" || typeof raw === "number" ? Number(raw) : NaN;
-  if (!Number.isInteger(id) || id <= 0) return null;
-  return id;
+  if (typeof raw === "number") {
+    return Number.isInteger(raw) && raw > 0 ? raw : null;
+  }
+  if (typeof raw !== "string" || raw === "") return null;
+  // WHY: reject floats / scientific notation that Number() would otherwise accept.
+  if (!/^\d+$/.test(raw)) return null;
+  const id = Number(raw);
+  return Number.isInteger(id) && id > 0 ? id : null;
 }
 
 /** Read access_token from a URL hash fragment (`#access_token=…`). */
