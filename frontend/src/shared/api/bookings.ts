@@ -7,6 +7,7 @@ import type {
   BookingCreate,
   BookingCreatedResponse,
   BookingDetailResponse,
+  BookingOwnerResponse,
   CourseBookingCreate,
   CourseBookingResponse,
   PaginatedBookingSelfList,
@@ -144,5 +145,27 @@ export async function cancelBooking(
     `api/v1/bookings/${id}/cancel`,
     undefined,
     bookingAuthConfig(options),
+  );
+}
+
+/**
+ * Mark attendee as checked in (`PATCH /bookings/{id}/check-in`).
+ * Requires `check_in_booking`; idempotent when already checked in.
+ */
+export async function checkInBooking(
+  id: number,
+): Promise<BookingOwnerResponse> {
+  return api.patch<BookingOwnerResponse>(`api/v1/bookings/${id}/check-in`);
+}
+
+/**
+ * Mark attendee as no-show (`PATCH /bookings/{id}/mark-no-show`).
+ * Requires `check_in_booking`; blocked after check-in.
+ */
+export async function markBookingNoShow(
+  id: number,
+): Promise<BookingOwnerResponse> {
+  return api.patch<BookingOwnerResponse>(
+    `api/v1/bookings/${id}/mark-no-show`,
   );
 }

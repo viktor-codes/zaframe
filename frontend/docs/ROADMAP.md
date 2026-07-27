@@ -94,7 +94,7 @@ Public zone first: simplest auth-wise, demoable to studios, closes the money loo
 - [x] Migrate old `/bookings` pages, set up redirects
 
 ## Phase 5 — Studio dashboard (P0 stories 3, 4)
-
+  
 Hardest zone — last, when the FSD pattern is routine.
 
 **MVP decision (2026-07-26):** dual-persona mode switch ("Customer ↔ Studio {name}")
@@ -118,7 +118,7 @@ Full mode switch → P1/polish when real cross-over demand appears.
 
 - [x] Course booking wizard (order checkout, availability warnings)
 - [x] Stripe Connect onboarding + payouts status
-- [ ] `features/check-in`: participants list + check-in / no-show (mobile-first)
+- [x] `features/check-in`: participants list + check-in / no-show (mobile-first)
 - [ ] Team members management (invite manager/instructor)
 
 ## Later (P2 backlog)

@@ -4,7 +4,6 @@
 
 import { api } from "./client";
 import type {
-  BookingOwnerResponse,
   PaginatedBookingOwnerList,
 } from "@entities/booking";
 import type {
@@ -46,7 +45,7 @@ export async function deleteOccurrence(id: number): Promise<void> {
 export async function fetchOccurrenceBookings(
   occurrenceId: number,
   params?: { page?: number; size?: number; status?: string },
-): Promise<BookingOwnerResponse[]> {
+): Promise<PaginatedBookingOwnerList> {
   const {
     page = DEFAULT_PAGE,
     size = DEFAULT_SIZE,
@@ -57,11 +56,10 @@ export async function fetchOccurrenceBookings(
     size,
   };
   if (status) searchParams.status = status;
-  const response = await api.get<PaginatedBookingOwnerList>(
+  return api.get<PaginatedBookingOwnerList>(
     `api/v1/occurrences/${occurrenceId}/bookings`,
     {
       params: searchParams,
     },
   );
-  return response.items;
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 import {
@@ -9,6 +10,8 @@ import {
   OCCURRENCE_STATUS,
   type OccurrenceResponse,
 } from "@entities/occurrence";
+import { PermissionGate } from "@entities/user";
+import { StudioPermission } from "@shared/lib";
 import { Button, Chip } from "@shared/ui";
 
 import { CancelOccurrenceForm } from "./cancel-occurrence-form";
@@ -69,32 +72,47 @@ export function CalendarOccurrenceCard({
           ) : null}
         </div>
 
-        {canManage ? (
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                setMode((current) => (current === "edit" ? "idle" : "edit"))
-              }
-            >
-              Edit
+        <div className="flex flex-wrap gap-2">
+          <PermissionGate
+            studioId={studioId}
+            permission={StudioPermission.VIEW_BOOKINGS}
+          >
+            <Button asChild variant="outline" size="sm">
+              <Link
+                href={`/dashboard/studios/${studioId}/occurrences/${occurrence.id}`}
+                data-testid={`calendar-check-in-${occurrence.id}`}
+              >
+                Check in
+              </Link>
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                setMode((current) =>
-                  current === "cancel" ? "idle" : "cancel",
-                )
-              }
-            >
-              Cancel
-            </Button>
-          </div>
-        ) : null}
+          </PermissionGate>
+          {canManage ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setMode((current) => (current === "edit" ? "idle" : "edit"))
+                }
+              >
+                Edit
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setMode((current) =>
+                    current === "cancel" ? "idle" : "cancel",
+                  )
+                }
+              >
+                Cancel
+              </Button>
+            </>
+          ) : null}
+        </div>
       </div>
 
       {mode === "edit" ? (

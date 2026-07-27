@@ -24,11 +24,13 @@ export type { Schema } from "./schema";
 export type { components, operations, paths } from "./types.generated";
 export {
   cancelBooking,
+  checkInBooking,
   createBooking,
   createCourseBooking,
   fetchBooking,
   fetchBookings,
   fetchMyBookings,
+  markBookingNoShow,
   type BookingAccessOptions,
   type BookingsListParams,
   type MyBookingsParams,

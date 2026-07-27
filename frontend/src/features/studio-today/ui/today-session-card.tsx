@@ -58,6 +58,18 @@ export function TodaySessionCard({
           />
           <PermissionGate
             studioId={studioId}
+            permission={StudioPermission.VIEW_BOOKINGS}
+          >
+            <Link
+              href={`/dashboard/studios/${studioId}/occurrences/${occurrence.id}`}
+              className="inline-flex min-h-11 items-center rounded-lg bg-primary px-3 py-2 text-sm font-medium text-white hover:bg-primary-dark"
+              data-testid={`today-check-in-${occurrence.id}`}
+            >
+              Check in
+            </Link>
+          </PermissionGate>
+          <PermissionGate
+            studioId={studioId}
             permission={StudioPermission.MANAGE_SCHEDULE}
           >
             <Link
