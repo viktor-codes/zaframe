@@ -26,6 +26,8 @@ export function useBookOccurrenceCheckout() {
   const heldBookingIdRef = useRef<number | null>(null);
   // WHY: one Idempotency-Key per booking id — never reuse across different holds.
   const checkoutKeyByBookingRef = useRef<Map<number, string>>(new Map());
+  // WHY: isPending updates only after re-render — sync guard blocks double-click races.
+  const isPayInFlightRef = useRef(false);
 
   const setHeld = (bookingId: number | null) => {
     heldBookingIdRef.current = bookingId;
@@ -61,6 +63,9 @@ export function useBookOccurrenceCheckout() {
       setIsOccurrenceFull(isOccurrenceFullCheckoutError(err));
       setError(getBookingCheckoutErrorMessage(err));
     },
+    onSettled: () => {
+      isPayInFlightRef.current = false;
+    },
   });
 
   return {
@@ -74,7 +79,8 @@ export function useBookOccurrenceCheckout() {
     },
     isPaying: mutation.isPending,
     pay: (input: BookOccurrenceCheckoutInput) => {
-      if (mutation.isPending) return;
+      if (isPayInFlightRef.current || mutation.isPending) return;
+      isPayInFlightRef.current = true;
       setError(null);
       setIsOccurrenceFull(false);
       // WHY: keep heldBookingId so retry does not create a second hold.

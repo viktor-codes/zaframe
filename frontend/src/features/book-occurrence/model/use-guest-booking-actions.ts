@@ -19,6 +19,8 @@ const UNSAFE_CHECKOUT_URL_MESSAGE =
 export function useGuestBookingActions(bookingId: number | null) {
   const [error, setError] = useState<string | null>(null);
   const checkoutIdempotencyKeyRef = useRef(createIdempotencyKey());
+  // WHY: isPending updates only after re-render — sync guard blocks double-click races.
+  const isPayInFlightRef = useRef(false);
 
   const checkoutMutation = useMutation({
     mutationFn: (data: CheckoutSessionCreate) =>
@@ -38,6 +40,9 @@ export function useGuestBookingActions(bookingId: number | null) {
     onError: (err) => {
       setError(getUserFacingApiMessage(err));
     },
+    onSettled: () => {
+      isPayInFlightRef.current = false;
+    },
   });
 
   return {
@@ -46,6 +51,8 @@ export function useGuestBookingActions(bookingId: number | null) {
     isPaying: checkoutMutation.isPending,
     pay: () => {
       if (bookingId == null) return;
+      if (isPayInFlightRef.current || checkoutMutation.isPending) return;
+      isPayInFlightRef.current = true;
       setError(null);
       const origin = window.location.origin;
       const token = getGuestBookingAccessToken(bookingId);
