@@ -13,6 +13,8 @@ export { ErrorBoundary } from "./error-boundary";
 export type { ErrorBoundaryProps } from "./error-boundary";
 export { RouteErrorBoundary } from "./route-error-boundary";
 export type { RouteErrorBoundaryProps } from "./route-error-boundary";
+export { RouteSegmentError } from "./route-segment-error";
+export type { RouteSegmentErrorProps } from "./route-segment-error";
 export { Input } from "./input";
 export type { InputProps } from "./input";
 export { Section, useSectionInView } from "./section";
