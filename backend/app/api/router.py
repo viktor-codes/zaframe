@@ -8,7 +8,9 @@ from app.modules.auth.router import account_router
 from app.modules.auth.router import router as auth_router
 from app.modules.booking.order import CourseBookingResponse, OrderListItem
 from app.modules.booking.order.router import router as order_router
+from app.modules.booking.router import create_router as booking_create_router
 from app.modules.booking.router import occurrence_bookings_router
+from app.modules.booking.router import owner_router as booking_owner_router
 from app.modules.booking.router import router as booking_router
 from app.modules.booking.schemas import (
     BookingCreatedResponse,
@@ -49,7 +51,9 @@ for r in (
     schedule_router,
     service_router,
     occurrence_router,
+    booking_create_router,
     booking_router,
+    booking_owner_router,
     occurrence_bookings_router,
     order_router,
     payment_router,
