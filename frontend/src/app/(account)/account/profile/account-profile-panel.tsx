@@ -1,6 +1,10 @@
 "use client";
 
-import { ProfileForm } from "@features/manage-account";
+import {
+  DeleteAccountSection,
+  ExportAccountDataSection,
+  ProfileForm,
+} from "@features/manage-account";
 import { useAuth } from "@shared/auth";
 import { Skeleton } from "@shared/ui/skeleton";
 
@@ -19,9 +23,11 @@ export function AccountProfilePanel() {
   }
 
   return (
-    <div className="max-w-lg">
+    <div className="max-w-lg space-y-10">
       {/* WHY: remount after /auth/me refresh so saved server values win. */}
       <ProfileForm key={`${user.id}-${user.updated_at}`} user={user} />
+      <ExportAccountDataSection />
+      <DeleteAccountSection />
     </div>
   );
 }

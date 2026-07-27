@@ -134,8 +134,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isInitialized: isBootstrapped && !isLoading,
       login,
       logout,
+      clearSession: clearAuthSession,
     }),
-    [user, isError, isBootstrapped, isLoading, login, logout],
+    [user, isError, isBootstrapped, isLoading, login, logout, clearAuthSession],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

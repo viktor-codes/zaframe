@@ -16,3 +16,4 @@ slowapi>=0.1.9
 redis>=5.0.0
 structlog>=25.5.0
 prometheus-client>=0.25.0
+sentry-sdk[fastapi]>=2.66.1

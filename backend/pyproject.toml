@@ -20,6 +20,7 @@ dependencies = [
     "pyjwt>=2.13.0",
     "prometheus-client>=0.25.0",
     "redis>=8.0.1",
+    "sentry-sdk[fastapi]>=2.66.1",
 ]
 
 [dependency-groups]

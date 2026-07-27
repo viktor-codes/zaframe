@@ -39,8 +39,9 @@ same email requires a future anonymization/support flow before this policy can c
   - sets `deleted_at`
   - revokes refresh tokens
   - clears auth cookies if called in browser flow
-- [ ] `GET /me/export`
-  - can be deferred, but document response shape if not implemented now
+- [x] `GET /me/export`
+  - returns `{ user, bookings, orders, payments }` for the authenticated user
+  - capped at 500 rows per collection for closed-beta volumes
 
 Deferred export response shape:
 
@@ -76,7 +77,7 @@ Deferred export response shape:
 - [x] Soft-deleted user cannot refresh or log in.
 - [x] Existing bookings/orders remain after soft delete.
 - [x] Deleted user is filtered from normal user queries.
-- [ ] Export endpoint returns expected user/account data if implemented.
+- [x] Export endpoint returns expected user/account data if implemented.
 
 ## Definition of Done
 

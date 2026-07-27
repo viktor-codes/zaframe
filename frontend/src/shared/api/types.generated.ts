@@ -531,6 +531,9 @@ export interface paths {
          *
          *     Auth is optional: with a valid Bearer token, ``user_id`` is set immediately;
          *     without a token the booking stays guest-owned until OTP attach.
+         *
+         *     When ``Idempotency-Key`` is present, repeated creates with the same key and
+         *     payload reuse the original booking/order instead of consuming another seat.
          */
         post: operations["create_booking_endpoint_api_v1_bookings_post"];
         delete?: never;
@@ -983,6 +986,26 @@ export interface paths {
         patch: operations["update_current_user_me_api_v1_auth_me_patch"];
         trace?: never;
     };
+    "/api/v1/me/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Current User Account
+         * @description Return a GDPR data export for the authenticated user (DSAR).
+         */
+        get: operations["export_current_user_account_api_v1_me_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/delete-account": {
         parameters: {
             query?: never;
@@ -1038,6 +1061,8 @@ export interface paths {
          *
          *     Verifies the signature, parses checkout.session.completed events, and delegates
          *     payment confirmation to the webhook processor.
+         *
+         *     Returns 503 when processing is incomplete so Stripe retries until durable success.
          */
         post: operations["stripe_webhook_webhooks_stripe_post"];
         delete?: never;
@@ -1182,6 +1207,40 @@ export interface components {
              * @description True when booking was created without a linked user account.
              */
             readonly is_guest_booking: boolean;
+        };
+        /**
+         * BookingExportItem
+         * @description Booking row included in a DSAR export (no Stripe secrets).
+         */
+        BookingExportItem: {
+            /** Id */
+            id: number;
+            /** Occurrence Id */
+            occurrence_id: number;
+            /** User Id */
+            user_id?: number | null;
+            /** Status */
+            status: string;
+            /** Guest Name */
+            guest_name?: string | null;
+            /** Guest Email */
+            guest_email?: string | null;
+            /** Guest Phone */
+            guest_phone?: string | null;
+            /** Payment Status */
+            payment_status?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Cancelled At */
+            cancelled_at?: string | null;
         };
         /**
          * BookingOwnerResponse
@@ -2026,6 +2085,42 @@ export interface components {
             access_token?: string | null;
         };
         /**
+         * OrderExportItem
+         * @description Order row included in a DSAR export.
+         */
+        OrderExportItem: {
+            /** Id */
+            id: number;
+            /** Studio Id */
+            studio_id: number;
+            /** Service Id */
+            service_id?: number | null;
+            /** User Id */
+            user_id?: number | null;
+            /** Guest Email */
+            guest_email?: string | null;
+            /** Guest Name */
+            guest_name?: string | null;
+            /** Guest Phone */
+            guest_phone?: string | null;
+            /** Status */
+            status: string;
+            /** Total Amount Cents */
+            total_amount_cents: number;
+            /** Currency */
+            currency: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
          * OrderListItem
          * @description Order list item for customer account and owner dashboard.
          */
@@ -2349,6 +2444,42 @@ export interface components {
              * @description Number of records per page
              */
             size: number;
+        };
+        /**
+         * PaymentExportItem
+         * @description Payment ledger row for DSAR (Stripe ids are user-facing refs, not secrets).
+         */
+        PaymentExportItem: {
+            /** Id */
+            id: number;
+            /** Booking Id */
+            booking_id?: number | null;
+            /** Order Id */
+            order_id?: number | null;
+            /** Amount Cents */
+            amount_cents: number;
+            /** Currency */
+            currency: string;
+            /** Status */
+            status: string;
+            /** Provider */
+            provider: string;
+            /** Stripe Checkout Session Id */
+            stripe_checkout_session_id: string;
+            /** Paid At */
+            paid_at?: string | null;
+            /** Refunded Amount Cents */
+            refunded_amount_cents: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
         };
         /**
          * PaymentListItem
@@ -3533,6 +3664,76 @@ export interface components {
             token_type: string;
         };
         /**
+         * UserDataExportResponse
+         * @description GDPR data export envelope for the authenticated user.
+         */
+        UserDataExportResponse: {
+            /** @description Account profile snapshot */
+            user: components["schemas"]["UserExportItem"];
+            /**
+             * Bookings
+             * @description Bookings linked by user_id or guest email
+             */
+            bookings?: components["schemas"]["BookingExportItem"][];
+            /**
+             * Orders
+             * @description Course orders linked by user_id or guest email
+             */
+            orders?: components["schemas"]["OrderExportItem"][];
+            /**
+             * Payments
+             * @description Payment ledger rows for those bookings/orders
+             */
+            payments?: components["schemas"]["PaymentExportItem"][];
+        };
+        /**
+         * UserExportItem
+         * @description User snapshot for GDPR data export (DSAR).
+         */
+        UserExportItem: {
+            /**
+             * Id
+             * @description User id
+             */
+            id: number;
+            /**
+             * Email
+             * Format: email
+             * @description Account email
+             */
+            email: string;
+            /**
+             * Name
+             * @description Display name
+             */
+            name?: string | null;
+            /**
+             * Phone
+             * @description Phone if set
+             */
+            phone?: string | null;
+            /**
+             * Marketing Consent
+             * @description Marketing preference
+             */
+            marketing_consent: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /**
+             * Deleted At
+             * @description Soft-delete timestamp; null while account is active
+             */
+            deleted_at?: string | null;
+        };
+        /**
          * UserResponse
          * @description API response schema including id and timestamps.
          */
@@ -4658,7 +4859,10 @@ export interface operations {
     create_booking_endpoint_api_v1_bookings_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional client key; retries with the same key return the original hold */
+                "Idempotency-Key"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -5432,6 +5636,26 @@ export interface operations {
             };
         };
     };
+    export_current_user_account_api_v1_me_export_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserDataExportResponse"];
+                };
+            };
+        };
+    };
     delete_current_user_account_api_v1_me_delete_account_post: {
         parameters: {
             query?: never;
@@ -5467,6 +5691,8 @@ export interface operations {
                 radius_km?: number | null;
                 /** @description Amenities; can be repeated */
                 amenities?: string[] | null;
+                /** @description Max studios to return */
+                limit?: number;
             };
             header?: never;
             path?: never;

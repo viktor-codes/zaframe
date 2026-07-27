@@ -18,6 +18,7 @@ from app.core.exceptions import ForbiddenError, UnauthorizedError
 from app.core.rate_limit import limiter
 from app.core.uow import UnitOfWork
 from app.models.user import User
+from app.modules.auth.account_export import export_current_user_data
 from app.modules.auth.schemas import (
     CurrentUserResponse,
     OTPRequest,
@@ -34,7 +35,7 @@ from app.modules.auth.service import (
 )
 from app.modules.catalog.studio import get_current_user_studio_roles
 from app.modules.identity import UserResponse
-from app.modules.identity.schemas import CurrentUserUpdate
+from app.modules.identity.schemas import CurrentUserUpdate, UserDataExportResponse
 from app.modules.identity.service import (
     soft_delete_current_user_account,
     update_current_user_profile,
@@ -204,6 +205,15 @@ async def update_current_user_me(
     """Update the current user's editable profile fields."""
     updated_user = await update_current_user_profile(uow, user, schema)
     return UserResponse.model_validate(updated_user)
+
+
+@account_router.get("/export", response_model=UserDataExportResponse)
+async def export_current_user_account(
+    user: Annotated[User, Depends(get_current_user_required)],
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
+) -> UserDataExportResponse:
+    """Return a GDPR data export for the authenticated user (DSAR)."""
+    return await export_current_user_data(uow, user)
 
 
 @account_router.post("/delete-account", status_code=204)

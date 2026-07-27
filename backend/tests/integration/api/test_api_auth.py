@@ -364,6 +364,75 @@ async def test_patch_auth_me_updates_marketing_consent(client):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+async def test_export_account_returns_user_bookings_orders_payments(
+    client, app_with_rollback_uow
+):
+    """GET /me/export returns DSAR envelope for the authenticated user."""
+    suffix = uuid4().hex[:8]
+    email = f"export-account-{suffix}@example.com"
+    auth_data = await authenticate_via_otp(client, email=email, name="Export User")
+    access_token = auth_data["access_token"]
+    user_id = auth_data["user"]["id"]
+
+    session = app_with_rollback_uow.state._integration_session
+    uow = create_uow(session)
+    studio = await uow.studios.add(
+        Studio(
+            owner_id=user_id,
+            name=f"Export Studio {suffix}",
+            slug=f"export-studio-{suffix}",
+            email=f"export-studio-{suffix}@example.com",
+            timezone="Europe/Dublin",
+        )
+    )
+    service = await uow.services.add(
+        Service(
+            studio_id=studio.id,
+            name="Export Service",
+            duration_minutes=60,
+            max_capacity=10,
+            price_single_cents=1500,
+        )
+    )
+    occurrence = await uow.occurrences.add(
+        Occurrence(
+            studio_id=studio.id,
+            service_id=service.id,
+            start_time=datetime.now(UTC) + timedelta(days=1),
+            end_time=datetime.now(UTC) + timedelta(days=1, hours=1),
+            title="Export Session",
+            max_capacity=10,
+            price_cents=1500,
+        )
+    )
+    booking = await uow.bookings.add(
+        Booking(
+            occurrence_id=occurrence.id,
+            user_id=user_id,
+            guest_name="Export User",
+            guest_email=email,
+            status=BookingStatus.CONFIRMED,
+        )
+    )
+    booking_id = booking.id
+
+    response = await client.get(
+        "/api/v1/me/export",
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["user"]["id"] == user_id
+    assert data["user"]["email"] == email
+    assert data["user"]["name"] == "Export User"
+    assert "marketing_consent" in data["user"]
+    assert any(item["id"] == booking_id for item in data["bookings"])
+    assert isinstance(data["orders"], list)
+    assert isinstance(data["payments"], list)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_delete_account_soft_deletes_user_and_revokes_sessions(client, app_with_rollback_uow):
     """
     Deleting an account hides the user from normal auth lookups and preserves history rows.

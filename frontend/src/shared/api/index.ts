@@ -71,7 +71,12 @@ export {
   updateScheduleTemplate,
 } from "./schedule-templates";
 export { fetchMyOrders, fetchOrder, type MyOrdersParams, type OrderAccessOptions } from "./orders";
-export { updateCurrentUser } from "./users";
+export {
+  deleteCurrentUserAccount,
+  getCurrentUserExport,
+  updateCurrentUser,
+  type UserDataExport,
+} from "./users";
 export {
   createStudio,
   deleteStudio,

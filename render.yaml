@@ -33,6 +33,9 @@ services:
       # Required for GET /metrics in production (Authorization: Bearer <token>).
       - key: METRICS_TOKEN
         sync: false
+      # Optional: Sentry DSN for API error reporting (unset = disabled).
+      - key: SENTRY_DSN
+        sync: false
 
   # Expire stale pending holds and complete past confirmed bookings (TD-11).
   # Schedule is UTC; */5 = every 5 minutes.

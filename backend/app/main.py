@@ -10,6 +10,7 @@ from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from typing import Any
 
+import sentry_sdk
 import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -33,6 +34,7 @@ from app.core.production_guards import (
     validate_production_rate_limit_config,
 )
 from app.core.rate_limit import limiter
+from app.core.sentry import init_sentry
 
 API_CONTENT_SECURITY_POLICY = (
     "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
@@ -80,6 +82,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     On shutdown: close all DB connections.
     """
     setup_logging()
+    init_sentry()
     validate_production_rate_limit_config()
     yield
     await engine.dispose()
@@ -208,6 +211,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
         exc_type=type(exc).__name__,
         stack=stack,
     )
+    sentry_sdk.capture_exception(exc)
     return _problem_response(
         status_code=500,
         content=_error_body(

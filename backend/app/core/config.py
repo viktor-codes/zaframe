@@ -195,6 +195,12 @@ class Settings(BaseSettings):
             "When unset outside dev, /metrics returns 503."
         ),
     )
+    SENTRY_DSN: str | None = Field(
+        default=None,
+        description=(
+            "Sentry DSN for API error reporting. When unset, Sentry is disabled."
+        ),
+    )
 
     # === Pydantic Settings configuration ===
     model_config = SettingsConfigDict(

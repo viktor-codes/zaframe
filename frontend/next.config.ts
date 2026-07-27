@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const isDev = process.env.NODE_ENV !== "production";
 
@@ -14,7 +15,8 @@ const contentSecurityPolicy = [
   // UI uses next/image with unoptimized for remote http(s); CSP must still allow them.
   "img-src 'self' data: https:",
   "font-src 'self' data:",
-  "connect-src 'self'",
+  // WHY: Sentry browser SDK posts events to ingest hosts when DSN is set.
+  "connect-src 'self' https://*.ingest.sentry.io https://*.ingest.de.sentry.io",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "object-src 'none'",
@@ -104,4 +106,11 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  // Avoid interactive source-map upload in CI without org/project secrets.
+  silent: true,
+  disableLogger: true,
+  sourcemaps: {
+    disable: true,
+  },
+});
