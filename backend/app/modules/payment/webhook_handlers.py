@@ -9,6 +9,7 @@ from app.modules.payment.service import (
     update_refund_from_stripe_object,
     update_studio_connect_status_from_account,
 )
+from app.modules.payment.webhook_outcome import WebhookOutcome
 
 
 async def record_processed_event(uow: UnitOfWork, *, event_id: str, event_type: str) -> None:
@@ -23,7 +24,7 @@ async def process_account_updated(
     event_id: str,
     event_type: str,
     request_id: str | None,
-) -> None:
+) -> WebhookOutcome:
     logger = structlog.get_logger(__name__)
     ok = await update_studio_connect_status_from_account(uow, account=account)
     if ok:
@@ -35,7 +36,7 @@ async def process_account_updated(
             event_type=event_type,
             idempotency_outcome="processed",
         )
-        return
+        return WebhookOutcome.PROCESSED
     logger.warning(
         "webhook_stripe_account_updated_unmatched",
         request_id=request_id,
@@ -43,7 +44,9 @@ async def process_account_updated(
         event_type=event_type,
         idempotency_outcome="unmatched",
     )
+    # WHY: poison / unmatched Connect account — ACK so Stripe stops retrying forever.
     await record_processed_event(uow, event_id=event_id, event_type=event_type)
+    return WebhookOutcome.PROCESSED
 
 
 async def process_refund_updated(
@@ -53,7 +56,7 @@ async def process_refund_updated(
     event_id: str,
     event_type: str,
     request_id: str | None,
-) -> None:
+) -> WebhookOutcome:
     logger = structlog.get_logger(__name__)
     ok = await update_refund_from_stripe_object(uow, stripe_refund=stripe_refund)
     if ok:
@@ -65,7 +68,7 @@ async def process_refund_updated(
             event_type=event_type,
             idempotency_outcome="processed",
         )
-        return
+        return WebhookOutcome.PROCESSED
     logger.warning(
         "webhook_refund_updated_unmatched",
         request_id=request_id,
@@ -73,4 +76,6 @@ async def process_refund_updated(
         event_type=event_type,
         idempotency_outcome="unmatched",
     )
+    # WHY: poison / unmatched refund — ACK so Stripe stops retrying forever.
     await record_processed_event(uow, event_id=event_id, event_type=event_type)
+    return WebhookOutcome.PROCESSED

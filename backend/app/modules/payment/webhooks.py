@@ -18,18 +18,21 @@ from app.core.config import settings
 from app.core.middleware.logging_middleware import REQUEST_ID_STATE_KEY
 from app.core.uow_factory import uow_scope
 from app.modules.payment.stripe_client import run_stripe
+from app.modules.payment.webhook_outcome import WebhookOutcome
 from app.modules.payment.webhook_processor import process_stripe_webhook_event
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 
 
-@router.post("/stripe", status_code=200)
+@router.post("/stripe")
 async def stripe_webhook(request: Request) -> Response:
     """
     Handle Stripe webhook events.
 
     Verifies the signature, parses checkout.session.completed events, and delegates
     payment confirmation to the webhook processor.
+
+    Returns 503 when processing is incomplete so Stripe retries until durable success.
     """
     logger = structlog.get_logger(__name__)
     request_id = getattr(request.state, REQUEST_ID_STATE_KEY, None)
@@ -66,6 +69,18 @@ async def stripe_webhook(request: Request) -> Response:
         return Response(status_code=400, content="Invalid signature")
 
     async with uow_scope(auto_commit=False) as uow:
-        await process_stripe_webhook_event(uow, event=event, request_id=request_id)
+        outcome = await process_stripe_webhook_event(
+            uow, event=event, request_id=request_id
+        )
+
+    if outcome == WebhookOutcome.RETRY:
+        logger.warning(
+            "webhook_processing_incomplete",
+            request_id=request_id,
+            event_id=str(event.id),
+            event_type=str(event.type),
+            idempotency_outcome="retry",
+        )
+        return Response(status_code=503, content="Webhook processing incomplete")
 
     return Response(status_code=200)

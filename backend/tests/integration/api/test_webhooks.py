@@ -539,8 +539,8 @@ async def test_stripe_webhook_no_metadata_returns_200(client):
 
 
 @pytest.mark.asyncio
-async def test_stripe_webhook_order_not_found_returns_200(client):
-    """confirm_order_after_payment returns False → 200 and records unmatched outcome."""
+async def test_stripe_webhook_order_not_found_returns_503(client):
+    """confirm_order_after_payment returns False → 503 so Stripe retries."""
     event = _stripe_event("checkout.session.completed", {"order_id": "999"})
     mock_uow = _mock_webhook_uow()
 
@@ -561,17 +561,14 @@ async def test_stripe_webhook_order_not_found_returns_200(client):
                         content=b"{}",
                         headers={"Stripe-Signature": "t=1,v1=x"},
                     )
-    assert r.status_code == 200
-    mock_uow.webhook_events.record.assert_awaited_once_with(
-        event_id="evt_test_1",
-        event_type="checkout.session.completed",
-    )
-    mock_uow.commit.assert_awaited_once()
+    assert r.status_code == 503
+    mock_uow.webhook_events.record.assert_not_awaited()
+    mock_uow.commit.assert_not_awaited()
 
 
 @pytest.mark.asyncio
-async def test_stripe_webhook_booking_not_found_returns_200(client):
-    """confirm_booking_after_payment returns False → 200 and records unmatched outcome."""
+async def test_stripe_webhook_booking_not_found_returns_503(client):
+    """confirm_booking_after_payment returns False → 503 so Stripe retries."""
     event = _stripe_event("checkout.session.completed", {"booking_id": "999"})
     mock_uow = _mock_webhook_uow()
 
@@ -592,12 +589,38 @@ async def test_stripe_webhook_booking_not_found_returns_200(client):
                         content=b"{}",
                         headers={"Stripe-Signature": "t=1,v1=x"},
                     )
-    assert r.status_code == 200
-    mock_uow.webhook_events.record.assert_awaited_once_with(
-        event_id="evt_test_1",
-        event_type="checkout.session.completed",
-    )
-    mock_uow.commit.assert_awaited_once()
+    assert r.status_code == 503
+    mock_uow.webhook_events.record.assert_not_awaited()
+    mock_uow.commit.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_stripe_webhook_booking_ledger_unavailable_returns_503(client):
+    """Missing booking for ledger → 503 without recording processed event."""
+    event = _stripe_event("checkout.session.completed", {"booking_id": "999"}, "pi_456")
+    mock_uow = _mock_webhook_uow()
+    mock_uow.bookings.get_by_id = AsyncMock(return_value=None)
+
+    with patch("app.modules.payment.webhooks.settings") as mock_settings:
+        mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
+        with patch("stripe.Webhook.construct_event", return_value=event):
+            with patch(
+                "app.modules.payment.webhooks.uow_scope",
+                side_effect=lambda **kw: _mock_uow_scope(mock_uow, **kw),
+            ):
+                with patch(
+                    "app.modules.payment.webhook_paid_checkout.confirm_booking_after_payment",
+                    new_callable=AsyncMock,
+                ) as mock_confirm:
+                    r = await client.post(
+                        "/webhooks/stripe",
+                        content=b"{}",
+                        headers={"Stripe-Signature": "t=1,v1=x"},
+                    )
+    assert r.status_code == 503
+    mock_confirm.assert_not_awaited()
+    mock_uow.webhook_events.record.assert_not_awaited()
+    mock_uow.commit.assert_not_awaited()
 
 
 @pytest.mark.asyncio
