@@ -61,8 +61,9 @@ class BookingListQueriesMixin(BookingGetMixin):
         occurrence_id: int | None = None,
         status: str | None = None,
     ) -> int:
+        # WHY: outerjoin on studio_members can duplicate rows; count distinct booking ids.
         query = (
-            select(func.count())
+            select(func.count(func.distinct(Booking.id)))
             .select_from(Booking)
             .join(Booking.occurrence)
             .join(Occurrence.studio)
@@ -79,7 +80,7 @@ class BookingListQueriesMixin(BookingGetMixin):
         if status is not None:
             query = query.where(Booking.status == status)
         result = await self._session.execute(query)
-        return result.scalar_one()
+        return int(result.scalar_one())
 
     async def list_my_with_occurrence_and_studio(
         self,

@@ -231,12 +231,23 @@ app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 
 # === CORS middleware ===
+# WHY: least-privilege methods/headers; wildcard CORS is unnecessary with credentials.
+_CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+_CORS_ALLOW_HEADERS = [
+    "Accept",
+    "Authorization",
+    "Content-Type",
+    "Idempotency-Key",
+    "X-CSRF-Token",
+    "X-Request-ID",
+]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=_CORS_ALLOW_METHODS,
+    allow_headers=_CORS_ALLOW_HEADERS,
+    expose_headers=[REQUEST_ID_HEADER],
 )
 
 register_routers(app)

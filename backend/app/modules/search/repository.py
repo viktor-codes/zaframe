@@ -2,20 +2,57 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
-from sqlalchemy import and_, func, or_, select, text
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import ColumnElement
 
 from app.models.service import Service, ServiceCategory, ServiceVisibility
 from app.models.studio import Studio
 
+# Mean Earth radius used by the haversine distance filter (km).
+_EARTH_RADIUS_KM = 6371.0
+
 
 @dataclass(frozen=True)
 class SearchMatch:
     studio: Studio
     matched_services: list[Service]
+
+
+def geo_bounding_box_deltas(
+    *,
+    lat: float,
+    radius_km: float,
+) -> tuple[float, float]:
+    """
+    Return (lat_delta_deg, lng_delta_deg) for a crude geo pre-filter.
+
+    Longitude degrees shrink toward the poles; near-polar latitudes use a floor
+    so the bbox does not explode.
+    """
+    lat_delta = radius_km / 111.0
+    cos_lat = math.cos(math.radians(lat))
+    lng_delta = radius_km / (111.0 * max(abs(cos_lat), 0.01))
+    return lat_delta, lng_delta
+
+
+def _haversine_km_expr(*, lat: float, lng: float) -> ColumnElement[float]:
+    """SQLAlchemy expression: great-circle distance from (lat, lng) to studio coords."""
+    return (
+        2
+        * _EARTH_RADIUS_KM
+        * func.asin(
+            func.sqrt(
+                func.pow(func.sin(func.radians(Studio.latitude - lat) / 2.0), 2)
+                + func.cos(func.radians(lat))
+                * func.cos(func.radians(Studio.latitude))
+                * func.pow(func.sin(func.radians(Studio.longitude - lng) / 2.0), 2)
+            )
+        )
+    )
 
 
 class SearchRepository:
@@ -61,15 +98,19 @@ class SearchRepository:
                 if amenity_normalized:
                     conditions.append(Studio.amenities.contains([amenity_normalized]))
 
+        if category is not None:
+            conditions.append(Service.category == category)
+
         if lat is not None and lng is not None:
-            radius = radius_km or 10
-            delta_deg = radius / 111.0
+            radius = float(radius_km or 10)
+            lat_delta, lng_delta = geo_bounding_box_deltas(lat=lat, radius_km=radius)
             conditions.append(
                 and_(
                     Studio.latitude.is_not(None),
                     Studio.longitude.is_not(None),
-                    func.abs(Studio.latitude - lat) <= delta_deg,
-                    func.abs(Studio.longitude - lng) <= delta_deg,
+                    func.abs(Studio.latitude - lat) <= lat_delta,
+                    func.abs(Studio.longitude - lng) <= lng_delta,
+                    _haversine_km_expr(lat=lat, lng=lng) <= radius,
                 )
             )
 
@@ -79,10 +120,6 @@ class SearchRepository:
             .where(*conditions)
             .distinct(Studio.id)
         )
-        if category is not None:
-            studios_stmt = studios_stmt.where(text("services.category = :category_filter")).params(
-                category_filter=category.value
-            )
 
         studios_result = await self._session.execute(studios_stmt)
         studios: list[Studio] = list(studios_result.scalars().all())
@@ -95,12 +132,10 @@ class SearchRepository:
             Service.is_active.is_(True),
             Service.visibility == ServiceVisibility.PUBLISHED,
         ]
-        services_stmt = select(Service).where(*service_conditions)
         if category is not None:
-            services_stmt = services_stmt.where(
-                text("services.category = :category_filter")
-            ).params(category_filter=category.value)
+            service_conditions.append(Service.category == category)
 
+        services_stmt = select(Service).where(*service_conditions)
         services_result = await self._session.execute(services_stmt)
         services: list[Service] = list(services_result.scalars().all())
 

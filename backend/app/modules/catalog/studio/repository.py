@@ -9,7 +9,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.elements import ColumnElement
 
+from app.core.datetime_utils import utc_now
 from app.core.repository import WriteRepositoryMixin
+from app.models.occurrence import Occurrence, OccurrenceStatus
 from app.models.service import Service, ServiceVisibility
 from app.models.studio import Studio
 from app.models.studio_member import StudioMember
@@ -36,10 +38,22 @@ class StudioRepository(WriteRepositoryMixin):
     async def get_by_slug_with_services_occurrences(
         self, slug: str, *, is_active: bool = True
     ) -> Studio | None:
+        """
+        Load a public studio with services and upcoming scheduled occurrences only.
+
+        WHY: loading every historical occurrence for a busy studio blows up memory
+        and response time on the public storefront aggregate.
+        """
+        now_utc = utc_now()
         result = await self._session.execute(
             select(Studio)
             .options(
-                selectinload(Studio.services).selectinload(Service.occurrences),
+                selectinload(Studio.services).selectinload(
+                    Service.occurrences.and_(
+                        Occurrence.start_time >= now_utc,
+                        Occurrence.status == OccurrenceStatus.SCHEDULED,
+                    )
+                ),
             )
             .where(
                 Studio.slug == slug,
