@@ -11,7 +11,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { X, ChevronDown } from "lucide-react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
 
 import {
   isServiceCategory,
@@ -19,7 +18,7 @@ import {
   type ServiceCategory,
 } from "@entities/service";
 import type { PaginatedSearchResultList } from "@entities/studio";
-import { Header } from "@features/navigation/components";
+import { Header } from "@features/navigation/components/Header";
 import { fetchStudios, getUserFacingApiMessage } from "@shared/api";
 import { queryKeys } from "@shared/lib/query-keys";
 import { useUIStore } from "@shared/lib/ui-store";
@@ -248,87 +247,79 @@ export function StudiosExplore({
             type="button"
             onClick={() => setCategoriesOpen((prev) => !prev)}
             className="flex w-full items-center justify-start gap-2 py-2 text-left text-sm font-semibold text-zinc-900"
+            aria-expanded={categoriesOpen}
           >
             Categories
-            <motion.span
-              animate={{ rotate: categoriesOpen ? 180 : 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              <ChevronDown className="h-4 w-4 text-zinc-500" />
-            </motion.span>
+            <ChevronDown
+              className={`h-4 w-4 text-zinc-500 transition-transform duration-200 ${
+                categoriesOpen ? "rotate-180" : "rotate-0"
+              }`}
+            />
           </button>
-          <AnimatePresence initial={false}>
-            {categoriesOpen && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.25, ease: "easeInOut" }}
-                className="overflow-hidden"
-              >
-                <div className="flex flex-wrap gap-2 pt-2 pb-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const next = new URLSearchParams(searchParams.toString());
-                      next.delete("category");
-                      router.replace(`/studios?${next.toString()}`, {
-                        scroll: false,
-                      });
-                    }}
-                    className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                      !category
-                        ? "bg-zinc-900 text-white"
-                        : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
-                    }`}
-                  >
-                    All
-                  </button>
-                  {CATEGORIES.map(({ value, label }) => {
-                    const isActive = category === value;
+          {categoriesOpen ? (
+            <div className="overflow-hidden">
+              <div className="flex flex-wrap gap-2 pt-2 pb-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = new URLSearchParams(searchParams.toString());
+                    next.delete("category");
+                    router.replace(`/studios?${next.toString()}`, {
+                      scroll: false,
+                    });
+                  }}
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                    !category
+                      ? "bg-zinc-900 text-white"
+                      : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+                  }`}
+                >
+                  All
+                </button>
+                {CATEGORIES.map(({ value, label }) => {
+                  const isActive = category === value;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => toggleCategory(value)}
+                      className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                        isActive
+                          ? "bg-zinc-900 text-white"
+                          : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="border-t border-zinc-100 pt-4">
+                <p className="mb-2 text-xs font-semibold tracking-wider text-zinc-500 uppercase">
+                  Amenities
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {AMENITIES_OPTIONS.map((a) => {
+                    const isActive = amenities.includes(a);
                     return (
                       <button
-                        key={value}
+                        key={a}
                         type="button"
-                        onClick={() => toggleCategory(value)}
+                        onClick={() => toggleAmenity(a)}
                         className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                           isActive
                             ? "bg-zinc-900 text-white"
                             : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
                         }`}
                       >
-                        {label}
+                        {a.replace("_", " ")}
                       </button>
                     );
                   })}
                 </div>
-                <div className="border-t border-zinc-100 pt-4">
-                  <p className="mb-2 text-xs font-semibold tracking-wider text-zinc-500 uppercase">
-                    Amenities
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {AMENITIES_OPTIONS.map((a) => {
-                      const isActive = amenities.includes(a);
-                      return (
-                        <button
-                          key={a}
-                          type="button"
-                          onClick={() => toggleAmenity(a)}
-                          className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                            isActive
-                              ? "bg-zinc-900 text-white"
-                              : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
-                          }`}
-                        >
-                          {a.replace("_", " ")}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+              </div>
+            </div>
+          ) : null}
           {hasFilters && (
             <Button
               variant="ghost"
