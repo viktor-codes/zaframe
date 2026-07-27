@@ -1,4 +1,7 @@
-import { BookingStatus, type BookingStatus as BookingStatusValue } from "@shared/lib";
+import {
+  BookingStatus,
+  type BookingStatus as BookingStatusValue,
+} from "@shared/lib";
 
 export type StudioBookingsStatusFilter = "all" | BookingStatusValue;
 

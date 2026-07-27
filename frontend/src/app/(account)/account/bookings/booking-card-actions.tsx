@@ -28,11 +28,7 @@ function formatHoldRemaining(remainingMs: number): string {
  * Account-list actions: finish unpaid hold and/or cancel before cutoff.
  */
 export function BookingCardActions({ booking, now }: BookingCardActionsProps) {
-  const canPay = canCompleteBookingPayment(
-    booking,
-    booking.occurrence,
-    now,
-  );
+  const canPay = canCompleteBookingPayment(booking, booking.occurrence, now);
   const remainingMs = canPay
     ? getBookingReservationRemainingMs(booking, now)
     : null;

@@ -13,7 +13,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const frontendRoot = path.resolve(__dirname, "..");
 const backendRoot = path.resolve(frontendRoot, "..", "backend");
 const snapshotPath = path.join(frontendRoot, "openapi.snapshot.json");
-const outputPath = path.join(frontendRoot, "src", "shared", "api", "types.generated.ts");
+const outputPath = path.join(
+  frontendRoot,
+  "src",
+  "shared",
+  "api",
+  "types.generated.ts",
+);
 
 const exportOpenApiCmd = `uv run python -c "from app.main import app; import json; print(json.dumps(app.openapi(), indent=2))"`;
 
@@ -28,9 +34,9 @@ writeFileSync(snapshotPath, openapiJson, "utf8");
 console.log(`Wrote ${path.relative(frontendRoot, snapshotPath)}`);
 
 console.log("Generating TypeScript types…");
-execSync(
-  `npx openapi-typescript "${snapshotPath}" -o "${outputPath}"`,
-  { cwd: frontendRoot, stdio: "inherit" },
-);
+execSync(`npx openapi-typescript "${snapshotPath}" -o "${outputPath}"`, {
+  cwd: frontendRoot,
+  stdio: "inherit",
+});
 
 console.log(`Done → ${path.relative(frontendRoot, outputPath)}`);

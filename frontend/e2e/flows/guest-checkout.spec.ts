@@ -67,9 +67,9 @@ test.describe("guest checkout critical flow", () => {
     );
     const created = await createCapture.waitForBooking();
 
-    expect(StripeCheckoutPage.isStripeCheckoutUrl(checkoutBody.checkout_url)).toBe(
-      true,
-    );
+    expect(
+      StripeCheckoutPage.isStripeCheckoutUrl(checkoutBody.checkout_url),
+    ).toBe(true);
     expect(checkoutBody.session_id).toMatch(/^cs_/);
     expect(created.id).toBeGreaterThan(0);
     expect(created.access_token.length).toBeGreaterThan(8);

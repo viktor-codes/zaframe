@@ -18,10 +18,7 @@ export function useStudioServices(studioId: number) {
     ServiceVisibility.DRAFT,
   );
 
-  const listParams = useMemo(
-    () => ({ size: SERVICES_PAGE_SIZE }),
-    [],
-  );
+  const listParams = useMemo(() => ({ size: SERVICES_PAGE_SIZE }), []);
 
   const query = useStudioServicesPages(studioId, listParams);
 

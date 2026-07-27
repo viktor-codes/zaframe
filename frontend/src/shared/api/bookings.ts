@@ -171,7 +171,5 @@ export async function checkInBooking(
 export async function markBookingNoShow(
   id: number,
 ): Promise<BookingOwnerResponse> {
-  return api.patch<BookingOwnerResponse>(
-    `api/v1/bookings/${id}/mark-no-show`,
-  );
+  return api.patch<BookingOwnerResponse>(`api/v1/bookings/${id}/mark-no-show`);
 }

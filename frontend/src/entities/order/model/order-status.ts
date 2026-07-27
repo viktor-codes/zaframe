@@ -1,11 +1,6 @@
 import { OrderStatus } from "@shared/lib/constants";
 
-export type OrderStatusTone =
-  | "neutral"
-  | "amber"
-  | "green"
-  | "red"
-  | "teal";
+export type OrderStatusTone = "neutral" | "amber" | "green" | "red" | "teal";
 
 export interface OrderStatusPresentation {
   label: string;
@@ -17,7 +12,9 @@ export interface OrderStatusPresentation {
 /**
  * Customer-facing label + tone for an order status badge.
  */
-export function getOrderStatusPresentation(status: string): OrderStatusPresentation {
+export function getOrderStatusPresentation(
+  status: string,
+): OrderStatusPresentation {
   if (status === OrderStatus.PAID) {
     return { label: "Paid", tone: "green" };
   }

@@ -16,7 +16,10 @@ export function parseGuestDetails(input: {
   guest_name: string;
   guest_email: string;
   guest_phone: string;
-}): { data: GuestDetails; errors: Partial<Record<keyof GuestDetails, string>> } {
+}): {
+  data: GuestDetails;
+  errors: Partial<Record<keyof GuestDetails, string>>;
+} {
   const result = GuestDetailsSchema.safeParse(input);
   if (result.success) {
     return { data: result.data, errors: {} };
@@ -26,7 +29,9 @@ export function parseGuestDetails(input: {
   for (const issue of result.error.issues) {
     const key = issue.path[0];
     if (
-      (key === "guest_name" || key === "guest_email" || key === "guest_phone") &&
+      (key === "guest_name" ||
+        key === "guest_email" ||
+        key === "guest_phone") &&
       !errors[key]
     ) {
       errors[key] = issue.message;

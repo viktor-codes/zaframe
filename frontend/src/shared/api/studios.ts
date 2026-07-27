@@ -123,12 +123,9 @@ export async function fetchStudioServices(
     searchParams.is_active = params.is_active;
   }
 
-  return api.get<PaginatedServiceList>(
-    `api/v1/studios/${studioId}/services`,
-    {
-      params: searchParams,
-    },
-  );
+  return api.get<PaginatedServiceList>(`api/v1/studios/${studioId}/services`, {
+    params: searchParams,
+  });
 }
 
 /**

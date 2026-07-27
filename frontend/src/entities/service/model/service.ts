@@ -16,11 +16,15 @@ export const SERVICE_TYPE = {
   COURSE: "course",
 } as const;
 
-export function isCourseService(service: Pick<ServicePricing, "type">): boolean {
+export function isCourseService(
+  service: Pick<ServicePricing, "type">,
+): boolean {
   return service.type === SERVICE_TYPE.COURSE;
 }
 
-export function isSingleService(service: Pick<ServicePricing, "type">): boolean {
+export function isSingleService(
+  service: Pick<ServicePricing, "type">,
+): boolean {
   return service.type === SERVICE_TYPE.SINGLE;
 }
 

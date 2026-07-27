@@ -85,13 +85,17 @@ function show(
 }
 
 export const toast = {
-  error: (message: string, options?: { requestId?: string; durationMs?: number }) =>
-    show("error", message, options),
+  error: (
+    message: string,
+    options?: { requestId?: string; durationMs?: number },
+  ) => show("error", message, options),
   success: (
     message: string,
     options?: { requestId?: string; durationMs?: number },
   ) => show("success", message, options),
-  info: (message: string, options?: { requestId?: string; durationMs?: number }) =>
-    show("info", message, options),
+  info: (
+    message: string,
+    options?: { requestId?: string; durationMs?: number },
+  ) => show("info", message, options),
   dismiss: (id: string) => useToastStore.getState().dismiss(id),
 };

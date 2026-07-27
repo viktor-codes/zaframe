@@ -58,10 +58,7 @@ export function useStripeConnectActions({
     mutationFn: () =>
       updateStudioPayoutSettings(studioId, { refresh_from_stripe: true }),
     onSuccess: (status) => {
-      queryClient.setQueryData(
-        queryKeys.studio.stripeStatus(studioId),
-        status,
-      );
+      queryClient.setQueryData(queryKeys.studio.stripeStatus(studioId), status);
       toast.success("Payout status updated from Stripe");
     },
   });

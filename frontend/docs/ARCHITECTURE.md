@@ -47,11 +47,11 @@ The token model dictates the strategy — this is a constraint, not a preference
   httpOnly). Server-side data fetching is possible only for public endpoints
   (direct to `API_UPSTREAM_URL`, not through the rewrite loop).
 
-| Zone | Rendering | Data fetching |
-|------|-----------|---------------|
-| `(main)` — landing, `/studios`, `/s/[slug]` | Server Components | server `fetch` to public API with `next: { revalidate }`; SEO via `generateMetadata` |
-| Booking wizard, forms, any interactivity | Client islands inside RSC pages | TanStack Query mutations |
-| `(account)`, `(dashboard)` | RSC shell (layout markup only), all data client-side | TanStack Query + `shared/api` client |
+| Zone                                        | Rendering                                            | Data fetching                                                                        |
+| ------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `(main)` — landing, `/studios`, `/s/[slug]` | Server Components                                    | server `fetch` to public API with `next: { revalidate }`; SEO via `generateMetadata` |
+| Booking wizard, forms, any interactivity    | Client islands inside RSC pages                      | TanStack Query mutations                                                             |
+| `(account)`, `(dashboard)`                  | RSC shell (layout markup only), all data client-side | TanStack Query + `shared/api` client                                                 |
 
 Rules that follow:
 
@@ -102,33 +102,33 @@ Domain components that appear on multiple surfaces live in `entities/`, not in a
 
 ## 5. Migration map (current code → FSD)
 
-| Current | Target |
-|---------|--------|
-| `src/lib/api/*` | `shared/api/` (+ generated types replace `src/types/*`) |
-| `src/lib/auth*`, `src/context/*` | `shared/auth/` |
-| `src/components/ui/*` | `shared/ui/` |
-| `src/lib/utils.ts`, `config.ts` | `shared/lib/` |
-| `src/types/*` (hand-written) | **deleted** — replaced by `types.generated.ts` + entity models |
-| `src/features/home`, `navigation` | stay as features (landing untouched) |
-| `src/features/studios` | split: cards → `entities/studio`, search → `features/search-studios` |
-| `src/app/(main)/studios/[id]` (public) | `app/(main)/s/[slug]` on public API |
+| Current                                    | Target                                                                              |
+| ------------------------------------------ | ----------------------------------------------------------------------------------- |
+| `src/lib/api/*`                            | `shared/api/` (+ generated types replace `src/types/*`)                             |
+| `src/lib/auth*`, `src/context/*`           | `shared/auth/`                                                                      |
+| `src/components/ui/*`                      | `shared/ui/`                                                                        |
+| `src/lib/utils.ts`, `config.ts`            | `shared/lib/`                                                                       |
+| `src/types/*` (hand-written)               | **deleted** — replaced by `types.generated.ts` + entity models                      |
+| `src/features/home`, `navigation`          | stay as features (landing untouched)                                                |
+| `src/features/studios`                     | split: cards → `entities/studio`, search → `features/search-studios`                |
+| `src/app/(main)/studios/[id]` (public)     | `app/(main)/s/[slug]` on public API                                                 |
 | `src/app/(main)/bookings/*` (account list) | `app/(account)/account/bookings` (`/account/bookings`; exact `/bookings` redirects) |
-| `src/app/(main)/dashboard/*` | `app/(dashboard)/…` sidebar + sub-routes |
-| `src/store/useUIStore.ts` | keep only if actually used; prefer local state |
+| `src/app/(main)/dashboard/*`               | `app/(dashboard)/…` sidebar + sub-routes                                            |
+| `src/store/useUIStore.ts`                  | keep only if actually used; prefer local state                                      |
 
 ## 6. Stack (locked)
 
-| Concern | Choice | Notes |
-|---------|--------|-------|
-| Framework | Next.js App Router | Server Components by default, `'use client'` only when needed |
-| Server state | TanStack Query | one `QueryClient` in providers; keys per entity |
-| UI state | `useState` / `useReducer` locally | Zustand only if a real global need appears |
-| Forms | React Hook Form + Zod | schemas in `features/*/model` or `shared/lib/schemas` |
-| API types | `openapi-typescript` | generated from FastAPI `/openapi.json`, committed |
-| Styling | Tailwind v4 (existing tokens: mint/navy, polaroid) | |
-| Unit tests | Vitest | |
-| E2E | Playwright (`e2e/`, POM pattern) | critical flows only; **local/`make e2e`**, not default Frontend CI |
-| Lint | ESLint + boundary rule between FSD layers | |
+| Concern      | Choice                                             | Notes                                                              |
+| ------------ | -------------------------------------------------- | ------------------------------------------------------------------ |
+| Framework    | Next.js App Router                                 | Server Components by default, `'use client'` only when needed      |
+| Server state | TanStack Query                                     | one `QueryClient` in providers; keys per entity                    |
+| UI state     | `useState` / `useReducer` locally                  | Zustand only if a real global need appears                         |
+| Forms        | React Hook Form + Zod                              | schemas in `features/*/model` or `shared/lib/schemas`              |
+| API types    | `openapi-typescript`                               | generated from FastAPI `/openapi.json`, committed                  |
+| Styling      | Tailwind v4 (existing tokens: mint/navy, polaroid) |                                                                    |
+| Unit tests   | Vitest                                             |                                                                    |
+| E2E          | Playwright (`e2e/`, POM pattern)                   | critical flows only; **local/`make e2e`**, not default Frontend CI |
+| Lint         | ESLint + boundary rule between FSD layers          |                                                                    |
 
 ## 7. Type generation from OpenAPI
 
@@ -154,17 +154,17 @@ Domain components that appear on multiple surfaces live in `entities/`, not in a
 
 ## 9. Backend module → frontend entity mapping
 
-| Backend module | Frontend entity / feature |
-|----------------|---------------------------|
-| `catalog/studio` | `entities/studio`, `features/manage-studio` |
-| `catalog/service` | `entities/service`, `features/manage-services` |
-| `catalog/occurrence` + `schedule` | `entities/occurrence`, `features/manage-schedule` |
-| `catalog/public` | storefront pages (`app/(main)/s/[slug]`) |
-| `booking` | `entities/booking`, `features/book-occurrence`, `features/cancel-booking`, `features/check-in` |
-| `booking/order` | `entities/order` |
-| `payment` | checkout step inside `features/book-occurrence`; payouts (P1) |
-| `auth` | `shared/auth`, `features/auth`, `features/manage-account` |
-| `search` | `features/search-studios` |
+| Backend module                    | Frontend entity / feature                                                                      |
+| --------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `catalog/studio`                  | `entities/studio`, `features/manage-studio`                                                    |
+| `catalog/service`                 | `entities/service`, `features/manage-services`                                                 |
+| `catalog/occurrence` + `schedule` | `entities/occurrence`, `features/manage-schedule`                                              |
+| `catalog/public`                  | storefront pages (`app/(main)/s/[slug]`)                                                       |
+| `booking`                         | `entities/booking`, `features/book-occurrence`, `features/cancel-booking`, `features/check-in` |
+| `booking/order`                   | `entities/order`                                                                               |
+| `payment`                         | checkout step inside `features/book-occurrence`; payouts (P1)                                  |
+| `auth`                            | `shared/auth`, `features/auth`, `features/manage-account`                                      |
+| `search`                          | `features/search-studios`                                                                      |
 
 ## 10. Error handling
 

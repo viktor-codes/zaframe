@@ -2,6 +2,7 @@ import { Suspense } from "react";
 
 import { fetchStudiosExplore } from "@shared/api/server";
 
+import { Header } from "@features/navigation/components/Header";
 import { StudiosExplore } from "@features/studios/components/studios-explore";
 import { StudiosSkeleton } from "@features/studios/components/StudiosSkeleton";
 import {
@@ -42,6 +43,14 @@ export default async function StudiosPage({ searchParams }: StudiosPageProps) {
         filters={filters}
         initialPage={initialPage}
         initialFetchFailed={initialFetchFailed}
+        header={
+          <Header
+            minimalSearch={{
+              href: "#studios-search",
+              placeholder: "Search studios…",
+            }}
+          />
+        }
       />
     </Suspense>
   );

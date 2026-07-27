@@ -47,13 +47,16 @@ describe("serverGet", () => {
 
   it("throws ApiError with requestId from the response header", async function () {
     const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ detail: "Not found", title: "Not Found" }), {
-        status: 404,
-        headers: {
-          "Content-Type": "application/json",
-          [REQUEST_ID_HEADER]: "resp-404",
+      new Response(
+        JSON.stringify({ detail: "Not found", title: "Not Found" }),
+        {
+          status: 404,
+          headers: {
+            "Content-Type": "application/json",
+            [REQUEST_ID_HEADER]: "resp-404",
+          },
         },
-      }),
+      ),
     );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -66,9 +69,11 @@ describe("serverGet", () => {
   });
 
   it("falls back to outbound requestId when response omits it", async function () {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ detail: "Boom" }), { status: 500 }),
-    );
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify({ detail: "Boom" }), { status: 500 }),
+      );
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(
@@ -80,9 +85,9 @@ describe("serverGet", () => {
   });
 
   it("passes next.revalidate through to fetch", async function () {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify([]), { status: 200 }),
-    );
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify([]), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 
     await serverGet("api/v1/studios", {
@@ -99,9 +104,11 @@ describe("serverGet", () => {
 describe("fetchStudioPublicBySlug", () => {
   it("calls the public slug endpoint with default revalidate", async function () {
     const payload = { id: 1, name: "Studio", slug: "yoga-lab", services: [] };
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify(payload), { status: 200 }),
-    );
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify(payload), { status: 200 }),
+      );
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await fetchStudioPublicBySlug("yoga-lab");
@@ -120,10 +127,17 @@ describe("fetchStudioPublicBySlug", () => {
 
 describe("fetchStudioById", () => {
   it("calls the public studio-by-id endpoint with default revalidate", async function () {
-    const payload = { id: 7, name: "Studio", slug: "yoga-lab", timezone: "UTC" };
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify(payload), { status: 200 }),
-    );
+    const payload = {
+      id: 7,
+      name: "Studio",
+      slug: "yoga-lab",
+      timezone: "UTC",
+    };
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify(payload), { status: 200 }),
+      );
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await fetchStudioById(7);
@@ -141,9 +155,11 @@ describe("fetchStudioById", () => {
 describe("fetchStudiosExplore", () => {
   it("calls GET /studios with include_services and filters", async function () {
     const payload = { items: [], total: 0, page: 1, size: 12 };
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify(payload), { status: 200 }),
-    );
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify(payload), { status: 200 }),
+      );
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await fetchStudiosExplore({

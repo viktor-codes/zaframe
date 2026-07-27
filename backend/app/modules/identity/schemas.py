@@ -172,20 +172,32 @@ class PaymentExportItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+def _empty_booking_export_items() -> list[BookingExportItem]:
+    return []
+
+
+def _empty_order_export_items() -> list[OrderExportItem]:
+    return []
+
+
+def _empty_payment_export_items() -> list[PaymentExportItem]:
+    return []
+
+
 class UserDataExportResponse(BaseModel):
     """GDPR data export envelope for the authenticated user."""
 
     user: UserExportItem = Field(..., description="Account profile snapshot")
     bookings: list[BookingExportItem] = Field(
-        default_factory=list,
+        default_factory=_empty_booking_export_items,
         description="Bookings linked by user_id or guest email",
     )
     orders: list[OrderExportItem] = Field(
-        default_factory=list,
+        default_factory=_empty_order_export_items,
         description="Course orders linked by user_id or guest email",
     )
     payments: list[PaymentExportItem] = Field(
-        default_factory=list,
+        default_factory=_empty_payment_export_items,
         description="Payment ledger rows for those bookings/orders",
     )
 

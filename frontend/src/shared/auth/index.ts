@@ -1,6 +1,10 @@
-/** Auth context, storage, session API, role/permission hooks, and route guards. */
+/** Auth context, storage, role/permission hooks, and route guards.
+ *
+ * WHY: do not re-export `./api` here — it is `client-only` and would break
+ * Server Component imports of guards (e.g. RequireAuth in app layouts).
+ * Session helpers: import from `@shared/auth/api` in Client Components only.
+ */
 export { AuthProvider, useAuth } from "./context";
-export { logoutSession, refreshAccessToken } from "./api";
 export {
   clearStoredTokens,
   getStoredAccessToken,

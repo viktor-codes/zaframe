@@ -97,7 +97,8 @@ export function ProfileForm({ user }: ProfileFormProps) {
             Marketing updates
           </span>
           <span className="mt-0.5 block text-xs text-zinc-500">
-            Occasional tips and studio highlights. You can turn this off anytime.
+            Occasional tips and studio highlights. You can turn this off
+            anytime.
           </span>
         </span>
       </label>

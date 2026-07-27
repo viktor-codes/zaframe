@@ -36,11 +36,8 @@ export function TeamPanel({ studioId }: TeamPanelProps) {
     refetch: refetchMembers,
   } = useStudioMembers(studioId);
 
-  const {
-    updateMemberRole,
-    removeMember,
-    pendingMemberId,
-  } = useMemberMutations(studioId);
+  const { updateMemberRole, removeMember, pendingMemberId } =
+    useMemberMutations(studioId);
 
   if (isStudioLoading || isMembersLoading) {
     return <ResourceListSkeleton testId="team-skeleton" rows={3} />;

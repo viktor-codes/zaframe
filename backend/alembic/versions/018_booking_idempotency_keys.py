@@ -1,7 +1,7 @@
 """Idempotency ledger for POST /bookings create retries.
 
 Revision ID: 018_booking_idempotency_keys
-Revises: 017_booking_guest_email_ci_unique
+Revises: 017_guest_email_ci_uq
 Create Date: 2026-07-27
 """
 
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "018_booking_idempotency_keys"
-down_revision: str | Sequence[str] | None = "017_booking_guest_email_ci_unique"
+down_revision: str | Sequence[str] | None = "017_guest_email_ci_uq"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

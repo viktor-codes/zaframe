@@ -17,9 +17,7 @@ export interface OccurrenceCancelFormValues {
 }
 
 type EditErrorMap = Partial<Record<keyof OccurrenceEditFormValues, string>>;
-type CancelErrorMap = Partial<
-  Record<keyof OccurrenceCancelFormValues, string>
->;
+type CancelErrorMap = Partial<Record<keyof OccurrenceCancelFormValues, string>>;
 
 const EditSchema = z
   .object({
@@ -76,16 +74,21 @@ function collectErrors<T extends string>(
   const errors: Partial<Record<T, string>> = {};
   for (const issue of error.issues) {
     const key = issue.path[0];
-    if (typeof key === "string" && keys.includes(key as T) && !errors[key as T]) {
+    if (
+      typeof key === "string" &&
+      keys.includes(key as T) &&
+      !errors[key as T]
+    ) {
       errors[key as T] = issue.message;
     }
   }
   return errors;
 }
 
-export function parseOccurrenceEdit(
-  input: OccurrenceEditFormValues,
-): { data: OccurrenceUpdate | null; errors: EditErrorMap } {
+export function parseOccurrenceEdit(input: OccurrenceEditFormValues): {
+  data: OccurrenceUpdate | null;
+  errors: EditErrorMap;
+} {
   const result = EditSchema.safeParse(input);
   if (!result.success) {
     return {
@@ -109,9 +112,10 @@ export function parseOccurrenceEdit(
   };
 }
 
-export function parseOccurrenceCancel(
-  input: OccurrenceCancelFormValues,
-): { data: OccurrenceUpdate | null; errors: CancelErrorMap } {
+export function parseOccurrenceCancel(input: OccurrenceCancelFormValues): {
+  data: OccurrenceUpdate | null;
+  errors: CancelErrorMap;
+} {
   const result = CancelSchema.safeParse(input);
   if (!result.success) {
     return {

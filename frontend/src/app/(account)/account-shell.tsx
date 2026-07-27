@@ -25,7 +25,9 @@ export function AccountShell({ children }: AccountShellProps) {
           </Link>
           <div className="flex items-center gap-4">
             <AccountDashboardLink />
-            <span className="text-secondary text-sm font-semibold">Account</span>
+            <span className="text-secondary text-sm font-semibold">
+              Account
+            </span>
           </div>
         </div>
         <AccountNav />

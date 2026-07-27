@@ -17,11 +17,11 @@ Studio → Service (single | course) → Occurrence → Booking → Order → Pa
 
 ## 2. Three surfaces and personas
 
-| Surface | Who | Job to be done |
-|---------|-----|----------------|
-| **Storefront** (public) | Guest / customer | "Find a class and book it" |
-| **Account** | Authenticated customer | "My bookings, payments, cancellations" |
-| **Dashboard** | Owner / Manager / Instructor | "Sell and run the day" |
+| Surface                 | Who                          | Job to be done                         |
+| ----------------------- | ---------------------------- | -------------------------------------- |
+| **Storefront** (public) | Guest / customer             | "Find a class and book it"             |
+| **Account**             | Authenticated customer       | "My bookings, payments, cancellations" |
+| **Dashboard**           | Owner / Manager / Instructor | "Sell and run the day"                 |
 
 Key IA fact: one person can be both a customer and staff of several studios.
 The header must switch modes explicitly ("Customer ↔ Studio {name}") — never mix
@@ -31,17 +31,17 @@ The word **"dashboard" is reserved for the studio surface**. The customer surfac
 
 ## 3. Decisions — RESOLVED (2026-07-05)
 
-| # | Question | Decision |
-|---|----------|----------|
-| 1 | UI language | **EN only** for MVP. i18n later if needed. |
-| 2 | Storefront routing | **`/s/{slug}`** from Phase 3 (backend already serves `GET /studios/slug/{slug}/public`). `/studios/[id]` public page is retired. |
-| 3 | Homepage | Keep the **marketing landing** (do not touch) + add a search block. Catalog lives at `/studios`. |
-| 4 | Account URL | **`/account/*`** (bookings, orders, profile). Current `/bookings/*` pages migrate there. |
-| 5 | Dashboard schedule view | **List grouped by date** for MVP. Week calendar → P2. |
-| 6 | Mobile priority | Storefront + check-in are **mobile-first**; dashboard is **desktop-first** (must not break on mobile). |
-| 7 | Pagination contract | Backend adds the **`{items, total, page, size}` envelope** to list endpoints **before** frontend list screens are built (see CONTRACTS §5, backlog for backend). |
-| 8 | Machine-readable error codes | **Deferred.** MVP distinguishes errors by HTTP status + `detail` text. `code` field → backlog. |
-| 9 | Docs location | `frontend/docs/` (this folder). |
+| #   | Question                     | Decision                                                                                                                                                         |
+| --- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | UI language                  | **EN only** for MVP. i18n later if needed.                                                                                                                       |
+| 2   | Storefront routing           | **`/s/{slug}`** from Phase 3 (backend already serves `GET /studios/slug/{slug}/public`). `/studios/[id]` public page is retired.                                 |
+| 3   | Homepage                     | Keep the **marketing landing** (do not touch) + add a search block. Catalog lives at `/studios`.                                                                 |
+| 4   | Account URL                  | **`/account/*`** (bookings, orders, profile). Current `/bookings/*` pages migrate there.                                                                         |
+| 5   | Dashboard schedule view      | **List grouped by date** for MVP. Week calendar → P2.                                                                                                            |
+| 6   | Mobile priority              | Storefront + check-in are **mobile-first**; dashboard is **desktop-first** (must not break on mobile).                                                           |
+| 7   | Pagination contract          | Backend adds the **`{items, total, page, size}` envelope** to list endpoints **before** frontend list screens are built (see CONTRACTS §5, backlog for backend). |
+| 8   | Machine-readable error codes | **Deferred.** MVP distinguishes errors by HTTP status + `detail` text. `code` field → backlog.                                                                   |
+| 9   | Docs location                | `frontend/docs/` (this folder).                                                                                                                                  |
 
 ## 4. Core UX principles (locked)
 
@@ -51,8 +51,8 @@ The word **"dashboard" is reserved for the studio surface**. The customer surfac
 - **Two schedule modes, physically separated in the UI:**
   1. **Templates** (recurring rules) → `POST /studios/{id}/generate-occurrences`
   2. **Calendar** (concrete occurrences) → edit / cancel with reason
-  Template edits never mutate existing occurrences. The UI must state this explicitly:
-  *"Template changes affect future generations only. Edit existing sessions in the calendar."*
+     Template edits never mutate existing occurrences. The UI must state this explicitly:
+     _"Template changes affect future generations only. Edit existing sessions in the calendar."_
 - **Owner onboarding funnel is the dashboard's spine.** The dashboard leads the owner through
   it instead of showing empty sections:
 
@@ -130,16 +130,16 @@ check-in — no services/schedule/payouts.
 
 ## 7. Edge cases — must be designed, not discovered
 
-| Situation | UI behaviour |
-|-----------|--------------|
-| Occurrence full | Disabled CTA + "No seats left" |
-| Pending booking (unpaid) | Hold timer + "Complete payment" action |
-| Stripe webhook delayed | "Payment processing…" + polling on success page |
-| Occurrence cancelled by studio | Account: "Session cancelled by the studio" + reason |
-| Course has overbooked dates | Warning from `PublicService.availability` before purchase |
-| Draft service | Dashboard only, badge "Not on storefront" |
-| Instructor w/o `manage_schedule` | Schedule menu item absent (PermissionGate) |
-| Booking expired (`expired` status) | Account: "Payment window expired" + rebook CTA |
+| Situation                          | UI behaviour                                              |
+| ---------------------------------- | --------------------------------------------------------- |
+| Occurrence full                    | Disabled CTA + "No seats left"                            |
+| Pending booking (unpaid)           | Hold timer + "Complete payment" action                    |
+| Stripe webhook delayed             | "Payment processing…" + polling on success page           |
+| Occurrence cancelled by studio     | Account: "Session cancelled by the studio" + reason       |
+| Course has overbooked dates        | Warning from `PublicService.availability` before purchase |
+| Draft service                      | Dashboard only, badge "Not on storefront"                 |
+| Instructor w/o `manage_schedule`   | Schedule menu item absent (PermissionGate)                |
+| Booking expired (`expired` status) | Account: "Payment window expired" + rebook CTA            |
 
 ## 8. Definition of Done — every screen
 

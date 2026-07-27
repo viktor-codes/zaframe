@@ -1,9 +1,6 @@
 export * from "./types";
 export * from "./service";
-export {
-  isServiceCategory,
-  SERVICE_CATEGORIES,
-} from "./service-category";
+export { isServiceCategory, SERVICE_CATEGORIES } from "./service-category";
 export {
   getServiceVisibilityPresentation,
   isServiceVisibility,

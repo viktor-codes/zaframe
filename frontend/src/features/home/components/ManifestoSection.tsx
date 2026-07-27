@@ -61,11 +61,7 @@ export const ManifestoSection = () => {
             Philosophy
           </AnimatedSectionHeading>
 
-          <AnimatedSectionHeading
-            size="section"
-            as="h2"
-            className="text-white"
-          >
+          <AnimatedSectionHeading size="section" as="h2" className="text-white">
             Made for everyone who <br />
             <span className="relative mt-4 inline-block font-serif font-light text-zinc-400 italic">
               values their time

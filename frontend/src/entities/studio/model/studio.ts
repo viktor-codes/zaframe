@@ -5,7 +5,9 @@ type StudioProfile = Pick<
   "name" | "slug" | "city" | "address" | "cover_url" | "logo_url" | "is_active"
 >;
 
-export function getStudioDisplayName(studio: Pick<StudioProfile, "name">): string {
+export function getStudioDisplayName(
+  studio: Pick<StudioProfile, "name">,
+): string {
   return studio.name.trim();
 }
 
@@ -31,7 +33,9 @@ export function hasStudioSlug(
   return typeof studio.slug === "string" && studio.slug.length > 0;
 }
 
-export function isStudioActive(studio: Pick<StudioProfile, "is_active">): boolean {
+export function isStudioActive(
+  studio: Pick<StudioProfile, "is_active">,
+): boolean {
   return studio.is_active;
 }
 

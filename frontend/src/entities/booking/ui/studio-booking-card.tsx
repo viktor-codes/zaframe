@@ -73,7 +73,9 @@ export function StudioBookingCard({
               now={now}
             />
           </div>
-          <p className="truncate text-sm text-neutral-600">{occurrence.title}</p>
+          <p className="truncate text-sm text-neutral-600">
+            {occurrence.title}
+          </p>
           <p className="text-sm text-neutral-500">
             {formatSessionWhen(occurrence.start_time, occurrence.end_time)}
           </p>

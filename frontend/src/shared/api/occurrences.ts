@@ -3,9 +3,7 @@
  */
 
 import { api } from "./client";
-import type {
-  PaginatedBookingOwnerList,
-} from "@entities/booking";
+import type { PaginatedBookingOwnerList } from "@entities/booking";
 import type {
   OccurrenceCreate,
   OccurrenceResponse,
@@ -46,11 +44,7 @@ export async function fetchOccurrenceBookings(
   occurrenceId: number,
   params?: { page?: number; size?: number; status?: string },
 ): Promise<PaginatedBookingOwnerList> {
-  const {
-    page = DEFAULT_PAGE,
-    size = DEFAULT_SIZE,
-    status,
-  } = params ?? {};
+  const { page = DEFAULT_PAGE, size = DEFAULT_SIZE, status } = params ?? {};
   const searchParams: Record<string, string | number | undefined> = {
     page,
     size,

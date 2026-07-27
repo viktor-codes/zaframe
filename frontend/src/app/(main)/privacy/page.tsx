@@ -28,7 +28,9 @@ export default function PrivacyPage() {
       </p>
 
       <section className="mb-8 space-y-3 text-sm text-neutral-700">
-        <h2 className="text-base font-semibold text-zinc-900">What we collect</h2>
+        <h2 className="text-base font-semibold text-zinc-900">
+          What we collect
+        </h2>
         <p>
           Account details you provide (email, name, optional phone, marketing
           preference), booking and course order records, and payment ledger
@@ -77,8 +79,9 @@ export default function PrivacyPage() {
       <section className="space-y-3 text-sm text-neutral-700">
         <h2 className="text-base font-semibold text-zinc-900">Contact</h2>
         <p>
-          For a data subject request outside the in-app export, email the address
-          used on your account or contact the studio that holds your booking.
+          For a data subject request outside the in-app export, email the
+          address used on your account or contact the studio that holds your
+          booking.
         </p>
       </section>
     </article>

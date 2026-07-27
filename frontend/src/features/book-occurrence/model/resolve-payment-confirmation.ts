@@ -5,10 +5,7 @@
  * The UI must poll and not assume confirmation from the redirect alone.
  */
 
-import {
-  BookingPaymentStatus,
-  BookingStatus,
-} from "@shared/lib/constants";
+import { BookingPaymentStatus, BookingStatus } from "@shared/lib/constants";
 
 export type PaymentConfirmationPhase =
   | "processing"

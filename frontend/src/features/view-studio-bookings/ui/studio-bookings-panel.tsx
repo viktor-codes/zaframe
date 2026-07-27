@@ -90,11 +90,7 @@ export function StudioBookingsPanel({ studioId }: StudioBookingsPanelProps) {
       ) : (
         <div className="space-y-3">
           {bookings.map((booking) => (
-            <StudioBookingCard
-              key={booking.id}
-              booking={booking}
-              now={now}
-            />
+            <StudioBookingCard key={booking.id} booking={booking} now={now} />
           ))}
         </div>
       )}

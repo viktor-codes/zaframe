@@ -24,8 +24,7 @@ export function getCancelDeadline(
   cancelBeforeHours: number,
 ): Date {
   return new Date(
-    new Date(occurrenceStartIso).getTime() -
-      cancelBeforeHours * 60 * 60 * 1000,
+    new Date(occurrenceStartIso).getTime() - cancelBeforeHours * 60 * 60 * 1000,
   );
 }
 

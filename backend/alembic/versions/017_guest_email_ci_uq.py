@@ -1,6 +1,6 @@
 """Case-insensitive unique index on active booking guest emails.
 
-Revision ID: 017_booking_guest_email_ci_unique
+Revision ID: 017_guest_email_ci_uq
 Revises: 016_anonymize_deleted_user_pii
 Create Date: 2026-07-27
 """
@@ -10,7 +10,7 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "017_booking_guest_email_ci_unique"
+revision: str = "017_guest_email_ci_uq"
 down_revision: str | Sequence[str] | None = "016_anonymize_deleted_user_pii"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
@@ -37,8 +37,8 @@ def upgrade() -> None:
             UPDATE bookings AS b
             SET
                 status = 'cancelled',
-                cancelled_at = NOW() AT TIME ZONE,
-                updated_at = NOW() AT TIME ZONE
+                cancelled_at = NOW(),
+                updated_at = NOW()
             FROM ranked AS r
             WHERE b.id = r.id AND r.rn > 1
             """

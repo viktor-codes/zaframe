@@ -52,7 +52,8 @@ describe("getCourseAvailabilityPresentation", () => {
     const result = getCourseAvailabilityPresentation(
       availability({
         requires_warning: true,
-        warning_message: "Some course sessions will be fuller, but booking is still allowed.",
+        warning_message:
+          "Some course sessions will be fuller, but booking is still allowed.",
         schedule_details: [
           { date: "2026-08-01", is_overbooked: true, remaining: 1 },
           { date: "2026-08-08", is_overbooked: false, remaining: 5 },

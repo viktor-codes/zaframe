@@ -1,16 +1,8 @@
-import {
-  BookingPaymentStatus,
-  BookingStatus,
-} from "@shared/lib/constants";
+import { BookingPaymentStatus, BookingStatus } from "@shared/lib/constants";
 import { isBookingReservationExpired, isPendingBooking } from "./booking";
 import { isSessionCancelledByStudio } from "./booking-account-edge";
 
-export type BookingStatusTone =
-  | "neutral"
-  | "amber"
-  | "green"
-  | "red"
-  | "teal";
+export type BookingStatusTone = "neutral" | "amber" | "green" | "red" | "teal";
 
 export interface BookingStatusPresentation {
   label: string;

@@ -24,10 +24,7 @@ const TemplateFormSchema = z
       .string()
       .trim()
       .regex(TIME_RE, "Enter a valid time (e.g. 18:00)"),
-    valid_from: z
-      .string()
-      .trim()
-      .regex(DATE_RE, "Enter a valid start date"),
+    valid_from: z.string().trim().regex(DATE_RE, "Enter a valid start date"),
     valid_to: z
       .string()
       .trim()
@@ -62,9 +59,10 @@ function collectTemplateErrors(error: z.ZodError): TemplateErrorMap {
   return errors;
 }
 
-export function parseCreateTemplate(
-  input: TemplateFormValues,
-): { data: ScheduleTemplateCreate | null; errors: TemplateErrorMap } {
+export function parseCreateTemplate(input: TemplateFormValues): {
+  data: ScheduleTemplateCreate | null;
+  errors: TemplateErrorMap;
+} {
   const result = TemplateFormSchema.safeParse(input);
   if (!result.success) {
     return { data: null, errors: collectTemplateErrors(result.error) };
@@ -80,9 +78,10 @@ export function parseCreateTemplate(
   };
 }
 
-export function parseUpdateTemplate(
-  input: TemplateFormValues,
-): { data: ScheduleTemplateUpdate | null; errors: TemplateErrorMap } {
+export function parseUpdateTemplate(input: TemplateFormValues): {
+  data: ScheduleTemplateUpdate | null;
+  errors: TemplateErrorMap;
+} {
   const parsed = parseCreateTemplate(input);
   if (!parsed.data) {
     return { data: null, errors: parsed.errors };

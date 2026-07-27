@@ -15,9 +15,9 @@ describe("booking model", () => {
   });
 
   it("treats payment_status succeeded as paid (not order paid)", () => {
-    expect(
-      isBookingPaymentSucceeded({ payment_status: "succeeded" }),
-    ).toBe(true);
+    expect(isBookingPaymentSucceeded({ payment_status: "succeeded" })).toBe(
+      true,
+    );
     expect(isBookingPaymentSucceeded({ payment_status: "paid" })).toBe(false);
   });
 

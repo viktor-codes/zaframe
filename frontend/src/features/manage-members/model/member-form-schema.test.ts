@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  emptyAddMemberForm,
-  parseAddMember,
-} from "./member-form-schema";
+import { emptyAddMemberForm, parseAddMember } from "./member-form-schema";
 
 describe("parseAddMember", () => {
   it("accepts a valid invite payload", () => {

@@ -33,7 +33,9 @@ async function findServiceIdForOccurrence(
     }),
   );
 
-  return matches.find((serviceId): serviceId is number => serviceId != null) ?? null;
+  return (
+    matches.find((serviceId): serviceId is number => serviceId != null) ?? null
+  );
 }
 
 /**
@@ -53,7 +55,10 @@ export default async function BookPage({
     return (
       <div className="mx-auto max-w-2xl px-6 py-12">
         <p className="text-sm text-neutral-600">Invalid studio link.</p>
-        <Link href="/studios" className="mt-3 inline-block text-primary underline">
+        <Link
+          href="/studios"
+          className="mt-3 inline-block text-primary underline"
+        >
           Browse studios
         </Link>
       </div>

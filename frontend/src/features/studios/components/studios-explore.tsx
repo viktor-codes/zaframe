@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { X, ChevronDown } from "lucide-react";
@@ -18,7 +12,6 @@ import {
   type ServiceCategory,
 } from "@entities/service";
 import type { PaginatedSearchResultList } from "@entities/studio";
-import { Header } from "@features/navigation/components/Header";
 import { fetchStudios, getUserFacingApiMessage } from "@shared/api";
 import { queryKeys } from "@shared/lib/query-keys";
 import { useUIStore } from "@shared/lib/ui-store";
@@ -66,12 +59,15 @@ export interface StudiosExploreProps {
   initialFetchFailed?: boolean;
   /** Filters parsed on the server — kept for remount key alignment. */
   filters: StudiosExploreFilters;
+  /** WHY: composed by the page (app layer) to avoid feature→feature imports. */
+  header: React.ReactNode;
 }
 
 export function StudiosExplore({
   initialPage,
   initialFetchFailed = false,
   filters: serverFilters,
+  header,
 }: StudiosExploreProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -212,12 +208,7 @@ export function StudiosExplore({
 
   return (
     <div className="min-h-screen bg-white">
-      <Header
-        minimalSearch={{
-          href: "#studios-search",
-          placeholder: "Search studios…",
-        }}
-      />
+      {header}
 
       <div className="container mx-auto px-4 pt-28 pb-12">
         <nav

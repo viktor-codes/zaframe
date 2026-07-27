@@ -40,7 +40,9 @@ export function isOccurrenceBookable(
   occurrence: Pick<OccurrenceTiming, "start_time" | "status">,
   now: Date = new Date(),
 ): boolean {
-  return isOccurrenceScheduled(occurrence) && !isOccurrenceInPast(occurrence, now);
+  return (
+    isOccurrenceScheduled(occurrence) && !isOccurrenceInPast(occurrence, now)
+  );
 }
 
 export function getOccurrenceDurationMinutes(

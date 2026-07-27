@@ -1,9 +1,9 @@
 """Durable outcomes for Stripe webhook processing."""
 
-from enum import Enum
+from enum import StrEnum
 
 
-class WebhookOutcome(str, Enum):
+class WebhookOutcome(StrEnum):
     """Maps to HTTP ACK policy for Stripe delivery retries.
 
     PROCESSED / DUPLICATE → HTTP 200 (do not retry).

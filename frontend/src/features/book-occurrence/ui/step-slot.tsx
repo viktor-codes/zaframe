@@ -102,7 +102,7 @@ export function StepSlot({
             <button
               type="button"
               disabled={isFull}
-              className={`w-full rounded-2xl text-left transition ring-offset-2 focus-visible:ring-2 focus-visible:ring-teal-400 disabled:cursor-not-allowed disabled:opacity-70 ${
+              className={`w-full rounded-2xl text-left ring-offset-2 transition focus-visible:ring-2 focus-visible:ring-teal-400 disabled:cursor-not-allowed disabled:opacity-70 ${
                 isSelected
                   ? "ring-2 ring-teal-500"
                   : "hover:ring-1 hover:ring-neutral-300"

@@ -7,7 +7,9 @@ interface EditServicePageProps {
   params: Promise<{ id: string; serviceId: string }>;
 }
 
-export default async function EditServicePage({ params }: EditServicePageProps) {
+export default async function EditServicePage({
+  params,
+}: EditServicePageProps) {
   const { id, serviceId: serviceIdParam } = await params;
   const studioId = parsePositiveIdString(id);
   const serviceId = parsePositiveIdString(serviceIdParam);

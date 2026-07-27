@@ -29,7 +29,9 @@ export async function generateMetadata({
   const { slug, serviceId } = await params;
   try {
     const studio = await loadStudio(slug);
-    const service = studio.services?.find((item) => item.id === Number(serviceId));
+    const service = studio.services?.find(
+      (item) => item.id === Number(serviceId),
+    );
     const studioName = getStudioDisplayName(studio);
     return {
       title: service
@@ -41,7 +43,9 @@ export async function generateMetadata({
   }
 }
 
-export default async function BookServicePage({ params }: BookServicePageProps) {
+export default async function BookServicePage({
+  params,
+}: BookServicePageProps) {
   const { slug: rawSlug, serviceId: rawServiceId } = await params;
   const slug = rawSlug?.trim();
   const serviceId = Number(rawServiceId);

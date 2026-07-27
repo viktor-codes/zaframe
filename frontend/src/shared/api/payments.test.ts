@@ -38,12 +38,17 @@ describe("createCheckoutSession", () => {
   });
 
   it("sends session Bearer when there is no guest access_token", async () => {
-    const fetchMock = vi.fn(async (_input: string | URL, init?: RequestInit) => {
-      return new Response(
-        JSON.stringify({ checkout_url: "https://stripe.test/c", session_id: "cs_1" }),
-        { status: 201, headers: { "Content-Type": "application/json" } },
-      );
-    });
+    const fetchMock = vi.fn(
+      async (_input: string | URL, init?: RequestInit) => {
+        return new Response(
+          JSON.stringify({
+            checkout_url: "https://stripe.test/c",
+            session_id: "cs_1",
+          }),
+          { status: 201, headers: { "Content-Type": "application/json" } },
+        );
+      },
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     await createCheckoutSession(
@@ -61,12 +66,17 @@ describe("createCheckoutSession", () => {
   });
 
   it("skips session Bearer for guest checkout with access_token", async () => {
-    const fetchMock = vi.fn(async (_input: string | URL, init?: RequestInit) => {
-      return new Response(
-        JSON.stringify({ checkout_url: "https://stripe.test/c", session_id: "cs_1" }),
-        { status: 201, headers: { "Content-Type": "application/json" } },
-      );
-    });
+    const fetchMock = vi.fn(
+      async (_input: string | URL, init?: RequestInit) => {
+        return new Response(
+          JSON.stringify({
+            checkout_url: "https://stripe.test/c",
+            session_id: "cs_1",
+          }),
+          { status: 201, headers: { "Content-Type": "application/json" } },
+        );
+      },
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     await createCheckoutSession(

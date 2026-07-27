@@ -1,4 +1,8 @@
-import { roleHasPermission, ServiceVisibility, StudioPermission } from "@shared/lib";
+import {
+  roleHasPermission,
+  ServiceVisibility,
+  StudioPermission,
+} from "@shared/lib";
 
 import { hasStudioSlug } from "./studio";
 import type { StudioWithRoleResponse } from "./types";
@@ -39,10 +43,14 @@ export type StudioConnectOnboardingInput =
 function isProfileIncomplete(studio: StudioOnboardingInput): boolean {
   const city = studio.city?.trim() ?? "";
   const description = studio.description?.trim() ?? "";
-  return !hasStudioSlug(studio) || city.length === 0 || description.length === 0;
+  return (
+    !hasStudioSlug(studio) || city.length === 0 || description.length === 0
+  );
 }
 
-function isConnectIncomplete(connect: NonNullable<StudioConnectOnboardingInput>): boolean {
+function isConnectIncomplete(
+  connect: NonNullable<StudioConnectOnboardingInput>,
+): boolean {
   const accountId = connect.stripe_account_id?.trim() ?? "";
   if (!accountId) return true;
   return !(connect.stripe_charges_enabled && connect.stripe_payouts_enabled);
@@ -151,7 +159,8 @@ export function resolveStudioOnboardingStep(
   return {
     id: "ready",
     title: "Studio ready",
-    description: "Open Today to run the day, or keep refining schedule and bookings.",
+    description:
+      "Open Today to run the day, or keep refining schedule and bookings.",
     href: base,
     ctaLabel: "Open Today",
   };
@@ -166,7 +175,10 @@ export function pickSpotlightStudioStep(
     number,
     ReadonlyArray<ServiceVisibilityInput> | undefined
   >,
-  connectByStudioId: ReadonlyMap<number, StudioConnectOnboardingInput> = new Map(),
+  connectByStudioId: ReadonlyMap<
+    number,
+    StudioConnectOnboardingInput
+  > = new Map(),
 ): { studio: StudioOnboardingInput; step: StudioOnboardingStep } | null {
   if (studios.length === 0) {
     return null;

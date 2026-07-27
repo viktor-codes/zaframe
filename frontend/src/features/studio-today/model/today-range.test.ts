@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { buildTodayParams, formatTodayHeading, TODAY_PAGE_SIZE } from "./today-range";
+import {
+  buildTodayParams,
+  formatTodayHeading,
+  TODAY_PAGE_SIZE,
+} from "./today-range";
 
 describe("buildTodayParams", () => {
   it("requests scheduled sessions from local midnight to next midnight", () => {

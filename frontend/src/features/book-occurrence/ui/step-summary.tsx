@@ -98,12 +98,15 @@ export function StepSummary({
         <div
           className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
           data-testid={
-            isOccurrenceFull ? "book-occurrence-full-error" : "book-checkout-error"
+            isOccurrenceFull
+              ? "book-occurrence-full-error"
+              : "book-checkout-error"
           }
         >
           <p>{error}</p>
           <div className="mt-3 flex flex-wrap gap-2">
-            {(isOccurrenceFull || heldBookingId != null) && onPickAnotherTime ? (
+            {(isOccurrenceFull || heldBookingId != null) &&
+            onPickAnotherTime ? (
               <Button
                 type="button"
                 variant="outline"

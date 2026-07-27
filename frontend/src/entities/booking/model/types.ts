@@ -7,9 +7,7 @@ export type BookingSelfListItem = Schema<"BookingSelfListItem">;
 export type BookingOwnerResponse = Schema<"BookingOwnerResponse">;
 /** Studio dashboard list item (`GET /bookings`) with nested occurrence. */
 export type BookingWithOccurrence = Schema<"BookingWithOccurrence">;
-export type BookingDetailResponse =
-  | BookingSelfResponse
-  | BookingOwnerResponse;
+export type BookingDetailResponse = BookingSelfResponse | BookingOwnerResponse;
 export type CheckoutSessionCreate = Schema<"CheckoutSessionCreate">;
 export type CheckoutSessionResponse = Schema<"CheckoutSessionResponse">;
 export type CourseBookingCreate = Schema<"CourseBookingCreate">;

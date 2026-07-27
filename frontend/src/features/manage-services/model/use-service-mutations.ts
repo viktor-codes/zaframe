@@ -5,11 +5,7 @@ import { useRouter } from "next/navigation";
 
 import type { ServiceCreate, ServiceUpdate } from "@entities/service";
 import { invalidateStudioServices } from "@entities/studio";
-import {
-  createService,
-  deactivateService,
-  updateService,
-} from "@shared/api";
+import { createService, deactivateService, updateService } from "@shared/api";
 import { queryKeys, ServiceVisibility } from "@shared/lib";
 import { toast } from "@shared/ui";
 
@@ -37,9 +33,7 @@ export function useCreateService(studioId: number) {
     onSuccess: (service) => {
       invalidateServiceCaches(queryClient, studioId, service.id);
       toast.success("Service created as draft");
-      router.push(
-        `/dashboard/studios/${studioId}/services/${service.id}`,
-      );
+      router.push(`/dashboard/studios/${studioId}/services/${service.id}`);
     },
   });
 
@@ -106,7 +100,6 @@ export function useServiceVisibilityActions(
     publish: publish.mutate,
     unpublish: unpublish.mutate,
     archive: archive.mutate,
-    isPending:
-      publish.isPending || unpublish.isPending || archive.isPending,
+    isPending: publish.isPending || unpublish.isPending || archive.isPending,
   };
 }

@@ -7,10 +7,7 @@ import { queryKeys } from "@shared/lib";
 
 import { useServiceScheduleTemplates } from "./use-service-schedule-templates";
 
-export function useScheduleTemplatesPanel(
-  studioId: number,
-  serviceId: number,
-) {
+export function useScheduleTemplatesPanel(studioId: number, serviceId: number) {
   const serviceQuery = useQuery({
     queryKey: queryKeys.service.detail(serviceId),
     queryFn: () => fetchService(serviceId),
@@ -20,8 +17,7 @@ export function useScheduleTemplatesPanel(
 
   const isLoading = serviceQuery.isLoading || templatesQuery.isLoading;
   const service = serviceQuery.data;
-  const isWrongStudio =
-    service != null && service.studio_id !== studioId;
+  const isWrongStudio = service != null && service.studio_id !== studioId;
 
   return {
     isLoading,

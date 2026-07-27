@@ -70,8 +70,7 @@ export function GuestBookingConfirmReady({
       cancelled_at: cancelledAt,
       checked_in_at:
         "checked_in_at" in booking ? (booking.checked_in_at ?? null) : null,
-      no_show_at:
-        "no_show_at" in booking ? (booking.no_show_at ?? null) : null,
+      no_show_at: "no_show_at" in booking ? (booking.no_show_at ?? null) : null,
     },
     occurrence,
   );
@@ -138,7 +137,9 @@ export function GuestBookingConfirmReady({
       canPay={needsPayment && !isHoldExpired}
       isHoldExpired={needsPayment && isHoldExpired}
       isPaid={isPaid}
-      isFreeUnpaid={Boolean(occurrence && occurrence.price_cents === 0 && !isPaid)}
+      isFreeUnpaid={Boolean(
+        occurrence && occurrence.price_cents === 0 && !isPaid,
+      )}
       error={error}
       isPaying={isPaying}
       onPay={onPay}

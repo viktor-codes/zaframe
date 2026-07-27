@@ -53,11 +53,7 @@ export function MyStudiosPanel() {
 
       <div className="grid gap-4">
         {rows.map(({ studio, step }) => (
-          <StudioMembershipCard
-            key={studio.id}
-            studio={studio}
-            step={step}
-          />
+          <StudioMembershipCard key={studio.id} studio={studio} step={step} />
         ))}
       </div>
     </div>

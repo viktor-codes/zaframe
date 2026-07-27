@@ -9,10 +9,7 @@ import {
   toStudiosExploreListParams,
 } from "./explore-filters";
 
-function searchResult(
-  studioId: number,
-  serviceIds: number[],
-): SearchResult {
+function searchResult(studioId: number, serviceIds: number[]): SearchResult {
   return {
     studio: { id: studioId, name: `Studio ${studioId}` },
     matched_services: serviceIds.map((id) => ({

@@ -72,12 +72,12 @@ describe("resolvePaymentConfirmation", () => {
 
 describe("shouldContinuePaymentConfirmationPoll", () => {
   it("continues only while processing (delayed webhook)", () => {
-    expect(
-      shouldContinuePaymentConfirmationPoll({ phase: "processing" }),
-    ).toBe(true);
-    expect(
-      shouldContinuePaymentConfirmationPoll({ phase: "confirmed" }),
-    ).toBe(false);
+    expect(shouldContinuePaymentConfirmationPoll({ phase: "processing" })).toBe(
+      true,
+    );
+    expect(shouldContinuePaymentConfirmationPoll({ phase: "confirmed" })).toBe(
+      false,
+    );
     expect(
       shouldContinuePaymentConfirmationPoll({ phase: "manual_review" }),
     ).toBe(false);

@@ -8,9 +8,7 @@ import {
 import { useAuth } from "@shared/auth";
 import { Button } from "@shared/ui";
 
-import {
-  getCourseAvailabilityPresentation,
-} from "../model/course-availability";
+import { getCourseAvailabilityPresentation } from "../model/course-availability";
 import {
   parseGuestDetails,
   type GuestDetails,
@@ -131,9 +129,7 @@ export function BookCourseWizard({
           canProceed={canProceed}
           studioSlug={slug}
           onBack={() => setStep("details")}
-          onPay={() =>
-            checkout.pay({ serviceId: service.id, guest })
-          }
+          onPay={() => checkout.pay({ serviceId: service.id, guest })}
         />
       ) : null}
     </BookCourseWizardChrome>

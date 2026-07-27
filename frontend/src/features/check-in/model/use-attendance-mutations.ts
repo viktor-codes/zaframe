@@ -9,10 +9,7 @@ import { toast } from "@shared/ui";
 /**
  * Check-in / no-show mutations; invalidate occurrence + studio lists on success.
  */
-export function useAttendanceMutations(
-  studioId: number,
-  occurrenceId: number,
-) {
+export function useAttendanceMutations(studioId: number, occurrenceId: number) {
   const queryClient = useQueryClient();
 
   const invalidate = () => {

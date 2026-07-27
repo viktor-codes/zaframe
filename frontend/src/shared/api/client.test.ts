@@ -121,7 +121,9 @@ describe("api client token refresh", () => {
     setRefreshTokensFn(refreshTokens);
     stubFetch({ "/public": [401] });
 
-    await expect(api.get("api/v1/public", { skipAuth: true })).rejects.toThrow();
+    await expect(
+      api.get("api/v1/public", { skipAuth: true }),
+    ).rejects.toThrow();
     expect(refreshTokens).not.toHaveBeenCalled();
   });
 
