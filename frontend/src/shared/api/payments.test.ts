@@ -85,13 +85,20 @@ describe("createOrderCheckoutSession", () => {
   });
 
   it("posts to order-checkout-session with Idempotency-Key", async () => {
-    const fetchMock = vi.fn(async (input: string | URL) => {
-      expect(String(input)).toContain("/api/v1/payments/order-checkout-session");
-      return new Response(
-        JSON.stringify({ checkout_url: "https://stripe.test/o", session_id: "cs_o1" }),
-        { status: 201, headers: { "Content-Type": "application/json" } },
-      );
-    });
+    const fetchMock = vi.fn(
+      async (_input: string | URL, _init?: RequestInit) => {
+        expect(String(_input)).toContain(
+          "/api/v1/payments/order-checkout-session",
+        );
+        return new Response(
+          JSON.stringify({
+            checkout_url: "https://stripe.test/o",
+            session_id: "cs_o1",
+          }),
+          { status: 201, headers: { "Content-Type": "application/json" } },
+        );
+      },
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     await createOrderCheckoutSession(
@@ -111,12 +118,17 @@ describe("createOrderCheckoutSession", () => {
   });
 
   it("skips session Bearer for guest order checkout with access_token", async () => {
-    const fetchMock = vi.fn(async () => {
-      return new Response(
-        JSON.stringify({ checkout_url: "https://stripe.test/o", session_id: "cs_o2" }),
-        { status: 201, headers: { "Content-Type": "application/json" } },
-      );
-    });
+    const fetchMock = vi.fn(
+      async (_input: string | URL, _init?: RequestInit) => {
+        return new Response(
+          JSON.stringify({
+            checkout_url: "https://stripe.test/o",
+            session_id: "cs_o2",
+          }),
+          { status: 201, headers: { "Content-Type": "application/json" } },
+        );
+      },
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     await createOrderCheckoutSession(

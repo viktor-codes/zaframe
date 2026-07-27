@@ -1,4 +1,8 @@
 export {
+  BookCourseWizard,
+  type BookCourseWizardProps,
+} from "./book-course-wizard";
+export {
   CourseAvailabilityBanner,
   type CourseAvailabilityBannerProps,
 } from "./course-availability-banner";

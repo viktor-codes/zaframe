@@ -1,5 +1,7 @@
-/** Course purchase: availability preview + (later) order checkout wizard. */
+/** Course purchase: availability preview + order checkout wizard. */
 export {
+  BookCourseWizard,
+  type BookCourseWizardProps,
   CourseAvailabilityBanner,
   type CourseAvailabilityBannerProps,
   CourseAvailabilityPanel,
