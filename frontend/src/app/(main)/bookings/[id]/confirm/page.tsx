@@ -1,32 +1,12 @@
-"use client";
+import { BookingConfirmView } from "./booking-confirm-view";
 
-import { useParams } from "next/navigation";
-import { GuestBookingConfirmPanel } from "@features/book-occurrence";
-import { CancelBookingControls } from "@features/cancel-booking";
+interface BookingConfirmPageProps {
+  params: Promise<{ id: string }>;
+}
 
-export default function BookingConfirmPage() {
-  const params = useParams();
-
-  return (
-    <GuestBookingConfirmPanel
-      routeId={params.id}
-      renderCancel={({
-        bookingId,
-        booking,
-        occurrence,
-        studio,
-        accessToken,
-        now,
-      }) => (
-        <CancelBookingControls
-          bookingId={bookingId}
-          booking={booking}
-          occurrence={occurrence}
-          studio={studio}
-          accessToken={accessToken}
-          now={now}
-        />
-      )}
-    />
-  );
+export default async function BookingConfirmPage({
+  params,
+}: BookingConfirmPageProps) {
+  const { id } = await params;
+  return <BookingConfirmView routeId={id} />;
 }

@@ -1,16 +1,20 @@
-"use client";
-
-import { Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { parsePositiveIdString } from "@shared/lib";
-import { Card, Button, Skeleton } from "@shared/ui";
 
-function CancelContent() {
-  const searchParams = useSearchParams();
+import { parsePositiveIdString } from "@shared/lib/parse-positive-id";
+import { Button } from "@shared/ui/button";
+import { Card } from "@shared/ui/card";
+
+interface BookingCancelPageProps {
+  searchParams: Promise<{ booking?: string; order?: string }>;
+}
+
+export default async function BookingCancelPage({
+  searchParams,
+}: BookingCancelPageProps) {
+  const sp = await searchParams;
   // WHY: never interpolate raw query into href — reject floats / junk.
-  const bookingId = parsePositiveIdString(searchParams.get("booking"));
-  const orderId = parsePositiveIdString(searchParams.get("order"));
+  const bookingId = parsePositiveIdString(sp.booking ?? null);
+  const orderId = parsePositiveIdString(sp.order ?? null);
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
@@ -42,19 +46,5 @@ function CancelContent() {
         </div>
       </Card>
     </div>
-  );
-}
-
-export default function BookingCancelPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="mx-auto max-w-2xl px-6 py-12">
-          <Skeleton className="h-48 w-full" />
-        </div>
-      }
-    >
-      <CancelContent />
-    </Suspense>
   );
 }
