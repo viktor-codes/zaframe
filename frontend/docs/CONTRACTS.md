@@ -114,7 +114,7 @@ Legacy `/count` endpoints and `skip` / `limit` query params are removed.
 | `GET /search` | studio search |
 | `GET /services/{id}/availability` | course availability / overbooked dates |
 | `GET /occurrences?service_id=…` | bookable slots |
-| `POST /bookings` | guest or user; `BookingCreate` (single) or `CourseBookingCreate` (course → Order + N bookings); returns `access_token` for guests; rate limit 10/min |
+| `POST /bookings` | guest or user (optional Bearer); `BookingCreate` (single) or `CourseBookingCreate` (course → Order + N bookings); with Bearer → `user_id` set immediately; without → guest until OTP attach; returns `access_token` for checkout; rate limit 10/min |
 | `POST /payments/checkout-session` | Stripe Checkout for single booking; **requires** `Idempotency-Key` header |
 | `POST /payments/order-checkout-session` | Stripe Checkout for course order; **requires** `Idempotency-Key` |
 

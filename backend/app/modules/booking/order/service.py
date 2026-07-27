@@ -19,6 +19,7 @@ from app.models import (
     OrderStatus,
     Service,
 )
+from app.models.user import User
 from app.modules.booking.order.dto import CourseBookingInput, CourseBookingResultDTO
 from app.modules.booking.persistence import (
     ensure_no_active_booking_for_guest,
@@ -67,11 +68,13 @@ async def create_course_booking(
     uow: UnitOfWork,
     *,
     data: CourseBookingInput,
+    user: User | None = None,
 ) -> CourseBookingResultDTO:
     """
-    Create an order and bookings for a course (guest checkout).
+    Create an order and bookings for a course (guest or authenticated checkout).
 
     Atomic within the current AsyncSession/transaction.
+    When ``user`` is provided, ``user_id`` is set on the order and each booking.
     """
     now_utc = datetime_utils.utc_now()
     availability = await check_course_availability_for_update(
@@ -106,11 +109,12 @@ async def create_course_booking(
     )
     prices = _distribute_course_unit_prices(total_amount_cents, len(occurrences))
 
+    user_id = user.id if user is not None else None
     order = await uow.orders.add(
         Order(
             studio_id=service.studio_id,
             service_id=service.id,
-            user_id=None,
+            user_id=user_id,
             guest_email=data.guest_email,
             guest_name=data.guest_name,
             guest_phone=data.guest_phone,
@@ -127,12 +131,13 @@ async def create_course_booking(
             uow,
             occurrence_id=occurrence.id,
             guest_email=data.guest_email,
+            user_id=user_id,
         )
         unit_price = prices[idx]
         bookings.append(
             Booking(
                 occurrence_id=occurrence.id,
-                user_id=None,
+                user_id=user_id,
                 guest_name=data.guest_name,
                 guest_email=data.guest_email,
                 guest_phone=data.guest_phone,
@@ -154,6 +159,7 @@ async def create_course_booking(
         studio_id=service.studio_id,
         booking_count=len(bookings),
         booking_type=BookingType.COURSE,
+        user_id=user_id,
     )
 
     return CourseBookingResultDTO(

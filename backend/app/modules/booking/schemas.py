@@ -22,9 +22,11 @@ class BookingBase(BaseModel):
 
 class BookingCreate(BookingBase):
     """
-    Guest booking create payload.
+    Booking create payload (guest or authenticated).
 
-    Used before OTP verify; user_id is attached after verification.
+    Guest checkout: no Bearer → ``user_id`` stays null until OTP attach.
+    Authenticated: Bearer present → ``user_id`` set on create; guest_* still
+    required for contact / receipt (wizard prefills from the profile).
     """
 
     guest_name: str = Field(..., min_length=1, max_length=100, description="Guest name")
@@ -41,7 +43,12 @@ class BookingCreate(BookingBase):
 
 
 class BookingCreateAuthenticated(BookingBase):
-    """Authenticated user booking create payload (user_id from token)."""
+    """
+    Reserved payload for occurrence-only authenticated create.
+
+    Current HTTP create uses ``BookingCreate`` (guest_* + optional Bearer).
+    Keep this schema for a future slim authenticated path if needed.
+    """
 
     pass
 

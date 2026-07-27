@@ -387,7 +387,7 @@ Client schemas booking **намеренно не отдают** `payment_intent_
 ## Open questions
 
 - UNKNOWN: планируется ли assignment `OrderStatus.CANCELLED` в app-коде (константа есть, write path не найден).
-- `BookingCreateAuthenticated` в schemas есть; HTTP create path сейчас guest-only через `BookingCreate` / `CourseBookingCreate` — отдельный authenticated create router не подключён.
+- `BookingCreateAuthenticated` schema остаётся reserved; HTTP create использует `BookingCreate` + optional Bearer (`get_current_user`) → `user_id` сразу при логине.
 - `can_access_booking` published, но live callers вне booking package не найдены (owner checks идут через studio permission).
 
 <details>

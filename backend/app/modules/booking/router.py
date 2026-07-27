@@ -12,7 +12,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, Request
 
-from app.core.deps import get_current_user_required, get_uow
+from app.core.deps import get_current_user, get_current_user_required, get_uow
 from app.core.pagination import PaginatedResponse, build_paginated_response, pagination_offset
 from app.core.rate_limit import limiter
 from app.core.uow import UnitOfWork
@@ -67,6 +67,7 @@ async def create_booking_endpoint(
     request: Request,
     schema: BookingCreate | CourseBookingCreate,
     uow: Annotated[UnitOfWork, Depends(get_uow)],
+    user: Annotated[User | None, Depends(get_current_user)],
 ) -> BookingCreatedResponse | CourseBookingResponse:
     """
     Create a booking.
@@ -74,6 +75,9 @@ async def create_booking_endpoint(
     Variants:
     - single occurrence booking (BookingCreate)
     - course purchase (CourseBookingCreate), creating one Order and N bookings
+
+    Auth is optional: with a valid Bearer token, ``user_id`` is set immediately;
+    without a token the booking stays guest-owned until OTP attach.
     """
     if isinstance(schema, CourseBookingCreate):
         result = await create_course_booking(
@@ -84,9 +88,10 @@ async def create_booking_endpoint(
                 guest_email=schema.guest_email,
                 guest_phone=schema.guest_phone,
             ),
+            user=user,
         )
         return map_course_booking_result(result)
-    booking = await create_booking(uow, schema)  # type: ignore[arg-type]
+    booking = await create_booking(uow, schema, user=user)  # type: ignore[arg-type]
     return map_booking_created_response(booking)
 
 

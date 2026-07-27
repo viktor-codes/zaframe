@@ -28,16 +28,23 @@ from app.modules.catalog.studio import has_studio_permission
 logger = structlog.get_logger(__name__)
 
 
-async def create_booking(uow: UnitOfWork, schema: BookingCreate) -> Booking:
+async def create_booking(
+    uow: UnitOfWork,
+    schema: BookingCreate,
+    *,
+    user: User | None = None,
+) -> Booking:
     """
-    Create a guest booking.
+    Create a booking (guest or authenticated).
 
     Validates:
     - occurrence exists and is active
     - occurrence is in the future
     - seats are available
 
-    user_id is set after OTP verify (attach_guest_resources).
+    When ``user`` is provided (Bearer on POST /bookings), ``user_id`` is set
+    immediately so the booking appears in ``GET /bookings/my``. Guests without
+    a token still get ``user_id=None`` until OTP attach.
     """
     occurrence = await uow.occurrences.get_by_id_for_update_with_service(schema.occurrence_id)
     if occurrence is None:
@@ -55,14 +62,17 @@ async def create_booking(uow: UnitOfWork, schema: BookingCreate) -> Booking:
     if confirmed_count + pending_count >= occurrence.max_capacity:
         raise ValidationError("No seats available")
 
+    user_id = user.id if user is not None else None
     await ensure_no_active_booking_for_guest(
         uow,
         occurrence_id=schema.occurrence_id,
         guest_email=schema.guest_email,
+        user_id=user_id,
     )
 
     booking = Booking(
         occurrence_id=schema.occurrence_id,
+        user_id=user_id,
         guest_name=schema.guest_name,
         guest_email=schema.guest_email,
         guest_phone=schema.guest_phone,
@@ -81,6 +91,7 @@ async def create_booking(uow: UnitOfWork, schema: BookingCreate) -> Booking:
         service_id=booking.service_id,
         order_id=booking.order_id,
         booking_type=booking.booking_type,
+        user_id=user_id,
     )
     return booking
 

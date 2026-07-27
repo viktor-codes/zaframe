@@ -111,9 +111,9 @@ export async function fetchBooking(
 export async function createBooking(
   data: BookingCreate,
 ): Promise<BookingCreatedResponse> {
-  return api.post<BookingCreatedResponse>("api/v1/bookings", data, {
-    skipAuth: true,
-  });
+  // WHY: send Bearer when present so the API can attach user_id immediately;
+  // guests without a token still create anonymously (optional auth on backend).
+  return api.post<BookingCreatedResponse>("api/v1/bookings", data);
 }
 
 export async function cancelBooking(
