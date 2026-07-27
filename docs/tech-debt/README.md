@@ -29,7 +29,7 @@ Also in CI / `make lint`: `uv run pyright app scripts`.
 
 | Priority | Step | Topic | Effort |
 |----------|------|-------|--------|
-| 🔴 P1 | [td-01](./td-01-catalog-capacity-dry.md) | DRY overbooking logic → `catalog/capacity.py` | ~3h |
+| ✅ Done | [td-01](./td-01-catalog-capacity-dry.md) | DRY overbooking logic → `catalog/capacity.py` | done |
 | 🟡 P2 | [td-02](./td-02-split-large-services.md) | Split oversized services (payment/auth/studio done; booking TBD) | partial |
 | 🔴 P1 | [td-03](./td-03-identity-ownership-policies.md) | Unify `is_own_booking` / `is_own_order` | ~2h |
 | 🟡 P2 | [td-04](./td-04-split-studio-router.md) | Decompose `studio/router.py` god-router | ~3h |
@@ -43,6 +43,9 @@ Also in CI / `make lint`: `uv run pyright app scripts`.
 
 ### Done notes
 
+- **td-01:** Shared pure helpers in `catalog/capacity.py` (+ `capacity_types.py`);
+  callers in `catalog/service` and `catalog/public`. Unit tests in
+  `tests/unit/catalog/test_catalog_capacity.py`.
 - **td-09:** `uv run pyright app scripts` in `Makefile` lint and `.github/workflows/backend-ci.yml`.
 - **td-10:** Option A in `frontend/e2e/flows/guest-checkout.spec.ts` + POM; run `make e2e-critical`.
   Not on default Frontend CI. Option B (Stripe CLI full confirm) remains optional/local.
@@ -52,14 +55,14 @@ Also in CI / `make lint`: `uv run pyright app scripts`.
 
 ```
 P1 (remaining):
-  td-01 → td-03 → td-02
+  td-03 → td-02
 
 P2 (after P1):
   td-05 → td-06 → td-04
 
 P3 (remaining / anytime):
   td-07, td-08
-  td-09, td-10, td-11 — done
+  td-01, td-09, td-10, td-11 — done
 ```
 
 ## Growth items (not in this pack — future ADR)

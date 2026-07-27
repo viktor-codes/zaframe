@@ -1,5 +1,8 @@
 # TD-01 — Extract shared overbooking logic into `catalog/capacity.py` (P1)
 
+> **Status: Done.** Shared helpers live in `catalog/capacity.py` (+ `capacity_types.py`);
+> catalog service/public callers use them; unit tests green.
+
 > Read [README.md](./README.md). **Highest-impact DRY fix** from the post-refactor review.
 
 ## Problem
