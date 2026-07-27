@@ -268,7 +268,7 @@ async def test_create_checkout_session_requires_connect_ready(mock_uow):
     mock_uow.bookings.get_by_id_for_update_with_occurrence_and_studio = AsyncMock(return_value=booking)
 
     with (
-        patch("app.modules.payment.checkout.get_stripe_client") as mock_get_client,
+        patch("app.modules.payment.checkout_helpers.get_stripe_client") as mock_get_client,
         pytest.raises(ValidationError, match="Stripe Connect onboarding"),
     ):
         await create_checkout_session(mock_uow, 1, **_checkout_kwargs())
@@ -449,7 +449,7 @@ async def test_create_order_checkout_session_requires_connect_ready(mock_uow):
     mock_uow.bookings.list_ = AsyncMock(return_value=[active_booking])
 
     with (
-        patch("app.modules.payment.checkout.get_stripe_client") as mock_get_client,
+        patch("app.modules.payment.checkout_helpers.get_stripe_client") as mock_get_client,
         pytest.raises(ValidationError, match="Stripe Connect onboarding"),
     ):
         await create_order_checkout_session(mock_uow, 1, **_order_checkout_kwargs())
@@ -468,7 +468,7 @@ async def test_create_order_checkout_session_rejects_duplicate_session(mock_uow)
     mock_uow.orders.get_by_id_for_update_with_service_and_studio = AsyncMock(return_value=order)
 
     with (
-        patch("app.modules.payment.checkout.get_stripe_client") as mock_get_client,
+        patch("app.modules.payment.checkout_helpers.get_stripe_client") as mock_get_client,
         pytest.raises(ValidationError, match="Checkout Session already created"),
     ):
         await create_order_checkout_session(mock_uow, 1, **_order_checkout_kwargs())
