@@ -87,11 +87,7 @@ export function ServicePolaroidCard({
             {priceCents === 0 ? "Free" : formatMoneyFromCents(priceCents)}
           </span>
           <span className="font-mono text-[10px] tracking-wide text-neutral-400 uppercase">
-            {isCourse && !href
-              ? "Coming soon"
-              : isCourse
-                ? "Full course"
-                : "Per session"}
+            {isCourse ? "Full course" : "Per session"}
           </span>
         </div>
       </div>
@@ -116,7 +112,6 @@ export function ServicePolaroidCard({
     <article
       className={`${shellClassName} hover:translate-y-0`}
       data-testid="service-polaroid-card"
-      data-course-gated={isCourse ? "true" : undefined}
     >
       {body}
     </article>
