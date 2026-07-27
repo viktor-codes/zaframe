@@ -177,3 +177,54 @@ describe("bookings api authentication", () => {
     ]);
   });
 });
+
+describe("api client AbortSignal", () => {
+  beforeEach(() => {
+    setAuthTokenProvider(() => "token");
+    setRefreshTokensFn(async () => ({ access_token: "fresh" }));
+  });
+
+  it("forwards signal to fetch", async () => {
+    const controller = new AbortController();
+    const fetchMock = vi.fn(async () => {
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await api.get("api/v1/protected", { signal: controller.signal });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ signal: controller.signal }),
+    );
+  });
+
+  it("skips refresh retry when aborted after 401", async () => {
+    const controller = new AbortController();
+    let refreshInvocations = 0;
+    setRefreshTokensFn(async () => {
+      refreshInvocations += 1;
+      controller.abort();
+      return { access_token: "fresh" };
+    });
+
+    const fetchMock = vi.fn(async () => {
+      return new Response(JSON.stringify({ detail: "expired" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      api.get("api/v1/protected", { signal: controller.signal }),
+    ).rejects.toMatchObject({ name: "AbortError" });
+
+    expect(refreshInvocations).toBe(1);
+    // First attempt only — no post-refresh retry after abort.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});

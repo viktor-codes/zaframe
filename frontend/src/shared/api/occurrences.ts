@@ -16,9 +16,13 @@ import type {
 const DEFAULT_PAGE = 1;
 const DEFAULT_SIZE = 50;
 
-export async function fetchOccurrence(id: number): Promise<OccurrenceResponse> {
+export async function fetchOccurrence(
+  id: number,
+  options?: { signal?: AbortSignal },
+): Promise<OccurrenceResponse> {
   return api.get<OccurrenceResponse>(`api/v1/occurrences/${id}`, {
     skipAuth: true,
+    signal: options?.signal,
   });
 }
 

@@ -77,7 +77,8 @@ function bootstrapAuthClient(): void {
 function useAuthQuery(loginTrigger: number, isReady: boolean) {
   return useQuery({
     queryKey: queryKeys.auth.me(loginTrigger),
-    queryFn: () => api.get<AuthUser>("/api/v1/auth/me"),
+    queryFn: ({ signal }) =>
+      api.get<AuthUser>("/api/v1/auth/me", { signal }),
     enabled: isReady,
     staleTime: 5 * 60 * 1000,
     retry: false,

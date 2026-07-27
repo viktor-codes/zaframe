@@ -87,14 +87,14 @@ export function useGuestBookingConfirm(
     isError: errorBooking,
   } = useQuery({
     queryKey: queryKeys.booking.detail(bookingId ?? 0),
-    queryFn: () => {
+    queryFn: ({ signal }) => {
       syncGuestAccessTokenFromLocation(
         bookingId!,
         persistGuestBookingAccessToken,
       );
       const token =
         getGuestBookingAccessToken(bookingId!) ?? peekUrlAccessToken();
-      return fetchBooking(bookingId!, { accessToken: token });
+      return fetchBooking(bookingId!, { accessToken: token, signal });
     },
     enabled: bookingId != null,
     retry: false,
@@ -118,13 +118,14 @@ export function useGuestBookingConfirm(
 
   const { data: occurrence } = useQuery({
     queryKey: queryKeys.occurrence.detail(resolvedBooking?.occurrence_id),
-    queryFn: () => fetchOccurrence(resolvedBooking!.occurrence_id),
+    queryFn: ({ signal }) =>
+      fetchOccurrence(resolvedBooking!.occurrence_id, { signal }),
     enabled: !!resolvedBooking?.occurrence_id,
   });
 
   const { data: studio } = useQuery({
     queryKey: queryKeys.studio.detail(occurrence?.studio_id),
-    queryFn: () => fetchStudio(occurrence!.studio_id),
+    queryFn: ({ signal }) => fetchStudio(occurrence!.studio_id, { signal }),
     enabled: !!occurrence?.studio_id,
   });
 

@@ -50,10 +50,10 @@ export function usePaymentConfirmationPoll(
 
   const query = useQuery({
     queryKey: queryKeys.booking.detail(bookingId ?? 0),
-    queryFn: () => {
+    queryFn: ({ signal }) => {
       const accessToken =
         bookingId != null ? getGuestBookingAccessToken(bookingId) : null;
-      return fetchBooking(bookingId!, { accessToken });
+      return fetchBooking(bookingId!, { accessToken, signal });
     },
     enabled: bookingId != null,
     retry: false,

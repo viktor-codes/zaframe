@@ -97,9 +97,13 @@ export async function deleteStudio(id: number): Promise<void> {
   return api.delete<void>(`api/v1/studios/${id}`);
 }
 
-export async function fetchStudio(id: number): Promise<StudioResponse> {
+export async function fetchStudio(
+  id: number,
+  options?: { signal?: AbortSignal },
+): Promise<StudioResponse> {
   return api.get<StudioResponse>(`api/v1/studios/${id}`, {
     skipAuth: true,
+    signal: options?.signal,
   });
 }
 

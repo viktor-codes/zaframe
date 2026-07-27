@@ -5,6 +5,7 @@
  * - Bearer token via setAuthTokenProvider
  * - On 401: single coalesced refresh → retry (unless skipAuth / skipRefresh)
  * - Sends `X-Request-ID` on every request; optional `Idempotency-Key`
+ * - Forwards `AbortSignal` from RequestInit (TanStack Query `queryFn` signal)
  */
 
 import "client-only";
@@ -119,6 +120,21 @@ async function coalesceRefresh(): Promise<{ access_token: string } | null> {
   return refreshInFlight;
 }
 
+/**
+ * WHY: TanStack Query cancels via AbortSignal; after a 401 we must not start
+ * refresh/retry once the caller has already abandoned the request.
+ */
+function throwIfAborted(signal: AbortSignal | null | undefined): void {
+  if (!signal?.aborted) return;
+  if (
+    signal.reason instanceof DOMException &&
+    signal.reason.name === "AbortError"
+  ) {
+    throw signal.reason;
+  }
+  throw new DOMException("The operation was aborted.", "AbortError");
+}
+
 async function request<T>(
   path: string,
   options: RequestConfig = {},
@@ -143,6 +159,7 @@ async function request<T>(
     body: init.body,
   });
 
+  // WHY: `signal` lives on RequestInit and is forwarded via `...init`.
   const response = await fetch(url, {
     ...init,
     headers,
@@ -156,7 +173,9 @@ async function request<T>(
     refreshTokens !== null;
 
   if (canRefresh) {
+    throwIfAborted(init.signal);
     const newTokens = await coalesceRefresh();
+    throwIfAborted(init.signal);
     if (newTokens) {
       headers.set("Authorization", `Bearer ${newTokens.access_token}`);
       // WHY: same request id on retry keeps logs correlatable across refresh.

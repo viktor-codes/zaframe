@@ -34,18 +34,25 @@ export interface BookingAccessOptions {
    * When set, sent as Bearer and session refresh is skipped.
    */
   accessToken?: string | null;
+  /** TanStack Query (or caller) cancellation signal. */
+  signal?: AbortSignal;
 }
 
 function bookingAuthConfig(options?: BookingAccessOptions): RequestConfig {
+  const config: RequestConfig = {};
+  if (options?.signal) {
+    config.signal = options.signal;
+  }
   const accessToken = options?.accessToken;
   if (accessToken) {
     return {
+      ...config,
       skipAuth: true,
       skipRefresh: true,
       headers: { Authorization: `Bearer ${accessToken}` },
     };
   }
-  return {};
+  return config;
 }
 
 const DEFAULT_PAGE = 1;
