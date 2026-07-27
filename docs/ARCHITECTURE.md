@@ -170,6 +170,9 @@ See [TD-11](./tech-debt/td-11-booking-lifecycle-cron.md) (done).
 
 ## Production Readiness Notes
 
+Closed-beta operator checklist (secrets names, smoke checks, no real values):
+[docs/ops/closed-beta-checklist.md](./ops/closed-beta-checklist.md).
+
 - **Migrations on deploy:** Render web service runs `python -m alembic upgrade head` via
   `preDeployCommand` in root `render.yaml` (deploy fails if migrate fails). Docker image CMD
   migrates then starts uvicorn. Heroku-style platforms use `release` in `backend/Procfile`.
