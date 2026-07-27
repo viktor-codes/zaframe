@@ -21,6 +21,7 @@ NOW = datetime(2026, 6, 15, 12, 0, 0, tzinfo=UTC)
 def mock_uow():
     uow = MagicMock()
     uow.bookings.flush = AsyncMock()
+    uow.commit = AsyncMock()
     uow.orders.expire_pending_without_active_bookings = AsyncMock(return_value=0)
     return uow
 
@@ -49,6 +50,7 @@ async def test_expire_stale_pending_at_boundary_transitions(mock_uow):
     assert booking.status == BookingStatus.EXPIRED
     assert booking.reserved_until is None
     mock_uow.bookings.flush.assert_awaited_once()
+    mock_uow.commit.assert_awaited_once()
     mock_uow.orders.expire_pending_without_active_bookings.assert_awaited_once_with(order_ids=[])
 
 
@@ -64,6 +66,7 @@ async def test_expire_stale_pending_one_microsecond_before_now_skipped(mock_uow)
 
     assert count == 0
     mock_uow.bookings.flush.assert_not_awaited()
+    mock_uow.commit.assert_not_awaited()
     mock_uow.orders.expire_pending_without_active_bookings.assert_not_awaited()
 
 
@@ -86,6 +89,7 @@ async def test_expire_stale_pending_no_rows_skips_flush(mock_uow):
 
     assert count == 0
     mock_uow.bookings.flush.assert_not_awaited()
+    mock_uow.commit.assert_not_awaited()
     mock_uow.orders.expire_pending_without_active_bookings.assert_not_awaited()
 
 
@@ -134,22 +138,47 @@ async def test_complete_past_confirmed_after_end_time_transitions(mock_uow):
     assert booking.status == BookingStatus.COMPLETED
     assert booking.reserved_until is None
     mock_uow.bookings.flush.assert_awaited_once()
+    mock_uow.commit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_expire_stale_pending_processes_multiple_batches(mock_uow):
+    """Full backlog is drained in LIMIT-sized commits, not one unbounded load."""
+    first = _pending_booking(reserved_until=NOW, order_id=1)
+    first.id = 1
+    second = _pending_booking(reserved_until=NOW, order_id=2)
+    second.id = 2
+    mock_uow.bookings.list_stale_pending = AsyncMock(side_effect=[[first], [second], []])
+
+    count = await expire_stale_pending(mock_uow, now=NOW, batch_size=1)
+
+    assert count == 2
+    assert first.status == BookingStatus.EXPIRED
+    assert second.status == BookingStatus.EXPIRED
+    assert mock_uow.bookings.list_stale_pending.await_count == 3
+    assert mock_uow.commit.await_count == 2
 
 
 def test_list_stale_pending_sql_boundary_includes_equality():
     from sqlalchemy import or_, select
 
-    query = select(Booking).where(
-        Booking.status == BookingStatus.PENDING,
-        or_(
-            Booking.reserved_until.is_(None),
-            Booking.reserved_until <= NOW,
-        ),
+    query = (
+        select(Booking)
+        .where(
+            Booking.status == BookingStatus.PENDING,
+            or_(
+                Booking.reserved_until.is_(None),
+                Booking.reserved_until <= NOW,
+            ),
+        )
+        .order_by(Booking.id)
+        .limit(500)
     )
     compiled = str(query)
     assert "reserved_until" in compiled
     assert "IS NULL" in compiled
     assert "<=" in compiled
+    assert "LIMIT" in compiled.upper() or "limit" in compiled
 
 
 def test_active_pending_hold_clause_uses_strict_greater_than():
@@ -171,8 +200,11 @@ def test_list_past_confirmed_sql_uses_strict_end_time_comparison():
             Booking.status == BookingStatus.CONFIRMED,
             Occurrence.end_time < NOW,
         )
+        .order_by(Booking.id)
+        .limit(500)
     )
     compiled = str(query)
     assert "end_time" in compiled
     assert "status" in compiled
     assert "<" in compiled
+    assert "LIMIT" in compiled.upper() or "limit" in compiled
