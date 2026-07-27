@@ -159,7 +159,9 @@ Two root causes, both are tests lagging behind shipped code.
   - File: `backend/app/modules/catalog/studio/service.py:35-47`
 - [x] Fix: add minimal member management endpoints (or explicitly defer if no screen needs it yet
       per the FR-11 promotion rule).
-  - Decision: explicitly deferred; no current UI needs member management endpoints.
+  - Decision (FR-12 era): deferred until UI needed.
+  - **Update (Wave 2, 2026-07):** members list/manage API + Team UI shipped
+    (`/studios/{id}/members`, `features/manage-members`).
 
 ---
 
