@@ -1,5 +1,3 @@
-"use client";
-
 import React, { forwardRef } from "react";
 
 import { resolveButtonDisabled } from "./resolve-button-disabled";
