@@ -1,34 +1,18 @@
-"use client";
-
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-
-import { useMyStudios } from "@entities/studio";
 
 import { DashboardSidebar } from "./dashboard-sidebar";
-import { parseDashboardStudioId } from "./parse-dashboard-studio-id";
 
 interface DashboardShellProps {
   children: React.ReactNode;
 }
 
+/**
+ * Server shell: static header chrome + sidebar island + page children slot.
+ */
 export function DashboardShell({ children }: DashboardShellProps) {
-  const pathname = usePathname();
-  const router = useRouter();
-  const selectedStudioId = parseDashboardStudioId(pathname);
-  const { data, isLoading } = useMyStudios();
-  const studios = data?.items ?? [];
-
   return (
     <div className="min-h-screen bg-neutral-50 lg:flex">
-      <DashboardSidebar
-        studios={studios}
-        selectedStudioId={selectedStudioId}
-        isStudiosLoading={isLoading}
-        onStudioSelect={(studioId) => {
-          router.push(`/dashboard/studios/${studioId}`);
-        }}
-      />
+      <DashboardSidebar />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="border-b border-neutral-200 bg-white">

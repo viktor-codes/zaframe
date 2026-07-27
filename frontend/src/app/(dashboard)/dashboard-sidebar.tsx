@@ -1,30 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useMemo } from "react";
 
-import { StudioSwitcher } from "@entities/studio";
+import { StudioSwitcher, useMyStudios } from "@entities/studio";
 import { usePermission } from "@shared/auth";
 import {
   buildStudioDashboardNav,
   filterStudioDashboardNav,
-} from "@shared/lib";
+} from "@shared/lib/studio-dashboard-nav";
 
-export interface DashboardSidebarProps {
-  studios: ReadonlyArray<{ id: number; name: string }>;
-  selectedStudioId: number | null;
-  isStudiosLoading: boolean;
-  onStudioSelect: (studioId: number) => void;
-}
+import { parseDashboardStudioId } from "./parse-dashboard-studio-id";
 
-export function DashboardSidebar({
-  studios,
-  selectedStudioId,
-  isStudiosLoading,
-  onStudioSelect,
-}: DashboardSidebarProps) {
+/**
+ * Client island: studio list + permission-filtered nav.
+ * Shell chrome stays on the server around this leaf.
+ */
+export function DashboardSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const selectedStudioId = parseDashboardStudioId(pathname);
+  const { data, isLoading } = useMyStudios();
+  const studios = data?.items ?? [];
   const { can } = usePermission(selectedStudioId);
 
   const studioNav = useMemo(() => {
@@ -48,8 +46,10 @@ export function DashboardSidebar({
           <StudioSwitcher
             studios={studios}
             selectedStudioId={selectedStudioId}
-            isLoading={isStudiosLoading}
-            onStudioSelect={onStudioSelect}
+            isLoading={isLoading}
+            onStudioSelect={(studioId) => {
+              router.push(`/dashboard/studios/${studioId}`);
+            }}
           />
         </div>
 
