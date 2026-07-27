@@ -16,6 +16,7 @@ async def search_studios_and_services(
     lng: float | None = None,
     radius_km: int | None = 10,
     amenities: list[str] | None = None,
+    limit: int = 20,
 ) -> list[SearchResult]:
     matches = await uow.search.search(
         query=query,
@@ -25,6 +26,7 @@ async def search_studios_and_services(
         lng=lng,
         radius_km=radius_km,
         amenities=amenities,
+        limit=limit,
     )
     return [
         SearchResult(

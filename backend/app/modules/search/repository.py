@@ -11,9 +11,28 @@ from sqlalchemy.sql.elements import ColumnElement
 
 from app.models.service import Service, ServiceCategory, ServiceVisibility
 from app.models.studio import Studio
+from app.modules.search.schemas import (
+    SEARCH_DEFAULT_LIMIT,
+    SEARCH_DEFAULT_RADIUS_KM,
+    SEARCH_MAX_LIMIT,
+    SEARCH_MAX_RADIUS_KM,
+    SEARCH_MIN_RADIUS_KM,
+)
 
 # Mean Earth radius used by the haversine distance filter (km).
 _EARTH_RADIUS_KM = 6371.0
+
+
+def _clamp_radius_km(radius_km: int | None) -> float:
+    if radius_km is None:
+        return float(SEARCH_DEFAULT_RADIUS_KM)
+    return float(max(SEARCH_MIN_RADIUS_KM, min(radius_km, SEARCH_MAX_RADIUS_KM)))
+
+
+def _clamp_limit(limit: int | None) -> int:
+    if limit is None:
+        return SEARCH_DEFAULT_LIMIT
+    return max(1, min(limit, SEARCH_MAX_LIMIT))
 
 
 @dataclass(frozen=True)
@@ -67,14 +86,16 @@ class SearchRepository:
         city: str | None = None,
         lat: float | None = None,
         lng: float | None = None,
-        radius_km: int | None = 10,
+        radius_km: int | None = SEARCH_DEFAULT_RADIUS_KM,
         amenities: list[str] | None = None,
+        limit: int = SEARCH_DEFAULT_LIMIT,
     ) -> list[SearchMatch]:
         conditions: list[ColumnElement[bool]] = [
             Studio.is_active.is_(True),
             Service.is_active.is_(True),
             Service.visibility == ServiceVisibility.PUBLISHED,
         ]
+        result_limit = _clamp_limit(limit)
 
         if city:
             city_normalized = city.strip().lower()
@@ -102,7 +123,7 @@ class SearchRepository:
             conditions.append(Service.category == category)
 
         if lat is not None and lng is not None:
-            radius = float(radius_km or 10)
+            radius = _clamp_radius_km(radius_km)
             lat_delta, lng_delta = geo_bounding_box_deltas(lat=lat, radius_km=radius)
             conditions.append(
                 and_(
@@ -114,11 +135,14 @@ class SearchRepository:
                 )
             )
 
+        # WHY: DISTINCT ON (id) requires ORDER BY id first on PostgreSQL.
         studios_stmt = (
             select(Studio)
             .join(Service, Service.studio_id == Studio.id)
             .where(*conditions)
             .distinct(Studio.id)
+            .order_by(Studio.id)
+            .limit(result_limit)
         )
 
         studios_result = await self._session.execute(studios_stmt)
