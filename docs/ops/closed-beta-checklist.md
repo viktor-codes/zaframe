@@ -19,6 +19,7 @@ See `backend/.env.example` and `frontend/.env.example` for descriptions.
 
 ### Cron (Render `zeeframe-booking-lifecycle`)
 
+- [ ] `ENVIRONMENT=production` — Blueprint sets this (parity with web; Settings default is `dev`)
 - [ ] `DATABASE_URL` — same DB as API
 - [ ] `SECRET_KEY` — synced from `zeeframe-api` via Blueprint `fromService`
 - [ ] After deploy: Trigger Run once; log shows `booking_lifecycle_complete`

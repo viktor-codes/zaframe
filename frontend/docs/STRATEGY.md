@@ -86,7 +86,8 @@ Sign in → Create studio → Profile/slug → Stripe Connect
 
 10. Search/filters on `/studios`.
 11. Week-view calendar in the dashboard.
-12. GDPR: export / delete account.
+
+**Done (Wave 1):** GDPR export / delete account (`GET /me/export`, delete UI, privacy/cookies).
 
 ## 6. URL tree (agreed)
 

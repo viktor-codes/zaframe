@@ -48,6 +48,9 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: python -m scripts.run_booking_lifecycle
     envVars:
+      # Match web service; Settings defaults to `dev` without this.
+      - key: ENVIRONMENT
+        value: production
       - key: DATABASE_URL
         sync: false
       # WHY: app.core.config.Settings requires SECRET_KEY at import time

@@ -94,7 +94,7 @@ Public zone first: simplest auth-wise, demoable to studios, closes the money loo
 - [x] Migrate old `/bookings` pages, set up redirects
 
 ## Phase 5 — Studio dashboard (P0 stories 3, 4)
-  
+   
 Hardest zone — last, when the FSD pattern is routine.
 
 **MVP decision (2026-07-26):** dual-persona mode switch ("Customer ↔ Studio {name}")
@@ -123,5 +123,7 @@ Full mode switch → P1/polish when real cross-over demand appears.
 
 ## Later (P2 backlog)
 
-Search/filters on `/studios` · week-view calendar · GDPR export/delete ·
-"Add to calendar" · i18n (RU) — see STRATEGY §5.
+Search/filters on `/studios` · week-view calendar · "Add to calendar" ·
+i18n (RU) — see STRATEGY §5.
+
+**Done (Wave 1):** GDPR export (`GET /me/export`) + delete-account UI + privacy/cookies.
