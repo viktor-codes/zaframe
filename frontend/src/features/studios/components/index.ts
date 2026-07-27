@@ -8,3 +8,5 @@ export type { StudiosSearchBarProps } from "./StudiosSearchBar";
 export { StudiosSkeleton } from "./StudiosSkeleton";
 export { EmptyState } from "./EmptyState";
 export type { EmptyStateProps } from "./EmptyState";
+export { StudiosExplore } from "./studios-explore";
+export type { StudiosExploreProps } from "./studios-explore";

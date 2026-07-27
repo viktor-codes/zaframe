@@ -11,7 +11,12 @@ vi.mock("@shared/lib/config", () => ({
   },
 }));
 
-import { fetchStudioById, fetchStudioPublicBySlug, serverGet } from "./server";
+import {
+  fetchStudioById,
+  fetchStudioPublicBySlug,
+  fetchStudiosExplore,
+  serverGet,
+} from "./server";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -129,6 +134,35 @@ describe("fetchStudioById", () => {
       RequestInit & { next?: { revalidate?: number } },
     ];
     expect(url).toBe("https://api.example.com/api/v1/studios/7");
+    expect(init.next?.revalidate).toBe(60);
+  });
+});
+
+describe("fetchStudiosExplore", () => {
+  it("calls GET /studios with include_services and filters", async function () {
+    const payload = { items: [], total: 0, page: 1, size: 12 };
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(payload), { status: 200 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await fetchStudiosExplore({
+      category: "yoga",
+      city: "Dublin",
+      amenities: ["wifi", "parking"],
+    });
+
+    expect(result).toEqual(payload);
+    const [url, init] = fetchMock.mock.calls[0] as [
+      string,
+      RequestInit & { next?: { revalidate?: number } },
+    ];
+    expect(url).toContain("https://api.example.com/api/v1/studios?");
+    expect(url).toContain("include_services=true");
+    expect(url).toContain("category=yoga");
+    expect(url).toContain("city=Dublin");
+    expect(url).toContain("amenities=wifi");
+    expect(url).toContain("amenities=parking");
     expect(init.next?.revalidate).toBe(60);
   });
 });

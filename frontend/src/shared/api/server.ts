@@ -9,7 +9,11 @@
 import "server-only";
 
 import type { OccurrenceResponse } from "@entities/occurrence";
-import type { StudioPublicResponse, StudioResponse } from "@entities/studio";
+import type {
+  PaginatedSearchResultList,
+  StudioPublicResponse,
+  StudioResponse,
+} from "@entities/studio";
 import { config } from "@shared/lib/config";
 
 import { ApiError } from "./api-error";
@@ -136,4 +140,49 @@ export async function fetchPublicServiceOccurrences(
       },
     },
   );
+}
+
+/**
+ * Public explore list (`GET /studios` with `include_services=true`).
+ * Always returns SearchResult pages — never owner-scoped filters.
+ */
+export async function fetchStudiosExplore(
+  params: {
+    page?: number;
+    size?: number;
+    is_active?: boolean;
+    city?: string;
+    category?: string;
+    query?: string;
+    amenities?: string[];
+  } = {},
+  options: Omit<ServerRequestConfig, "params"> = {},
+): Promise<PaginatedSearchResultList> {
+  const {
+    page = 1,
+    size = 12,
+    is_active = true,
+    city,
+    category,
+    query,
+    amenities,
+  } = params;
+
+  return serverGet<PaginatedSearchResultList>("api/v1/studios", {
+    ...options,
+    params: {
+      page,
+      size,
+      is_active,
+      include_services: true,
+      ...(city ? { city } : {}),
+      ...(category ? { category } : {}),
+      ...(query ? { query } : {}),
+      ...(amenities?.length ? { amenities } : {}),
+    },
+    next: {
+      revalidate: STOREFRONT_REVALIDATE_SECONDS,
+      ...options.next,
+    },
+  });
 }
