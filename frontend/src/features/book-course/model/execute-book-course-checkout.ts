@@ -34,6 +34,8 @@ export interface ExecuteBookCourseCheckoutInput {
   /** Known total from create response; used on retry when create is skipped. */
   heldTotalAmountCents: number | null;
   checkoutKeyByOrder: Map<number, string>;
+  /** Stable create keys per service+email intent (double-submit / retry). */
+  createKeyByIntent: Map<string, string>;
   origin: string;
   redirectTo: (url: string) => void;
 }
@@ -52,12 +54,24 @@ function checkoutIdempotencyKeyFor(
   return key;
 }
 
+function createCourseIdempotencyKeyFor(
+  keys: Map<string, string>,
+  intentKey: string,
+): string {
+  const existing = keys.get(intentKey);
+  if (existing) return existing;
+  const key = createIdempotencyKey();
+  keys.set(intentKey, key);
+  return key;
+}
+
 export async function executeBookCourseCheckout({
   serviceId,
   guest,
   heldOrderId,
   heldTotalAmountCents,
   checkoutKeyByOrder,
+  createKeyByIntent,
   origin,
   redirectTo,
 }: ExecuteBookCourseCheckoutInput): Promise<BookCourseCheckoutResult> {
@@ -68,12 +82,21 @@ export async function executeBookCourseCheckout({
 
   // WHY: after checkout_failed the order is already created — retry payment only.
   if (orderId == null) {
-    const created = await createCourseBooking({
-      service_id: serviceId,
-      guest_name: guest.guest_name,
-      guest_email: guest.guest_email,
-      guest_phone: guest.guest_phone,
-    });
+    const intentKey = `${serviceId}:${guest.guest_email.trim().toLowerCase()}`;
+    const created = await createCourseBooking(
+      {
+        service_id: serviceId,
+        guest_name: guest.guest_name,
+        guest_email: guest.guest_email,
+        guest_phone: guest.guest_phone,
+      },
+      {
+        idempotencyKey: createCourseIdempotencyKeyFor(
+          createKeyByIntent,
+          intentKey,
+        ),
+      },
+    );
 
     orderId = created.order.id;
     totalAmountCents = created.order.total_amount_cents;

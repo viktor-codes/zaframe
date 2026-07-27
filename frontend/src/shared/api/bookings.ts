@@ -120,10 +120,13 @@ export async function fetchBooking(
 
 export async function createBooking(
   data: BookingCreate,
+  options?: { idempotencyKey: string },
 ): Promise<BookingCreatedResponse> {
   // WHY: send Bearer when present so the API can attach user_id immediately;
   // guests without a token still create anonymously (optional auth on backend).
-  return api.post<BookingCreatedResponse>("api/v1/bookings", data);
+  return api.post<BookingCreatedResponse>("api/v1/bookings", data, {
+    idempotencyKey: options?.idempotencyKey,
+  });
 }
 
 /**
@@ -133,8 +136,11 @@ export async function createBooking(
  */
 export async function createCourseBooking(
   data: CourseBookingCreate,
+  options?: { idempotencyKey: string },
 ): Promise<CourseBookingResponse> {
-  return api.post<CourseBookingResponse>("api/v1/bookings", data);
+  return api.post<CourseBookingResponse>("api/v1/bookings", data, {
+    idempotencyKey: options?.idempotencyKey,
+  });
 }
 
 export async function cancelBooking(

@@ -26,6 +26,8 @@ export function useBookOccurrenceCheckout() {
   const heldBookingIdRef = useRef<number | null>(null);
   // WHY: one Idempotency-Key per booking id — never reuse across different holds.
   const checkoutKeyByBookingRef = useRef<Map<number, string>>(new Map());
+  // WHY: one create Idempotency-Key per occurrence+email intent (multi-tab / retry).
+  const createKeyByIntentRef = useRef<Map<string, string>>(new Map());
   // WHY: isPending updates only after re-render — sync guard blocks double-click races.
   const isPayInFlightRef = useRef(false);
 
@@ -40,6 +42,7 @@ export function useBookOccurrenceCheckout() {
         ...input,
         heldBookingId: heldBookingIdRef.current,
         checkoutKeyByBooking: checkoutKeyByBookingRef.current,
+        createKeyByIntent: createKeyByIntentRef.current,
         origin: window.location.origin,
         redirectTo: (url) => {
           window.location.href = url;

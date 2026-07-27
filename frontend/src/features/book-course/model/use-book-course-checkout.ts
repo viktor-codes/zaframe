@@ -24,6 +24,7 @@ export function useBookCourseCheckout() {
   const heldOrderIdRef = useRef<number | null>(null);
   const heldTotalAmountCentsRef = useRef<number | null>(null);
   const checkoutKeyByOrderRef = useRef<Map<number, string>>(new Map());
+  const createKeyByIntentRef = useRef<Map<string, string>>(new Map());
   const isPayInFlightRef = useRef(false);
 
   const setHeld = (orderId: number | null, totalAmountCents: number | null) => {
@@ -39,6 +40,7 @@ export function useBookCourseCheckout() {
         heldOrderId: heldOrderIdRef.current,
         heldTotalAmountCents: heldTotalAmountCentsRef.current,
         checkoutKeyByOrder: checkoutKeyByOrderRef.current,
+        createKeyByIntent: createKeyByIntentRef.current,
         origin: window.location.origin,
         redirectTo: (url) => {
           window.location.href = url;

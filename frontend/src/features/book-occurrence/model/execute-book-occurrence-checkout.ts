@@ -29,6 +29,8 @@ export interface ExecuteBookOccurrenceCheckoutInput {
   /** When set, skip createBooking and retry checkout for this hold. */
   heldBookingId: number | null;
   checkoutKeyByBooking: Map<number, string>;
+  /** Stable create keys per occurrence+email intent (double-submit / retry). */
+  createKeyByIntent: Map<string, string>;
   origin: string;
   /** Navigate to Stripe Checkout (injected to keep this module window-free). */
   redirectTo: (url: string) => void;
@@ -48,11 +50,23 @@ function checkoutIdempotencyKeyFor(
   return key;
 }
 
+function createBookingIdempotencyKeyFor(
+  keys: Map<string, string>,
+  intentKey: string,
+): string {
+  const existing = keys.get(intentKey);
+  if (existing) return existing;
+  const key = createIdempotencyKey();
+  keys.set(intentKey, key);
+  return key;
+}
+
 export async function executeBookOccurrenceCheckout({
   occurrence,
   guest,
   heldBookingId,
   checkoutKeyByBooking,
+  createKeyByIntent,
   origin,
   redirectTo,
 }: ExecuteBookOccurrenceCheckoutInput): Promise<BookOccurrenceCheckoutResult> {
@@ -62,14 +76,23 @@ export async function executeBookOccurrenceCheckout({
 
   // WHY: after checkout_failed the seat is already held — retry payment only.
   if (bookingId == null) {
-    const booking = await createBooking({
-      occurrence_id: occurrence.id,
-      guest_name: guest.guest_name,
-      guest_email: guest.guest_email,
-      guest_phone: guest.guest_phone,
-      booking_type: "single",
-      service_id: occurrence.service_id,
-    });
+    const intentKey = `${occurrence.id}:${guest.guest_email.trim().toLowerCase()}`;
+    const booking = await createBooking(
+      {
+        occurrence_id: occurrence.id,
+        guest_name: guest.guest_name,
+        guest_email: guest.guest_email,
+        guest_phone: guest.guest_phone,
+        booking_type: "single",
+        service_id: occurrence.service_id,
+      },
+      {
+        idempotencyKey: createBookingIdempotencyKeyFor(
+          createKeyByIntent,
+          intentKey,
+        ),
+      },
+    );
 
     bookingId = booking.id;
     accessToken = booking.access_token;

@@ -10,7 +10,7 @@ Operations:
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Header, Query, Request
 
 from app.core.deps import get_current_user, get_current_user_required, get_uow
 from app.core.pagination import PaginatedResponse, build_paginated_response, pagination_offset
@@ -36,6 +36,12 @@ from app.modules.booking import (
     map_booking_created_response,
     map_booking_for_user,
     mark_booking_no_show,
+)
+from app.modules.booking.idempotency import (
+    fingerprint_booking_create,
+    get_active_idempotency_row,
+    record_booking_idempotency,
+    replay_booking_create_response,
 )
 from app.modules.booking.mapping import map_owner_booking_with_occurrence
 from app.modules.booking.order import (
@@ -68,6 +74,15 @@ async def create_booking_endpoint(
     schema: BookingCreate | CourseBookingCreate,
     uow: Annotated[UnitOfWork, Depends(get_uow)],
     user: Annotated[User | None, Depends(get_current_user)],
+    idempotency_key: Annotated[
+        str | None,
+        Header(
+            min_length=8,
+            max_length=255,
+            alias="Idempotency-Key",
+            description="Optional client key; retries with the same key return the original hold",
+        ),
+    ] = None,
 ) -> BookingCreatedResponse | CourseBookingResponse:
     """
     Create a booking.
@@ -78,7 +93,22 @@ async def create_booking_endpoint(
 
     Auth is optional: with a valid Bearer token, ``user_id`` is set immediately;
     without a token the booking stays guest-owned until OTP attach.
+
+    When ``Idempotency-Key`` is present, repeated creates with the same key and
+    payload reuse the original booking/order instead of consuming another seat.
     """
+    user_id = user.id if user is not None else None
+    fingerprint: str | None = None
+    if idempotency_key is not None:
+        fingerprint = fingerprint_booking_create(schema, user_id=user_id)
+        existing = await get_active_idempotency_row(
+            uow,
+            idempotency_key=idempotency_key,
+            request_fingerprint=fingerprint,
+        )
+        if existing is not None:
+            return await replay_booking_create_response(uow, existing)
+
     if isinstance(schema, CourseBookingCreate):
         result = await create_course_booking(
             uow,
@@ -90,8 +120,24 @@ async def create_booking_endpoint(
             ),
             user=user,
         )
+        if idempotency_key is not None and fingerprint is not None:
+            await record_booking_idempotency(
+                uow,
+                idempotency_key=idempotency_key,
+                request_fingerprint=fingerprint,
+                resource_kind="order",
+                resource_id=result.order.id,
+            )
         return map_course_booking_result(result)
     booking = await create_booking(uow, schema, user=user)  # type: ignore[arg-type]
+    if idempotency_key is not None and fingerprint is not None:
+        await record_booking_idempotency(
+            uow,
+            idempotency_key=idempotency_key,
+            request_fingerprint=fingerprint,
+            resource_kind="booking",
+            resource_id=booking.id,
+        )
     return map_booking_created_response(booking)
 
 

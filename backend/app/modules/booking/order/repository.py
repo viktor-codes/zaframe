@@ -63,6 +63,15 @@ class OrderRepository(WriteRepositoryMixin):
         )
         return result.scalar_one_or_none()
 
+    async def get_by_id_with_bookings(self, order_id: int) -> Order | None:
+        """Load order with full booking rows (idempotent create replay)."""
+        result = await self._session.execute(
+            select(Order)
+            .options(selectinload(Order.bookings))
+            .where(Order.id == order_id)
+        )
+        return result.scalar_one_or_none()
+
     async def list_for_user(
         self,
         *,

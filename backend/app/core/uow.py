@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 if TYPE_CHECKING:
     from app.modules.auth.repository import OTPCodeRepository, RefreshTokenRepository
+    from app.modules.booking.idempotency_repository import BookingIdempotencyRepository
     from app.modules.booking.order.repository import OrderRepository
     from app.modules.booking.repository import BookingRepository
     from app.modules.catalog.occurrence.repository import OccurrenceRepository
@@ -31,6 +32,7 @@ class UnitOfWork:
 
     session: AsyncSession
     bookings: BookingRepository
+    booking_idempotency: BookingIdempotencyRepository
     otp_codes: OTPCodeRepository
     users: UserRepository
     studios: StudioRepository

@@ -3,6 +3,7 @@
 
 from app.core.database import Base
 from app.models.booking import Booking, BookingStatus, BookingType
+from app.models.booking_idempotency_key import BookingIdempotencyKey
 from app.models.occurrence import Occurrence, OccurrenceStatus
 from app.models.order import Order, OrderStatus
 from app.models.otp_code import OTPCode
@@ -27,6 +28,7 @@ __all__ = [
     "Booking",
     "BookingStatus",
     "BookingType",
+    "BookingIdempotencyKey",
     "OTPCode",
     "Order",
     "OrderStatus",

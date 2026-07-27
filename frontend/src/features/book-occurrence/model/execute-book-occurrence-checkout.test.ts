@@ -78,11 +78,16 @@ describe("executeBookOccurrenceCheckout", () => {
       guest,
       heldBookingId: null,
       checkoutKeyByBooking: keys,
+      createKeyByIntent: new Map(),
       origin: "http://localhost",
       redirectTo,
     });
 
     expect(createBooking).toHaveBeenCalledOnce();
+    expect(createBooking).toHaveBeenCalledWith(
+      expect.objectContaining({ occurrence_id: 10 }),
+      { idempotencyKey: "idem-key-1" },
+    );
     expect(createCheckoutSession).toHaveBeenCalledWith(
       expect.objectContaining({
         booking_id: 42,
@@ -109,6 +114,7 @@ describe("executeBookOccurrenceCheckout", () => {
       guest,
       heldBookingId: 42,
       checkoutKeyByBooking: keys,
+      createKeyByIntent: new Map(),
       origin: "http://localhost",
       redirectTo,
     });
@@ -144,6 +150,7 @@ describe("executeBookOccurrenceCheckout", () => {
       guest,
       heldBookingId: null,
       checkoutKeyByBooking: keys,
+      createKeyByIntent: new Map(),
       origin: "http://localhost",
       redirectTo,
     });
@@ -159,6 +166,7 @@ describe("executeBookOccurrenceCheckout", () => {
       guest,
       heldBookingId: 7,
       checkoutKeyByBooking: keys,
+      createKeyByIntent: new Map(),
       origin: "http://localhost",
       redirectTo,
     });

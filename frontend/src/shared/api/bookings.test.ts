@@ -46,15 +46,19 @@ describe("createCourseBooking", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const result = await createCourseBooking({
-      service_id: 55,
-      guest_name: "Ada",
-      guest_email: "ada@example.com",
-      guest_phone: "+10000000000",
-    });
+    const result = await createCourseBooking(
+      {
+        service_id: 55,
+        guest_name: "Ada",
+        guest_email: "ada@example.com",
+        guest_phone: "+10000000000",
+      },
+      { idempotencyKey: "create-course-idem-1" },
+    );
 
     const headers = new Headers(fetchMock.mock.calls[0]?.[1]?.headers);
     expect(headers.get("Authorization")).toBe("Bearer session-token");
+    expect(headers.get("Idempotency-Key")).toBe("create-course-idem-1");
     const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
     expect(body).toEqual({
       service_id: 55,

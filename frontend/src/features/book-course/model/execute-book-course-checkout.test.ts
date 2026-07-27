@@ -73,6 +73,7 @@ describe("executeBookCourseCheckout", () => {
       heldOrderId: null,
       heldTotalAmountCents: null,
       checkoutKeyByOrder: keys,
+      createKeyByIntent: new Map(),
       origin: "https://app.test",
       redirectTo,
     });
@@ -115,6 +116,7 @@ describe("executeBookCourseCheckout", () => {
       heldOrderId: 42,
       heldTotalAmountCents: 12000,
       checkoutKeyByOrder: keys,
+      createKeyByIntent: new Map(),
       origin: "https://app.test",
       redirectTo,
     });
@@ -150,6 +152,7 @@ describe("executeBookCourseCheckout", () => {
       heldOrderId: null,
       heldTotalAmountCents: null,
       checkoutKeyByOrder: new Map(),
+      createKeyByIntent: new Map(),
       origin: "https://app.test",
       redirectTo,
     });
@@ -176,6 +179,7 @@ describe("executeBookCourseCheckout", () => {
       heldOrderId: 42,
       heldTotalAmountCents: 12000,
       checkoutKeyByOrder: new Map(),
+      createKeyByIntent: new Map(),
       origin: "https://app.test",
       redirectTo,
     });
