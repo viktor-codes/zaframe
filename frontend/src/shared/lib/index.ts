@@ -3,6 +3,7 @@ export { config } from "./config";
 export { cn } from "./utils";
 export { formatMoneyFromCents } from "./format-money";
 export { getSafeNextPath } from "./safe-next-path";
+export { parsePositiveIdString } from "./parse-positive-id";
 export {
   getSafeStripeCheckoutUrl,
   isAllowedStripeCheckoutUrl,

@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchBooking, getUserFacingApiMessage } from "@shared/api";
 import {
   getGuestBookingAccessToken,
+  parsePositiveIdString,
   queryKeys,
 } from "@shared/lib";
 
@@ -30,20 +31,13 @@ export interface UsePaymentConfirmationPollResult {
   bookingId: number | null;
 }
 
-function parseBookingId(raw: string | null): number | null {
-  if (raw == null || raw.trim() === "") return null;
-  const id = Number(raw);
-  if (!Number.isInteger(id) || id <= 0) return null;
-  return id;
-}
-
 /**
  * Poll GET /bookings/{id} after Stripe redirect until webhook confirms payment.
  */
 export function usePaymentConfirmationPoll(
   bookingIdParam: string | null,
 ): UsePaymentConfirmationPollResult {
-  const bookingId = parseBookingId(bookingIdParam);
+  const bookingId = parsePositiveIdString(bookingIdParam);
   const [pollStartedAt] = useState(() => Date.now());
   const [isWebhookSlow, setIsWebhookSlow] = useState(false);
   const [hasTimedOut, setHasTimedOut] = useState(false);

@@ -3,11 +3,13 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { parsePositiveIdString } from "@shared/lib";
 import { Card, Button, Skeleton } from "@shared/ui";
 
 function CancelContent() {
   const searchParams = useSearchParams();
-  const bookingId = searchParams.get("booking");
+  // WHY: never interpolate raw query into href — reject floats / junk.
+  const bookingId = parsePositiveIdString(searchParams.get("booking"));
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
@@ -20,13 +22,13 @@ function CancelContent() {
           complete the payment later or browse other studios.
         </p>
         <div className="flex flex-col justify-center gap-4 sm:flex-row">
-          {bookingId && (
+          {bookingId != null ? (
             <Button asChild>
               <Link href={`/bookings/${bookingId}/confirm`}>
                 Back to booking
               </Link>
             </Button>
-          )}
+          ) : null}
           <Button variant="outline" asChild>
             <Link href="/studios">Browse studios</Link>
           </Button>

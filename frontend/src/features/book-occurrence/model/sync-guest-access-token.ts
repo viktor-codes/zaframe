@@ -6,15 +6,14 @@
  * backward compatibility, then stripped.
  */
 
+import { parsePositiveIdString } from "@shared/lib/parse-positive-id";
+
 export function parseBookingRouteId(raw: unknown): number | null {
   if (typeof raw === "number") {
     return Number.isInteger(raw) && raw > 0 ? raw : null;
   }
-  if (typeof raw !== "string" || raw === "") return null;
-  // WHY: reject floats / scientific notation that Number() would otherwise accept.
-  if (!/^\d+$/.test(raw)) return null;
-  const id = Number(raw);
-  return Number.isInteger(id) && id > 0 ? id : null;
+  if (typeof raw !== "string") return null;
+  return parsePositiveIdString(raw);
 }
 
 /** Read access_token from a URL hash fragment (`#access_token=…`). */
