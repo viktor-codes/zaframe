@@ -16,6 +16,9 @@ const apiURL = (process.env.API_URL ?? "http://127.0.0.1:8000").replace(
  * Run locally:
  *   make e2e-critical
  *
+ * Critical guest flow is Option A (td-10): assert Stripe Checkout URL + pending
+ * hold. Full webhook confirm stays in backend tests / optional Stripe CLI.
+ *
  * Or manually (two terminals):
  *   cd backend && uv run uvicorn app.main:app --port 8000
  *   cd frontend && npm run dev

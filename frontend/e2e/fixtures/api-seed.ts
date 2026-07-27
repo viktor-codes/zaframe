@@ -88,7 +88,9 @@ export function seedBookableOccurrence(): E2eSeedData {
 }
 
 /**
- * Fetch booking status via owner JWT (GET /bookings/{id} requires auth).
+ * Fetch booking status via owner JWT (GET /bookings/{id} requires a user session).
+ *
+ * WHY: guest opaque `access_token` is for checkout / order poll — not GET /bookings/{id}.
  */
 export async function fetchBookingStatusAsOwner(
   apiBaseUrl: string,

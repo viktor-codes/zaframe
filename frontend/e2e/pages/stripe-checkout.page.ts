@@ -9,8 +9,12 @@ export interface CheckoutSessionPayload {
 /**
  * Stripe hosted checkout helpers.
  *
- * E2E mode A (default): assert checkout session API response only — do not
- * complete payment or simulate webhooks (see test_webhooks.py for that).
+ * Option A (default, CI-stable): assert checkout session API response only —
+ * do not complete payment or simulate webhooks (see backend test_webhooks.py).
+ *
+ * Option B (local full confirm): run
+ *   stripe listen --forward-to localhost:8000/webhooks/stripe
+ * then complete Checkout with card 4242… — not asserted by this POM.
  */
 export class StripeCheckoutPage {
   constructor(private readonly page: Page) {}
@@ -31,31 +35,35 @@ export class StripeCheckoutPage {
 
   /**
    * Click Pay and capture checkout session JSON before Stripe redirect runs.
-   * @param payTestId - wizard summary uses `submit-booking-button`;
-   *   confirm page uses `pay-booking-button`.
+   * Wizard summary: `submit-booking-button`; confirm page: `pay-booking-button`.
    */
   async clickPayAndCaptureCheckoutSession(
-    payTestId: "submit-booking-button" | "pay-booking-button" = "submit-booking-button",
+    payTestId:
+      | "submit-booking-button"
+      | "pay-booking-button" = "submit-booking-button",
   ): Promise<CheckoutSessionPayload> {
     const captured: { payload: CheckoutSessionPayload | null } = {
       payload: null,
     };
 
-    await this.page.route("**/api/v1/payments/checkout-session", async (route) => {
-      if (route.request().method() !== "POST") {
-        await route.continue();
-        return;
-      }
-      const response = await route.fetch();
-      const body = (await response.json()) as CheckoutSessionPayload;
-      captured.payload = body;
-      await route.fulfill({
-        status: response.status(),
-        headers: response.headers(),
-        contentType: "application/json",
-        body: JSON.stringify(body),
-      });
-    });
+    await this.page.route(
+      "**/api/v1/payments/checkout-session",
+      async (route) => {
+        if (route.request().method() !== "POST") {
+          await route.continue();
+          return;
+        }
+        const response = await route.fetch();
+        const body = (await response.json()) as CheckoutSessionPayload;
+        captured.payload = body;
+        await route.fulfill({
+          status: response.status(),
+          headers: response.headers(),
+          contentType: "application/json",
+          body: JSON.stringify(body),
+        });
+      },
+    );
 
     await this.page.getByTestId(payTestId).click();
 
@@ -73,6 +81,11 @@ export class StripeCheckoutPage {
   }
 
   static isStripeCheckoutUrl(url: string): boolean {
-    return url.includes("checkout.stripe.com");
+    try {
+      const parsed = new URL(url);
+      return parsed.hostname === "checkout.stripe.com";
+    } catch {
+      return false;
+    }
   }
 }

@@ -95,7 +95,7 @@ export function BookOccurrenceWizard({
               type="button"
               disabled={!selected}
               onClick={goToDetails}
-              data-testid="book-slot-continue"
+              data-testid="book-occurrence-button"
             >
               Continue
             </Button>

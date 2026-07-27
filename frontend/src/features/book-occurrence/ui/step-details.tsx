@@ -71,6 +71,7 @@ export function StepDetails({
         error={errors.guest_name}
         onChange={(event) => onChange({ guest_name: event.target.value })}
         autoComplete="name"
+        data-testid="guest-name-input"
       />
       <Input
         label="Email"
@@ -91,6 +92,7 @@ export function StepDetails({
         error={errors.guest_phone}
         onChange={(event) => onChange({ guest_phone: event.target.value })}
         autoComplete="tel"
+        data-testid="guest-phone-input"
       />
 
       <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-between">

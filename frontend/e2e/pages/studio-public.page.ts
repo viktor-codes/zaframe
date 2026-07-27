@@ -20,7 +20,11 @@ export class StudioPublicPage {
   }
 
   async clickServiceById(serviceId: number): Promise<void> {
-    await this.page.locator(`a[href$="/book/${serviceId}"]`).click();
+    await this.page
+      .locator(
+        `[data-testid="service-polaroid-card"][data-service-id="${serviceId}"]`,
+      )
+      .click();
     await this.page.waitForURL(new RegExp(`/book/${serviceId}$`), {
       waitUntil: "domcontentloaded",
     });

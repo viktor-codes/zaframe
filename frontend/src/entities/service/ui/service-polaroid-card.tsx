@@ -102,6 +102,7 @@ export function ServicePolaroidCard({
         href={href}
         className={shellClassName}
         data-testid="service-polaroid-card"
+        data-service-id={service.id}
       >
         <article>{body}</article>
       </Link>
@@ -112,6 +113,7 @@ export function ServicePolaroidCard({
     <article
       className={`${shellClassName} hover:translate-y-0`}
       data-testid="service-polaroid-card"
+      data-service-id={service.id}
     >
       {body}
     </article>
