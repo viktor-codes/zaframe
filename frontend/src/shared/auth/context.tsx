@@ -20,6 +20,7 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, setAuthTokenProvider, setRefreshTokensFn } from "@shared/api";
 import { queryKeys } from "@shared/lib/query-keys";
+import { clearPrivateClientSession } from "@shared/lib/clear-private-client-session";
 import { logoutSession, refreshAccessToken } from "./api";
 import {
   notifyAuthSessionInvalidated,
@@ -98,13 +99,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const clearAuthSession = useCallback(() => {
     clearStoredTokens();
-    queryClient.removeQueries({ queryKey: queryKeys.auth.all });
+    clearPrivateClientSession(queryClient);
     setLoginTrigger((prev) => prev + 1);
   }, [queryClient]);
 
   useLayoutEffect(() => {
     setAuthSessionInvalidatedHandler(() => {
-      queryClient.removeQueries({ queryKey: queryKeys.auth.all });
+      clearPrivateClientSession(queryClient);
       setLoginTrigger((prev) => prev + 1);
     });
     return () => setAuthSessionInvalidatedHandler(null);

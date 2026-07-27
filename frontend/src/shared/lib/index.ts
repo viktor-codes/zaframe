@@ -10,6 +10,7 @@ export {
 } from "./stripe-checkout-url";
 export { useUIStore, type HeaderVariant } from "./ui-store";
 export {
+  clearAllGuestBookingAccess,
   getGuestBookingAccessToken,
   getGuestBookingSnapshot,
   persistGuestBookingAccessToken,
@@ -18,12 +19,14 @@ export {
   type GuestBookingSnapshot,
 } from "./booking-guest-token";
 export {
+  clearAllGuestOrderAccess,
   getGuestOrderAccessToken,
   getGuestOrderSnapshot,
   persistGuestOrderAccessToken,
   storeGuestOrderAccess,
   type GuestOrderSnapshot,
 } from "./order-guest-token";
+export { clearPrivateClientSession } from "./clear-private-client-session";
 export * from "./constants";
 export {
   buildStudioDashboardNav,

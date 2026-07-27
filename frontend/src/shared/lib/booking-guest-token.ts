@@ -8,6 +8,8 @@
 
 import { z } from "zod";
 
+import { removeSessionStorageByPrefixes } from "./remove-session-storage-by-prefixes";
+
 const TOKEN_PREFIX = "zeeframe_booking_access_token_";
 const SNAPSHOT_PREFIX = "zeeframe_booking_snapshot_";
 
@@ -89,4 +91,9 @@ export function updateGuestBookingSnapshot(
     `${SNAPSHOT_PREFIX}${bookingId}`,
     JSON.stringify(next.data),
   );
+}
+
+/** Remove all guest booking tokens and PII snapshots (logout / session invalidate). */
+export function clearAllGuestBookingAccess(): void {
+  removeSessionStorageByPrefixes([TOKEN_PREFIX, SNAPSHOT_PREFIX]);
 }

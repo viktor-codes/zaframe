@@ -5,6 +5,8 @@
 
 import { z } from "zod";
 
+import { removeSessionStorageByPrefixes } from "./remove-session-storage-by-prefixes";
+
 const TOKEN_PREFIX = "zeeframe_order_access_token_";
 const SNAPSHOT_PREFIX = "zeeframe_order_snapshot_";
 
@@ -66,4 +68,9 @@ export function getGuestOrderSnapshot(
   } catch {
     return null;
   }
+}
+
+/** Remove all guest order tokens and PII snapshots (logout / session invalidate). */
+export function clearAllGuestOrderAccess(): void {
+  removeSessionStorageByPrefixes([TOKEN_PREFIX, SNAPSHOT_PREFIX]);
 }
